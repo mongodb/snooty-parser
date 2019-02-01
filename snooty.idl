@@ -117,7 +117,8 @@ interface HTML <: Literal {
 interface Code <: Literal {
   type: "code";
   lang: string?;
-  meta: string?;
+  copyable: boolean;
+  emphasize_lines: [(int, int)];
 }
 
 interface Definition <: Node {

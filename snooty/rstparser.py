@@ -20,7 +20,6 @@ from .flutter import checked, check_type, LoadError
 PAT_EXPLICIT_TILE = re.compile(r'^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$', re.DOTALL)
 PAT_WHITESPACE = re.compile(r'^\x20*')
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r'^\x20*\.\.\x20[^\s]+::\s*\S+')
-SPECIAL_DIRECTIVES = {'code-block', 'include', 'only'}
 
 
 @checked
@@ -38,6 +37,10 @@ class LegacyTabsDefinition(nodes.Node):
     tabs: List[LegacyTabDefinition]
 
 
+def option_bool(argument: str) -> Any:
+    return docutils.parsers.rst.directives.choice(argument, ('true', 'false', None))
+
+
 class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
     pass
 
@@ -46,6 +49,10 @@ class directive(docutils.nodes.General, docutils.nodes.Element):
     def __init__(self, name: str) -> None:
         super(directive, self).__init__()
         self['name'] = name
+
+
+class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
+    pass
 
 
 class role(docutils.nodes.General, docutils.nodes.Inline, docutils.nodes.Element):
@@ -131,6 +138,22 @@ def parse_options(block_text: str) -> Dict[str, str]:
     return kv
 
 
+def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
+    """Parse a comma-delimited list of line numbers and ranges."""
+    results: List[Tuple[int, int]] = []
+    for term in (term for term in term.split(',') if term.strip()):
+        parts = term.split('-', 1)
+        lower = int(parts[0])
+        higher = int(parts[1]) if len(parts) == 2 else lower
+
+        if lower < 0 or lower > max_val or higher < 0 or higher > max_val or lower > higher:
+            raise ValueError(f'Invalid line number specification: {term}')
+
+        results.append((lower, higher))
+
+    return results
+
+
 class Directive(docutils.parsers.rst.Directive):
     optional_arguments = 1
     final_argument_whitespace = True
@@ -163,7 +186,7 @@ class Directive(docutils.parsers.rst.Directive):
                 node.append(argument)
 
         # Parse the content
-        if self.name in SPECIAL_DIRECTIVES:
+        if self.name in {'include', 'only'}:
             raw = docutils.nodes.FixedTextElement()
             raw.document = self.state.document
             raw.source, raw.line = source, line
@@ -195,9 +218,8 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
 class TabsDirective(Directive):
     option_spec = {
         'tabset': str,
-        'hidden': bool
+        'hidden': option_bool
     }
-    has_content = True
 
     def run(self) -> List[docutils.nodes.Node]:
         # Transform the old YAML-based syntax into the new pure-rst syntax.
@@ -262,6 +284,38 @@ class TabsDirective(Directive):
         return node
 
 
+class CodeDirective(Directive):
+    required_arguments = 1
+    optional_arguments = 0
+    option_spec = {
+        'copyable': option_bool,
+        'emphasize-lines': str
+    }
+
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        copyable = 'copyable' not in self.options or self.options['copyable'] == 'true'
+
+        try:
+            n_lines = len(self.content)
+            emphasize_lines = parse_linenos(self.options.get('emphasize-lines', ''), n_lines)
+        except ValueError as err:
+            error_node = self.state.document.reporter.error(
+                str(err),
+                line=self.lineno)
+            return [error_node]
+
+        value = '\n'.join(self.content)
+        node = code(value, value)
+        node['name'] = 'code'
+        node['lang'] = self.arguments[0]
+        node['copyable'] = copyable
+        node['emphasize_lines'] = emphasize_lines
+        node.document = self.state.document
+        node.source, node.line = source, line
+        return [node]
+
+
 def handle_role(typ: str, rawtext: str, text: str,
                 lineno: int, inliner: object,
                 options: Dict[str, object] = {},
@@ -274,6 +328,9 @@ def lookup_directive(directive_name: str, language_module: object,
                      document: docutils.nodes.document) -> Tuple[Type[Any], List[object]]:
     if directive_name.startswith('tabs'):
         return TabsDirective, []
+
+    if directive_name in {'code-block', 'sourcecode'}:
+        return CodeDirective, []
 
     return Directive, []
 

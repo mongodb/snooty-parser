@@ -41,7 +41,7 @@ class Action(HeadingMixin):
             nodes_to_append_children.append({
                 'type': 'code',
                 'lang': self.language,
-                'copyable': False if self.copyable is None else self.copyable,
+                'copyable': True if self.copyable is None else self.copyable,
                 'position': {'start': {'line': self.line}},
                 'value': self.code
             })

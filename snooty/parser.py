@@ -67,6 +67,15 @@ class JSONVisitor:
             value = node.children[1].astext()
             self.state[-1].setdefault('options', {})[key] = value
             raise docutils.nodes.SkipNode()
+        elif node_name == 'code':
+            doc['type'] = 'code'
+            doc['lang'] = node['lang']
+            doc['copyable'] = node['copyable']
+            if node['emphasize_lines']:
+                doc['emphasize_lines'] = node['emphasize_lines']
+            doc['value'] = node.astext()
+            self.state[-1]['children'].append(doc)
+            raise docutils.nodes.SkipNode()
 
         self.state.append(doc)
 
@@ -74,9 +83,6 @@ class JSONVisitor:
             doc['type'] = 'text'
             doc['value'] = str(node)
             return
-
-        # Most, but not all, nodes have children nodes
-        make_children = True
 
         if node_name == 'directive':
             self.handle_directive(node, doc)
@@ -103,13 +109,8 @@ class JSONVisitor:
             doc['type'] = 'listItem'
         elif node_name == 'title':
             doc['type'] = 'heading'
-        elif node_name == 'FixedTextElement':
-            doc['type'] = 'literal'
-            doc['value'] = node.astext()
-            make_children = False
 
-        if make_children:
-            doc['children'] = []
+        doc['children'] = []
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         node_name = node.__class__.__name__

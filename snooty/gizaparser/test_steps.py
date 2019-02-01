@@ -67,7 +67,8 @@ def test_step() -> None:
         '</heading><paragraph><text>hi</text></paragraph>',
         '<paragraph><text>You can install either the latest stable version of MongoDB ',
         'or a\nspecific version of MongoDB.</text></paragraph>',
-        '<directive name="code-block">',
-        '<text>sh</text><literal></literal></directive><paragraph><text>bye</text></paragraph>',
+        '<code lang="sh" copyable="True">',
+        'echo "mongodb-org hold" | sudo dpkg --set-selections',
+        '</code><paragraph><text>bye</text></paragraph>',
         '</section></directive></directive>'
     ))

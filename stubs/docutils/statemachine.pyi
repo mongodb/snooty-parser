@@ -9,7 +9,8 @@ class ViewList:
     def __iter__(self) -> Iterator[str]: ...
 
 
-class StringList(ViewList): ...
+class StringList(ViewList):
+    def __len__(self) -> int: ...
 
 
 class State:
