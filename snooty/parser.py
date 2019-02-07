@@ -284,7 +284,7 @@ class Project:
         elif ext == '.yaml' and prefix in self.yaml_mapping:
             file_id = os.path.basename(path)
             giza_category = self.yaml_mapping[prefix]
-            needs_rebuild = set((file_id)).union(*(
+            needs_rebuild = set((file_id,)).union(*(
                 category.dg.dependents[file_id] for category in self.yaml_mapping.values()))
             logger.debug('needs_rebuild: %s', ','.join(needs_rebuild))
             for file_id in needs_rebuild:
