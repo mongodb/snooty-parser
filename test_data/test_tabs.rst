@@ -20,6 +20,14 @@
 
            Trusty content
 
+.. tabs-platforms::
+
+   tabs:
+      - id: windows
+        content: |
+
+           Windows content
+
 .. tabs::
    :hidden: true
 

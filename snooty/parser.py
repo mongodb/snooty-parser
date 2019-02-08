@@ -130,17 +130,18 @@ class JSONVisitor:
         name = node['name']
         doc['name'] = name
 
+        options = node['options'] or {}
+        if options:
+            doc['options'] = options
+
         if node.children and node.children[0].__class__.__name__ == 'directive_argument':
             visitor = self.__make_child_visitor()
             node.children[0].walkabout(visitor)
             argument = visitor.state[-1]['children']
             doc['argument'] = argument
-            options = node['options']
-            doc['options'] = options
             node.children = node.children[1:]
         else:
             argument = []
-            options = {}
             doc['argument'] = argument
 
         argument_text = None

@@ -15,16 +15,18 @@ def test_tabs() -> None:
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
 
-        '<directive name="tabs"><directive name="tab"><text>bionic</text>',
+        '<directive name="tabs" hidden="True"><directive name="tab"><text>bionic</text>',
         '<paragraph><text>Bionic content</text></paragraph></directive>',
-
         '<directive name="tab"><text>xenial</text><paragraph><text>',
         'Xenial content</text></paragraph></directive>',
-
         '<directive name="tab"><text>trusty</text><paragraph><text>',
         'Trusty content</text></paragraph></directive></directive>',
 
-        '<directive name="tabs"><directive name="tab"><text>trusty</text><paragraph><text>',
+        '<directive name="tabs" tabset="platforms"><directive name="tab"><text>windows</text>',
+        '<paragraph><text>Windows content</text></paragraph></directive></directive>',
+
+        '<directive name="tabs" hidden="true"><directive name="tab">',
+        '<text>trusty</text><paragraph><text>',
         'Trusty content</text></paragraph></directive>',
 
         '<directive name="tab"><text>xenial</text><paragraph><text>',
@@ -35,7 +37,7 @@ def test_tabs() -> None:
 
     assert len(diagnostics) == 1 and \
         diagnostics[0].message.startswith('Unexpected field') and \
-        diagnostics[0].start[0] == 36
+        diagnostics[0].start[0] == 44
 
 
 def test_codeblock() -> None:

@@ -51,9 +51,11 @@ def get_line(node: docutils.nodes.Node) -> int:
 def ast_to_testing_string(ast: Any) -> str:
     value = ast.get('value', '')
     children = ast.get('children', [])
+    attr_pairs = [(k, v) for k, v in ast.items() if k not in (
+        'argument', 'value', 'children', 'type', 'position', 'options') and v]
+    attr_pairs.extend((k, v) for k, v in ast.get('options', {}).items())
     attrs = ' '.join(
-        '{}="{}"'.format(k, v) for k, v in ast.items() if k not in (
-            'argument', 'value', 'children', 'type', 'position') and v)
+        '{}="{}"'.format(k, v) for k, v in attr_pairs)
     contents = value if value else (''.join(
         ast_to_testing_string(child) for child in children)
         if children else '')
