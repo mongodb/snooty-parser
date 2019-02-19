@@ -131,9 +131,6 @@ class JSONVisitor:
         doc['name'] = name
 
         options = node['options'] or {}
-        if options:
-            doc['options'] = options
-
         if node.children and node.children[0].__class__.__name__ == 'directive_argument':
             visitor = self.__make_child_visitor()
             node.children[0].walkabout(visitor)
@@ -164,6 +161,9 @@ class JSONVisitor:
                 msg = '"figure" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno))
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+        if options:
+            doc['options'] = options
 
     def add_static_asset(self, path: Path) -> StaticAsset:
         fileid, path = util.reroot_path(path, self.docpath, self.project_root)
