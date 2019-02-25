@@ -1,12 +1,10 @@
 import collections.abc
 import dataclasses
+import enum
 import typing
-from typing import cast, Any, Callable, Dict, Set, Tuple, Type, TypeVar, Optional, Union  # noqa
+from dataclasses import MISSING
+from typing import cast, Any, Callable, Dict, Set, Tuple, Type, TypeVar, Iterator, Optional, Union
 from typing_extensions import Protocol
-
-# As of Python 3.7, the mypy Field definition is different from Python's version.
-# Use an old-fashioned comment until this situation is fixed.
-CACHED_TYPES = {}  # type: Dict[type, Optional[Dict[str, dataclasses.Field[Any]]]]
 
 
 class HasAnnotations(Protocol):
@@ -17,6 +15,10 @@ class Constructable(Protocol):
     def __init__(self, **kwargs: object) -> None: ...
 
 
+_A = TypeVar('_A', bound=HasAnnotations)
+_C = TypeVar('_C', bound=Constructable)
+
+
 class mapping_dict(Dict[str, Any]):
     """A dictionary that also contains source line information."""
     __slots__ = ('_start_line', '_end_line')
@@ -24,8 +26,55 @@ class mapping_dict(Dict[str, Any]):
     _end_line: int
 
 
-T = TypeVar('T', bound=HasAnnotations)
-C = TypeVar('C', bound=Constructable)
+@dataclasses.dataclass
+class _Field:
+    """A single field in a _TypeThunk."""
+    __slots__ = ('default_factory', 'type')
+
+    default_factory: Optional[Callable[[], Any]]
+    type: Type[Any]
+
+
+class _TypeThunk:
+    """Type hints cannot be fully resolved at module runtime due to ForwardRefs. Instead,
+       store the type here, and resolve type hints only when needed. By that time, hopefully all
+       types have been declared."""
+    __slots__ = ('type', '_fields')
+
+    def __init__(self, klass: Type[Any]) -> None:
+        self.type = klass
+        self._fields: Optional[Dict[str, _Field]] = None
+
+    def __getitem__(self, field_name: str) -> _Field:
+        return self.fields[field_name]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.fields.keys())
+
+    @property
+    def fields(self) -> Dict[str, _Field]:
+        def make_factory(value: object) -> Callable[[], Any]:
+            return lambda: value
+
+        if self._fields is None:
+            hints = typing.get_type_hints(self.type)
+            # This is gnarly. Sorry. For each field, store its default_factory if present; otherwise
+            # create a factory returning its default if present; otherwise None. Default parameter
+            # in the lambda is a ~~hack~~ to avoid messing up the variable binding.
+            fields: Dict[str, _Field] = {
+                field.name: _Field(
+                    field.default_factory if field.default_factory is not MISSING  # type: ignore
+                    else ((make_factory(field.default)) if field.default is not MISSING
+                          else None),
+                    hints[field.name]) for field in dataclasses.fields(self.type)
+            }
+
+            self._fields = fields
+
+        return self._fields
+
+
+CACHED_TYPES: Dict[type, _TypeThunk] = {}
 
 
 def _add_indefinite_article(s: str) -> str:
@@ -131,9 +180,9 @@ def english_description_of_type(ty: type) -> Tuple[str, Dict[type, str]]:
     return inner(ty, False, 0), hints
 
 
-def checked(klass: Type[T]) -> Type[T]:
+def checked(klass: Type[_A]) -> Type[_A]:
     """Marks a dataclass as being deserializable."""
-    CACHED_TYPES[klass] = None
+    CACHED_TYPES[klass] = _TypeThunk(klass)
     return klass
 
 
@@ -167,19 +216,28 @@ class LoadUnknownField(LoadError):
         self.bad_field = bad_field
 
 
-def check_type(ty: Type[C], data: object, ty_module: str = '') -> C:
+def check_type(ty: Type[_C], data: object) -> _C:
     # Check for a primitive type
     if isinstance(ty, type) and issubclass(ty, (str, int, float, bool, type(None))):
         if not isinstance(data, ty):
             raise LoadWrongType(ty, data)
-        return cast(C, data)
+        return cast(_C, data)
 
-    # Check for an object
-    if isinstance(data, dict) and ty in CACHED_TYPES:
+    if isinstance(ty, enum.EnumMeta):
+        try:
+            if isinstance(data, str):
+                return ty[data]
+            if isinstance(data, int):
+                return ty(data)
+        except (KeyError, ValueError) as err:
+            raise LoadWrongType(ty, data) from err
+
+    # Check if the given type is a known flutter-annotated type
+    if ty in CACHED_TYPES:
+        if not isinstance(data, dict):
+            raise LoadWrongType(ty, data)
+
         annotations = CACHED_TYPES[ty]
-        if annotations is None:
-            annotations = {field.name: field for field in dataclasses.fields(ty)}
-            CACHED_TYPES[ty] = annotations
         result: Dict[str, object] = {}
 
         # Assign missing fields None
@@ -198,14 +256,12 @@ def check_type(ty: Type[C], data: object, ty_module: str = '') -> C:
             have_value = False
             if key in missing:
                 # Use the field's default_factory if it's defined
-                try:
-                    result[key] = field.default_factory()  # type: ignore
+                if field.default_factory is not None:
+                    result[key] = field.default_factory()
                     have_value = True
-                except TypeError:
-                    pass
 
             if not have_value:
-                result[key] = check_type(field.type, value, ty.__module__)
+                result[key] = check_type(field.type, value)
 
         output = ty(**result)
         start_line = getattr(data, '_start_line', None)
@@ -220,23 +276,26 @@ def check_type(ty: Type[C], data: object, ty_module: str = '') -> C:
         if origin is list:
             if not isinstance(data, list):
                 raise LoadWrongType(ty, data)
-            return cast(C, [check_type(args[0], x, ty_module) for x in data])
+            return cast(_C, [check_type(args[0], x) for x in data])
         elif origin is dict:
             if not isinstance(data, dict):
                 raise LoadWrongType(ty, data)
             key_type, value_type = args
-            return cast(C, {
-                check_type(key_type, k, ty_module): check_type(value_type, v, ty_module)
+            return cast(_C, {
+                check_type(key_type, k): check_type(value_type, v)
                 for k, v in data.items()})
-        elif origin is tuple and isinstance(data, collections.abc.Collection):
+        elif origin is tuple:
+            if not isinstance(data, collections.abc.Collection):
+                raise LoadWrongType(ty, data)
+
             if not len(data) == len(args):
                 raise LoadWrongArity(ty, data)
-            return cast(C, tuple(
-                check_type(tuple_ty, x, ty_module) for x, tuple_ty in zip(data, args)))
+            return cast(_C, tuple(
+                check_type(tuple_ty, x) for x, tuple_ty in zip(data, args)))
         elif origin is Union:
             for candidate_ty in args:
                 try:
-                    return cast(C, check_type(candidate_ty, data, ty_module))
+                    return cast(_C, check_type(candidate_ty, data))
                 except LoadError:
                     pass
 
@@ -245,6 +304,6 @@ def check_type(ty: Type[C], data: object, ty_module: str = '') -> C:
         raise LoadError('Unsupported PEP-484 type', ty, data)
 
     if ty is object or ty is Any or isinstance(data, ty):
-        return cast(C, data)
+        return cast(_C, data)
 
     raise LoadError('Unloadable type', ty, data)
