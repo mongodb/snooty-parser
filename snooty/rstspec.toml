@@ -1,0 +1,281 @@
+[meta]
+version = 0
+
+[enum]
+user_level = ["beginner", "intermediate", "advanced"]
+dedent_mode = ["auto"]
+
+[directive.default-domain]
+argument_type = "string"
+deprecated = true
+
+[directive.list-table]
+help = """Define a table using nested lists."""
+example = """.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * - Platform
+     - 4.0 Community & Enterprise
+     - 3.6 Community & Enterprise
+   * - Ubuntu 16.04
+     - |checkmark|
+     - |checkmark|
+"""
+content_type = "list_table"
+options.widths = "string"
+options.class = "string"
+options.header-rows = "nonnegative_integer"
+options.stub-columns = "nonnegative_integer"
+
+[directive.admonition]
+content_type = "block"
+argument_type = "string"
+options.class = "string"
+
+[directive.note]
+inherit = "admonition"
+
+[directive.warning]
+inherit = "admonition"
+
+[directive.important]
+inherit = "admonition"
+
+[directive.danger]
+inherit = "admonition"
+
+[directive.tip]
+inherit = "admonition"
+
+[directive.versionchanged]
+argument_type = "string"
+content_type = "block"
+
+[directive.versionadded]
+argument_type = "string"
+content_type = "block"
+
+[directive.include]
+help = """Include a reStructuredText file's contents."""
+argument_type = ["path", "uri"]
+
+[directive.literalinclude]
+help = """Include a file as a block of code."""
+inherit = "include"
+options.start-after = "string"
+options.end-before = "string"
+options.language = "string"
+options.dedent = ["nonnegative_integer", "dedent_mode"]
+
+[directive.figure]
+help = """Include an image file."""
+argument_type = ["path", "uri"]
+options.alt = "string"
+options.figwidth = "length"
+options.scale = "string"
+options.width = "length"
+
+[directive.raw]
+help = """Include raw unparsed content when rendering into a given output format."""
+deprecated = true
+argument_type = "string"
+content_type = "string"
+
+[directive.class]
+help = """Set a class on the next element."""
+deprecated = true
+argument_type = "string"
+
+[directive.tabs]
+content_type = "block"
+argument_type = "string"
+options.hidden = "boolean"
+options.tabset = "string"
+
+[directive.tabs-cloud]
+
+inherit = "tabs"
+[directive.tabs-platforms]
+
+inherit = "tabs"
+[directive.tabs-drivers]
+
+inherit = "tabs"
+
+[directive.tab]
+argument_type = "string"
+content_type = "block"
+
+[directive.code-block]
+help = """A block of code to show the user."""
+argument_type = "string"
+options.copyable = "boolean"
+options.emphasize-lines = "string"
+
+[directive.cssclass]
+argument_type = "string"
+
+[directive.uriwriter]
+
+###### Guides
+[directive.card]
+help = """A single-page card."""
+argument_type = "string"
+
+[directive.multi-card]
+help = """A card with multiple pages."""
+example = """.. multi-card:: MongoDB in the Cloud
+
+   * cloud/atlas
+   * cloud/connectionstring
+"""
+argument_type = "string"
+content_type = "path-list"
+
+[directive.guide-index]
+help = """Render the guide landing page, using the cards listed in this directive."""
+content_type = ["directive.card", "directive.multi-card"]
+
+[directive._guides-base]
+required_context = "guide"
+argument_type = "string"
+content_type = "block"
+
+[directive.type]
+help = """The guide's type."""
+inherit = "_guides-base"
+
+[directive.level]
+help = """The expected level of user experience for this guide."""
+inherit = "_guides-base"
+argument_type = "user_level"
+
+[directive.author]
+help = """The author of this guide."""
+inherit = "_guides-base"
+
+[directive.product_version]
+help = """The version of product to which this guide applies."""
+inherit = "_guides-base"
+
+[directive.languages]
+help = """A list of languages that this guide supports."""
+example = """.. languages::
+
+   * shell
+   * compass
+   * python
+"""
+inherit = "_guides-base"
+content_type = "list"
+
+[directive.deployments]
+help = """Lists the expected types of MongoDB deployments for this guide."""
+inherit = "_guides-base"
+
+[directive.result_description]
+help = """Describes the end result that the user should have once they have finished this guide."""
+inherit = "_guides-base"
+
+[directive.prerequisites]
+help = """The prerequisites to start this guide."""
+inherit = "_guides-base"
+
+[directive.check_your_environment]
+help = """Checks the user should perform before starting this guide."""
+inherit = "_guides-base"
+
+[directive.time]
+help = """Shows the time expected for this guide."""
+inherit = "_guides-base"
+
+[directive.procedure]
+help = """This guide's main procedure."""
+inherit = "_guides-base"
+
+[directive.summary]
+inherit = "_guides-base"
+
+[directive.whats_next]
+help = """What the user should do next. Typically a brief paragraph, followed by a list of articles."""
+inherit = "_guides-base"
+
+[directive.seealso]
+help = """Related pages. Typically a list."""
+inherit = "_guides-base"
+
+###### Roles
+[role.guilabel]
+help = """Used to specify a label or button in a GUI."""
+
+[role.doc]
+help = """Link to a page in the current project."""
+
+[role.manual]
+help = """Link to a page in the latest stable version of the MongoDB manual."""
+type = "link http://docs.mongodb.com/manual%s"
+
+[role.ref]
+help = """Link to a named target."""
+
+[role.term]
+help = """Link to a term in the glossary."""
+
+[role.issue]
+help = """Link to a JIRA ticket."""
+type = "link https://jira.mongodb.org/browse/%s"
+
+[role.perl-api]
+help = "Link to a page in the Perl driver's CPAN API reference."
+type = "link https://metacpan.org/pod/MongoDB::%s"
+
+[role.node-docs]
+help = """Link to a page in the Node.js driver's documentation."""
+type = "link http://mongodb.github.io/node-mongodb-native/3.0/%s"
+
+[role.node-api]
+help = """Link to a page in the Node.js driver's API reference."""
+type = "link http://mongodb.github.io/node-mongodb-native/3.0/api/%s"
+
+[role.ruby-api]
+help = """Link to a page in the Ruby driver's API reference."""
+type = "link http://api.mongodb.com/ruby/current/Mongo/%s"
+
+[role.scala-api]
+help = """Link to a page in the Scala driver's API reference."""
+type = "link http://mongodb.github.io/mongo-scala-driver/2.2/scaladoc/org/mongodb/scala/MongoCollection.html#%s"
+
+[role.csharp-docs]
+help = """Link to a page in the C# driver's documentation."""
+type = "link https://mongodb.github.io/mongo-csharp-driver/2.5/reference/%s"
+
+[role.csharp-api]
+help = """Link to a page in the C# driver's API reference."""
+type = "link https://mongodb.github.io/mongo-csharp-driver/2.5/apidocs/html/%s.htm"
+
+[role.java-async-docs]
+help = """Link to the async Java driver's documentation."""
+type = "link http://mongodb.github.io/mongo-java-driver/3.7/%s"
+
+[role.java-async-api]
+help = """Link to the async Java driver's API reference."""
+type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
+
+[role.java-sync-api]
+help = """Link to the synchronous Java driver's API reference."""
+type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
+
+### Types of objects (directive & role pairs)
+[rstobject."py:class"]
+[rstobject.authrole]
+[rstobject.binary]
+[rstobject.method]
+[rstobject.mongodb]
+[rstobject.option]
+[rstobject.phpclass]
+[rstobject.phpmethod]
+[rstobject.program]
+[rstobject.update]
+[rstobject.query]
+[rstobject.setting]

@@ -1,3 +1,5 @@
+import pkg_resources
+import re
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -6,16 +8,16 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
-import re
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import Any, Callable, Dict, Generic, Optional, List, Tuple, \
-    Type, TypeVar, Iterable, Sequence
+from typing import Any, Dict, Generic, Optional, List, Tuple, \
+    Type, TypeVar, Iterable
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import Diagnostic, ProjectConfig
 from .flutter import checked, check_type, LoadError
+from . import specparser
 
 PAT_EXPLICIT_TILE = re.compile(r'^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$', re.DOTALL)
 PAT_WHITESPACE = re.compile(r'^\x20*')
@@ -74,70 +76,6 @@ class role(docutils.nodes.Inline, docutils.nodes.Element):
             self['target'] = text
 
 
-def parse_directive_arguments(self: docutils.parsers.rst.states.Body,
-                              directive: docutils.parsers.rst.Directive,
-                              arg_block: Iterable[str]) -> Sequence[str]:
-        required = directive.required_arguments
-        optional = directive.optional_arguments
-        arg_text = '\n'.join(arg_block)
-        arguments = arg_text.split()
-        if len(arguments) < required:
-            raise docutils.parsers.rst.states.MarkupError(
-                '{} argument(s) required, {} supplied'.format(required, len(arguments)))
-        elif len(arguments) > required + optional:
-            if directive.final_argument_whitespace:
-                arguments = arg_text.split(' ', required + optional - 1)
-            else:
-                raise docutils.parsers.rst.states.MarkupError(
-                    'maximum %s argument(s) allowed, %s supplied'
-                    % (required + optional, len(arguments)))
-        return arguments
-
-
-docutils.parsers.rst.states.Body.parse_directive_arguments = (  # type: ignore
-    parse_directive_arguments)
-
-
-def parse_options(block_text: str) -> Dict[str, str]:
-    """Docutils doesn't parse directive options that aren't known ahead
-       of time. Do it ourselves, badly."""
-    lines = block_text.split('\n')
-    current_key: Optional[str] = None
-    kv: Dict[str, str] = {}
-    base_indentation = 0
-
-    for i, line in enumerate(lines):
-        if i == 0:
-            continue
-
-        stripped = line.strip()
-        if not stripped:
-            continue
-
-        whitespace_match = PAT_WHITESPACE.match(line)
-        assert whitespace_match is not None
-        indentation = len(whitespace_match.group(0))
-
-        if base_indentation == 0:
-            base_indentation = indentation
-
-        match = re.match(docutils.parsers.rst.states.Body.patterns['field_marker'], stripped)
-        if match:
-            current_key = match.group(0)
-            assert current_key is not None
-            value = stripped[len(current_key):]
-            current_key = current_key.strip().strip(':')
-            kv[current_key] = value
-            continue
-
-        if indentation == base_indentation:
-            break
-        elif current_key:
-            kv[current_key] += '\n' + line[indentation:]
-
-    return kv
-
-
 def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
     """Parse a comma-delimited list of line numbers and ranges."""
     results: List[Tuple[int, int]] = []
@@ -154,21 +92,16 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
     return results
 
 
-class Directive(docutils.parsers.rst.Directive):
-    optional_arguments = 1
-    final_argument_whitespace = True
-    has_content = True
+class BaseDocutilsDirective(docutils.parsers.rst.Directive):
+    required_arguments = 0
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         node = directive(self.name)
         node.document = self.state.document
         node.source, node.line = source, line
+        node['options'] = self.options
         self.add_name(node)
-
-        # Parse options
-        options = parse_options(self.block_text)
-        node['options'] = options
 
         # Parse the directive's argument. An argument spans from the 0th line to the first
         # non-option line; this is a heuristic that is not part of docutils, since docutils
@@ -177,7 +110,9 @@ class Directive(docutils.parsers.rst.Directive):
             arg_lines = self.arguments[0].split('\n')
             argument_text = arg_lines[0]
             textnodes, messages = self.state.inline_text(argument_text, self.lineno)
-            if len(arg_lines) > 1 and not options and PAT_BLOCK_HAS_ARGUMENT.match(self.block_text):
+            if len(arg_lines) > 1 and \
+               not self.options and \
+               PAT_BLOCK_HAS_ARGUMENT.match(self.block_text):
                 node.extend(textnodes)
             else:
                 argument = directive_argument(argument_text, '', *textnodes)
@@ -215,7 +150,11 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
     return lines
 
 
-class TabsDirective(Directive):
+class TabsDirective(BaseDocutilsDirective):
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+    has_content = True
     option_spec = {
         'tabset': str,
         'hidden': option_bool
@@ -256,7 +195,7 @@ class TabsDirective(Directive):
             return [node]
 
         # The new syntax needs no special handling
-        return Directive.run(self)
+        return super().run()
 
     def make_tab_node(self, source: str, child: LegacyTabDefinition) -> docutils.nodes.Node:
         line = self.lineno + child.line
@@ -284,9 +223,11 @@ class TabsDirective(Directive):
         return node
 
 
-class CodeDirective(Directive):
+class CodeDirective(docutils.parsers.rst.Directive):
     required_arguments = 1
     optional_arguments = 0
+    has_content = True
+    final_argument_whitespace = True
     option_spec = {
         'copyable': option_bool,
         'emphasize-lines': str
@@ -324,26 +265,6 @@ def handle_role(typ: str, rawtext: str, text: str,
     return [node], []
 
 
-def lookup_directive(directive_name: str, language_module: object,
-                     document: docutils.nodes.document) -> Tuple[Type[Any], List[object]]:
-    if directive_name.startswith('tabs'):
-        return TabsDirective, []
-
-    if directive_name in {'code-block', 'sourcecode'}:
-        return CodeDirective, []
-
-    return Directive, []
-
-
-def lookup_role(role_name: str, language_module: object, lineno: int,
-                reporter: object) -> Tuple[Optional[Callable[..., Any]], List[object]]:
-    return handle_role, []
-
-
-docutils.parsers.rst.directives.directive = lookup_directive
-docutils.parsers.rst.roles.role = lookup_role
-
-
 class NoTransformRstParser(docutils.parsers.rst.Parser):
     def get_transforms(self) -> List[object]:
         return []
@@ -365,12 +286,62 @@ class Visitor(Protocol):
 _V = TypeVar('_V', bound=Visitor)
 
 
+def register_spec_with_docutils(spec: specparser.Spec) -> None:
+    """Register all of the definitions in the spec with docutils."""
+    directives = list(spec.directive.items())
+    roles = list(spec.role.items())
+
+    for name, rst_object in spec.rstobject.items():
+        directive = rst_object.create_directive()
+        role = rst_object.create_role()
+        directives.append((name, directive))
+        roles.append((name, role))
+
+    for name, directive in directives:
+        # Skip abstract base directives
+        if name.startswith('_'):
+            continue
+
+        # Tabs have special handling because of the need to support legacy syntax
+        if name == 'tabs' or name.startswith('tabs-'):
+            docutils.parsers.rst.directives.register_directive(name, TabsDirective)
+            continue
+
+        options: Dict[str, object] = {
+            option_name:
+                spec.get_validator(option) for option_name, option in directive.options.items()
+        }
+
+        class DocutilsDirective(BaseDocutilsDirective):
+            has_content = bool(directive.content_type)
+            optional_arguments = 1 if directive.argument_type else 0
+            final_argument_whitespace = True
+            option_spec = options
+
+        new_name = ''.join(e for e in name.title() if e.isalnum() or e == '_') + 'Directive'
+        DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
+        docutils.parsers.rst.directives.register_directive(name, DocutilsDirective)
+
+    # Code blocks currently have special handling
+    docutils.parsers.rst.directives.register_directive('code-block', CodeDirective)
+    docutils.parsers.rst.directives.register_directive('sourcecode', CodeDirective)
+
+    for name, role_spec in roles:
+        docutils.parsers.rst.roles.register_local_role(name, handle_role)
+
+
 class Parser(Generic[_V]):
     __slots__ = ('project_config', 'visitor_class')
+    spec: Optional[specparser.Spec] = None
 
     def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
+
+        if not self.spec:
+            spec = Parser.spec = specparser.Spec.loads(
+                str(pkg_resources.resource_string(__name__, 'rstspec.toml'), 'utf-8'))
+            register_spec_with_docutils(spec)
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         diagnostics: List[Diagnostic] = []
