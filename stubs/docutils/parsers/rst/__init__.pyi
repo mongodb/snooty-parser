@@ -21,6 +21,7 @@ class Directive:
     final_argument_whitespace: bool
 
     def add_name(self, node: docutils.nodes.Node) -> None: ...
+    def run(self) -> List[docutils.nodes.Node]: ...
 
 
 class Parser:
