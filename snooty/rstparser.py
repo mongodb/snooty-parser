@@ -55,7 +55,7 @@ class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
     pass
 
 
-class role(docutils.nodes.General, docutils.nodes.Inline, docutils.nodes.Element):
+class role(docutils.nodes.Inline, docutils.nodes.Element):
     def __init__(self, name: str, rawtext: str, text: str, lineno: int) -> None:
         super(role, self).__init__()
         self['name'] = name

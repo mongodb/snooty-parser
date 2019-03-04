@@ -52,8 +52,9 @@ def test_step() -> None:
         '</target></paragraph></section></directive>',
 
         '<directive name="step"><section><heading><text>Create a </text><literal><text>',
-        '/etc/apt/sources.list.d/mongodb-org-3.4.list</text></literal><text> file for MongoDB.',
-        '</text></heading>',
+        '/etc/apt/sources.list.d/mongodb-org-3.4.list</text></literal><text> file for </text>',
+        '<role name="guilabel" label="MongoDB" target="MongoDB" raw="MongoDB"></role>',
+        '<text>.</text></heading>',
         '<section><heading><text>Optional: action heading</text></heading>'
         '<paragraph><text>Create the list file using the command appropriate for ',
         'your version\nof Debian.</text></paragraph>',
