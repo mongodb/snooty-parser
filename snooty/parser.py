@@ -94,6 +94,8 @@ class JSONVisitor:
         elif node_name == 'target':
             doc['type'] = 'target'
             doc['ids'] = node['ids']
+            if 'refuri' in node:
+                doc['refuri'] = node['refuri']
         elif node_name == 'definition_list':
             doc['type'] = 'definitionList'
         elif node_name == 'definition_list_item':
@@ -109,6 +111,10 @@ class JSONVisitor:
             doc['type'] = 'listItem'
         elif node_name == 'title':
             doc['type'] = 'heading'
+        elif node_name == 'reference':
+            for attr_name in ('refuri', 'refname'):
+                if attr_name in node:
+                    doc[attr_name] = node[attr_name]
 
         doc['children'] = []
 
