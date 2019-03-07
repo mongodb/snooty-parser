@@ -288,6 +288,8 @@ _V = TypeVar('_V', bound=Visitor)
 
 def register_spec_with_docutils(spec: specparser.Spec) -> None:
     """Register all of the definitions in the spec with docutils."""
+    from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
+
     directives = list(spec.directive.items())
     roles = list(spec.role.items())
 
@@ -322,9 +324,11 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
         docutils.parsers.rst.directives.register_directive(name, DocutilsDirective)
 
-    # Code blocks currently have special handling
+    # Some directives currently have special handling
     docutils.parsers.rst.directives.register_directive('code-block', CodeDirective)
     docutils.parsers.rst.directives.register_directive('sourcecode', CodeDirective)
+    docutils.parsers.rst.directives.register_directive('guide', LegacyGuideDirective)
+    docutils.parsers.rst.directives.register_directive('guide-index', LegacyGuideIndexDirective)
 
     for name, role_spec in roles:
         docutils.parsers.rst.roles.register_local_role(name, handle_role)

@@ -137,6 +137,11 @@ content_type = "path-list"
 help = """Render the guide landing page, using the cards listed in this directive."""
 content_type = ["directive.card", "directive.multi-card"]
 
+[directive.guide]
+help = """Legacy guide definition."""
+content_type = "block"
+deprecated = true
+
 [directive._guides-base]
 required_context = "guide"
 argument_type = "string"

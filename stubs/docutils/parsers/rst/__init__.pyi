@@ -4,6 +4,10 @@ import docutils.statemachine
 from typing import Any, Dict, List
 
 
+class DirectiveError(Exception):
+    ...
+
+
 class Directive:
     arguments: List[str]
     block_text: str
@@ -22,6 +26,7 @@ class Directive:
 
     def add_name(self, node: docutils.nodes.Node) -> None: ...
     def run(self) -> List[docutils.nodes.Node]: ...
+    def severe(self, message: str) -> DirectiveError: ...
 
 
 class Parser:

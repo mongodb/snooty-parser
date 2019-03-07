@@ -12,6 +12,7 @@ toml = "*"
 pyyaml = "*"
 typing-extensions = "*"
 python-jsonrpc-server = "*"
+fett = "*"
 
 [dev-packages]
 "flake8" = "*"
