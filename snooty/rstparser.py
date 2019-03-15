@@ -1,5 +1,5 @@
-import pkg_resources
 import re
+import sys
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -22,6 +22,9 @@ from . import specparser
 PAT_EXPLICIT_TILE = re.compile(r'^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$', re.DOTALL)
 PAT_WHITESPACE = re.compile(r'^\x20*')
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r'^\x20*\.\.\x20[^\s]+::\s*\S+')
+PACKAGE_ROOT = Path(sys.modules['snooty'].__file__).resolve().parent
+if PACKAGE_ROOT.is_file():
+    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 
 @checked
@@ -343,8 +346,8 @@ class Parser(Generic[_V]):
         self.visitor_class = visitor_class
 
         if not self.spec:
-            spec = Parser.spec = specparser.Spec.loads(
-                str(pkg_resources.resource_string(__name__, 'rstspec.toml'), 'utf-8'))
+            with PACKAGE_ROOT.joinpath('rstspec.toml').open() as f:
+                spec = Parser.spec = specparser.Spec.loads(f.read())
             register_spec_with_docutils(spec)
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
