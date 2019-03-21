@@ -272,6 +272,7 @@ class Project:
         username = pwd.getpwuid(os.getuid()).pw_name
         branch = subprocess.check_output(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=root,
             encoding='utf-8').strip()
         self.prefix = [self.config.name, username, branch]
 
