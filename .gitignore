@@ -8,4 +8,4 @@ node_modules/
 .coverage
 htmlcov/
 .venv/
-snooty.tar.bz2
+dist/
