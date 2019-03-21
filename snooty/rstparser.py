@@ -364,7 +364,7 @@ class Parser(Generic[_V]):
 
         parser.parse(text, document)
 
-        visitor = self.visitor_class(self.project_config.root, path, document)
+        visitor = self.visitor_class(self.project_config.source_path, path, document)
         visitor.add_diagnostics(diagnostics)
         document.walkabout(visitor)
         return visitor, text

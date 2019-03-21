@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 class JSONVisitor:
     """Node visitor that creates a JSON-serializable structure."""
     def __init__(self,
-                 project_root: Path,
+                 source_path: Path,
                  docpath: PurePath,
                  document: docutils.nodes.document) -> None:
-        self.project_root = project_root
+        self.source_path = source_path
         self.docpath = docpath
         self.document = document
         self.state: List[Dict[str, Any]] = []
@@ -163,7 +163,6 @@ class JSONVisitor:
                 static_asset = self.add_static_asset(Path(argument_text))
                 options['checksum'] = static_asset.checksum
             except OSError as err:
-                print(util.get_line(node))
                 msg = '"figure" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno))
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
@@ -172,7 +171,7 @@ class JSONVisitor:
             doc['options'] = options
 
     def add_static_asset(self, path: Path) -> StaticAsset:
-        fileid, path = util.reroot_path(path, self.docpath, self.project_root)
+        fileid, path = util.reroot_path(path, self.docpath, self.source_path)
         static_asset = StaticAsset.load(fileid.as_posix(), path)
         self.static_assets.add(static_asset)
         return static_asset
@@ -181,7 +180,7 @@ class JSONVisitor:
         self.diagnostics.extend(diagnostics)
 
     def __make_child_visitor(self) -> 'JSONVisitor':
-        visitor = type(self)(self.project_root, self.docpath, self.document)
+        visitor = type(self)(self.source_path, self.docpath, self.document)
         visitor.diagnostics = self.diagnostics
         return visitor
 
@@ -253,13 +252,13 @@ class Project:
                  root: Path,
                  backend: ProjectBackend) -> None:
         root = root.resolve(strict=True)
-        root, self.config, config_diagnostics = ProjectConfig.open(root)
+        self.config, config_diagnostics = ProjectConfig.open(root)
 
         if config_diagnostics:
-            backend.on_diagnostics(root, config_diagnostics)
+            backend.on_diagnostics(self.config.root, config_diagnostics)
             raise ProjectConfigError()
 
-        self.root = root
+        self.root = self.config.source_path
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.static_assets: Dict[PurePath, Set[StaticAsset]] = collections.defaultdict(set)
         self.backend = backend

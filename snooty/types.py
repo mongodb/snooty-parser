@@ -125,23 +125,28 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
+    source: str = field(default='source')
     constants: Dict[str, object] = field(default_factory=dict)
 
+    @property
+    def source_path(self) -> Path:
+        return self.root.joinpath(self.source)
+
     @classmethod
-    def open(cls, root: Path) -> Tuple[Path, 'ProjectConfig', List[Diagnostic]]:
+    def open(cls, root: Path) -> Tuple['ProjectConfig', List[Diagnostic]]:
         path = root
         while path.parent != path:
             try:
                 with path.joinpath('snooty.toml').open() as f:
                     data = toml.load(f)
-                    data['root'] = root
+                    data['root'] = path
                     result, diagnostics = check_type(ProjectConfig, data).render_constants()
-                    return path, result, diagnostics
+                    return result, diagnostics
             except FileNotFoundError:
                 pass
             path = path.parent
 
-        return root, cls(root, 'untitled'), []
+        return cls(root, 'untitled'), []
 
     def render_constants(self) -> Tuple['ProjectConfig', List[Diagnostic]]:
         if not self.constants:

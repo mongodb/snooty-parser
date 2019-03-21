@@ -7,7 +7,7 @@ from ..util import ast_to_testing_string
 
 
 def test_step() -> None:
-    project_path, project_config, project_diagnostics = ProjectConfig.open(Path('test_data'))
+    project_config, project_diagnostics = ProjectConfig.open(Path('test_data'))
     assert project_diagnostics == []
 
     category = GizaStepsCategory(project_config)

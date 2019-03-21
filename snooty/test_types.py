@@ -4,7 +4,7 @@ from .types import Diagnostic, ProjectConfig, StaticAsset, Page
 
 def test_project() -> None:
     path = Path('test_data/bad_project')
-    root_path, project_config, project_diagnostics = ProjectConfig.open(path)
+    project_config, project_diagnostics = ProjectConfig.open(path)
     assert len(project_diagnostics) == 1
     assert project_config.constants == {
         'version': '3.4',
@@ -13,11 +13,11 @@ def test_project() -> None:
     }
 
     path = Path('test_data/empty_project')
-    root_path, project_config, project_diagnostics = ProjectConfig.open(path)
+    project_config, project_diagnostics = ProjectConfig.open(path)
     assert project_config.constants == {}
 
     # Test missing project behavior
-    root_path, project_config, project_diagnostics = ProjectConfig.open(Path('.').resolve())
+    project_config, project_diagnostics = ProjectConfig.open(Path('.').resolve())
     assert project_config.name == 'untitled'
     assert len(project_diagnostics) == 0
 
