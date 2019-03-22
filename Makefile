@@ -34,18 +34,28 @@ dist/snooty/.EXISTS:
 		--lto snooty.py
 	rm snooty.py
 	mv snooty.dist dist/snooty
+	install -m644 snooty/rstspec.toml LICENSE* dist/snooty/
+
+	dep_path=$$(otool -L dist/snooty/snooty | grep Python | awk '{print $$1}'); \
+	if [ $$(uname -s) = Darwin ]; then \
+		install_name_tool \
+			-change "$$dep_path" \
+			@executable_path/Python \
+			dist/snooty/snooty; \
+	fi; \
+	install -m644 "$$dep_path" dist/snooty/
+
 	touch $@
 
 dist/snooty-${VERSION}-${PLATFORM}.tar.bz2: snooty/rstspec.toml dist/snooty/.EXISTS ## Build a binary tarball
-	install -m644 snooty/rstspec.toml snooty.dist
 	tar -cjf $@ -C dist snooty
 
 dist/snooty-${VERSION}-${PLATFORM}.tar.bz2.asc: dist/snooty-${VERSION}-${PLATFORM}.tar.bz2 ## Build and sign a binary tarball
 	gpg --armor --detach-sig $^
 
 clean: ## Remove all build artifacts
-	-rm -r snooty.tar.bz2* snooty.py .venv dist
-	-rm -rf snooty.dist
+	-rm -r snooty.tar.bz2* snooty.py .venv
+	-rm -rf dist
 
 flit-publish: test ## Deploy the package to pypi
 	SOURCE_DATE_EPOCH="$$SOURCE_DATE_EPOCH" flit publish
