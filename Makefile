@@ -47,14 +47,16 @@ dist/snooty/.EXISTS:
 
 	touch $@
 
-dist/snooty-${VERSION}-${PLATFORM}.tar.bz2: snooty/rstspec.toml dist/snooty/.EXISTS ## Build a binary tarball
-	tar -cjf $@ -C dist snooty
+dist/snooty-${VERSION}-${PLATFORM}.zip: snooty/rstspec.toml dist/snooty/.EXISTS ## Build a binary tarball
+	# Normalize the mtime, and zip in sorted order
+	find dist/snooty -exec touch -t "$$(date -jf '%s' '+%Y%m%d%H%M.%S' $$SOURCE_DATE_EPOCH)" {} +
+	cd dist && find snooty -print | sort | zip -X ../$@ -@
 
-dist/snooty-${VERSION}-${PLATFORM}.tar.bz2.asc: dist/snooty-${VERSION}-${PLATFORM}.tar.bz2 ## Build and sign a binary tarball
+dist/snooty-${VERSION}-${PLATFORM}.zip.asc: dist/snooty-${VERSION}-${PLATFORM}.zip ## Build and sign a binary tarball
 	gpg --armor --detach-sig $^
 
 clean: ## Remove all build artifacts
-	-rm -r snooty.tar.bz2* snooty.py .venv
+	-rm -r snooty.tar.zip* snooty.py .venv
 	-rm -rf dist
 
 flit-publish: test ## Deploy the package to pypi
