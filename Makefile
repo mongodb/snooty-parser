@@ -24,8 +24,7 @@ lint: .venv/.EXISTS ## Run all linting
 test: lint ## Run unit tests
 	. .venv/bin/activate && python3 -m pytest --cov=snooty
 
-dist/snooty/.EXISTS:
-	$(MAKE) test
+dist/snooty/.EXISTS: .venv/.EXISTS
 	-rm -rf snooty.dist dist
 	mkdir dist
 	echo 'from snooty import main; main.main()' > snooty.py
@@ -35,15 +34,28 @@ dist/snooty/.EXISTS:
 	rm snooty.py
 	mv snooty.dist dist/snooty
 	install -m644 snooty/rstspec.toml LICENSE* dist/snooty/
+	chmod -R u+w dist/snooty
 
-	dep_path=$$(otool -L dist/snooty/snooty | grep Python | awk '{print $$1}'); \
+	# on macOS, bundle Python and openssl
 	if [ $$(uname -s) = Darwin ]; then \
+		dep_python_path=$$(otool -L dist/snooty/snooty | grep Python | awk '{print $$1}'); \
+		dep_libssl_path=$$(otool -L dist/snooty/_hashlib.so | grep libssl | awk '{print $$1}'); \
+		dep_libcrypto_path=$$(otool -L "$$dep_libssl_path" | grep libcrypto | awk '{print $$1}'); \
+		install -m644 "$$dep_python_path" dist/snooty/ || exit 1; \
+		install -m644 "$$dep_libssl_path" dist/snooty/ || exit 1; \
 		install_name_tool \
-			-change "$$dep_path" \
+			-change "$$dep_python_path" \
 			@executable_path/Python \
-			dist/snooty/snooty; \
-	fi; \
-	install -m644 "$$dep_path" dist/snooty/
+			dist/snooty/snooty || exit 1; \
+		install_name_tool \
+			-change "$$dep_libssl_path" \
+			"@executable_path/$$(basename $$dep_libssl_path)" \
+			dist/snooty/_hashlib.so || exit 1; \
+		install_name_tool \
+			-change "$$dep_libcrypto_path" \
+			"@executable_path/$$(basename $$dep_libcrypto_path)" \
+			"dist/snooty/$$(basename $$dep_libssl_path)" || exit 1; \
+	fi
 
 	touch $@
 
