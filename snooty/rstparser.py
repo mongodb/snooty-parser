@@ -354,6 +354,9 @@ class Parser(Generic[_V]):
         diagnostics: List[Diagnostic] = []
         if text is None:
             text, diagnostics = self.project_config.read(path)
+        else:
+            text, diagnostics = self.project_config.substitute(text)
+
         parser = NoTransformRstParser()
         settings = docutils.frontend.OptionParser(
             components=(docutils.parsers.rst.Parser,)

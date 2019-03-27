@@ -4,7 +4,7 @@ import re
 from pathlib import Path, PurePath
 from dataclasses import dataclass, field
 import toml
-from .flutter import checked, check_type
+from .flutter import checked, check_type, LoadError
 from typing import Any, Callable, Dict, Set, List, Tuple, Optional, Union, Match
 
 PAT_VARIABLE = re.compile(r'{\+([\w-]+)\+}')
@@ -135,18 +135,22 @@ class ProjectConfig:
     @classmethod
     def open(cls, root: Path) -> Tuple['ProjectConfig', List[Diagnostic]]:
         path = root
+        diagnostics = []
         while path.parent != path:
             try:
                 with path.joinpath('snooty.toml').open(encoding='utf-8') as f:
                     data = toml.load(f)
                     data['root'] = path
-                    result, diagnostics = check_type(ProjectConfig, data).render_constants()
-                    return result, diagnostics
+                    result, parsed_diagnostics = check_type(ProjectConfig, data).render_constants()
+                    return result, parsed_diagnostics
             except FileNotFoundError:
                 pass
+            except LoadError as err:
+                diagnostics.append(Diagnostic.error(str(err), 0))
+
             path = path.parent
 
-        return cls(root, 'untitled'), []
+        return cls(root, 'untitled'), diagnostics
 
     def render_constants(self) -> Tuple['ProjectConfig', List[Diagnostic]]:
         if not self.constants:
@@ -154,7 +158,7 @@ class ProjectConfig:
         constants: Dict[str, object] = {}
         all_diagnostics: List[Diagnostic] = []
         for k, v in self.constants.items():
-            result, diagnostics = ProjectConfig.substitute(constants, str(v))
+            result, diagnostics = self.substitute(str(v))
             all_diagnostics.extend(diagnostics)
             constants[k] = result
 
@@ -163,19 +167,18 @@ class ProjectConfig:
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
         text = path.read_text(encoding='utf-8')
-        return ProjectConfig.substitute(self.constants, text)
+        return self.substitute(text)
 
-    @staticmethod
-    def substitute(constants: Dict[str, object], source: str) -> Tuple[str, List[Diagnostic]]:
+    def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
         """Substitute all placeholders within a string."""
         diagnostics: List[Diagnostic] = []
 
         def handle_match(match: Match[str]) -> str:
-            """Replace a given placeholder match with a value from the Sphinx
+            """Replace a given placeholder match with a value from the project
                configuration. Log a warning if it's not defined."""
             variable_name = match.group(1)
             try:
-                return str(constants[variable_name])
+                return str(self.constants[variable_name])
             except KeyError:
                 lineno = source.count('\n', 0, match.start())
                 diagnostics.append(
