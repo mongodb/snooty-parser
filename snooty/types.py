@@ -137,7 +137,7 @@ class ProjectConfig:
         path = root
         while path.parent != path:
             try:
-                with path.joinpath('snooty.toml').open() as f:
+                with path.joinpath('snooty.toml').open(encoding='utf-8') as f:
                     data = toml.load(f)
                     data['root'] = path
                     result, diagnostics = check_type(ProjectConfig, data).render_constants()
@@ -162,7 +162,7 @@ class ProjectConfig:
         return self, all_diagnostics
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
-        text = path.open().read()
+        text = path.read_text(encoding='utf-8')
         return ProjectConfig.substitute(self.constants, text)
 
     @staticmethod

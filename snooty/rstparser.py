@@ -346,7 +346,7 @@ class Parser(Generic[_V]):
         self.visitor_class = visitor_class
 
         if not self.spec:
-            with PACKAGE_ROOT.joinpath('rstspec.toml').open() as f:
+            with PACKAGE_ROOT.joinpath('rstspec.toml').open(encoding='utf-8') as f:
                 spec = Parser.spec = specparser.Spec.loads(f.read())
             register_spec_with_docutils(spec)
 

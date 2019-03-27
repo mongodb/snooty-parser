@@ -24,7 +24,7 @@ lint: .venv/.EXISTS ## Run all linting
 test: lint ## Run unit tests
 	. .venv/bin/activate && python3 -m pytest --cov=snooty
 
-dist/snooty/.EXISTS: .venv/.EXISTS
+dist/snooty/.EXISTS: .venv/.EXISTS pyproject.toml snooty/*.py snooty/gizaparser/*.py
 	-rm -rf snooty.dist dist
 	mkdir dist
 	echo 'from snooty import main; main.main()' > snooty.py
