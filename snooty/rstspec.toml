@@ -329,6 +329,10 @@ type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
 help = """Link to the synchronous Java driver's API reference."""
 type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
 
+[role.atlas]
+help = """Link to the synchronous Atlas documentation."""
+type = "link https://docs.atlas.mongodb.com/%s"
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 [rstobject.authaction]
