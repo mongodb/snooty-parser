@@ -4,6 +4,8 @@ version = 0
 [enum]
 user_level = ["beginner", "intermediate", "advanced"]
 dedent_mode = ["auto"]
+alignment = ["left", "center", "right"]
+card_type = ["small", "large"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -75,6 +77,11 @@ options.alt = "string"
 options.figwidth = "length"
 options.scale = "string"
 options.width = "length"
+options.align = "alignment"
+
+[directive.example]
+help = """A section providing an example related to the surrounding text."""
+content_type = "block"
 
 [directive.raw]
 help = """Include raw unparsed content when rendering into a given output format."""
@@ -82,10 +89,21 @@ deprecated = true
 argument_type = "string"
 content_type = "string"
 
+[directive.only]
+help = """Only parse a chunk of content if the condition in the argument is true."""
+argument_type = "string"
+content_type = "block"
+
 [directive.class]
 help = """Set a class on the next element."""
 deprecated = true
 argument_type = "string"
+content_type = "block"
+
+[directive.toctree]
+help = """List pages to treat as children of this page."""
+content_type = "block"
+options.titlesonly = "flag"
 
 [directive.tabs]
 content_type = "block"
@@ -94,13 +112,15 @@ options.hidden = "boolean"
 options.tabset = "string"
 
 [directive.tabs-cloud]
-
 inherit = "tabs"
+
 [directive.tabs-platforms]
-
 inherit = "tabs"
-[directive.tabs-drivers]
 
+[directive.tabs-drivers]
+inherit = "tabs"
+
+[directive.tabs-auth]
 inherit = "tabs"
 
 [directive.tab]
@@ -117,6 +137,10 @@ options.emphasize-lines = "string"
 argument_type = "string"
 
 [directive.uriwriter]
+
+[directive.card-group]
+options.type = "card_type"
+content_type = "block"
 
 ###### Guides
 [directive.card]
@@ -214,6 +238,12 @@ inherit = "_guides-base"
 [role.guilabel]
 help = """Used to specify a label or button in a GUI."""
 
+[role.abbr]
+help = """Abbreviation with hover text."""
+
+[role.xml]
+help = """Use XML to create reStructuredText nodes."""
+
 [role.doc]
 help = """Link to a page in the current project."""
 
@@ -284,3 +314,7 @@ type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
 [rstobject.update]
 [rstobject.query]
 [rstobject.setting]
+[rstobject.bsontype]
+[rstobject.pipeline]
+[rstobject.data]
+[rstobject.authaction]
