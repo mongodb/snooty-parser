@@ -36,7 +36,8 @@ dist/snooty/.EXISTS: .venv/.EXISTS pyproject.toml snooty/*.py snooty/gizaparser/
 	install -m644 snooty/rstspec.toml LICENSE* dist/snooty/
 	chmod -R u+w dist/snooty
 
-	# on macOS, bundle Python and openssl
+	# on macOS, bundle Python, openssl, and Python's hash implementations
+	# We should only need Python and OpenSSL, but macOS Sierra is whining
 	if [ $$(uname -s) = Darwin ]; then \
 		dep_python_path=$$(otool -L dist/snooty/snooty | grep Python | awk '{print $$1}'); \
 		dep_libssl_path=$$(otool -L dist/snooty/_hashlib.so | grep libssl | awk '{print $$1}'); \
@@ -55,6 +56,10 @@ dist/snooty/.EXISTS: .venv/.EXISTS pyproject.toml snooty/*.py snooty/gizaparser/
 			-change "$$dep_libcrypto_path" \
 			"@executable_path/$$(basename $$dep_libcrypto_path)" \
 			"dist/snooty/$$(basename $$dep_libssl_path)" || exit 1; \
+		for hashfunction in md5 sha1 sha512 sha256 blake2; do \
+			path=$$(python3 -c "import _$${hashfunction}; print(_$${hashfunction}.__file__)"); \
+			install -m755 "$${path}" dist/snooty/ || exit 1; \
+		done; \
 	fi
 
 	touch $@
