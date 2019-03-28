@@ -233,7 +233,9 @@ class CodeDirective(docutils.parsers.rst.Directive):
     final_argument_whitespace = True
     option_spec = {
         'copyable': option_bool,
-        'emphasize-lines': str
+        'emphasize-lines': str,
+        'class': str,
+        'linenos': docutils.parsers.rst.directives.flag
     }
 
     def run(self) -> List[docutils.nodes.Node]:

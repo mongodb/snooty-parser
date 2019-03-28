@@ -66,6 +66,7 @@ class Step(Inheritable, HeadingMixin):
     pre: Optional[str]
     level: Optional[int]
     optional: Optional[bool]
+    edition: Union[List[str], str, None]
 
     action: Union[List[Action], Action, None]
 

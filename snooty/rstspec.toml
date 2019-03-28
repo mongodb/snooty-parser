@@ -6,6 +6,7 @@ user_level = ["beginner", "intermediate", "advanced"]
 dedent_mode = ["auto"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
+output_format = ["html"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -78,6 +79,7 @@ options.linenos = "string"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "dedent_mode"]
 options.emphasize-lines = "string"
+options.lines = "string"
 
 [directive.figure]
 help = """Include an image file."""
@@ -101,13 +103,16 @@ content_type = "block"
 [directive.raw]
 help = """Include raw unparsed content when rendering into a given output format."""
 deprecated = true
-argument_type = "string"
+argument_type = "output_format"
 content_type = "string"
 
 [directive.only]
 help = """Only parse a chunk of content if the condition in the argument is true."""
 argument_type = "string"
 content_type = "block"
+
+[directive.cond]
+inherit = "only"
 
 [directive.unicode]
 argument_type = "string"
@@ -122,6 +127,7 @@ content_type = "block"
 help = """List pages to treat as children of this page."""
 content_type = "block"
 options.titlesonly = "flag"
+options.hidden = "flag"
 
 [directive.tabs]
 content_type = "block"
@@ -145,11 +151,16 @@ inherit = "tabs"
 argument_type = "string"
 content_type = "block"
 
+[directive.index]
+argument_type = "string"
+
 [directive.code-block]
 help = """A block of code to show the user."""
 argument_type = "string"
 options.copyable = "boolean"
 options.emphasize-lines = "string"
+options.class = "string"
+options.linenos = "flag"
 
 [directive.cssclass]
 argument_type = "string"
@@ -266,11 +277,35 @@ help = """Abbreviation with hover text."""
 [role.file]
 help = """Show a file path."""
 
+[role.icon-fa5]
+help = """Show a FontAwesome 5 Solid icon."""
+
 [role.icon]
-help = """Show an icon."""
+inherit = "icon-fa5"
+
+[role.icon-fa5-brands]
+help = """Show a FontAwesome 5 Brand icon."""
+
+[role.iconb]
+inherit = "icon-fa5-brands"
+
+[role.icon-mms]
+help = """Show an MMS icon."""
+
+[role.icon-mms-org]
+help = """Show an MMS-org icon."""
+
+[role.icon-charts]
+help = """Show a MongoDB Charts icon."""
+
+[role.icon-fa4]
+help = """Show a FontAwesome 4 icon."""
 
 [role.xml]
 help = """Use XML to create reStructuredText nodes."""
+
+[role.rfc]
+help = """Reference an IETF RFC."""
 
 [role.doc]
 help = """Link to a page in the current project."""
@@ -333,22 +368,97 @@ type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
 help = """Link to the synchronous Atlas documentation."""
 type = "link https://docs.atlas.mongodb.com/%s"
 
+[role."v2.2"]
+type = "link https://docs.mongodb.com/v2.2%s"
+
+[role."v2.4"]
+type = "link https://docs.mongodb.com/v2.4%s"
+
+[role."v2.6"]
+type = "link https://docs.mongodb.com/v2.6%s"
+
+[role."v3.0"]
+type = "link https://docs.mongodb.com/v3.0%s"
+
+[role."v3.2"]
+type = "link https://docs.mongodb.com/v3.2%s"
+
+[role."v3.4"]
+type = "link https://docs.mongodb.com/v3.4%s"
+
+[role."v3.6"]
+type = "link https://docs.mongodb.com/v3.6%s"
+
+[role."v4.0"]
+type = "link https://docs.mongodb.com/v4.0%s"
+
+[role.bic]
+type = "link https://docs.mongodb.com/bi-connector/current%s"
+
+[role.k8s]
+type = "link https://docs.mongodb.com/kubernetes-operator/stable%s"
+
+[role.product]
+type = "link http://www.mongodb.com/products/%s?jmp=docs"
+
+[role.dl]
+type = "link http://www.mongodb.com/download-center/%s?jmp=docs"
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
+[rstobject.action]
+[rstobject.alert]
+
+[rstobject.alert-type]
+inherit = "alert"
+
+[rstobject.apierror]
+[rstobject.asetting]
+[rstobject.atlasrole]
 [rstobject.authaction]
 [rstobject.authrole]
 [rstobject.binary]
+[rstobject.bsetting]
 [rstobject.bsontype]
+[rstobject.collflag]
+[rstobject.commandoption]
+[rstobject.configexpansion]
 [rstobject.data]
 [rstobject.dbcommand]
+[rstobject.error]
+[rstobject.event]
+[rstobject.expression]
+[rstobject.group]
+[rstobject.httpaction]
+[rstobject.json-expansion]
+[rstobject.json-operator]
+[rstobject.limit]
+[rstobject.macro]
+[rstobject.mailgunaction]
 [rstobject.method]
 [rstobject.mongodb]
+[rstobject.msetting]
+[rstobject.operator]
 [rstobject.option]
+[rstobject.parameter]
 [rstobject.phpclass]
 [rstobject.phpmethod]
 [rstobject.pipeline]
 [rstobject.program]
+[rstobject.projection]
 [rstobject.query]
+[rstobject.readconcern]
+[rstobject.readmode]
+[rstobject.replstate]
+[rstobject.rsconf]
+[rstobject.s3action]
+[rstobject.serverstatus]
+[rstobject.sesaction]
 [rstobject.setting]
+[rstobject.slackaction]
+[rstobject.toolcommand]
+[rstobject.twilioaction]
 [rstobject.update]
 [rstobject.urioption]
+[rstobject.variable]
+[rstobject.writeconcern]
