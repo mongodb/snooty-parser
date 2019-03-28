@@ -58,6 +58,13 @@ content_type = "block"
 argument_type = "string"
 content_type = "block"
 
+[directive.contents]
+argument_type = "string"
+options.local = "flag"
+options.backlinks = "string"
+options.depth = "nonnegative_integer"
+options.class = "string"
+
 [directive.include]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
@@ -67,20 +74,28 @@ help = """Include a file as a block of code."""
 inherit = "include"
 options.start-after = "string"
 options.end-before = "string"
+options.linenos = "string"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "dedent_mode"]
+options.emphasize-lines = "string"
 
 [directive.figure]
 help = """Include an image file."""
 argument_type = ["path", "uri"]
+content_type = "block"
 options.alt = "string"
 options.figwidth = "length"
 options.scale = "string"
 options.width = "length"
 options.align = "alignment"
+options.lightbox = "flag"
 
 [directive.example]
 help = """A section providing an example related to the surrounding text."""
+content_type = "block"
+
+[directive.optional]
+help = """A section optional information or steps."""
 content_type = "block"
 
 [directive.raw]
@@ -93,6 +108,9 @@ content_type = "string"
 help = """Only parse a chunk of content if the condition in the argument is true."""
 argument_type = "string"
 content_type = "block"
+
+[directive.unicode]
+argument_type = "string"
 
 [directive.class]
 help = """Set a class on the next element."""
@@ -188,6 +206,10 @@ inherit = "_guides-base"
 help = """The version of product to which this guide applies."""
 inherit = "_guides-base"
 
+[directive.hlist]
+content_type = "list"
+options.columns = "nonnegative_integer"
+
 [directive.languages]
 help = """A list of languages that this guide supports."""
 example = """.. languages::
@@ -240,6 +262,12 @@ help = """Used to specify a label or button in a GUI."""
 
 [role.abbr]
 help = """Abbreviation with hover text."""
+
+[role.file]
+help = """Show a file path."""
+
+[role.icon]
+help = """Show an icon."""
 
 [role.xml]
 help = """Use XML to create reStructuredText nodes."""
@@ -303,18 +331,20 @@ type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
+[rstobject.authaction]
 [rstobject.authrole]
 [rstobject.binary]
+[rstobject.bsontype]
+[rstobject.data]
+[rstobject.dbcommand]
 [rstobject.method]
 [rstobject.mongodb]
 [rstobject.option]
 [rstobject.phpclass]
 [rstobject.phpmethod]
+[rstobject.pipeline]
 [rstobject.program]
-[rstobject.update]
 [rstobject.query]
 [rstobject.setting]
-[rstobject.bsontype]
-[rstobject.pipeline]
-[rstobject.data]
-[rstobject.authaction]
+[rstobject.update]
+[rstobject.urioption]
