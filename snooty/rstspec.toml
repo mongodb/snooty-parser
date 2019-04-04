@@ -307,6 +307,9 @@ help = """Use XML to create reStructuredText nodes."""
 [role.rfc]
 help = """Reference an IETF RFC."""
 
+[role.hardlink]
+help = """Link to a URL in the current project."""
+
 [role.doc]
 help = """Link to a page in the current project."""
 
