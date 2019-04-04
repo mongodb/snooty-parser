@@ -28,7 +28,8 @@ PrimitiveType = Enum('PrimitiveType', (
     'string',
     'length',
     'boolean',
-    'flag'
+    'flag',
+    'linenos'
 ))
 
 #: docutils option validation function for each of the above primitive types
@@ -41,7 +42,8 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.length: docutils.parsers.rst.directives.length_or_percentage_or_unitless,
     PrimitiveType.boolean: lambda argument: docutils.parsers.rst.directives.choice(
         argument, ('true', 'false', None)),
-    PrimitiveType.flag: docutils.parsers.rst.directives.flag
+    PrimitiveType.flag: docutils.parsers.rst.directives.flag,
+    PrimitiveType.linenos: str
 }
 
 #: Option types can be a primitive type (PrimitiveType), an enum

@@ -83,3 +83,56 @@ def test_codeblock() -> None:
 
    foo''')
     assert diagnostics[0].severity == Diagnostic.Level.warning
+
+
+def test_literalinclude() -> None:
+    root = Path('test_data')
+    path = Path(root).joinpath(Path('test.rst'))
+    project_config = ProjectConfig(root, '', source='./')
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test a simple code-block
+    page, diagnostics = parse_rst(parser, path, '''
+.. literalinclude:: /driver-examples/pythonexample.py
+   :dedent:
+   :start-after: Start Example 3
+   :end-before: End Example 3
+''')
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<code lang="py">db.inventory.insert_many([\n',
+        '    {"item": "journal",\n',
+        '     "qty": 25,\n',
+        '     "tags": ["blank", "red"],\n',
+        '     "size": {"h": 14, "w": 21, "uom": "cm"}},\n',
+        '    {"item": "mat",\n',
+        '     "qty": 85,\n',
+        '     "tags": ["gray"],\n',
+        '     "size": {"h": 27.9, "w": 35.5, "uom": "cm"}},\n',
+        '    {"item": "mousepad",\n',
+        '     "qty": 25,\n',
+        '     "tags": ["gel", "blue"],\n',
+        '     "size": {"h": 19, "w": 22.85, "uom": "cm"}}])</code>',
+        '</root>'
+    ))
+
+    # Test bad code-blocks
+    page, diagnostics = parse_rst(parser, path, '''
+.. literalinclude:: /driver-examples/pythonexample.py
+   :start-after: Start Example 0
+   :end-before: End Example 3
+''')
+    assert len(diagnostics) == 1
+
+    page, diagnostics = parse_rst(parser, path, '''
+.. literalinclude:: /driver-examples/pythonexample.py
+   :start-after: Start Example 3
+   :end-before: End Example 0
+''')
+    assert len(diagnostics) == 1
+
+    page, diagnostics = parse_rst(parser, path, '''
+.. literalinclude:: /driver-examples/garbagnrekvjisd.py
+''')
+    assert len(diagnostics) == 1

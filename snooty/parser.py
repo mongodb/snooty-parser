@@ -20,6 +20,51 @@ RST_EXTENSIONS = {'.rst', '.txt'}
 logger = logging.getLogger(__name__)
 
 
+def transform_literal_include(path: Path,
+                              doc: Dict[str, SerializableType],
+                              options: Dict[str, SerializableType]) -> None:
+    """Transform a literal-include directive AST node into a code node."""
+    text = path.read_text(encoding='utf-8')
+    lines = text.split('\n')
+    start_after = 0
+    end_before = len(lines)
+    if 'start-after' in options:
+        start_after_text = options['start-after']
+        assert isinstance(start_after_text, str)
+        start_after = next((idx for idx, line in enumerate(lines)
+                            if start_after_text in line), -1)
+        if start_after < 0:
+            raise ValueError(f'"{start_after_text}" not found in {path}')
+
+    if 'end-before' in options:
+        end_before_text = options['end-before']
+        assert isinstance(end_before_text, str)
+        end_before = next((idx for idx, line in enumerate(lines, start=start_after)
+                           if end_before_text in line), -1)
+        if end_before < 0:
+            raise ValueError(f'"{end_before_text}" not found in {path}')
+        end_before -= start_after
+
+    lines = lines[(start_after + 1):end_before]
+
+    if 'dedent' in options:
+        dedent = min(len(line) - len(line.lstrip()) for line in lines)
+        lines = [line[dedent:] for line in lines]
+
+    doc.clear()
+    doc.update({
+        'type': 'code',
+        'lang': options['language'] if 'language' in options else path.suffix.lstrip('.'),
+        'copyable': 'copyable' in options,
+        'value': '\n'.join(lines)
+    })
+
+    if 'emphasize_lines' in options:
+        doc['emphasize_lines'] = options['emphasize_lines']
+
+    options.clear()
+
+
 class JSONVisitor:
     """Node visitor that creates a JSON-serializable structure."""
     def __init__(self,
@@ -86,6 +131,7 @@ class JSONVisitor:
 
         if node_name == 'directive':
             self.handle_directive(node, doc)
+            return
         elif node_name == 'role':
             doc['name'] = node['name']
             doc['label'] = node['label']
@@ -166,9 +212,30 @@ class JSONVisitor:
                 msg = '"figure" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno))
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+        elif name == 'literalinclude':
+            if argument_text is None:
+                lineno = util.get_line(node)
+                self.diagnostics.append(
+                    Diagnostic.error('"literalinclude" expected a path argument', lineno))
+                return
+
+            try:
+                code_path = Path(argument_text)
+                _, code_path = util.reroot_path(code_path, self.docpath, self.source_path)
+                transform_literal_include(code_path, doc, options)
+            except OSError as err:
+                msg = '"literalinclude" could not open "{}": {}'.format(
+                    argument_text, os.strerror(err.errno))
+                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            except ValueError as err:
+                msg = f'Invalid "literalinclude": {err}'
+                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            return
 
         if options:
             doc['options'] = options
+
+        doc['children'] = []
 
     def add_static_asset(self, path: Path) -> StaticAsset:
         fileid, path = util.reroot_path(path, self.docpath, self.source_path)

@@ -3,7 +3,6 @@ version = 0
 
 [enum]
 user_level = ["beginner", "intermediate", "advanced"]
-dedent_mode = ["auto"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
@@ -73,13 +72,12 @@ argument_type = ["path", "uri"]
 [directive.literalinclude]
 help = """Include a file as a block of code."""
 inherit = "include"
-options.start-after = "string"
-options.end-before = "string"
-options.linenos = "string"
+options.start-after = "linenos"
+options.end-before = "linenos"
+options.linenos = "flag"
 options.language = "string"
-options.dedent = ["nonnegative_integer", "dedent_mode"]
-options.emphasize-lines = "string"
-options.lines = "string"
+options.dedent = ["nonnegative_integer", "flag"]
+options.emphasize-lines = "linenos"
 
 [directive.figure]
 help = """Include an image file."""
