@@ -136,3 +136,25 @@ def test_literalinclude() -> None:
 .. literalinclude:: /driver-examples/garbagnrekvjisd.py
 ''')
     assert len(diagnostics) == 1
+
+
+def test_admonition() -> None:
+    root = Path('test_data')
+    path = Path(root).joinpath(Path('test.rst'))
+    project_config = ProjectConfig(root, '', source='./')
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(parser, path, '''
+.. note::
+   * foo
+   * bar
+''')
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<directive name="note">',
+        '<list><listItem><paragraph><text>foo</text></paragraph></listItem>',
+        '<listItem><paragraph><text>bar</text></paragraph></listItem></list>',
+        '</directive>',
+        '</root>'
+    ))

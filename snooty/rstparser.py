@@ -111,13 +111,18 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         # requires each directive to define its syntax.
         if self.arguments and not self.arguments[0].startswith(':'):
             arg_lines = self.arguments[0].split('\n')
-            argument_text = arg_lines[0]
-            textnodes, messages = self.state.inline_text(argument_text, self.lineno)
             if len(arg_lines) > 1 and \
                not self.options and \
                PAT_BLOCK_HAS_ARGUMENT.match(self.block_text):
-                node.extend(textnodes)
+                content_lines = prepare_viewlist(self.arguments[0])
+                self.state.nested_parse(
+                    docutils.statemachine.ViewList(content_lines, source=self.arguments[0]),
+                    self.state_machine.line_offset,
+                    node,
+                    match_titles=True)
             else:
+                argument_text = arg_lines[0]
+                textnodes, messages = self.state.inline_text(argument_text, self.lineno)
                 argument = directive_argument(argument_text, '', *textnodes)
                 argument.document = self.state.document
                 argument.source, argument.line = source, line
