@@ -4,7 +4,7 @@ import docutils.nodes
 import docutils.parsers.rst.directives
 from dataclasses import dataclass
 from .rstparser import BaseDocutilsDirective
-from typing import Dict, List, Tuple, Iterable, Optional
+from typing import Callable, Dict, List, Tuple, Iterable, Optional
 
 LEADING_WHITESPACE = re.compile(r'^\n?(\x20+)')
 LEGACY_GUIDES_TEMPLATE = fett.Template('''
@@ -16,7 +16,16 @@ LEGACY_GUIDES_TEMPLATE = fett.Template('''
 
 .. author:: {{ author }}
 
-.. type:: {{ type }}
+.. category:: {{ type }}
+
+{{ if languages }}
+
+.. languages::
+
+   {{ for language in languages }}
+   * {{ language }}
+   {{ end }}
+{{ end }}
 
 .. level:: {{ level }}
 
@@ -160,9 +169,9 @@ class LegacyGuideDirective(docutils.parsers.rst.Directive):
     has_content = True
     final_argument_whitespace = True
 
-    guide_keys = {
+    guide_keys: Dict[str, Callable[[str], object]] = {
         'title': str,
-        'languages': str,
+        'languages': lambda l: l.split(),
         'author': str,
         'type': str,
         'level': str,
@@ -200,6 +209,7 @@ class LegacyGuideDirective(docutils.parsers.rst.Directive):
                     line=(self.lineno + err.lineno + 1))]
 
         # Validate keys
+        result: Dict[str, object] = {}
         for key, validation_function in self.guide_keys.items():
             if key not in options:
                 if key in self.optional_keys:
@@ -212,13 +222,13 @@ class LegacyGuideDirective(docutils.parsers.rst.Directive):
                     continue
 
             try:
-                options[key] = validation_function(options[key])
+                result[key] = validation_function(options[key])
             except ValueError as err:
                 message = f'Invalid guide option value: {key}: {err}'
                 return [self.state.document.reporter.error(message, line=self.lineno)]
 
         try:
-            rendered = LEGACY_GUIDES_TEMPLATE.render(options)
+            rendered = LEGACY_GUIDES_TEMPLATE.render(result)
         except Exception as error:
             raise self.severe(f'Failed to render template: {error}')
 

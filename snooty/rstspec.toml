@@ -3,6 +3,7 @@ version = 0
 
 [enum]
 user_level = ["beginner", "intermediate", "advanced"]
+guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
@@ -198,9 +199,10 @@ required_context = "guide"
 argument_type = "string"
 content_type = "block"
 
-[directive.type]
+[directive.category]
 help = """The guide's type."""
 inherit = "_guides-base"
+argument_type = "guide_categories"
 
 [directive.level]
 help = """The expected level of user experience for this guide."""

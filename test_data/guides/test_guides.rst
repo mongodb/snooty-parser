@@ -5,7 +5,12 @@ Sample App
 ==========
 
 .. author:: MongoDB
-.. type:: Getting Started
+.. category:: Getting Started
+.. languages::
+
+   * shell
+   * java-sync
+
 .. level:: beginner
 .. product_version:: 4.0
 .. result_description::

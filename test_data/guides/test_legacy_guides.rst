@@ -2,6 +2,9 @@
 
    title: Sample App
    author: MongoDB
+   languages:
+     shell
+     java-sync
    type: Getting Started
    level: beginner
    product_version: 4.0
