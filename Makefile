@@ -1,4 +1,4 @@
-.PHONY: help lint test clean flit-publish
+.PHONY: help lint test clean flit-publish package
 
 SYSTEM_PYTHON=$(shell which python3)
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
@@ -78,3 +78,5 @@ clean: ## Remove all build artifacts
 
 flit-publish: test ## Deploy the package to pypi
 	SOURCE_DATE_EPOCH="$$SOURCE_DATE_EPOCH" flit publish
+
+package: dist/snooty-${VERSION}-${PLATFORM}.zip

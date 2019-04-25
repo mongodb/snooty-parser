@@ -24,11 +24,11 @@ requires = [
 [tool.flit.metadata.requires-extra]
 dev = [
     "flake8 ~= 3.7.7",
-    "mypy ~= 0.670",
-    "nuitka ~= 0.6.2"
+    "mypy ~= 0.701",
+    "nuitka == 0.6.2" # 0.6.3 causes segfaults on start
 ]
 test = [
-    "pytest ~= 4.3.1",
+    "pytest ~= 4.4.1",
     "pytest-cov ~= 2.6.1"
 ]
 
