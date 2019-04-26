@@ -158,3 +158,60 @@ def test_admonition() -> None:
         '</directive>',
         '</root>'
     ))
+
+
+def test_rst_replacement() -> None:
+    root = Path('test_data')
+    path = Path(root).joinpath(Path('test.rst'))
+    project_config = ProjectConfig(root, '', source='./')
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(parser, path, '''
+.. |new version| replace:: 3.4
+
+foo |new version| bar
+''')
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<substitution_definition name="new version">',
+        '<text>3.4</text>',
+        '</substitution_definition>',
+        '<paragraph>',
+        '<text>foo </text>',
+        '<substitution_reference name="new version"></substitution_reference>',
+        '<text> bar</text>',
+        '</paragraph>',
+        '</root>'
+    ))
+
+    page, diagnostics = parse_rst(parser, path, '''
+.. |double arrow ->| unicode:: foo U+27A4 U+27A4 .. double arrow
+
+foo |double arrow ->| bar
+''')
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<substitution_definition name="double arrow ->">',
+        '<text>foo</text><text>➤</text><text>➤</text>',
+        '</substitution_definition>',
+        '<paragraph>',
+        '<text>foo </text>',
+        '<substitution_reference name="double arrow ->"></substitution_reference>',
+        '<text> bar</text>',
+        '</paragraph>',
+        '</root>'
+    ))
+
+    # Ensure that the parser doesn't emit warnings about unresolvable substitution references
+    page, diagnostics = parse_rst(parser, path, 'foo |bar|')
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<paragraph>',
+        '<text>foo </text>',
+        '<substitution_reference name="bar"></substitution_reference>',
+        '</paragraph>',
+        '</root>'
+    ))

@@ -16,6 +16,7 @@ from .gizaparser.nodes import GizaCategory
 from .types import Diagnostic, SerializableType, EmbeddedRstParser, Page, \
     StaticAsset, ProjectConfigError, ProjectConfig
 
+NO_CHILDREN = {'substitution_reference'}
 RST_EXTENSIONS = {'.rst', '.txt'}
 logger = logging.getLogger(__name__)
 
@@ -161,6 +162,12 @@ class JSONVisitor:
             for attr_name in ('refuri', 'refname'):
                 if attr_name in node:
                     doc[attr_name] = node[attr_name]
+        elif node_name == 'substitution_definition':
+            name = node['names'][0]
+            doc['name'] = name
+        elif node_name == 'substitution_reference':
+            doc['name'] = node['refname']
+            return
 
         doc['children'] = []
 
@@ -173,7 +180,7 @@ class JSONVisitor:
 
         if popped['type'] == 'term':
             self.state[-1]['term'] = popped['children']
-        else:
+        elif self.state[-1]['type'] not in NO_CHILDREN:
             if 'children' not in self.state[-1]:
                 print(self.state[-1])
             self.state[-1]['children'].append(popped)

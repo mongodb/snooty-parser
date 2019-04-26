@@ -113,9 +113,6 @@ content_type = "block"
 [directive.cond]
 inherit = "only"
 
-[directive.unicode]
-argument_type = "string"
-
 [directive.class]
 help = """Set a class on the next element."""
 deprecated = true
