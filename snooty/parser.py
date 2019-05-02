@@ -49,7 +49,11 @@ def transform_literal_include(path: Path,
     lines = lines[(start_after + 1):end_before]
 
     if 'dedent' in options:
-        dedent = min(len(line) - len(line.lstrip()) for line in lines)
+        try:
+            dedent = min(len(line) - len(line.lstrip()) for line in lines if len(line.lstrip()) > 0)
+        except ValueError:
+            # Handle the (unlikely) case where there are no non-empty lines
+            dedent = 0
         lines = [line[dedent:] for line in lines]
 
     doc.clear()
