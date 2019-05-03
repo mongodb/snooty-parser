@@ -1,4 +1,4 @@
-ref: a-child-ref
+ref: a-parent-ref
 content: |
   Foo bar
   =====

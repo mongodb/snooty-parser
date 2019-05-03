@@ -175,7 +175,9 @@ class GizaCategory(Generic[_I]):
                 if _parent.ref is None:
                     _parent.ref = ''
 
-                obj.ref = _parent.ref
+                # If the child does not have a ref, inherit it from the parent
+                if not obj.ref:
+                    obj.ref = _parent.ref
                 parent = _parent
             except StopIteration:
                 diagnostics.append(Diagnostic.error(f'Failed to inherit {obj.ref}', obj.line))
