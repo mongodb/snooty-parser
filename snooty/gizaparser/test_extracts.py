@@ -41,10 +41,10 @@ def test_extract() -> None:
 
     pages = category.to_pages(create_page, giza_node.data)
     assert [str(page.get_id()) for page in pages] == [
-        'test_data/extract/_base',
-        'test_data/extract/installation-directory-rhel',
-        'test_data/extract/broken-inherit',
-        'test_data/extract/another-file']
+        'test_data/extracts/_base',
+        'test_data/extracts/installation-directory-rhel',
+        'test_data/extracts/broken-inherit',
+        'test_data/extracts/another-file']
     assert ast_to_testing_string(pages[0].ast) == ''.join((
         '<directive name="extract"><paragraph><text>By default, MongoDB stores its data files in ',
         '{{mongodDatadir}} and its\nlog files in </text><literal><text>/var/log/mongodb</text>',
