@@ -40,7 +40,7 @@ def test_extract() -> None:
         return page, make_embedded_rst_parser(project_config, page, all_diagnostics[path])
 
     pages = category.to_pages(create_page, giza_node.data)
-    assert [str(page.get_id()) for page in pages] == [
+    assert [str(page.fake_full_path()) for page in pages] == [
         'test_data/extracts/installation-directory-rhel',
         'test_data/extracts/broken-inherit',
         'test_data/extracts/another-file',

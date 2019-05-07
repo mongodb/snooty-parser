@@ -10,7 +10,7 @@ from typing import List
 
 from . import language_server
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic
+from .types import Page, Diagnostic, FileId
 
 PATTERNS = ['*' + ext for ext in RST_EXTENSIONS] + ['*.yaml']
 logger = logging.getLogger(__name__)
@@ -23,6 +23,12 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 
     def dispatch(self, event: watchdog.events.FileSystemEvent) -> None:
         if event.is_directory:
+            return
+
+        # Ignore non-text files; the Project handles changed static assets.
+        # Eventually this logic should probably be moved into the Project's
+        # filesystem monitor.
+        if PurePath(event.src_path).suffix not in {'.txt', '.rst', '.yaml'}:
             return
 
         if event.event_type in (watchdog.events.EVENT_TYPE_CREATED,
@@ -47,7 +53,7 @@ class Backend:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: PurePath, diagnostics: List[Diagnostic]) -> None:
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         for diagnostic in diagnostics:
             # Line numbers are currently... uh, "approximate"
             print('{}({}:{}ish): {}'.format(
@@ -57,10 +63,10 @@ class Backend:
                 diagnostic.message))
             self.total_warnings += 1
 
-    def on_update(self, prefix: List[str], page_id: str, page: Page) -> None:
+    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         pass
 
-    def on_delete(self, page_id: str) -> None:
+    def on_delete(self, page_id: FileId) -> None:
         pass
 
 
@@ -69,11 +75,12 @@ class MongoBackend(Backend):
         super(MongoBackend, self).__init__()
         self.client = connection
 
-    def on_update(self, prefix: List[str], page_id: str, page: Page) -> None:
-        checksums = list(asset.checksum for asset in page.static_assets)
+    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+        checksums = list(asset.get_checksum() for asset in page.static_assets if asset.upload)
 
-        self.client['snooty']['documents'].replace_one({'_id': page_id}, {
-            '_id': page_id,
+        fully_qualified_pageid = '/'.join(prefix + [page_id.with_suffix('').as_posix()])
+        self.client['snooty']['documents'].replace_one({'_id': fully_qualified_pageid}, {
+            '_id': fully_qualified_pageid,
             'prefix': prefix,
             'ast': page.ast,
             'source': page.source,
@@ -87,13 +94,16 @@ class MongoBackend(Backend):
         missing_assets = page.static_assets.difference(remote_assets)
 
         for static_asset in missing_assets:
-            self.client['snooty']['assets'].replace_one({'_id': static_asset.checksum}, {
-                '_id': static_asset.checksum,
+            if not static_asset.upload:
+                continue
+
+            self.client['snooty']['assets'].replace_one({'_id': static_asset.get_checksum()}, {
+                '_id': static_asset.get_checksum(),
                 'type': os.path.splitext(static_asset.fileid)[1],
                 'data': static_asset.data
             }, upsert=True)
 
-    def on_delete(self, page_id: str) -> None:
+    def on_delete(self, page_id: FileId) -> None:
         pass
 
 

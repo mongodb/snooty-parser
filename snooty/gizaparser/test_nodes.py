@@ -21,17 +21,6 @@ class SubstitutionTest(Parent):
     child: Child
 
 
-def test_dependency_graph() -> None:
-    dg = nodes.DependencyGraph()
-    dg.set_dependencies('foo', {'a', 'b', 'c'})
-    assert dg.dependencies == {'foo': {'a', 'b', 'c'}}
-    assert dg.dependents == {'a': {'foo'}, 'b': {'foo'}, 'c': {'foo'}}
-
-    dg.set_dependencies('foo', {'b'})
-    assert dg.dependencies == {'foo': {'b'}}
-    assert {k: v for k, v in dg.dependents.items() if v} == {'b': {'foo'}}
-
-
 def test_substitution() -> None:
     diagnostics: List[Diagnostic] = []
     replacements = {

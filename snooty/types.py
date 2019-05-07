@@ -1,11 +1,13 @@
 import enum
 import hashlib
 import re
-from pathlib import Path, PurePath
+from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path, PurePath, PurePosixPath
+from typing import cast, Any, Callable, Dict, DefaultDict, Set, List, \
+                   Iterator, Tuple, Optional, Union, Match
 import toml
 from .flutter import checked, check_type, LoadError
-from typing import Any, Callable, Dict, Set, List, Tuple, Optional, Union, Match
 
 PAT_VARIABLE = re.compile(r'{\+([\w-]+)\+}')
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
@@ -17,6 +19,11 @@ class SnootyError(Exception):
 
 
 class ProjectConfigError(SnootyError):
+    pass
+
+
+class FileId(PurePosixPath):
+    """An unambiguous file path relative to the local project's root."""
     pass
 
 
@@ -78,25 +85,89 @@ class Diagnostic:
 
 @dataclass
 class StaticAsset:
-    __slots__ = ('fileid', 'checksum', 'data')
-
-    fileid: str
-    checksum: str
-    data: Optional[bytes]
+    fileid: FileId
+    path: Path
+    upload: bool
+    _checksum: Optional[str]
+    _data: Optional[bytes]
 
     def __hash__(self) -> int:
-        return hash(self.checksum)
+        return hash(self.fileid)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, StaticAsset) and \
-               self.checksum == other.checksum and \
                self.fileid == other.fileid
 
+    def get_checksum(self) -> str:
+        self.__load()
+        assert self._checksum
+        return self._checksum
+
+    @property
+    def data(self) -> bytes:
+        self.__load()
+        assert self._data
+        return self._data
+
     @classmethod
-    def load(cls, fileid: str, path: Path) -> 'StaticAsset':
-        data = path.read_bytes()
-        asset_hash = hashlib.blake2b(data, digest_size=32).hexdigest()
-        return cls(fileid, asset_hash, data)
+    def load(cls, fileid: FileId, path: Path, upload: bool = False) -> 'StaticAsset':
+        return cls(fileid, path, upload, None, None)
+
+    def __load(self) -> None:
+        self._data = self.path.read_bytes()
+        self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
+
+
+@dataclass
+class Cache:
+    """A versioned cache that associates a (FileId, int) pair with an arbitrary object and
+       an integer version. Whenever the key is re-assigned, the version is incremented."""
+    _cache: Dict[Tuple[FileId, int], object] = field(default_factory=dict)
+    _keys_of_each_fileid: DefaultDict[FileId, Set[int]] = field(
+        default_factory=lambda: defaultdict(set))
+    _versions: DefaultDict[Tuple[FileId, int], int] = field(
+        default_factory=lambda: defaultdict(int))
+
+    def __setitem__(self, key: Tuple[FileId, int], value: object) -> None:
+        if key in self._cache:
+            self._cache[key] = value
+        else:
+            self._cache[key] = value
+
+        self._versions[key] += 1
+        self._keys_of_each_fileid[key[0]].add(key[1])
+
+    def __delitem__(self, fileid: FileId) -> None:
+        keys = self._keys_of_each_fileid[fileid]
+        del self._keys_of_each_fileid[fileid]
+        for key in keys:
+            del self._cache[(fileid, key)]
+
+    def __getitem__(self, key: Tuple[FileId, int]) -> Optional[object]:
+        return self._cache.get(key, None)
+
+    def get_versions(self, fileid: FileId) -> Iterator[int]:
+        for key, version in self._versions.items():
+            if key[0] == fileid:
+                yield version
+
+
+class PendingTask:
+    """A thunk which will be executed in the main process after the full tree is
+       constructed. This should primarily be used to execute tasks which may need
+       to mutate state from the main process (e.g. caches or dependency graphs)."""
+    def __init__(self, node: Dict[str, SerializableType]) -> None:
+        self.node = node
+
+    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+        """Perform an action in the main process once the tree has been built."""
+        pass
+
+    def error(self, message: str) -> Diagnostic:
+        """Create an error diagnostic associated with this task's node."""
+        return Diagnostic.error(
+            message,
+            cast(int, cast(Any, self.node['position'])['start']['line']))
 
 
 @dataclass
@@ -105,10 +176,12 @@ class Page:
     source: str
     ast: SerializableType
     static_assets: Set[StaticAsset] = field(default_factory=set)
+    pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
     output_filename: Optional[str] = None
 
-    def get_id(self) -> PurePath:
+    def fake_full_path(self) -> PurePath:
+        """Return a fictitious path (hopefully) uniquely identifying this output artifact."""
         if self.category:
             # Giza wrote out yaml file artifacts under a directory. e.g. steps-foo.yaml becomes
             # steps/foo.rst
@@ -118,6 +191,13 @@ class Page:
                  self.output_filename else
                  self.source_path.name.replace(f'{self.category}-', '', 1)))
         return self.source_path
+
+    def finish(self, diagnostics: List[Diagnostic], cache: Optional[Cache] = None) -> None:
+        """Finish all pending tasks for this page. This should be run in the main process."""
+        for task in self.pending_tasks:
+            task(diagnostics, cache if cache is not None else Cache())
+
+        self.pending_tasks.clear()
 
 
 @checked
@@ -131,6 +211,10 @@ class ProjectConfig:
     @property
     def source_path(self) -> Path:
         return self.root.joinpath(self.source)
+
+    @property
+    def config_path(self) -> Path:
+        return self.root.joinpath('snooty.toml')
 
     @classmethod
     def open(cls, root: Path) -> Tuple['ProjectConfig', List[Diagnostic]]:

@@ -10,6 +10,7 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
+from .types import FileId
 from . import types
 from .parser import Project, SerializableType
 
@@ -146,19 +147,19 @@ class Backend:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: PurePath, diagnostics: List[types.Diagnostic]) -> None:
+    def on_diagnostics(self, path: FileId, diagnostics: List[types.Diagnostic]) -> None:
         self.server.set_diagnostics(path, diagnostics)
 
-    def on_update(self, prefix: List[str], page_id: str, page: types.Page) -> None:
+    def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
         pass
 
-    def on_delete(self, page_id: str) -> None:
+    def on_delete(self, page_id: FileId) -> None:
         pass
 
 
 @dataclass
 class WorkspaceEntry:
-    page_id: str
+    page_id: FileId
     document_uri: Uri
     diagnostics: List[types.Diagnostic]
 
@@ -252,7 +253,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         item = check_type(TextDocumentItem, textDocument)
         page_path = self.uri_to_path(item.uri)
-        page_id = self.project.get_page_id(page_path)
+        page_id = self.project.get_fileid(page_path)
         entry = WorkspaceEntry(page_id, item.uri, [])
         self.workspace[item.uri] = entry
         self.project.update(page_path, item.text)
