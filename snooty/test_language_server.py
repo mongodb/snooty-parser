@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from . import language_server
-from .types import Diagnostic
+from .types import Diagnostic, FileId
 from .flutter import checked, check_type
 
 
@@ -53,7 +53,7 @@ def test_pid_exists() -> None:
 
 
 def test_workspace_entry() -> None:
-    entry = language_server.WorkspaceEntry('', '', [
+    entry = language_server.WorkspaceEntry(FileId(''), '', [
         Diagnostic.error('foo', 10),
         Diagnostic.warning('fo', 10, 12),
     ])

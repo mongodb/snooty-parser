@@ -11,6 +11,7 @@ def test_tabs() -> None:
     project_config = ProjectConfig(root, '')
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
 
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -53,6 +54,7 @@ def test_codeblock() -> None:
    foo bar
      indented
    end''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -69,6 +71,7 @@ def test_codeblock() -> None:
    foo
    bar
    baz''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -82,6 +85,7 @@ def test_codeblock() -> None:
    :emphasize-lines: 10
 
    foo''')
+    page.finish(diagnostics)
     assert diagnostics[0].severity == Diagnostic.Level.warning
 
 
@@ -98,6 +102,7 @@ def test_literalinclude() -> None:
    :start-after: Start Example 3
    :end-before: End Example 3
 ''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -123,6 +128,7 @@ def test_literalinclude() -> None:
    :start-after: Start Example 0
    :end-before: End Example 3
 ''')
+    page.finish(diagnostics)
     assert len(diagnostics) == 1
 
     page, diagnostics = parse_rst(parser, path, '''
@@ -130,11 +136,13 @@ def test_literalinclude() -> None:
    :start-after: Start Example 3
    :end-before: End Example 0
 ''')
+    page.finish(diagnostics)
     assert len(diagnostics) == 1
 
     page, diagnostics = parse_rst(parser, path, '''
 .. literalinclude:: /driver-examples/garbagnrekvjisd.py
 ''')
+    page.finish(diagnostics)
     assert len(diagnostics) == 1
 
 
@@ -149,6 +157,7 @@ def test_admonition() -> None:
    * foo
    * bar
 ''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -171,6 +180,7 @@ def test_rst_replacement() -> None:
 
 foo |new version| bar
 ''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -190,6 +200,7 @@ foo |new version| bar
 
 foo |double arrow ->| bar
 ''')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -206,6 +217,7 @@ foo |double arrow ->| bar
 
     # Ensure that the parser doesn't emit warnings about unresolvable substitution references
     page, diagnostics = parse_rst(parser, path, 'foo |bar|')
+    page.finish(diagnostics)
     assert diagnostics == []
     assert ast_to_testing_string(page.ast) == ''.join((
         '<root>',
@@ -234,6 +246,7 @@ def test_roles() -> None:
 * :binary:`mongod <~bin.mongod>`
 * :guilabel:`Test <foo>`
 ''')
+    page.finish(diagnostics)
     assert diagnostics == []
     print(ast_to_testing_string(page.ast))
     assert ast_to_testing_string(page.ast) == ''.join((

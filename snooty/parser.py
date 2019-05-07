@@ -5,69 +5,135 @@ import multiprocessing
 import os
 import pwd
 import subprocess
+import threading
 from functools import partial
 from pathlib import Path, PurePath
 from typing import Any, Dict, Tuple, Optional, Set, List, Iterable
 from typing_extensions import Protocol
 import docutils.utils
+import watchdog.events
+import networkx
 
 from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
 from .types import Diagnostic, SerializableType, EmbeddedRstParser, Page, \
-    StaticAsset, ProjectConfigError, ProjectConfig
+    StaticAsset, ProjectConfigError, ProjectConfig, PendingTask, FileId, \
+    Cache
 
 NO_CHILDREN = {'substitution_reference'}
 RST_EXTENSIONS = {'.rst', '.txt'}
 logger = logging.getLogger(__name__)
 
 
-def transform_literal_include(path: Path,
-                              doc: Dict[str, SerializableType],
-                              options: Dict[str, SerializableType]) -> None:
+class PendingLiteralInclude(PendingTask):
     """Transform a literal-include directive AST node into a code node."""
-    text = path.read_text(encoding='utf-8')
-    lines = text.split('\n')
-    start_after = 0
-    end_before = len(lines)
-    if 'start-after' in options:
-        start_after_text = options['start-after']
-        assert isinstance(start_after_text, str)
-        start_after = next((idx for idx, line in enumerate(lines)
-                            if start_after_text in line), -1)
-        if start_after < 0:
-            raise ValueError(f'"{start_after_text}" not found in {path}')
+    def __init__(self,
+                 node: Dict[str, SerializableType],
+                 asset: StaticAsset,
+                 options: Dict[str, SerializableType]) -> None:
+        super().__init__(node)
+        self.asset = asset
+        self.options = options
 
-    if 'end-before' in options:
-        end_before_text = options['end-before']
-        assert isinstance(end_before_text, str)
-        end_before = next((idx for idx, line in enumerate(lines, start=start_after)
-                           if end_before_text in line), -1)
-        if end_before < 0:
-            raise ValueError(f'"{end_before_text}" not found in {path}')
-        end_before -= start_after
+    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+        """Load the literalinclude target text into our node."""
+        # Use the cached node if our parameters match the cache entry
+        options_key = hash(
+            tuple(((k, v) for k, v in self.options.items())))
+        entry = cache[(self.asset.fileid, options_key)]
+        if entry is not None:
+            assert isinstance(entry, dict)
+            self.node.update(entry)
+            return
 
-    lines = lines[(start_after + 1):end_before]
-
-    if 'dedent' in options:
         try:
-            dedent = min(len(line) - len(line.lstrip()) for line in lines if len(line.lstrip()) > 0)
-        except ValueError:
-            # Handle the (unlikely) case where there are no non-empty lines
-            dedent = 0
-        lines = [line[dedent:] for line in lines]
+            text = self.asset.path.read_text(encoding='utf-8')
+        except OSError as err:
+            diagnostics.append(self.error(f'Error opening {self.asset.path}: {err}'))
+            return
 
-    doc.clear()
-    doc.update({
-        'type': 'code',
-        'lang': options['language'] if 'language' in options else path.suffix.lstrip('.'),
-        'copyable': 'copyable' in options,
-        'value': '\n'.join(lines)
-    })
+        # Split the file into lines, and find our start-after query
+        lines = text.split('\n')
+        start_after = 0
+        end_before = len(lines)
+        if 'start-after' in self.options:
+            start_after_text = self.options['start-after']
+            assert isinstance(start_after_text, str)
+            start_after = next((idx for idx, line in enumerate(lines)
+                                if start_after_text in line), -1)
+            if start_after < 0:
+                diagnostics.append(self.error(
+                    f'"{start_after_text}" not found in {self.asset.path}'))
+                return
 
-    if 'emphasize_lines' in options:
-        doc['emphasize_lines'] = options['emphasize_lines']
+        # ...now find the end-before query
+        if 'end-before' in self.options:
+            end_before_text = self.options['end-before']
+            assert isinstance(end_before_text, str)
+            end_before = next((idx for idx, line in enumerate(lines, start=start_after)
+                               if end_before_text in line), -1)
+            if end_before < 0:
+                diagnostics.append(self.error(
+                    f'"{end_before_text}" not found in {self.asset.path}'))
+                return
+            end_before -= start_after
 
-    options.clear()
+        # Find the requested lines
+        lines = lines[(start_after + 1):end_before]
+
+        # Deduce a reasonable dedent, if requested.
+        if 'dedent' in self.options:
+            try:
+                dedent = min(len(line) -
+                             len(line.lstrip()) for line in lines if len(line.lstrip()) > 0)
+            except ValueError:
+                # Handle the (unlikely) case where there are no non-empty lines
+                dedent = 0
+            lines = [line[dedent:] for line in lines]
+
+        self.node.clear()
+        lang = (self.options['language']
+                if 'language' in self.options else
+                self.asset.path.suffix.lstrip('.'))
+        self.node.update({
+            'type': 'code',
+            'lang': lang,
+            'copyable': 'copyable' in self.options,
+            'value': '\n'.join(lines)
+        })
+
+        if 'emphasize_lines' in self.options:
+            self.node['emphasize_lines'] = self.options['emphasize_lines']
+
+        # Update the cache with this node
+        cache[(self.asset.fileid, options_key)] = self.node.copy()
+
+
+class PendingFigure(PendingTask):
+    """Add an image's checksum."""
+    def __init__(self, node: Dict[str, SerializableType], asset: StaticAsset) -> None:
+        super().__init__(node)
+        self.asset = asset
+
+    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+        """Compute this figure's checksum and store it in our node."""
+        # Use the cached checksum if possible. Note that this does not currently
+        # update the underlying asset: if the asset is used by the current backend,
+        # the image will still have to be read.
+        options = self.node.setdefault('options', {})
+        assert isinstance(options, dict)
+        entry = cache[(self.asset.fileid, 0)]
+        if entry is not None:
+            assert isinstance(entry, str)
+            options['checksum'] = entry
+            return
+
+        try:
+            checksum = self.asset.get_checksum()
+            options['checksum'] = checksum
+            cache[(self.asset.fileid, 0)] = checksum
+        except OSError as err:
+            diagnostics.append(self.error(f'Error opening {self.asset.path}: {err}'))
 
 
 class JSONVisitor:
@@ -82,6 +148,7 @@ class JSONVisitor:
         self.state: List[Dict[str, Any]] = []
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
+        self.pending: List[PendingTask] = []
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         node_name = node.__class__.__name__
@@ -218,8 +285,8 @@ class JSONVisitor:
                 return
 
             try:
-                static_asset = self.add_static_asset(Path(argument_text))
-                options['checksum'] = static_asset.checksum
+                static_asset = self.add_static_asset(Path(argument_text), upload=True)
+                self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
@@ -231,9 +298,8 @@ class JSONVisitor:
                 return
 
             try:
-                code_path = Path(argument_text)
-                _, code_path = util.reroot_path(code_path, self.docpath, self.source_path)
-                transform_literal_include(code_path, doc, options)
+                static_asset = self.add_static_asset(Path(argument_text), False)
+                self.pending.append(PendingLiteralInclude(doc, static_asset, options))
             except OSError as err:
                 msg = '"literalinclude" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno))
@@ -248,9 +314,9 @@ class JSONVisitor:
 
         doc['children'] = []
 
-    def add_static_asset(self, path: Path) -> StaticAsset:
+    def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(path, self.docpath, self.source_path)
-        static_asset = StaticAsset.load(fileid.as_posix(), path)
+        static_asset = StaticAsset.load(fileid, path, upload)
         self.static_assets.add(static_asset)
         return static_asset
 
@@ -260,6 +326,8 @@ class JSONVisitor:
     def __make_child_visitor(self) -> 'JSONVisitor':
         visitor = type(self)(self.source_path, self.docpath, self.document)
         visitor.diagnostics = self.diagnostics
+        visitor.static_assets = self.static_assets
+        visitor.pending = self.pending
         return visitor
 
 
@@ -287,7 +355,8 @@ def parse_rst(parser: rstparser.Parser[JSONVisitor],
         path,
         text,
         visitor.state[-1],
-        visitor.static_assets), visitor.diagnostics
+        visitor.static_assets,
+        visitor.pending), visitor.diagnostics
 
 
 def make_embedded_rst_parser(project_config: ProjectConfig,
@@ -305,6 +374,7 @@ def make_embedded_rst_parser(project_config: ProjectConfig,
 
         diagnostics.extend(visitor.diagnostics)
         page.static_assets.update(visitor.static_assets)
+        page.pending_tasks.extend(visitor.pending)
 
         return children
 
@@ -312,34 +382,39 @@ def make_embedded_rst_parser(project_config: ProjectConfig,
 
 
 def get_giza_category(path: PurePath) -> str:
+    """Infer the Giza category of a YAML file."""
     return path.name.split('-', 1)[0]
 
 
 class ProjectBackend(Protocol):
     def on_progress(self, progress: int, total: int, message: str) -> None: ...
 
-    def on_diagnostics(self, path: PurePath, diagnostics: List[Diagnostic]) -> None: ...
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None: ...
 
-    def on_update(self, prefix: List[str], page_id: str, page: Page) -> None: ...
+    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None: ...
 
-    def on_delete(self, page_id: str) -> None: ...
+    def on_delete(self, page_id: FileId) -> None: ...
 
 
-class Project:
+class _Project:
+    """Internal representation of a Snooty project with no data locking."""
     def __init__(self,
                  root: Path,
-                 backend: ProjectBackend) -> None:
+                 backend: ProjectBackend,
+                 filesystem_watcher: util.FileWatcher) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
 
         if config_diagnostics:
-            backend.on_diagnostics(self.config.root, config_diagnostics)
+            backend.on_diagnostics(
+                self.get_fileid(self.config.config_path),
+                config_diagnostics)
             raise ProjectConfigError()
 
         self.root = self.config.source_path
         self.parser = rstparser.Parser(self.config, JSONVisitor)
-        self.static_assets: Dict[PurePath, Set[StaticAsset]] = collections.defaultdict(set)
         self.backend = backend
+        self.filesystem_watcher = filesystem_watcher
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             'steps': gizaparser.steps.GizaStepsCategory(self.config),
@@ -354,9 +429,13 @@ class Project:
             encoding='utf-8').strip()
         self.prefix = [self.config.name, username, branch]
 
-    def get_page_id(self, path: PurePath) -> str:
-        page_id = path.with_suffix('').relative_to(self.root).as_posix()
-        return '/'.join(self.prefix + [page_id])
+        self.pages: Dict[FileId, Page] = {}
+
+        self.asset_dg: 'networkx.DiGraph[FileId]' = networkx.DiGraph()
+        self._expensive_operation_cache = Cache()
+
+    def get_fileid(self, path: PurePath) -> FileId:
+        return FileId(path.relative_to(self.root))
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
@@ -371,7 +450,7 @@ class Project:
             file_id = os.path.basename(path)
             giza_category = self.yaml_mapping[prefix]
             needs_rebuild = set((file_id,)).union(*(
-                category.dg.dependents[file_id] for category in self.yaml_mapping.values()))
+                category.dg.predecessors(file_id) for category in self.yaml_mapping.values()))
             logger.debug('needs_rebuild: %s', ','.join(needs_rebuild))
             for file_id in needs_rebuild:
                 file_diagnostics: List[Diagnostic] = []
@@ -396,26 +475,26 @@ class Project:
             raise ValueError('Unknown file type: ' + str(path))
 
         for source_path, diagnostic_list in diagnostics.items():
-            self.backend.on_diagnostics(source_path, diagnostic_list)
+            self.backend.on_diagnostics(self.get_fileid(source_path), diagnostic_list)
 
         for page in pages:
-            self.backend.on_update(self.prefix, self.get_page_id(path), page)
+            self._page_updated(page, diagnostic_list)
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
             del giza_category[file_id]
 
-        self.backend.on_delete(self.get_page_id(path))
+        self.backend.on_delete(self.get_fileid(path))
 
     def build(self) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         with multiprocessing.Pool() as pool:
             paths = util.get_files(self.root, RST_EXTENSIONS)
             logger.debug('Processing rst files')
-            for page, diagnostics in pool.imap_unordered(partial(parse_rst, self.parser), paths):
-                self.backend.on_update(self.prefix, self.get_page_id(page.get_id()), page)
-                self.backend.on_diagnostics(page.source_path, diagnostics)
+            results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
+            for page, diagnostics in results:
+                self._page_updated(page, diagnostics)
 
         # Categorize our YAML files
         logger.debug('Categorizing YAML files')
@@ -443,6 +522,107 @@ class Project:
                         self.config, page, all_yaml_diagnostics.setdefault(giza_node.path, []))
 
                 for page in giza_category.to_pages(create_page, giza_node.data):
-                    self.backend.on_update(self.prefix, self.get_page_id(page.get_id()), page)
-                    self.backend.on_diagnostics(
-                        page.source_path, all_yaml_diagnostics.get(page.source_path, []))
+                    self._page_updated(page, all_yaml_diagnostics.get(page.source_path, []))
+
+    def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
+        """Update any state associated with a parsed page."""
+        # Finish any pending tasks
+        page.finish(diagnostics, self._expensive_operation_cache)
+
+        # Synchronize our asset watching
+        old_assets: Set[StaticAsset] = set()
+        removed_assets: Set[StaticAsset] = set()
+        fileid = self.get_fileid(page.fake_full_path())
+
+        logger.debug('Updated: %s', fileid)
+
+        if fileid in self.pages:
+            old_page = self.pages[fileid]
+            old_assets = old_page.static_assets
+            removed_assets = old_page.static_assets.difference(page.static_assets)
+
+        new_assets = page.static_assets.difference(old_assets)
+        for asset in new_assets:
+            self.filesystem_watcher.watch_file(asset.path)
+        for asset in removed_assets:
+            self.filesystem_watcher.end_watch(asset.path)
+
+        # Update dependents
+        try:
+            self.asset_dg.remove_node(self.get_fileid(page.source_path))
+        except networkx.exception.NetworkXError:
+            pass
+        self.asset_dg.add_edges_from(
+            (self.get_fileid(page.source_path), self.get_fileid(asset.path))
+            for asset in page.static_assets)
+
+        # Report to our backend
+        self.pages[fileid] = page
+        self.backend.on_update(self.prefix, fileid, page)
+        self.backend.on_diagnostics(self.get_fileid(page.source_path), diagnostics)
+
+    def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
+        asset_path = self.get_fileid(Path(ev.src_path))
+
+        # Revoke any caching that might have been performed on this file
+        try:
+            del self._expensive_operation_cache[asset_path]
+        except KeyError:
+            pass
+
+        # Rebuild any pages depending on this asset
+        for page_id in list(self.asset_dg.predecessors(asset_path)):
+            self.update(self.pages[page_id].source_path)
+
+
+class Project:
+    """A Snooty project, providing high-level operations on a project such as
+       requesting a rebuild, and updating a file based on new contents.
+
+       This class's public methods are thread-safe."""
+    __slots__ = ('_project', '_lock', '_filesystem_watcher')
+
+    def __init__(self, root: Path, backend: ProjectBackend) -> None:
+        self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
+        self._project = _Project(root, backend, self._filesystem_watcher)
+        self._lock = threading.Lock()
+        self._filesystem_watcher.start()
+
+    @property
+    def config(self) -> ProjectConfig:
+        return self._project.config
+
+    def get_fileid(self, path: PurePath) -> FileId:
+        """Create a FileId from a path."""
+        # We don't need to obtain a lock because this method only operates on
+        # _Project.root, which never changes after creation.
+        return self._project.get_fileid(path)
+
+    def update(self, path: Path, optional_text: Optional[str] = None) -> None:
+        """Re-parse a file, optionally using the provided text rather than reading the file."""
+        with self._lock:
+            self._project.update(path, optional_text)
+
+    def delete(self, path: PurePath) -> None:
+        """Mark a path as having been deleted."""
+        with self._lock:
+            self._project.delete(path)
+
+    def build(self) -> None:
+        """Build the full project."""
+        with self._lock:
+            self._project.build()
+
+    def stop_monitoring(self) -> None:
+        """Stop the filesystem monitoring thread associated with this project."""
+        self._filesystem_watcher.stop(join=True)
+
+    def _on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
+        with self._lock:
+            self._project.on_asset_event(ev)
+
+    def __enter__(self) -> 'Project':
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.stop_monitoring()

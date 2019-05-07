@@ -1,10 +1,10 @@
-import collections
 import dataclasses
 import logging
 import re
+import networkx
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import cast, Callable, Dict, Set, Generic, Optional, \
+from typing import cast, Callable, Dict, Generic, Optional, \
                    TypeVar, Tuple, Iterator, Sequence, List, Union, \
                    Match
 from ..flutter import checked
@@ -126,24 +126,6 @@ def inherit(project_config: ProjectConfig,
     return dataclasses.replace(obj, **changes) if changes else obj
 
 
-class DependencyGraph:
-    __slots__ = ('dependencies', 'dependents')
-
-    def __init__(self) -> None:
-        self.dependents: Dict[str, Set[str]] = collections.defaultdict(set)
-        self.dependencies: Dict[str, Set[str]] = collections.defaultdict(set)
-
-    def set_dependencies(self, obj: str, dependencies: Set[str]) -> None:
-        for dependency in self.dependencies[obj]:
-            self.dependents[dependency].remove(obj)
-        self.dependencies[obj] = dependencies
-        for dependency in dependencies:
-            self.dependents[dependency].add(obj)
-
-    def __delitem__(self, obj: str) -> None:
-        pass
-
-
 @dataclass
 class GizaFile(Generic[_I]):
     """A GizaFile represents a single Giza YAML file."""
@@ -161,7 +143,7 @@ class GizaCategory(Generic[_I]):
        to transform a given path into Pages."""
     project_config: ProjectConfig
     nodes: Dict[str, GizaFile[_I]] = field(default_factory=dict)
-    dg: DependencyGraph = field(default_factory=DependencyGraph)
+    dg: 'networkx.DiGraph[str]' = field(default_factory=networkx.DiGraph)
 
     def parse(self,
               path: Path,
@@ -179,7 +161,6 @@ class GizaCategory(Generic[_I]):
         """Add a file with one or more Giza nodes."""
         file_id = path.name
         self.nodes[file_id] = GizaFile(path, text, elements)
-        dependencies = set()
         for element in elements:
             inherit = None
             if element.source:
@@ -190,9 +171,7 @@ class GizaCategory(Generic[_I]):
             if not inherit:
                 continue
 
-            dependencies.add(inherit.file)
-
-        self.dg.set_dependencies(file_id, dependencies)
+            self.dg.add_edge(file_id, inherit.file)
 
     def reify(self, obj: _I, diagnostics: List[Diagnostic]) -> _I:
         """Resolve inheritance and substitution in a single Giza node."""
@@ -249,7 +228,7 @@ class GizaCategory(Generic[_I]):
 
     def __delitem__(self, file_id: str) -> None:
         """Remove a file and any nodes it may have created."""
-        del self.dg[file_id]
+        self.dg.remove_node(file_id)
         del self.nodes[file_id]
 
 

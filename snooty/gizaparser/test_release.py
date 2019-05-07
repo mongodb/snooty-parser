@@ -39,7 +39,7 @@ def test_release_specification() -> None:
         return page, make_embedded_rst_parser(project_config, page, all_diagnostics[path])
 
     pages = category.to_pages(create_page, giza_node.data)
-    assert [str(page.get_id()) for page in pages] == [
+    assert [str(page.fake_full_path()) for page in pages] == [
         'test_data/release/untar-release-osx-x86_64',
         'test_data/release/install-ent-windows-default']
 
