@@ -267,142 +267,158 @@ inherit = "_guides-base"
 ###### Roles
 [role.guilabel]
 help = """Used to specify a label or button in a GUI."""
+type = "text"
 
 [role.abbr]
 help = """Abbreviation with hover text."""
+type = "text"
 
 [role.file]
 help = """Show a file path."""
+type = "text"
 
 [role.icon-fa5]
 help = """Show a FontAwesome 5 Solid icon."""
+type = "explicit_title"
 
 [role.icon]
 inherit = "icon-fa5"
+type = "explicit_title"
 
 [role.icon-fa5-brands]
 help = """Show a FontAwesome 5 Brand icon."""
+type = "explicit_title"
 
 [role.iconb]
 inherit = "icon-fa5-brands"
 
 [role.icon-mms]
 help = """Show an MMS icon."""
+type = "explicit_title"
 
 [role.icon-mms-org]
 help = """Show an MMS-org icon."""
+type = "explicit_title"
 
 [role.icon-charts]
 help = """Show a MongoDB Charts icon."""
+type = "explicit_title"
 
 [role.icon-fa4]
 help = """Show a FontAwesome 4 icon."""
+type = "explicit_title"
 
 [role.xml]
 help = """Use XML to create reStructuredText nodes."""
+type = "text"
 
 [role.rfc]
 help = """Reference an IETF RFC."""
+type = "explicit_title"
 
 [role.hardlink]
 help = """Link to a URL in the current project."""
+type = "explicit_title"
 
 [role.doc]
 help = """Link to a page in the current project."""
+type = "explicit_title"
 
 [role.manual]
 help = """Link to a page in the latest stable version of the MongoDB manual."""
-type = "link http://docs.mongodb.com/manual%s"
+type = {link = "https://docs.mongodb.com/manual%s"}
 
 [role.ref]
 help = """Link to a named target."""
+type = "explicit_title"
 
 [role.term]
 help = """Link to a term in the glossary."""
+type = "explicit_title"
 
 [role.issue]
 help = """Link to a JIRA ticket."""
-type = "link https://jira.mongodb.org/browse/%s"
+type = {link = "https://jira.mongodb.org/browse/%s"}
 
 [role.perl-api]
 help = "Link to a page in the Perl driver's CPAN API reference."
-type = "link https://metacpan.org/pod/MongoDB::%s"
+type = {link = "https://metacpan.org/pod/MongoDB::%s"}
 
 [role.node-docs]
 help = """Link to a page in the Node.js driver's documentation."""
-type = "link http://mongodb.github.io/node-mongodb-native/3.0/%s"
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.0/%s"}
 
 [role.node-api]
 help = """Link to a page in the Node.js driver's API reference."""
-type = "link http://mongodb.github.io/node-mongodb-native/3.0/api/%s"
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.0/api/%s"}
 
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
-type = "link http://api.mongodb.com/ruby/current/Mongo/%s"
+type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
 
 [role.scala-api]
 help = """Link to a page in the Scala driver's API reference."""
-type = "link http://mongodb.github.io/mongo-scala-driver/2.2/scaladoc/org/mongodb/scala/MongoCollection.html#%s"
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.2/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
 
 [role.csharp-docs]
 help = """Link to a page in the C# driver's documentation."""
-type = "link https://mongodb.github.io/mongo-csharp-driver/2.5/reference/%s"
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/reference/%s"}
 
 [role.csharp-api]
 help = """Link to a page in the C# driver's API reference."""
-type = "link https://mongodb.github.io/mongo-csharp-driver/2.5/apidocs/html/%s.htm"
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/apidocs/html/%s.htm"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
-type = "link http://mongodb.github.io/mongo-java-driver/3.7/%s"
+type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/%s"}
 
 [role.java-async-api]
 help = """Link to the async Java driver's API reference."""
-type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
+type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
-type = "link http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"
+type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
 
 [role.atlas]
 help = """Link to the synchronous Atlas documentation."""
-type = "link https://docs.atlas.mongodb.com/%s"
+type = {link = "https://docs.atlas.mongodb.com/%s"}
 
 [role."v2.2"]
-type = "link https://docs.mongodb.com/v2.2%s"
+type = {link = "https://docs.mongodb.com/v2.2%s"}
 
 [role."v2.4"]
-type = "link https://docs.mongodb.com/v2.4%s"
+type = {link = "https://docs.mongodb.com/v2.4%s"}
 
 [role."v2.6"]
-type = "link https://docs.mongodb.com/v2.6%s"
+type = {link = "https://docs.mongodb.com/v2.6%s"}
 
 [role."v3.0"]
-type = "link https://docs.mongodb.com/v3.0%s"
+type = {link = "https://docs.mongodb.com/v3.0%s"}
 
 [role."v3.2"]
-type = "link https://docs.mongodb.com/v3.2%s"
+type = {link = "https://docs.mongodb.com/v3.2%s"}
 
 [role."v3.4"]
-type = "link https://docs.mongodb.com/v3.4%s"
+type = {link = "https://docs.mongodb.com/v3.4%s"}
 
 [role."v3.6"]
-type = "link https://docs.mongodb.com/v3.6%s"
+type = {link = "https://docs.mongodb.com/v3.6%s"}
 
 [role."v4.0"]
-type = "link https://docs.mongodb.com/v4.0%s"
+type = {link = "https://docs.mongodb.com/v4.0%s"}
 
 [role.bic]
-type = "link https://docs.mongodb.com/bi-connector/current%s"
+type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
 
 [role.k8s]
-type = "link https://docs.mongodb.com/kubernetes-operator/stable%s"
+type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s"}
 
 [role.product]
-type = "link http://www.mongodb.com/products/%s?jmp=docs"
+type = {link = "http://www.mongodb.com/products/%s?jmp=docs"}
 
 [role.dl]
-type = "link http://www.mongodb.com/download-center/%s?jmp=docs"
+type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]

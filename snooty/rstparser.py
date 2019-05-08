@@ -61,22 +61,73 @@ class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
 
 
 class role(docutils.nodes.Inline, docutils.nodes.Element):
-    def __init__(self, name: str, rawtext: str, text: str, lineno: int) -> None:
+    """Docutils node representing a role."""
+    def __init__(self, name: str, lineno: int,
+                 label: Optional[str], target: Optional[str]) -> None:
         super(role, self).__init__()
         self['name'] = name
-        self['raw'] = text
 
-        match = PAT_EXPLICIT_TILE.match(text)
-        if match:
+        if label is not None:
             self['label'] = {
                 'type': 'text',
-                'value': match['label'],
+                'value': label,
                 'position': {'start': {'line': lineno}}
             }
-            self['target'] = match['target']
+
+        if target is not None:
+            self['target'] = target
+
+
+def handle_role_text(typ: str,
+                     rawtext: str,
+                     text: str,
+                     lineno: int,
+                     inliner: docutils.parsers.rst.states.Inliner,
+                     options: Dict[str, object] = {},
+                     content: List[object] = []) -> Tuple[
+                        List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    """Handle roles with plain text content."""
+    node = role(typ, lineno, text, None)
+    return [node], []
+
+
+def handle_role_explicit_title(typ: str, rawtext: str, text: str,
+                               lineno: int, inliner: docutils.parsers.rst.states.Inliner,
+                               options: Dict[str, object] = {},
+                               content: List[object] = []) -> Tuple[
+                                   List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    """Handle link-like roles with a target and an optional title."""
+    match = PAT_EXPLICIT_TILE.match(text)
+    if match:
+        node = role(typ, lineno, match['label'], match['target'])
+    else:
+        node = role(typ, lineno, None, text)
+
+    return [node], []
+
+
+class LinkRoleHandler:
+    """Handle roles which generate a link from a template."""
+    def __init__(self, url_template: str) -> None:
+        self.url_template = url_template
+
+    def __call__(self, typ: str, rawtext: str, text: str,
+                 lineno: int, inliner: docutils.parsers.rst.states.Inliner,
+                 options: Dict[str, object] = {},
+                 content: List[object] = []) -> Tuple[
+                     List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+        match = PAT_EXPLICIT_TILE.match(text)
+        label: Optional[str] = None
+        if match:
+            label, target = match['label'], match['target']
         else:
-            self['label'] = text
-            self['target'] = text
+            target = text
+
+        url = self.url_template % target
+        if not label:
+            label = url
+        node = docutils.nodes.reference(label, label, internal=False, refuri=url)
+        return [node], []
 
 
 def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
@@ -267,14 +318,6 @@ class CodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-def handle_role(typ: str, rawtext: str, text: str,
-                lineno: int, inliner: object,
-                options: Dict[str, object] = {},
-                content: List[object] = []) -> Tuple[List[object], List[object]]:
-    node = role(typ, rawtext, text, lineno)
-    return [node], []
-
-
 class NoTransformRstParser(docutils.parsers.rst.Parser):
     def get_transforms(self) -> List[object]:
         return []
@@ -303,6 +346,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     directives = list(spec.directive.items())
     roles = list(spec.role.items())
 
+    # Define rstobjects
     for name, rst_object in spec.rstobject.items():
         directive = rst_object.create_directive()
         role = rst_object.create_role()
@@ -340,8 +384,20 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     docutils.parsers.rst.directives.register_directive('guide', LegacyGuideDirective)
     docutils.parsers.rst.directives.register_directive('guide-index', LegacyGuideIndexDirective)
 
+    # Define roles
     for name, role_spec in roles:
-        docutils.parsers.rst.roles.register_local_role(name, handle_role)
+        handler = None
+        if not role_spec.type or role_spec.type == specparser.PrimitiveRoleType.text:
+            handler = handle_role_text
+        elif isinstance(role_spec.type, specparser.LinkRoleType):
+            handler = LinkRoleHandler(role_spec.type.link)
+        elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
+            handler = handle_role_explicit_title
+
+        if not handler:
+            raise ValueError('Unknown role type "{}"'.format(role_spec.type))
+
+        docutils.parsers.rst.roles.register_local_role(name, handler)
 
 
 class Parser(Generic[_V]):

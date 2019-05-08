@@ -215,3 +215,82 @@ foo |double arrow ->| bar
         '</paragraph>',
         '</root>'
     ))
+
+
+def test_roles() -> None:
+    root = Path('test_data')
+    path = Path(root).joinpath(Path('test.rst'))
+    project_config = ProjectConfig(root, '', source='./')
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test both forms of :manual: (an extlink), :rfc: (explicit title),
+    # :binary: (rstobject), and :guilabel: (plain text)
+    page, diagnostics = parse_rst(parser, path, '''
+* :manual:`/introduction/`
+* :manual:`Introduction to MongoDB </introduction/>`
+* :rfc:`1149`
+* :rfc:`RFC-1149 <1149>`
+* :binary:`~bin.mongod`
+* :binary:`mongod <~bin.mongod>`
+* :guilabel:`Test <foo>`
+''')
+    assert diagnostics == []
+    print(ast_to_testing_string(page.ast))
+    assert ast_to_testing_string(page.ast) == ''.join((
+        '<root>',
+        '<list>',
+        '<listItem>',
+        '<paragraph>',
+        '<reference refuri="https://docs.mongodb.com/manual/introduction/">',
+        '<text>https://docs.mongodb.com/manual/introduction/</text>'
+        '</reference>'
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<reference refuri="https://docs.mongodb.com/manual/introduction/">',
+        '<text>Introduction to MongoDB</text>'
+        '</reference>'
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<role name="rfc" target="1149"></role>',
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<role name="rfc" label="',
+        '{\'type\': \'text\', \'value\': \'RFC-1149\', \'position\': {\'start\': {\'line\': 5}}}',
+        '" target="1149"></role>',
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<role name="binary" target="~bin.mongod"></role>',
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<role name="binary" label="',
+        '{\'type\': \'text\', \'value\': \'mongod\', \'position\': {\'start\': {\'line\': 7}}}',
+        '" target="~bin.mongod"></role>',
+        '</paragraph>',
+        '</listItem>',
+
+        '<listItem>',
+        '<paragraph>',
+        '<role name="guilabel" label="',
+        '{\'type\': \'text\', \'value\': \'Test <foo>\', \'position\': {\'start\': {\'line\': 8}}}',
+        '"></role>',
+        '</paragraph>',
+        '</listItem>',
+
+        '</list>',
+        '</root>'
+    ))

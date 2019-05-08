@@ -1,6 +1,7 @@
 import docutils.parsers.rst
 import docutils.parsers.rst.states
 import docutils.statemachine
+import docutils.utils
 import docutils
 from typing import Dict, List, Tuple, Iterable, Sequence, Pattern, Union
 
@@ -28,3 +29,7 @@ class Body:
     def parse_directive_arguments(self,
                                   directive: docutils.parsers.rst.Directive,
                                   arg_block: Iterable[str]) -> Sequence[str]: ...
+
+
+class Inliner:
+    reporter: docutils.utils.Reporter

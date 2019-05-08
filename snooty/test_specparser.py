@@ -21,6 +21,7 @@ def test_load() -> None:
 
     [role._parent]
     help = "test-role"
+    type = "text"
 
     [role.child]
     inherit = "_parent"
@@ -48,6 +49,7 @@ def test_load() -> None:
     # has a separate inheritance namespace
     assert spec.rstobject['child'].help == 'test-rstobject'
     assert spec.role['child'].help == 'test-role'
+    assert spec.role['child'].type == specparser.PrimitiveRoleType.text
 
     validator = spec.get_validator([specparser.PrimitiveType.nonnegative_integer, 'user_level'])
     assert validator('10') == 10

@@ -139,9 +139,10 @@ class JSONVisitor:
             return
         elif node_name == 'role':
             doc['name'] = node['name']
-            doc['label'] = node['label']
-            doc['target'] = node['target']
-            doc['raw'] = node['raw']
+            if 'label' in node:
+                doc['label'] = node['label']
+            if 'target' in node:
+                doc['target'] = node['target']
         elif node_name == 'target':
             doc['type'] = 'target'
             doc['ids'] = node['ids']
