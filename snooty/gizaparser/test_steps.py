@@ -53,7 +53,9 @@ def test_step() -> None:
 
         '<directive name="step"><section><heading><text>Create a </text><literal><text>',
         '/etc/apt/sources.list.d/mongodb-org-3.4.list</text></literal><text> file for </text>',
-        '<role name="guilabel" label="MongoDB" target="MongoDB" raw="MongoDB"></role>',
+        '<role name="guilabel" label="',
+        '{\'type\': \'text\', \'value\': \'MongoDB\', \'position\': {\'start\': {\'line\': 1}}}',
+        '"></role>',
         '<text>.</text></heading>',
         '<section><heading><text>Optional: action heading</text></heading>'
         '<paragraph><text>Create the list file using the command appropriate for ',

@@ -17,6 +17,13 @@ class _Inheritable(Protocol):
     inherit: Optional[str]
 
 
+@checked
+@dataclass
+class LinkRoleType:
+    """Configuration for a role which links to a specific URL template."""
+    link: str
+
+
 _T = TypeVar('_T', bound=_Inheritable)
 SPEC_VERSION = 0
 StringOrStringlist = Union[List[str], str, None]
@@ -31,6 +38,14 @@ PrimitiveType = Enum('PrimitiveType', (
     'flag',
     'linenos'
 ))
+PrimitiveRoleType = Enum('PrimitiveRoleType', (
+    'text',
+    'explicit_title'
+))
+
+#: Spec definition of a role: this can be either a PrimitiveRoleType, or
+#: an object requiring additional configuration.
+RoleType = Union[PrimitiveRoleType, LinkRoleType]
 
 #: docutils option validation function for each of the above primitive types
 VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
@@ -83,7 +98,7 @@ class Role:
     inherit: Optional[str]
     help: Optional[str]
     example: Optional[str]
-    type: Optional[ArgumentType]
+    type: Optional[RoleType]
     deprecated: bool = field(default=False)
 
 
@@ -112,7 +127,7 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
-            type=None,
+            type=PrimitiveRoleType.explicit_title,
             deprecated=self.deprecated)
 
 

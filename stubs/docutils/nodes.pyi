@@ -68,3 +68,13 @@ class system_message(Element): ...
 
 class Text(Node):
     def __init__(self, data: object, rawsource: str=''): ...
+
+
+class Resolvable:
+    resolved: int
+
+
+class Referential(Resolvable): ...
+
+
+class reference(General, Inline, Referential, TextElement): ...
