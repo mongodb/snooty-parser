@@ -1,0 +1,15 @@
+ref: _untar-release
+copyable: true
+language: 'sh'
+code: |
+  tar -zxvf mongodb-{{platform}}-{{builder}}-{{version}}.tgz
+---
+ref: _install-windows-ent
+copyable: true
+language: bat
+code: |
+   msiexec.exe /l*v mdbinstall.log  /qb /i mongodb-win32-x86_64-enterprise-windows-64-{{version}}-signed.msi
+
+# Adding SHOULD_INSTALL_COMPASS="0" since the install page states that this installs just what's specified in ADDLOCAL
+
+...

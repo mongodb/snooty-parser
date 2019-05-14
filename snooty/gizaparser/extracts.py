@@ -57,9 +57,12 @@ class GizaExtractsCategory(GizaCategory[Extract]):
                  extracts: Sequence[Extract]) -> List[Page]:
         pages: List[Page] = []
         for extract in extracts:
+            assert extract.ref is not None
+            if extract.ref.startswith('_'):
+                continue
+
             page, rst_parser = page_factory()
             page.category = 'extracts'
-            assert extract.ref is not None
             page.output_filename = extract.ref
             page.ast = extract_to_page(page, extract, rst_parser)
             pages.append(page)

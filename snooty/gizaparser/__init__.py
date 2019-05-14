@@ -1,1 +1,1 @@
-from . import steps, extracts  # NoQA
+from . import steps, extracts, release  # NoQA
