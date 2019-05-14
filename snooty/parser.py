@@ -344,7 +344,8 @@ class Project:
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             'steps': gizaparser.steps.GizaStepsCategory(self.config),
-            'extracts': gizaparser.extracts.GizaExtractsCategory(self.config)
+            'extracts': gizaparser.extracts.GizaExtractsCategory(self.config),
+            'release': gizaparser.release.GizaReleaseSpecificationCategory(self.config),
         }
 
         username = pwd.getpwuid(os.getuid()).pw_name

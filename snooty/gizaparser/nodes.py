@@ -5,7 +5,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import cast, Callable, Dict, Set, Generic, Optional, \
-                   TypeVar, Tuple, Iterator, Sequence, List, Union
+                   TypeVar, Tuple, Iterator, Sequence, List, Union, \
+                   Match
 from ..flutter import checked
 from ..types import Diagnostic, Page, EmbeddedRstParser, SerializableType, ProjectConfig
 
@@ -14,13 +15,26 @@ PAT_SUBSTITUTION = re.compile(r'\{\{([\w-]+)\}\}')
 logger = logging.getLogger(__name__)
 
 
-def substitute_text(text: str, replacements: Dict[str, str]) -> str:
-    return PAT_SUBSTITUTION.sub(lambda match: replacements.get(match.group(1), ''), text)
+def substitute_text(text: str,
+                    replacements: Dict[str, str],
+                    diagnostics: List[Diagnostic]) -> str:
+    def substitute(match: Match[str]) -> str:
+        try:
+            return replacements[match.group(1)]
+        except KeyError:
+            diagnostics.append(Diagnostic.warning(
+                f'Unknown substitution: "{match.group(1)}". ' +
+                'You may intend this substitution to be empty', 1))
+            return ''
+
+    return PAT_SUBSTITUTION.sub(substitute, text)
 
 
-def substitute(obj: _T, replacements: Dict[str, str]) -> _T:
+def substitute(obj: _T,
+               replacements: Dict[str, str],
+               diagnostics: List[Diagnostic]) -> _T:
     if isinstance(obj, str):
-        return substitute_text(obj, replacements)
+        return substitute_text(obj, replacements, diagnostics)
 
     if not dataclasses.is_dataclass(obj):
         return obj
@@ -29,11 +43,11 @@ def substitute(obj: _T, replacements: Dict[str, str]) -> _T:
     for obj_field in dataclasses.fields(obj):
         value = getattr(obj, obj_field.name)
         if isinstance(value, str):
-            new_str = substitute_text(value, replacements)
+            new_str = substitute_text(value, replacements, diagnostics)
             if new_str is not value:
                 changes[obj_field.name] = new_str
         elif dataclasses.is_dataclass(value):
-            new_value = substitute(value, replacements)
+            new_value = substitute(value, replacements, diagnostics)
             if new_value is not value:
                 changes[obj_field.name] = new_value
 
@@ -65,7 +79,10 @@ class Inheritable(Node):
 _I = TypeVar('_I', bound=Inheritable)
 
 
-def inherit(obj: _I, parent: Optional[_I]) -> _I:
+def inherit(project_config: ProjectConfig,
+            obj: _I,
+            parent: Optional[_I],
+            diagnostics: List[Diagnostic]) -> _I:
     logger.debug('Inheriting %s', obj.ref)
     changes: Dict[str, object] = {}
 
@@ -77,6 +94,11 @@ def inherit(obj: _I, parent: Optional[_I]) -> _I:
             if src not in replacement:
                 replacement[src] = dest
 
+    # Merge in project-wide constants into the giza substitutions system
+    new_replacement = {k: str(v) for k, v in project_config.constants.items()}
+    new_replacement.update(replacement)
+    replacement = new_replacement
+
     # Inherit root-level keys
     for field_name in (field.name for field in dataclasses.fields(obj)
                        if field.name not in {'replacement', 'ref', 'source', 'inherit'}):
@@ -87,8 +109,8 @@ def inherit(obj: _I, parent: Optional[_I]) -> _I:
                 changes[field_name] = new_value
                 value = new_value
 
-        if replacement and value is not None:
-            changes[field_name] = substitute(value, replacement)
+        if value is not None:
+            changes[field_name] = substitute(value, replacement, diagnostics)
 
     return dataclasses.replace(obj, **changes) if changes else obj
 
@@ -187,7 +209,7 @@ class GizaCategory(Generic[_I]):
         if obj.ref is None:
             obj.ref = ''
 
-        obj = inherit(obj, parent)
+        obj = inherit(self.project_config, obj, parent, diagnostics)
         return obj
 
     def reify_file_id(self,
