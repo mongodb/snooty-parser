@@ -211,18 +211,17 @@ class JSONVisitor:
         except (IndexError, KeyError):
             pass
 
-        if name == 'figure':
+        if name in {'figure', 'image'}:
             if argument_text is None:
                 self.diagnostics.append(
-                    Diagnostic.error('"figure" expected a path argument', util.get_line(node)))
+                    Diagnostic.error(f'"{name}" expected a path argument', util.get_line(node)))
                 return
 
             try:
                 static_asset = self.add_static_asset(Path(argument_text))
                 options['checksum'] = static_asset.checksum
             except OSError as err:
-                msg = '"figure" could not open "{}": {}'.format(
-                    argument_text, os.strerror(err.errno))
+                msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == 'literalinclude':
             if argument_text is None:

@@ -70,6 +70,10 @@ ArgumentType = Union[
     None]
 
 
+class MissingDict(Dict[str, ArgumentType]):
+    pass
+
+
 @checked
 @dataclass
 class Meta:
@@ -88,7 +92,7 @@ class Directive:
     argument_type: ArgumentType
     required_context: Optional[str]
     deprecated: bool = field(default=False)
-    options: Dict[str, ArgumentType] = field(default_factory=dict)
+    options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
 
 
 @checked
@@ -211,9 +215,14 @@ class Spec:
                     msg = f'Cannot inherit from non-existent directive {inheritable.inherit}'
                     raise ValueError(msg)
 
-                inheritable = dataclasses.replace(base, **{
-                    k: v for k, v in dataclasses.asdict(inheritable).items() if v is not None
-                })
+                inheritable = dataclasses.replace(
+                    base,
+                    **{
+                        k: v
+                        for k, v in dataclasses.asdict(inheritable).items()
+                        if v is not None and not isinstance(v, MissingDict)
+                    },
+                )
                 inheritable_index[key] = inheritable
                 pending.remove(key)
 

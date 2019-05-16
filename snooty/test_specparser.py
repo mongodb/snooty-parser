@@ -12,12 +12,12 @@ def test_load() -> None:
 
     [directive._parent]
     content_type = "block"
+    options.foo = ["path", "uri"]
 
     [directive.child]
     inherit = "_parent"
     argument_type = "user_level"
     deprecated = true
-    options.foo = ["path", "uri"]
 
     [role._parent]
     help = "test-role"

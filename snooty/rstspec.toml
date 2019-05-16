@@ -91,6 +91,9 @@ options.width = "length"
 options.align = "alignment"
 options.lightbox = "flag"
 
+[directive.image]
+inherit = "figure"
+
 [directive.example]
 help = """A section providing an example related to the surrounding text."""
 content_type = "block"
@@ -124,6 +127,10 @@ help = """List pages to treat as children of this page."""
 content_type = "block"
 options.titlesonly = "flag"
 options.hidden = "flag"
+
+[directive.tabs-pillstrip]
+deprecated = true
+argument_type = "string"
 
 [directive.tabs]
 content_type = "block"
