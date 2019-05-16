@@ -5,9 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.1.6] - 2019-05-16
 ### Added
 - The `literalinclude` directive.
 - AST nodes for substitutions.
+
 ### Changed
 - Only match PAT_EXPLICIT_TILE if needed by role.
 
@@ -17,13 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     optionally a label field.
   * `link` roles do not emit a role node at all; instead, they emit a
     reference with the refuri already set.
+
 ### Fixed
 - Multiline directive arguments.
 - Include guide "languages" in legacy guide syntax.
 - `:dedent:` on `literalinclude` directives with empty lines.
 - Child giza nodes should not always have their parent's ref.
 - Extracts should be created with the category `extracts`, not `extract`.
-
 
 ## [v0.1.5] - 2019-03-28
 ### Added
