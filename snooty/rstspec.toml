@@ -12,6 +12,16 @@ output_format = ["html"]
 argument_type = "string"
 deprecated = true
 
+[directive.div]
+deprecated = true
+argument_type = "string"
+content_type = "block"
+
+[directive.container]
+deprecated = true
+argument_type = "string"
+content_type = "block"
+
 [directive.list-table]
 help = """Define a table using nested lists."""
 example = """.. list-table::
@@ -150,6 +160,9 @@ inherit = "tabs"
 [directive.tabs-auth]
 inherit = "tabs"
 
+[directive.tabs-cloud-providers]
+inherit = "tabs"
+
 [directive.tab]
 argument_type = "string"
 content_type = "block"
@@ -271,6 +284,16 @@ inherit = "_guides-base"
 help = """Related pages. Typically a list."""
 inherit = "_guides-base"
 
+[directive.meta]
+help = """Add metadata to the site for SEO."""
+options.keywords = "string"
+options.description = "string"
+
+[directive.topic]
+help = """A block with a self-contained chunk of information."""
+argument_type = "string"
+content_type = "block"
+
 ###### Roles
 [role.guilabel]
 help = """Used to specify a label or button in a GUI."""
@@ -330,10 +353,6 @@ type = "explicit_title"
 [role.doc]
 help = """Link to a page in the current project."""
 type = "explicit_title"
-
-[role.manual]
-help = """Link to a page in the latest stable version of the MongoDB manual."""
-type = {link = "https://docs.mongodb.com/manual%s"}
 
 [role.ref]
 help = """Link to a named target."""
@@ -415,6 +434,34 @@ type = {link = "https://docs.mongodb.com/v3.6%s"}
 [role."v4.0"]
 type = {link = "https://docs.mongodb.com/v4.0%s"}
 
+[role.website]
+help = """Link to a page in the MongoDB website."""
+type = {link = "https://www.mongodb.com%s?jmp=docs"}
+
+[role.manual]
+help = """Link to a page in the latest stable version of the MongoDB manual."""
+type = {link = "https://docs.mongodb.com/manual%s"}
+
+[role.cloudmgr]
+help = """Link to a page in the Cloud Manager docs."""
+type = {link = "https://docs.cloudmanager.mongodb.com%s"}
+
+[role.stitch]
+help = """Link to a page in the Stitch docs."""
+type = {link = "https://docs.mongodb.com/stitch%s"}
+
+[role.charts]
+help = """Link to a page in the Charts docs."""
+type = {link = "https://docs.mongodb.com/charts/saas%s"}
+
+[role.compass]
+help = """Link to a page in the Compass docs."""
+type = {link = "https://docs.mongodb.com/compass%s"}
+
+[role.driver]
+help = """Link to a driver's page in the Ecosystem docs."""
+type = {link = "https://docs.mongodb.com/ecosystem/drivers%s"}
+
 [role.bic]
 type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
 
@@ -463,6 +510,7 @@ inherit = "alert"
 [rstobject.msetting]
 [rstobject.operator]
 [rstobject.option]
+[rstobject."mongomirror:option"]
 [rstobject.parameter]
 [rstobject.phpclass]
 [rstobject.phpmethod]

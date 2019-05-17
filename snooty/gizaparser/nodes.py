@@ -109,7 +109,7 @@ def inherit(project_config: ProjectConfig,
                 changes[field_name] = new_value
                 value = new_value
 
-        if value is not None:
+        if value is not None and obj.ref and not obj.ref.startswith('_'):
             changes[field_name] = substitute(value, replacement, diagnostics)
 
     return dataclasses.replace(obj, **changes) if changes else obj

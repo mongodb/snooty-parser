@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from . import nodes
 from ..types import Diagnostic, ProjectConfig
 
@@ -70,14 +70,29 @@ def test_substitution() -> None:
 
 
 def test_inheritance() -> None:
+    @dataclass
+    class TestNode(nodes.Inheritable):
+        content: Optional[str]
+
     project_config, diagnostics = ProjectConfig.open(Path('test_data'))
-    parent = nodes.Inheritable('parent', {'foo': 'bar', 'old': ''}, source=None, inherit=None)
-    child = nodes.Inheritable(
-        'child',
-        {'bar': 'baz', 'old': 'new'},
+    parent = TestNode(
+        ref='_parent',
+        replacement={'foo': 'bar', 'old': ''},
+        source=None,
+        inherit=None,
+        content='{{bar}}')
+    child = TestNode(
+        ref='child',
+        replacement={'bar': 'baz', 'old': 'new'},
         source=nodes.Inherit('self.yaml', 'parent'),
-        inherit=None)
+        inherit=None,
+        content=None)
+    parent = nodes.inherit(project_config, parent, None, diagnostics)
     child = nodes.inherit(project_config, child, parent, diagnostics)
 
-    assert child.replacement == {'foo': 'bar', 'bar': 'baz', 'old': 'new'}
+    assert child.replacement == {
+        'foo': 'bar',
+        'bar': 'baz',
+        'old': 'new'}
+    assert child.content == 'baz'
     assert not diagnostics
