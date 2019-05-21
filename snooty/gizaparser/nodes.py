@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 def substitute_text(text: str,
                     replacements: Dict[str, str],
                     diagnostics: List[Diagnostic]) -> str:
+    """Apply Giza-style replacements to a string. Report a diagnostic for unknown
+       substitutions, and insert an empty string."""
     def substitute(match: Match[str]) -> str:
+        """Handle a substitution match."""
         try:
             return replacements[match.group(1)]
         except KeyError:
@@ -33,6 +36,7 @@ def substitute_text(text: str,
 def substitute(obj: _T,
                replacements: Dict[str, str],
                diagnostics: List[Diagnostic]) -> _T:
+    """Apply Giza-style replacements to a Giza node."""
     if isinstance(obj, str):
         return substitute_text(obj, replacements, diagnostics)
 
@@ -55,6 +59,7 @@ def substitute(obj: _T,
 
 
 class Node:
+    """A base Giza node."""
     @property
     def line(self) -> int:
         return cast(int, getattr(self, '_start_line', 0))
@@ -63,12 +68,14 @@ class Node:
 @checked
 @dataclass
 class Inherit(Node):
+    """A Giza node mixin specifies a parent node."""
     file: str
     ref: str
 
 
 @dataclass
 class Inheritable(Node):
+    """A mixin for inheritable Giza nodes."""
     ref: Optional[str]
     replacement: Optional[Dict[str, str]]
 
@@ -83,6 +90,9 @@ def inherit(project_config: ProjectConfig,
             obj: _I,
             parent: Optional[_I],
             diagnostics: List[Diagnostic]) -> _I:
+    """Implement inheritance on a pair of Giza nodes: parent's fields overwrite any
+       unset fields in obj, and substitution variables are replaced if obj is not
+       a base node. If parent is None, then only substitution occurs."""
     logger.debug('Inheriting %s', obj.ref)
     changes: Dict[str, object] = {}
 
@@ -109,6 +119,7 @@ def inherit(project_config: ProjectConfig,
                 changes[field_name] = new_value
                 value = new_value
 
+        # Avoid substituting if this is a base node.
         if value is not None and obj.ref and not obj.ref.startswith('_'):
             changes[field_name] = substitute(value, replacement, diagnostics)
 
@@ -155,14 +166,17 @@ class GizaCategory(Generic[_I]):
     def parse(self,
               path: Path,
               text: Optional[str] = None) -> Tuple[Sequence[_I], str, List[Diagnostic]]:
+        """Abstract method to parse Giza nodes out of YAML source text."""
         pass
 
     def to_pages(self,
                  page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
                  data: Sequence[_I]) -> List[Page]:
+        """Abstract method to generate pages from a given set of Giza nodes."""
         pass
 
     def add(self, path: Path, text: str, elements: Sequence[_I]) -> None:
+        """Add a file with one or more Giza nodes."""
         file_id = path.name
         self.nodes[file_id] = GizaFile(path, text, elements)
         dependencies = set()
@@ -181,6 +195,7 @@ class GizaCategory(Generic[_I]):
         self.dg.set_dependencies(file_id, dependencies)
 
     def reify(self, obj: _I, diagnostics: List[Diagnostic]) -> _I:
+        """Resolve inheritance and substitution in a single Giza node."""
         parent_identifier = obj.source if obj.source is not None else obj.inherit
         parent: Optional[_I] = None
         if parent_identifier is not None:
@@ -215,6 +230,7 @@ class GizaCategory(Generic[_I]):
     def reify_file_id(self,
                       file_id: str,
                       diagnostics: Dict[PurePath, List[Diagnostic]]) -> GizaFile[_I]:
+        """Resolve inheritance and substitution in a Giza source file."""
         node = self.nodes[file_id]
         return dataclasses.replace(node, data=[
             self.reify(el, diagnostics.setdefault(node.path, [])) for el in node.data])
@@ -222,14 +238,17 @@ class GizaCategory(Generic[_I]):
     def reify_all_files(self,
                         diagnostics: Dict[PurePath, List[Diagnostic]]) -> Iterator[
                             Tuple[str, GizaFile[_I]]]:
+        """Resolve inheritance and substitution in all source files within this category."""
         for file_id, node in self.nodes.items():
             data = [self.reify(el, diagnostics.setdefault(node.path, [])) for el in node.data]
             yield file_id, dataclasses.replace(node, data=data)
 
     def __len__(self) -> int:
+        """Return the number of nodes in this category."""
         return len(self.nodes)
 
     def __delitem__(self, file_id: str) -> None:
+        """Remove a file and any nodes it may have created."""
         del self.dg[file_id]
         del self.nodes[file_id]
 
@@ -237,6 +256,8 @@ class GizaCategory(Generic[_I]):
 @checked
 @dataclass
 class OldHeading(Node):
+    """Giza at one point supported manually setting the rSt character to use
+       for a heading. This node specification defines that format.."""
     character: Optional[str]
     text: str
 
@@ -244,6 +265,7 @@ class OldHeading(Node):
 @dataclass
 @checked
 class HeadingMixin(Node):
+    """A mixin for Giza node specifications which define a heading."""
     title: Union[str, OldHeading, None]
     heading: Union[str, OldHeading, None]
     level: Optional[int]
