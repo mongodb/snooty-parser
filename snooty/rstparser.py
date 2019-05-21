@@ -4,6 +4,7 @@ import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
 import docutils.parsers.rst.directives
+import docutils.parsers.rst.directives.misc
 import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
@@ -25,6 +26,13 @@ PAT_BLOCK_HAS_ARGUMENT = re.compile(r'^\x20*\.\.\x20[^\s]+::\s*\S+')
 PACKAGE_ROOT = Path(sys.modules['snooty'].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
+
+# Remove the built-in directives we don't want
+# TODO: This hack can be removed once we refactor role and directive handling
+docutils.parsers.rst.directives._directive_registry = {
+    k: v for k, v in docutils.parsers.rst.directives._directive_registry.items()
+    if k in {'replace', 'unicode'}
+}
 
 
 @checked
@@ -221,7 +229,7 @@ class TabsDirective(BaseDocutilsDirective):
 
     def run(self) -> List[docutils.nodes.Node]:
         # Transform the old YAML-based syntax into the new pure-rst syntax.
-        # This heuristic gusses whether we have the old syntax or the NEW.
+        # This heuristic guesses whether we have the old syntax or the NEW.
         if any(line == 'tabs:' for line in self.content):
             parsed = load_yaml('\n'.join(self.content))[0]
             try:
