@@ -354,6 +354,46 @@ type = "explicit_title"
 help = """Link to a page in the current project."""
 type = "explicit_title"
 
+[role.api]
+help = """Link to the api.mongodb.com API index."""
+type = {link = "https://api.mongodb.com/%s"}
+
+[role.aws]
+help = """Link to the Amazon AWS documentation."""
+type = {link = "http://docs.aws.amazon.com%s"}
+
+[role.gettingstarted]
+help = """Link to the MongoDB Getting Started guide."""
+type = {link = "https://docs.mongodb.org/getting-started%s"}
+
+[role.master]
+help = """Link to a path in the master branch of the current project."""
+type = "explicit_title"
+
+[role.docsgithub]
+help = """Link to a MongoDB Manual GitHub path."""
+type = {link = "http://github.com/mongodb/docs/blob/master/%s"}
+
+[role.guides]
+help = """Link to a page in the MongoDB Guides site."""
+type = {link = "https://docs.mongodb.com/guides%s"}
+
+[role.mms-docs]
+help = """Link to a page in the MongoDB Guides site."""
+type = {link = "https://docs.cloud.mongodb.com%s"}
+
+[role.mms-home]
+help = """Link to a MongoDB Cloud Services page."""
+type = {link = "https://cloud.mongodb.com%s"}
+
+[role.mongo-spark]
+help = """Link to a page in the MongoDB Spark Connector GitHub project."""
+type = {link = "https://github.com/mongodb/mongo-spark%s"}
+
+[role.source]
+help = """Link to a file in the MongoDB server GitHub project."""
+type = {link = "https://github.com/mongodb/mongo/blob/master/%s"}
+
 [role.ref]
 help = """Link to a named target."""
 type = "explicit_title"
@@ -446,6 +486,10 @@ type = {link = "https://docs.mongodb.com/manual%s"}
 help = """Link to a page in the Cloud Manager docs."""
 type = {link = "https://docs.cloudmanager.mongodb.com%s"}
 
+[role.opsmgr]
+help = """Link to a page in the MMS Ops Manager documentation."""
+type = {link = "https://docs.opsmanager.mongodb.com/current%s"}
+
 [role.stitch]
 help = """Link to a page in the Stitch docs."""
 type = {link = "https://docs.mongodb.com/stitch%s"}
@@ -453,6 +497,22 @@ type = {link = "https://docs.mongodb.com/stitch%s"}
 [role.charts]
 help = """Link to a page in the Charts docs."""
 type = {link = "https://docs.mongodb.com/charts/saas%s"}
+
+[role."charts-v0.10"]
+help = """Link to a page in v0.10 of the Charts docs."""
+type = {link = "https://docs.mongodb.com/charts/v0.10%s"}
+
+[role."charts-v0.9"]
+help = """Link to a page in v0.9 of the Charts docs."""
+type = {link = "https://docs.mongodb.com/charts/v0.9%s"}
+
+[role."v0.10"]
+deprecated = true
+inherit = "charts-v0.10"
+
+[role."v0.9"]
+deprecated = true
+inherit = "charts-v0.9"
 
 [role.compass]
 help = """Link to a page in the Compass docs."""
