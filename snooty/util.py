@@ -167,3 +167,16 @@ class FileWatcher:
 
     def __len__(self) -> int:
         return sum(len(w) for w in self.directories.values())
+
+
+def ast_get_text(ast: Any) -> str:
+    """Return pure textual content from a given AST node."""
+    if ast.get('type') == 'text':
+        return cast(str, ast['value'])
+
+    label = ast.get('label', None)
+    if label:
+        return ast_get_text(label)
+
+    children = ast.get('children', ())
+    return ''.join(ast_get_text(child) for child in children)

@@ -4,6 +4,9 @@ from typing import Any, Optional, Sequence, Iterable, Union
 from typing_extensions import Protocol
 
 
+def make_id(input_value: str) -> str: ...
+
+
 class NodeVisitor(Protocol):
     def dispatch_visit(self, node: docutils.nodes.Node) -> None: ...
     def dispatch_departure(self, node: docutils.nodes.Node) -> None: ...

@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 import re
+import docutils.nodes
 import networkx
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
@@ -9,6 +10,7 @@ from typing import cast, Callable, Dict, Generic, Optional, \
                    Match
 from ..flutter import checked
 from ..types import Diagnostic, Page, EmbeddedRstParser, SerializableType, ProjectConfig
+from .. import util
 
 _T = TypeVar('_T', str, object)
 PAT_SUBSTITUTION = re.compile(r'\{\{([\w-]+)\}\}')
@@ -262,8 +264,17 @@ class HeadingMixin(Node):
             heading_text = 'Optional: ' + heading_text
 
         result = parse_rst(heading_text, self.line, True)
+
+        # Generate an anchor ID for this heading. It would be useful for this
+        # to be unique, but it's not possible to do so in a repeatable fashion
+        # without seeing the whole page, so doing that has to fall to the
+        # renderer.
+        heading_id = docutils.nodes.make_id(
+            ''.join(util.ast_get_text(node) for node in result))
+
         return ({
             'type': 'heading',
             'position': {'start': {'line': self.line}},
-            'children': result
+            'children': result,
+            'id': heading_id
         },)
