@@ -230,6 +230,9 @@ class JSONVisitor:
             doc['type'] = 'listItem'
         elif node_name == 'title':
             doc['type'] = 'heading'
+            # Attach an anchor ID to this section
+            assert node.parent
+            doc['id'] = node.parent['ids'][0]
         elif node_name == 'reference':
             for attr_name in ('refuri', 'refname'):
                 if attr_name in node:

@@ -21,7 +21,7 @@ def test_legacy_guides() -> None:
 
     correct = ''.join((
         '<root guide="">',
-        '<section><heading><text>Sample App</text></heading>',
+        '<section><heading id="sample-app"><text>Sample App</text></heading>',
         '<directive name="author"><text>MongoDB</text></directive>',
         '<directive name="category"><text>Getting Started</text></directive>',
         '<directive name="languages"><list>',
