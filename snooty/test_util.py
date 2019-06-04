@@ -1,5 +1,7 @@
-import time
 import os
+import pytest
+import sys
+import time
 import watchdog.events
 from pathlib import Path, PurePath
 from typing import Callable, List, Tuple, Type
@@ -38,6 +40,10 @@ def test_get_files() -> None:
     }
 
 
+@pytest.mark.skipif(
+    sys.platform != "darwin",
+    reason="file watching has very different behavior on different systems; it's hard to test",
+)
 def test_file_watcher() -> None:
     events: List[Tuple[str, str]] = []
 
