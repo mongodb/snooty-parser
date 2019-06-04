@@ -1,0 +1,10 @@
+---
+pipeline:
+
+  test:
+    image: python:3.7
+    commands:
+      - python3 -m pip install virtualenv
+      - make test
+    environment:
+      FLIT_ROOT_INSTALL: "1"
