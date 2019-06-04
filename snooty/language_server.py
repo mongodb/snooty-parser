@@ -14,7 +14,7 @@ from .types import FileId
 from . import types
 from .parser import Project, SerializableType
 
-_F = TypeVar('_F', bound=Callable[..., Any])
+_F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
 PARENT_PROCESS_WATCH_INTERVAL_SECONDS = 60
 logger = logging.getLogger(__name__)
@@ -31,13 +31,15 @@ class debounce:
         def debounced(*args: Any, **kwargs: Any) -> Any:
             def action() -> None:
                 fn(*args, **kwargs)
+
             try:
-                getattr(debounced, 'debounce_timer').cancel()
+                getattr(debounced, "debounce_timer").cancel()
             except AttributeError:
                 pass
             timer = threading.Timer(wait, action)
-            setattr(debounced, 'debounce_timer', timer)
+            setattr(debounced, "debounce_timer", timer)
             timer.start()
+
         return cast(_F, debounced)
 
 
@@ -141,7 +143,7 @@ def pid_exists(pid: int) -> bool:
 
 
 class Backend:
-    def __init__(self, server: 'LanguageServer') -> None:
+    def __init__(self, server: "LanguageServer") -> None:
         self.server = server
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
@@ -164,39 +166,43 @@ class WorkspaceEntry:
     diagnostics: List[types.Diagnostic]
 
     def create_lsp_diagnostics(self) -> List[object]:
-        return [{
-            'range': {
-                'start': {
-                    'line': diagnostic.start[0],
-                    'character': diagnostic.start[1]
+        return [
+            {
+                "range": {
+                    "start": {
+                        "line": diagnostic.start[0],
+                        "character": diagnostic.start[1],
+                    },
+                    "end": {"line": diagnostic.end[0], "character": diagnostic.end[1]},
                 },
-                'end': {
-                    'line': diagnostic.end[0],
-                    'character': diagnostic.end[1]
-                }
-            },
-            'severity': diagnostic.severity,
-            'message': diagnostic.message
-        } for diagnostic in self.diagnostics]
+                "severity": diagnostic.severity,
+                "message": diagnostic.message,
+            }
+            for diagnostic in self.diagnostics
+        ]
 
 
 class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def __init__(self, rx: BinaryIO, tx: BinaryIO) -> None:
         self.project: Optional[Project] = None
-        self.root_uri = ''
+        self.root_uri = ""
         self.workspace: Dict[str, WorkspaceEntry] = {}
         self.path_to_uri: Dict[PurePath, Uri] = {}
         self.diagnostics: Dict[PurePath, List[types.Diagnostic]] = {}
 
         self._jsonrpc_stream_reader = pyls_jsonrpc.streams.JsonRpcStreamReader(rx)
         self._jsonrpc_stream_writer = pyls_jsonrpc.streams.JsonRpcStreamWriter(tx)
-        self._endpoint = pyls_jsonrpc.endpoint.Endpoint(self, self._jsonrpc_stream_writer.write)
+        self._endpoint = pyls_jsonrpc.endpoint.Endpoint(
+            self, self._jsonrpc_stream_writer.write
+        )
         self._shutdown = False
 
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
 
-    def set_diagnostics(self, page_path: PurePath, diagnostics: List[types.Diagnostic]) -> None:
+    def set_diagnostics(
+        self, page_path: PurePath, diagnostics: List[types.Diagnostic]
+    ) -> None:
         if page_path not in self.path_to_uri:
             # Not open; don't report diagnostics
             return
@@ -205,43 +211,49 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         uri = self.path_to_uri[page_path]
         workspace_item = self.workspace[uri]
         workspace_item.diagnostics = diagnostics
-        self._endpoint.notify('textDocument/publishDiagnostics', params={
-            'uri': uri,
-            'diagnostics': workspace_item.create_lsp_diagnostics()
-        })
+        self._endpoint.notify(
+            "textDocument/publishDiagnostics",
+            params={"uri": uri, "diagnostics": workspace_item.create_lsp_diagnostics()},
+        )
 
     def uri_to_path(self, uri: Uri) -> Path:
-        path = Path(uri.replace('file://', '', 1).replace(self.root_uri, ''))
+        path = Path(uri.replace("file://", "", 1).replace(self.root_uri, ""))
         self.path_to_uri[path] = uri
         return path
 
-    def m_initialize(self, processId: Optional[int] = None, rootUri: Optional[Uri] = None,
-                     **kwargs: object) -> SerializableType:
+    def m_initialize(
+        self,
+        processId: Optional[int] = None,
+        rootUri: Optional[Uri] = None,
+        **kwargs: object
+    ) -> SerializableType:
         if rootUri:
-            root_path = Path(rootUri.replace('file://', '', 1))
+            root_path = Path(rootUri.replace("file://", "", 1))
             self.project = Project(root_path, Backend(self))
             self.project.build()
             self.rootUri = rootUri
 
         if processId is not None:
+
             def watch_parent_process(pid: int) -> None:
                 # exist when the given pid is not alive
                 if not pid_exists(pid):
-                    logger.info('parent process %s is not alive', pid)
+                    logger.info("parent process %s is not alive", pid)
                     self.m_exit()
-                logger.debug('parent process %s is still alive', pid)
+                logger.debug("parent process %s is still alive", pid)
                 threading.Timer(
                     PARENT_PROCESS_WATCH_INTERVAL_SECONDS,
                     watch_parent_process,
-                    args=[pid]).start()
+                    args=[pid],
+                ).start()
 
-            watching_thread = threading.Thread(target=watch_parent_process, args=(processId,))
+            watching_thread = threading.Thread(
+                target=watch_parent_process, args=(processId,)
+            )
             watching_thread.daemon = True
             watching_thread.start()
 
-        return {'capabilities': {
-            'textDocumentSync': 1,
-        }}
+        return {"capabilities": {"textDocumentSync": 1}}
 
     def m_initialized(self, **kwargs: object) -> None:
         # Ignore this message to avoid logging a pointless warning
@@ -259,16 +271,18 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.project.update(page_path, item.text)
 
     @debounce(0.2)
-    def m_text_document__did_change(self,
-                                    textDocument: SerializableType,
-                                    contentChanges: SerializableType) -> None:
+    def m_text_document__did_change(
+        self, textDocument: SerializableType, contentChanges: SerializableType
+    ) -> None:
         if not self.project:
             return
 
         identifier = check_type(VersionedTextDocumentIdentifier, textDocument)
         page_path = self.uri_to_path(identifier.uri)
         assert isinstance(contentChanges, list)
-        change = next(check_type(TextDocumentContentChangeEvent, x) for x in contentChanges)
+        change = next(
+            check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
+        )
         self.project.update(page_path, change.text)
 
     def m_text_document__did_close(self, textDocument: SerializableType) -> None:
@@ -294,5 +308,5 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 def start() -> None:
     stdin, stdout = sys.stdin.buffer, sys.stdout.buffer
     server = LanguageServer(stdin, stdout)
-    logger.info('Started')
+    logger.info("Started")
     server.start()

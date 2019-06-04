@@ -21,27 +21,28 @@ class _Inheritable(Protocol):
 @dataclass
 class LinkRoleType:
     """Configuration for a role which links to a specific URL template."""
+
     link: str
 
 
-_T = TypeVar('_T', bound=_Inheritable)
+_T = TypeVar("_T", bound=_Inheritable)
 SPEC_VERSION = 0
 StringOrStringlist = Union[List[str], str, None]
-PrimitiveType = Enum('PrimitiveType', (
-    'integer',
-    'nonnegative_integer',
-    'path',
-    'uri',
-    'string',
-    'length',
-    'boolean',
-    'flag',
-    'linenos'
-))
-PrimitiveRoleType = Enum('PrimitiveRoleType', (
-    'text',
-    'explicit_title'
-))
+PrimitiveType = Enum(
+    "PrimitiveType",
+    (
+        "integer",
+        "nonnegative_integer",
+        "path",
+        "uri",
+        "string",
+        "length",
+        "boolean",
+        "flag",
+        "linenos",
+    ),
+)
+PrimitiveRoleType = Enum("PrimitiveRoleType", ("text", "explicit_title"))
 
 #: Spec definition of a role: this can be either a PrimitiveRoleType, or
 #: an object requiring additional configuration.
@@ -56,18 +57,15 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.string: str,
     PrimitiveType.length: docutils.parsers.rst.directives.length_or_percentage_or_unitless,
     PrimitiveType.boolean: lambda argument: docutils.parsers.rst.directives.choice(
-        argument, ('true', 'false', None)),
+        argument, ("true", "false", None)
+    ),
     PrimitiveType.flag: docutils.parsers.rst.directives.flag,
-    PrimitiveType.linenos: str
+    PrimitiveType.linenos: str,
 }
 
 #: Option types can be a primitive type (PrimitiveType), an enum
 #: defined in the spec, or a union of those.
-ArgumentType = Union[
-    List[Union[PrimitiveType, str]],
-    PrimitiveType,
-    str,
-    None]
+ArgumentType = Union[List[Union[PrimitiveType, str]], PrimitiveType, str, None]
 
 
 class MissingDict(Dict[str, ArgumentType]):
@@ -78,6 +76,7 @@ class MissingDict(Dict[str, ArgumentType]):
 @dataclass
 class Meta:
     """Meta information about the file as a whole."""
+
     version: int
 
 
@@ -85,6 +84,7 @@ class Meta:
 @dataclass
 class Directive:
     """Declaration of a reStructuredText directive (block content)."""
+
     inherit: Optional[str]
     help: Optional[str]
     example: Optional[str]
@@ -99,6 +99,7 @@ class Directive:
 @dataclass
 class Role:
     """Declaration of a reStructuredText role (inline content)."""
+
     inherit: Optional[str]
     help: Optional[str]
     example: Optional[str]
@@ -111,6 +112,7 @@ class Role:
 class RstObject:
     """Declaration of a reStructuredText object, defining both a Directive
        as well as a Role that links to that directive."""
+
     inherit: Optional[str]
     help: Optional[str]
     deprecated: bool = field(default=False)
@@ -120,11 +122,12 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
-            content_type='block',
-            argument_type='string',
+            content_type="block",
+            argument_type="string",
             required_context=None,
             deprecated=self.deprecated,
-            options={})
+            options={},
+        )
 
     def create_role(self) -> Role:
         return Role(
@@ -132,13 +135,15 @@ class RstObject:
             help=self.help,
             example=None,
             type=PrimitiveRoleType.explicit_title,
-            deprecated=self.deprecated)
+            deprecated=self.deprecated,
+        )
 
 
 @checked
 @dataclass
 class Spec:
     """The spec root."""
+
     meta: Meta
     enum: Dict[str, List[str]] = field(default_factory=dict)
     directive: Dict[str, Directive] = field(default_factory=dict)
@@ -146,11 +151,11 @@ class Spec:
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
 
     @classmethod
-    def loads(cls, data: str) -> 'Spec':
+    def loads(cls, data: str) -> "Spec":
         """Load a spec from a string."""
         root = check_type(cls, toml.loads(data))
         if root.meta.version != SPEC_VERSION:
-            raise ValueError(f'Unknown spec version: {root.meta.version}')
+            raise ValueError(f"Unknown spec version: {root.meta.version}")
 
         root._resolve_inheritance()
 
@@ -173,15 +178,16 @@ class Spec:
 
                 # Assertion to quiet mypy's failing type flow analysis
                 assert isinstance(option_spec, list)
-                options = ', '.join(str(x) for x in option_spec)
-                raise ValueError(f'Expected one of {options}; got {argument}')
+                options = ", ".join(str(x) for x in option_spec)
+                raise ValueError(f"Expected one of {options}; got {argument}")
+
             return validator
         elif isinstance(option_spec, PrimitiveType):
             return VALIDATORS[option_spec]
         elif isinstance(option_spec, str) and option_spec in self.enum:
             return lambda argument: docutils.parsers.rst.directives.choice(
-                argument,
-                self.enum[cast(str, option_spec)])
+                argument, self.enum[cast(str, option_spec)]
+            )
 
         raise ValueError(f'Unknown directive argument type "{option_spec}"')
 
@@ -200,7 +206,7 @@ class Spec:
         def resolve_value(key: str, inheritable: _T) -> _T:
             """Resolve a single inheritable dataclass."""
             if key in pending:
-                raise ValueError(f'Inheritance cycle detected while resolving {key}')
+                raise ValueError(f"Inheritance cycle detected while resolving {key}")
 
             if key in resolved:
                 return inheritable
@@ -209,10 +215,10 @@ class Spec:
                 pending.add(key)
                 try:
                     base = resolve_value(
-                        inheritable.inherit,
-                        inheritable_index[inheritable.inherit])
+                        inheritable.inherit, inheritable_index[inheritable.inherit]
+                    )
                 except KeyError:
-                    msg = f'Cannot inherit from non-existent directive {inheritable.inherit}'
+                    msg = f"Cannot inherit from non-existent directive {inheritable.inherit}"
                     raise ValueError(msg)
 
                 inheritable = dataclasses.replace(

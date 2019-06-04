@@ -11,6 +11,7 @@ from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
 @dataclass
 class Action(HeadingMixin):
     """An action that a user must take."""
+
     code: Optional[str]
     copyable: Optional[bool]
     content: Optional[str]
@@ -25,11 +26,13 @@ class Action(HeadingMixin):
 
         if heading_nodes:
             nodes_to_append_children = []
-            all_nodes.append({
-                'type': 'section',
-                'position': {'start': {'line': self.line}},
-                'children': nodes_to_append_children
-            })
+            all_nodes.append(
+                {
+                    "type": "section",
+                    "position": {"start": {"line": self.line}},
+                    "children": nodes_to_append_children,
+                }
+            )
 
             nodes_to_append_children.extend(heading_nodes)
 
@@ -38,13 +41,15 @@ class Action(HeadingMixin):
             nodes_to_append_children.extend(result)
 
         if self.code:
-            nodes_to_append_children.append({
-                'type': 'code',
-                'lang': self.language,
-                'copyable': True if self.copyable is None else self.copyable,
-                'position': {'start': {'line': self.line}},
-                'value': self.code
-            })
+            nodes_to_append_children.append(
+                {
+                    "type": "code",
+                    "lang": self.language,
+                    "copyable": True if self.copyable is None else self.copyable,
+                    "position": {"start": {"line": self.line}},
+                    "value": self.code,
+                }
+            )
 
         if self.content:
             result = parse_rst(self.content, self.line, False)
@@ -73,9 +78,9 @@ class Step(Inheritable, HeadingMixin):
     def render(self, page: Page, parse_rst: EmbeddedRstParser) -> SerializableType:
         children: List[SerializableType] = []
         root = {
-            'type': 'section',
-            'position': {'start': {'line': self.line}},
-            'children': children
+            "type": "section",
+            "position": {"start": {"line": self.line}},
+            "children": children,
         }
 
         children.extend(self.render_heading(parse_rst))
@@ -101,31 +106,35 @@ class Step(Inheritable, HeadingMixin):
         return root
 
 
-def step_to_page(page: Page, step: Step, rst_parser: EmbeddedRstParser) -> SerializableType:
+def step_to_page(
+    page: Page, step: Step, rst_parser: EmbeddedRstParser
+) -> SerializableType:
     rendered = step.render(page, rst_parser)
     return {
-        'type': 'directive',
-        'name': 'step',
-        'position': {'start': {'line': step.line}},
-        'children': [rendered]
+        "type": "directive",
+        "name": "step",
+        "position": {"start": {"line": step.line}},
+        "children": [rendered],
     }
 
 
 class GizaStepsCategory(GizaCategory[Step]):
-    def parse(self,
-              path: Path,
-              text: Optional[str] = None) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
+    def parse(
+        self, path: Path, text: Optional[str] = None
+    ) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
         return parse(Step, path, self.project_config, text)
 
-    def to_pages(self,
-                 page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
-                 steps: Sequence[Step]) -> List[Page]:
+    def to_pages(
+        self,
+        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        steps: Sequence[Step],
+    ) -> List[Page]:
         page, rst_parser = page_factory()
-        page.category = 'steps'
+        page.category = "steps"
         page.ast = {
-            'type': 'directive',
-            'name': 'steps',
-            'position': {'start': {'line': 0}},
-            'children': [step_to_page(page, step, rst_parser) for step in steps]
+            "type": "directive",
+            "name": "steps",
+            "position": {"start": {"line": 0}},
+            "children": [step_to_page(page, step, rst_parser) for step in steps],
         }
         return [page]

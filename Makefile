@@ -1,4 +1,4 @@
-.PHONY: help lint test clean flit-publish package
+.PHONY: help lint format test clean flit-publish package
 
 SYSTEM_PYTHON=$(shell which python3)
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
@@ -8,7 +8,7 @@ export SOURCE_DATE_EPOCH = $(shell date +%s)
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_.0-9-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-.venv/.EXISTS:
+.venv/.EXISTS: pyproject.toml
 	-rm -r .venv snooty.py
 	python3 -m virtualenv .venv
 	. .venv/bin/activate && \
@@ -19,7 +19,11 @@ help: ## Show this help message
 
 lint: .venv/.EXISTS ## Run all linting
 	. .venv/bin/activate && python3 -m mypy --strict snooty
-	. .venv/bin/activate && python3 -m flake8 --max-line-length=100 snooty
+	. .venv/bin/activate && python3 -m pyflakes snooty
+	. .venv/bin/activate && python3 -m black snooty --check
+
+format: .venv/.EXISTS ## Format source code with black
+	. .venv/bin/activate && python3 -m black snooty
 
 test: lint ## Run unit tests
 	. .venv/bin/activate && python3 -m pytest --cov=snooty

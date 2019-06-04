@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from .rstparser import BaseDocutilsDirective
 from typing import Callable, Dict, List, Tuple, Iterable, Optional
 
-LEADING_WHITESPACE = re.compile(r'^\n?(\x20+)')
-LEGACY_GUIDES_TEMPLATE = fett.Template('''
+LEADING_WHITESPACE = re.compile(r"^\n?(\x20+)")
+LEGACY_GUIDES_TEMPLATE = fett.Template(
+    """
 :guide:
 
 ====================================================================================================
@@ -68,9 +69,11 @@ LEGACY_GUIDES_TEMPLATE = fett.Template('''
 
    {{ seealso }}
 {{ end }}
-''')
+"""
+)
 
-LEGACY_GUIDES_INDEX_TEMPLATE = fett.Template('''
+LEGACY_GUIDES_INDEX_TEMPLATE = fett.Template(
+    """
 .. guide-index::
 
    {{ for card in cards }}
@@ -87,7 +90,8 @@ LEGACY_GUIDES_INDEX_TEMPLATE = fett.Template('''
    .. card:: {{ card.guides car }}
    {{ end }}
    {{ end }}
-''')
+"""
+)
 
 
 class ParseError(Exception):
@@ -101,7 +105,7 @@ def _parse_indentation(lines: Iterable[str]) -> Iterable[Tuple[bool, int, str]]:
     indentation = 0
 
     for lineno, line in enumerate(lines):
-        line = line.replace('\t', '    ')
+        line = line.replace("\t", "    ")
         line_indentation_match = LEADING_WHITESPACE.match(line)
 
         if line_indentation_match is None:
@@ -113,7 +117,7 @@ def _parse_indentation(lines: Iterable[str]) -> Iterable[Tuple[bool, int, str]]:
                 indentation = line_indentation
 
             if line_indentation < indentation:
-                raise ParseError('Improper dedent', lineno)
+                raise ParseError("Improper dedent", lineno)
             line_indentation = min(indentation, line_indentation)
             yield (True, lineno, line[line_indentation:])
 
@@ -123,7 +127,7 @@ def _parse_keys(lines: Iterable[str]) -> Dict[str, str]:
     result: Dict[str, str] = {}
     in_key = True
 
-    pending_key = ''
+    pending_key = ""
     pending_value: List[str] = []
 
     # This is a 2-state machine
@@ -131,24 +135,24 @@ def _parse_keys(lines: Iterable[str]) -> Dict[str, str]:
         if not in_key:
             if not is_indented:
                 if not line:
-                    pending_value.append('')
+                    pending_value.append("")
                     continue
 
                 # Switch to in_key
-                result[pending_key] = '\n'.join(pending_value).strip()
+                result[pending_key] = "\n".join(pending_value).strip()
                 pending_value = []
-                pending_key = ''
+                pending_key = ""
                 in_key = True
             else:
                 pending_value.append(line)
 
         if in_key:
             if is_indented:
-                raise ParseError('Unexpected indentation', lineno)
+                raise ParseError("Unexpected indentation", lineno)
 
-            parts = line.split(':', 1)
+            parts = line.split(":", 1)
             if line.strip() and len(parts) != 2:
-                raise ParseError('Expected key', lineno)
+                raise ParseError("Expected key", lineno)
 
             pending_key = parts[0].strip()
             value = parts[1].strip()
@@ -158,7 +162,7 @@ def _parse_keys(lines: Iterable[str]) -> Dict[str, str]:
             in_key = False
 
     if pending_value:
-        result[pending_key] = '\n'.join(pending_value).strip()
+        result[pending_key] = "\n".join(pending_value).strip()
 
     return result
 
@@ -170,31 +174,31 @@ class LegacyGuideDirective(docutils.parsers.rst.Directive):
     final_argument_whitespace = True
 
     guide_keys: Dict[str, Callable[[str], object]] = {
-        'title': str,
-        'languages': lambda l: l.split(),
-        'author': str,
-        'type': str,
-        'level': str,
-        'product_version': str,
-        'result_description': str,
-        'time': int,
-        'prerequisites': str,
-        'check_your_environment': str,
-        'considerations': str,
-        'procedure': str,
-        'verify': str,
-        'summary': str,
-        'whats_next': str,
-        'seealso': str
+        "title": str,
+        "languages": lambda l: l.split(),
+        "author": str,
+        "type": str,
+        "level": str,
+        "product_version": str,
+        "result_description": str,
+        "time": int,
+        "prerequisites": str,
+        "check_your_environment": str,
+        "considerations": str,
+        "procedure": str,
+        "verify": str,
+        "summary": str,
+        "whats_next": str,
+        "seealso": str,
     }
 
     optional_keys = {
-        'check_your_environment',
-        'considerations',
-        'verify',
-        'languages',
-        'whats_next',
-        'seealso'
+        "check_your_environment",
+        "considerations",
+        "verify",
+        "languages",
+        "whats_next",
+        "seealso",
     }
 
     def run(self) -> List[docutils.nodes.Node]:
@@ -205,35 +209,39 @@ class LegacyGuideDirective(docutils.parsers.rst.Directive):
         except ParseError as err:
             return [
                 self.state.document.reporter.error(
-                    str(err),
-                    line=(self.lineno + err.lineno + 1))]
+                    str(err), line=(self.lineno + err.lineno + 1)
+                )
+            ]
 
         # Validate keys
         result: Dict[str, object] = {}
         for key, validation_function in self.guide_keys.items():
             if key not in options:
                 if key in self.optional_keys:
-                    options[key] = ''
+                    options[key] = ""
                 else:
                     messages.append(
                         self.state.document.reporter.warning(
-                            f'Missing required guide option: {key}',
-                            line=self.lineno))
+                            f"Missing required guide option: {key}", line=self.lineno
+                        )
+                    )
                     continue
 
             try:
                 result[key] = validation_function(options[key])
             except ValueError as err:
-                message = f'Invalid guide option value: {key}: {err}'
+                message = f"Invalid guide option value: {key}: {err}"
                 return [self.state.document.reporter.error(message, line=self.lineno)]
 
         try:
             rendered = LEGACY_GUIDES_TEMPLATE.render(result)
         except Exception as error:
-            raise self.severe(f'Failed to render template: {error}')
+            raise self.severe(f"Failed to render template: {error}")
 
-        rendered_lines = docutils.statemachine.string2lines(rendered, 4, convert_whitespace=True)
-        self.state_machine.insert_input(rendered_lines, '')
+        rendered_lines = docutils.statemachine.string2lines(
+            rendered, 4, convert_whitespace=True
+        )
+        self.state_machine.insert_input(rendered_lines, "")
 
         return messages
 
@@ -256,7 +264,7 @@ class LegacyGuideIndexDirective(BaseDocutilsDirective):
     final_argument_whitespace = True
 
     def run(self) -> List[docutils.nodes.Node]:
-        if not self.content or any('.. ' in line for line in self.content):
+        if not self.content or any(".. " in line for line in self.content):
             return super().run()
 
         cards: List[Card] = []
@@ -266,7 +274,7 @@ class LegacyGuideIndexDirective(BaseDocutilsDirective):
         def handle_single_guide() -> None:
             if pending_card[0] is None:
                 assert previous_line is not None
-                cards.append(Card('', False, [previous_line]))
+                cards.append(Card("", False, [previous_line]))
             else:
                 cards.append(Card(pending_card[0].title, True, pending_card[0].guides))
                 pending_card[0] = None
@@ -292,15 +300,15 @@ class LegacyGuideIndexDirective(BaseDocutilsDirective):
         if previous_line is not None:
             handle_single_guide()
 
-        data = {
-            'cards': cards
-        }
+        data = {"cards": cards}
 
         try:
             rendered = LEGACY_GUIDES_INDEX_TEMPLATE.render(data)
         except Exception as error:
-            raise self.severe(f'Failed to render template: {error}')
+            raise self.severe(f"Failed to render template: {error}")
 
-        rendered_lines = docutils.statemachine.string2lines(rendered, 4, convert_whitespace=True)
-        self.state_machine.insert_input(rendered_lines, '')
+        rendered_lines = docutils.statemachine.string2lines(
+            rendered, 4, convert_whitespace=True
+        )
+        self.state_machine.insert_input(rendered_lines, "")
         return []

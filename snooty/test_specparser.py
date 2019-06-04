@@ -3,7 +3,8 @@ from . import specparser
 
 
 def test_load() -> None:
-    spec = specparser.Spec.loads(f'''
+    spec = specparser.Spec.loads(
+        f"""
     [meta]
     version = 0
 
@@ -31,38 +32,43 @@ def test_load() -> None:
 
     [rstobject.child]
     inherit = "_parent"
-    ''')
+    """
+    )
 
     assert spec.meta.version == 0
-    assert spec.enum['user_level'] == ['beginner', 'intermediate', 'advanced']
-    assert spec.directive['child'] == specparser.Directive(
-        inherit='_parent',
+    assert spec.enum["user_level"] == ["beginner", "intermediate", "advanced"]
+    assert spec.directive["child"] == specparser.Directive(
+        inherit="_parent",
         example=None,
         help=None,
-        content_type='block',
-        argument_type='user_level',
+        content_type="block",
+        argument_type="user_level",
         required_context=None,
         deprecated=True,
-        options={'foo': [specparser.PrimitiveType.path, specparser.PrimitiveType.uri]})
+        options={"foo": [specparser.PrimitiveType.path, specparser.PrimitiveType.uri]},
+    )
 
     # Test these in the opposite order of the definition to ensure that each "type" of definition
     # has a separate inheritance namespace
-    assert spec.rstobject['child'].help == 'test-rstobject'
-    assert spec.role['child'].help == 'test-role'
-    assert spec.role['child'].type == specparser.PrimitiveRoleType.text
+    assert spec.rstobject["child"].help == "test-rstobject"
+    assert spec.role["child"].help == "test-role"
+    assert spec.role["child"].type == specparser.PrimitiveRoleType.text
 
-    validator = spec.get_validator([specparser.PrimitiveType.nonnegative_integer, 'user_level'])
-    assert validator('10') == 10
-    assert validator('intermediate') == 'intermediate'
+    validator = spec.get_validator(
+        [specparser.PrimitiveType.nonnegative_integer, "user_level"]
+    )
+    assert validator("10") == 10
+    assert validator("intermediate") == "intermediate"
     with pytest.raises(ValueError):
-        validator('-10')
+        validator("-10")
     with pytest.raises(ValueError):
-        validator('foo')
+        validator("foo")
 
 
 def test_inheritance_cycle() -> None:
     with pytest.raises(ValueError):
-        specparser.Spec.loads(f'''
+        specparser.Spec.loads(
+            f"""
         [meta]
         version = 0
 
@@ -71,12 +77,14 @@ def test_inheritance_cycle() -> None:
 
         [directive.child]
         inherit = "parent"
-        ''')
+        """
+        )
 
 
 def test_missing_parent() -> None:
     with pytest.raises(ValueError):
-        specparser.Spec.loads(f'''
+        specparser.Spec.loads(
+            f"""
         [meta]
         version = 0
 
@@ -85,26 +93,33 @@ def test_missing_parent() -> None:
 
         [directive.child]
         inherit = "parent"
-        ''')
+        """
+        )
 
 
 def test_bad_type() -> None:
-    spec = specparser.Spec.loads(f'''
+    spec = specparser.Spec.loads(
+        f"""
     [meta]
     version = 0
-    ''')
+    """
+    )
 
     with pytest.raises(ValueError):
-        spec.get_validator('gjriojwe')
+        spec.get_validator("gjriojwe")
 
 
 def test_bad_version() -> None:
     with pytest.raises(ValueError):
-        specparser.Spec.loads(f'''
+        specparser.Spec.loads(
+            f"""
         [meta]
-        version = -1''')
+        version = -1"""
+        )
 
     with pytest.raises(ValueError):
-        specparser.Spec.loads(f'''
+        specparser.Spec.loads(
+            f"""
         [meta]
-        version = 1''')
+        version = 1"""
+        )

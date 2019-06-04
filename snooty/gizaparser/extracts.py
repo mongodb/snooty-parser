@@ -25,44 +25,53 @@ class Extract(Inheritable, HeadingMixin):
         return children
 
 
-def extract_to_page(page: Page,
-                    extract: Extract,
-                    rst_parser: EmbeddedRstParser) -> SerializableType:
+def extract_to_page(
+    page: Page, extract: Extract, rst_parser: EmbeddedRstParser
+) -> SerializableType:
     rendered = extract.render(page, rst_parser)
     return {
-        'type': 'directive',
-        'name': 'extract',
-        'position': {'start': {'line': extract.line}},
-        'children': rendered
+        "type": "directive",
+        "name": "extract",
+        "position": {"start": {"line": extract.line}},
+        "children": rendered,
     }
 
 
 class GizaExtractsCategory(GizaCategory[Extract]):
-    def parse(self,
-              path: Path,
-              text: Optional[str] = None) -> Tuple[Sequence[Extract], str, List[Diagnostic]]:
+    def parse(
+        self, path: Path, text: Optional[str] = None
+    ) -> Tuple[Sequence[Extract], str, List[Diagnostic]]:
         extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
 
         def report_missing_ref(extract: Extract) -> bool:
             diagnostics.append(
-                Diagnostic.error('Missing ref; all extracts must define a ref', extract.line))
+                Diagnostic.error(
+                    "Missing ref; all extracts must define a ref", extract.line
+                )
+            )
             return False
 
         # All extracts must have an explicitly-defined ref ID
-        extracts = [extract for extract in extracts if extract.ref or report_missing_ref(extract)]
+        extracts = [
+            extract
+            for extract in extracts
+            if extract.ref or report_missing_ref(extract)
+        ]
         return extracts, text, diagnostics
 
-    def to_pages(self,
-                 page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
-                 extracts: Sequence[Extract]) -> List[Page]:
+    def to_pages(
+        self,
+        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        extracts: Sequence[Extract],
+    ) -> List[Page]:
         pages: List[Page] = []
         for extract in extracts:
             assert extract.ref is not None
-            if extract.ref.startswith('_'):
+            if extract.ref.startswith("_"):
                 continue
 
             page, rst_parser = page_factory()
-            page.category = 'extracts'
+            page.category = "extracts"
             page.output_filename = extract.ref
             page.ast = extract_to_page(page, extract, rst_parser)
             pages.append(page)

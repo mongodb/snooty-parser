@@ -8,7 +8,7 @@ from yaml.composer import Composer
 from ..flutter import check_type, LoadError, mapping_dict
 from ..types import Diagnostic, SerializableType, ProjectConfig
 
-_T = TypeVar('_T')
+_T = TypeVar("_T")
 logger = logging.getLogger(__name__)
 
 
@@ -34,8 +34,8 @@ def load_yaml(text: str) -> List[SerializableType]:
 
     loader = MyLoader(text)
     loader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        dict_constructor)
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, dict_constructor
+    )
     result: List[SerializableType] = []
     while True:
         data = loader.get_data()
@@ -47,10 +47,9 @@ def load_yaml(text: str) -> List[SerializableType]:
     return result
 
 
-def parse(ty: Type[_T],
-          path: Path,
-          project_config: ProjectConfig,
-          text: Optional[str] = None) -> Tuple[List[_T], str, List[Diagnostic]]:
+def parse(
+    ty: Type[_T], path: Path, project_config: ProjectConfig, text: Optional[str] = None
+) -> Tuple[List[_T], str, List[Diagnostic]]:
     diagnostics: List[Diagnostic] = []
     if text is None:
         text, diagnostics = project_config.read(path)
