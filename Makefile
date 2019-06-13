@@ -34,7 +34,7 @@ dist/snooty/.EXISTS: .venv/.EXISTS pyproject.toml snooty/*.py snooty/gizaparser/
 	echo 'from snooty import main; main.main()' > snooty.py
 	PYTHONHOME=`pwd`/.venv python3 -m nuitka \
 		--standalone --python-flag=no_site --remove-output \
-		--lto snooty.py
+		--include-package dns --lto snooty.py
 	rm snooty.py
 	mv snooty.dist dist/snooty
 	install -m644 snooty/rstspec.toml LICENSE* dist/snooty/
