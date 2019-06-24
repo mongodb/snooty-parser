@@ -347,6 +347,31 @@ class JSONVisitor:
                 msg = f'Invalid "literalinclude": {err}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
             return
+        elif name == "include":
+            if argument_text is None:
+                self.diagnostics.append(
+                    Diagnostic.error(
+                        f'"{name}" expected a path argument', util.get_line(node)
+                    )
+                )
+                return
+
+            fileid, path = util.reroot_path(
+                Path(argument_text), self.docpath, self.source_path
+            )
+
+            # Validate if file exists
+            if not path.is_file():
+                # Check if file is snooty-generated
+                if (
+                    fileid.match("steps/*.rst")
+                    or fileid.match("extracts/*.rst")
+                    or fileid.match("release/*.rst")
+                ):
+                    pass
+                else:
+                    msg = f'"{name}" could not open "{argument_text}: No such file exists"'
+                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
         if options:
             doc["options"] = options
