@@ -178,6 +178,46 @@ def test_literalinclude() -> None:
     assert len(diagnostics) == 1
 
 
+def test_include() -> None:
+    root = Path("test_data")
+    path = Path(root).joinpath(Path("test.rst"))
+    project_config = ProjectConfig(root, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test good include
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+        .. include:: /driver-examples/rstexample.rst
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+
+    # Test generated include
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+        .. include:: /driver-examples/steps/generated-include.rst
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+
+    # Test bad include
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+        .. include:: /driver-examples/fake-include.rst
+        """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+
+
 def test_admonition() -> None:
     root = Path("test_data")
     path = Path(root).joinpath(Path("test.rst"))
