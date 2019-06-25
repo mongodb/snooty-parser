@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional
+from pathlib import Path, PurePath
+from typing import List, Optional, Dict
 from . import nodes
+from .release import GizaReleaseSpecificationCategory
 from ..types import Diagnostic, ProjectConfig
 
 
@@ -83,3 +84,30 @@ def test_inheritance() -> None:
     assert child.replacement == {"foo": "bar", "bar": "baz", "old": "new"}
     assert child.content == "baz"
     assert not diagnostics
+
+
+def test_reify_all_files() -> None:
+    """Test to see if repeated refs in a YAML are detected"""
+    project_config = ProjectConfig(Path("test_data"), "")
+    project_config.constants["version"] = "3.4"
+
+    # Place good path and bad path here
+    paths = ("test_data/release-base.yaml", "test_data/release-base-repeat.yaml")
+
+    for i, path in enumerate(paths):
+        test_path = Path(path)
+
+        # Change GizaCategory based on file type (steps, release, etc.)
+        category = GizaReleaseSpecificationCategory(project_config)
+        all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+
+        extracts, text, diagnostics = category.parse(test_path)
+        category.add(test_path, text, extracts)
+        all_diagnostics[test_path] = diagnostics
+
+        file_id, giza_node = next(category.reify_all_files(all_diagnostics))
+
+        if i % 2:
+            assert len(all_diagnostics[test_path]) > 0
+        else:
+            assert len(all_diagnostics[test_path]) == 0
