@@ -18,6 +18,7 @@ from typing import (
     List,
     Union,
     Match,
+    Set,
 )
 from ..flutter import checked
 from ..types import Diagnostic, Page, EmbeddedRstParser, SerializableType, ProjectConfig
@@ -191,6 +192,7 @@ class GizaCategory(Generic[_I]):
         """Add a file with one or more Giza nodes."""
         file_id = path.name
         self.nodes[file_id] = GizaFile(path, text, elements)
+
         for element in elements:
             inherit = None
             if element.source:
@@ -203,7 +205,7 @@ class GizaCategory(Generic[_I]):
 
             self.dg.add_edge(file_id, inherit.file)
 
-    def reify(self, obj: _I, diagnostics: List[Diagnostic]) -> _I:
+    def reify(self, obj: _I, diagnostics: List[Diagnostic], refs_set: Set[str]) -> _I:
         """Resolve inheritance and substitution in a single Giza node."""
         parent_identifier = obj.source if obj.source is not None else obj.inherit
         parent: Optional[_I] = None
@@ -240,6 +242,14 @@ class GizaCategory(Generic[_I]):
             obj.ref = ""
 
         obj = inherit(self.project_config, obj, parent, diagnostics)
+
+        # Check if ref already exists within the same file
+        if obj.ref in refs_set:
+            msg = f"ref {obj.ref} already exists"
+            diagnostics.append(Diagnostic.error(msg, obj.line))
+        elif obj.ref is not None:
+            refs_set.add(obj.ref)
+
         return obj
 
     def reify_file_id(
@@ -247,21 +257,29 @@ class GizaCategory(Generic[_I]):
     ) -> GizaFile[_I]:
         """Resolve inheritance and substitution in a Giza source file."""
         node = self.nodes[file_id]
-        return dataclasses.replace(
-            node,
-            data=[
-                self.reify(el, diagnostics.setdefault(node.path, []))
-                for el in node.data
-            ],
-        )
+        refs: Set[str] = set()
+        data = [
+            self.reify(el, diagnostics.setdefault(node.path, []), refs)
+            for el in node.data
+        ]
+
+        return dataclasses.replace(node, data=data)
 
     def reify_all_files(
         self, diagnostics: Dict[PurePath, List[Diagnostic]]
     ) -> Iterator[Tuple[str, GizaFile[_I]]]:
         """Resolve inheritance and substitution in all source files within this category."""
+
+        refs_dict: Dict[str, Set[str]] = {}
+
         for file_id, node in self.nodes.items():
+            if file_id not in refs_dict:
+                refs_dict[file_id] = set()
+
             data = [
-                self.reify(el, diagnostics.setdefault(node.path, []))
+                self.reify(
+                    el, diagnostics.setdefault(node.path, []), refs_dict[file_id]
+                )
                 for el in node.data
             ]
             yield file_id, dataclasses.replace(node, data=data)
