@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.8] - 2019-06-27
+
+### Added
+
+- Add support for the following roles:
+
+  - `api`
+  - `aws`
+  - `gettingstarted`
+  - `master`
+  - `docsgithub`
+  - `guides`
+  - `mms-docs`
+  - `mms-home`
+  - `mongo-spark`
+  - `source`
+  - `opsmgr`
+  - `charts-v0.10`
+  - `charts-v0.9`
+
+### Fixed
+
+- The full `dns` package is included in binary builds, letting them connect to the database.
+
+### Changed
+
+- Avoid unnecessarily reprocessing figures and literal includes.
+- Automatically rebuild files if their dependent assets change.
+- Heading nodes now have an attached ID.
+
 ## [v0.1.7] - 2019-05-21
 
 ### Added
