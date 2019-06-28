@@ -124,13 +124,23 @@ class StaticAsset:
 
     def get_checksum(self) -> str:
         self.__load()
-        assert self._checksum
+        assert self._checksum is not None
         return self._checksum
+
+    def can_upload(self) -> bool:
+        """Return True iff the file exists and it's of a file type which should be uploaded
+           (e.g. an image)."""
+        try:
+            self.__load()
+        except OSError:
+            return False
+
+        return self.upload
 
     @property
     def data(self) -> bytes:
         self.__load()
-        assert self._data
+        assert self._data is not None
         return self._data
 
     @classmethod
@@ -138,8 +148,9 @@ class StaticAsset:
         return cls(fileid, path, upload, None, None)
 
     def __load(self) -> None:
-        self._data = self.path.read_bytes()
-        self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
+        if self._data is None:
+            self._data = self.path.read_bytes()
+            self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
 
 
 @dataclass

@@ -60,7 +60,9 @@ class PendingLiteralInclude(PendingTask):
         try:
             text = self.asset.path.read_text(encoding="utf-8")
         except OSError as err:
-            diagnostics.append(self.error(f"Error opening {self.asset.path}: {err}"))
+            diagnostics.append(
+                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+            )
             return
 
         # Split the file into lines, and find our start-after query
@@ -161,7 +163,9 @@ class PendingFigure(PendingTask):
             options["checksum"] = checksum
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
-            diagnostics.append(self.error(f"Error opening {self.asset.path}: {err}"))
+            diagnostics.append(
+                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+            )
 
 
 class JSONVisitor:

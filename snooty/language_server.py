@@ -10,9 +10,9 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
-from .types import FileId
+from .types import FileId, SerializableType
 from . import types
-from .parser import Project, SerializableType
+from .parser import Project
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str

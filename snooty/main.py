@@ -82,7 +82,7 @@ class MongoBackend(Backend):
 
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         checksums = list(
-            asset.get_checksum() for asset in page.static_assets if asset.upload
+            asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
         fully_qualified_pageid = "/".join(prefix + [page_id.with_suffix("").as_posix()])
@@ -109,7 +109,7 @@ class MongoBackend(Backend):
         missing_assets = page.static_assets.difference(remote_assets)
 
         for static_asset in missing_assets:
-            if not static_asset.upload:
+            if not static_asset.can_upload():
                 continue
 
             self.client["snooty"]["assets"].replace_one(
