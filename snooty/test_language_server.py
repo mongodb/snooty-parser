@@ -68,5 +68,20 @@ def test_workspace_entry() -> None:
 
 
 def test_language_server() -> None:
-    server = language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer)
-    assert server.uri_to_path("file://foo.rst") == Path("foo.rst")
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        assert server.uri_to_path("file://foo.rst") == Path("foo.rst")
+
+
+def test_text_doc_resolve() -> None:
+    """Tests to see if m_text_document__resolve() returns the proper path combined with """
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(None, "file://test_data/test_project")
+
+        test_file = "/images/compass-create-database.png"
+
+        assert server.project is not None
+
+        assert (
+            server.m_text_document__resolve(test_file)
+            == str(server.project.config.source_path) + test_file
+        )

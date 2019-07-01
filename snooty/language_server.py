@@ -225,7 +225,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self,
         processId: Optional[int] = None,
         rootUri: Optional[Uri] = None,
-        **kwargs: object
+        **kwargs: object,
     ) -> SerializableType:
         if rootUri:
             root_path = Path(rootUri.replace("file://", "", 1))
@@ -258,6 +258,16 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def m_initialized(self, **kwargs: object) -> None:
         # Ignore this message to avoid logging a pointless warning
         pass
+
+    def m_text_document__resolve(self, path: str) -> str:
+        """Given an artifact's path relative to the project's source directory, 
+        return a corresponding source file path relative to the project's root."""
+
+        if self.project is None:
+            logger.warn("Project uninitialized")
+            return path
+
+        return str(self.project.config.source_path) + path
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
