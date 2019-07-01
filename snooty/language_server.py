@@ -300,9 +300,15 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
     def m_exit(self, **_kwargs: object) -> None:
         self._endpoint.shutdown()
-        self._jsonrpc_stream_reader.close()
-        self._jsonrpc_stream_writer.close()
-        sys.exit(0)
+        if self.project:
+            self.project.stop_monitoring()
+
+    def __enter__(self) -> "LanguageServer":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.m_shutdown()
+        self.m_exit()
 
 
 def start() -> None:
