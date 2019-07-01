@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `textDocument/resolve` RPC endpoint to return the source file path of an artifact relative to the project's root (DOCSP-5967).
 
+### Fixed
+
+- Don't throw exception if saving an asset to the server fails (DOCSP-5998).
+- The language server can now be gracefully shutdown using a context manager,
+  for use in tests.
+
+### Changed
+
+- Diagnostic messages when failing to open a static asset are more succinct.
+- Warn about YAML files with duplicated refs (DOCSP-5704).
+
 ## [v0.1.8] - 2019-06-27
 
 ### Added
