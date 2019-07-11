@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import threading
+import urllib.parse
 import pyls_jsonrpc.dispatchers
 import pyls_jsonrpc.endpoint
 import pyls_jsonrpc.streams
@@ -185,9 +186,7 @@ class WorkspaceEntry:
 class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def __init__(self, rx: BinaryIO, tx: BinaryIO) -> None:
         self.project: Optional[Project] = None
-        self.root_uri = ""
         self.workspace: Dict[str, WorkspaceEntry] = {}
-        self.path_to_uri: Dict[PurePath, Uri] = {}
         self.diagnostics: Dict[PurePath, List[types.Diagnostic]] = {}
 
         self._jsonrpc_stream_reader = pyls_jsonrpc.streams.JsonRpcStreamReader(rx)
@@ -201,25 +200,36 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
 
     def set_diagnostics(
-        self, page_path: PurePath, diagnostics: List[types.Diagnostic]
+        self, fileid: FileId, diagnostics: List[types.Diagnostic]
     ) -> None:
-        if page_path not in self.path_to_uri:
-            # Not open; don't report diagnostics
-            return
+        self.diagnostics[fileid] = diagnostics
+        uri = self.fileid_to_uri(fileid)
+        workspace_item = self.workspace.get(uri, None)
+        if workspace_item is None:
+            workspace_item = WorkspaceEntry(fileid, uri, [])
 
-        self.diagnostics[page_path] = diagnostics
-        uri = self.path_to_uri[page_path]
-        workspace_item = self.workspace[uri]
         workspace_item.diagnostics = diagnostics
         self._endpoint.notify(
             "textDocument/publishDiagnostics",
             params={"uri": uri, "diagnostics": workspace_item.create_lsp_diagnostics()},
         )
 
-    def uri_to_path(self, uri: Uri) -> Path:
-        path = Path(uri.replace("file://", "", 1).replace(self.root_uri, ""))
-        self.path_to_uri[path] = uri
-        return path
+    def uri_to_fileid(self, uri: Uri) -> FileId:
+        if not self.project:
+            raise TypeError("Cannot map uri to fileid before a project is open")
+
+        parsed = urllib.parse.urlparse(uri)
+        if parsed.scheme != "file":
+            raise ValueError("Only file:// URIs may be resolved", uri)
+
+        path = Path(parsed.netloc).joinpath(Path(parsed.path)).resolve()
+        return self.project.get_fileid(path)
+
+    def fileid_to_uri(self, fileid: FileId) -> str:
+        if not self.project:
+            raise TypeError("Cannot map fileid to uri before a project is open")
+
+        return "file://" + str(self.project.config.source_path.joinpath(fileid))
 
     def m_initialize(
         self,
@@ -231,7 +241,6 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             root_path = Path(rootUri.replace("file://", "", 1))
             self.project = Project(root_path, Backend(self))
             self.project.build()
-            self.rootUri = rootUri
 
         if processId is not None:
 
@@ -260,7 +269,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         pass
 
     def m_text_document__resolve(self, path: str) -> str:
-        """Given an artifact's path relative to the project's source directory, 
+        """Given an artifact's path relative to the project's source directory,
         return a corresponding source file path relative to the project's root."""
 
         if self.project is None:
@@ -274,9 +283,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         item = check_type(TextDocumentItem, textDocument)
-        page_path = self.uri_to_path(item.uri)
-        page_id = self.project.get_fileid(page_path)
-        entry = WorkspaceEntry(page_id, item.uri, [])
+        fileid = self.uri_to_fileid(item.uri)
+        page_path = self.project.get_full_path(fileid)
+        entry = WorkspaceEntry(fileid, item.uri, [])
         self.workspace[item.uri] = entry
         self.project.update(page_path, item.text)
 
@@ -288,7 +297,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(VersionedTextDocumentIdentifier, textDocument)
-        page_path = self.uri_to_path(identifier.uri)
+        page_path = self.project.get_full_path(self.uri_to_fileid(identifier.uri))
         assert isinstance(contentChanges, list)
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
@@ -300,8 +309,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(TextDocumentIdentifier, textDocument)
-        page_path = self.uri_to_path(identifier.uri)
-        del self.path_to_uri[page_path]
+        page_path = self.project.get_full_path(self.uri_to_fileid(identifier.uri))
         del self.workspace[identifier.uri]
         self.project.update(page_path)
 

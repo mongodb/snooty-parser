@@ -6,6 +6,8 @@ from . import language_server
 from .types import Diagnostic, FileId
 from .flutter import checked, check_type
 
+CWD_URL = "file://" + Path().resolve().as_posix()
+
 
 @checked
 @dataclass
@@ -69,13 +71,16 @@ def test_workspace_entry() -> None:
 
 def test_language_server() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
-        assert server.uri_to_path("file://foo.rst") == Path("foo.rst")
+        server.m_initialize(None, CWD_URL + "/test_data/test_project")
+        assert server.uri_to_fileid(
+            CWD_URL + "/test_data/test_project/source/blah/bar.rst"
+        ) == FileId("blah/bar.rst")
 
 
 def test_text_doc_resolve() -> None:
     """Tests to see if m_text_document__resolve() returns the proper path combined with """
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
-        server.m_initialize(None, "file://test_data/test_project")
+        server.m_initialize(None, CWD_URL + "/test_data/test_project")
 
         test_file = "/images/compass-create-database.png"
 

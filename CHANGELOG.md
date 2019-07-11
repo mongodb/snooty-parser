@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Language server URIs now map correctly into local FileIds, and vice versa.
+
 ## [v0.1.9] - 2019-07-08
 
 ### Added

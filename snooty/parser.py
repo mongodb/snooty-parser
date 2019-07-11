@@ -509,6 +509,9 @@ class _Project:
     def get_fileid(self, path: PurePath) -> FileId:
         return FileId(path.relative_to(self.root))
 
+    def get_full_path(self, fileid: FileId) -> Path:
+        return self.root.joinpath(fileid)
+
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
         prefix = get_giza_category(path)
@@ -691,6 +694,11 @@ class Project:
         # We don't need to obtain a lock because this method only operates on
         # _Project.root, which never changes after creation.
         return self._project.get_fileid(path)
+
+    def get_full_path(self, fileid: FileId) -> Path:
+        # We don't need to obtain a lock because this method only operates on
+        # _Project.root, which never changes after creation.
+        return self._project.get_full_path(fileid)
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""
