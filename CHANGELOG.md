@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `code` directive alias for `code-block`.
+
 ### Fixed
 
 - Language server URIs now map correctly into local FileIds, and vice versa.

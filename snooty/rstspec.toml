@@ -178,6 +178,10 @@ options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
 
+[directive.code]
+help = """A block of code to show the user."""
+inherit = "code-block"
+
 [directive.cssclass]
 argument_type = "string"
 

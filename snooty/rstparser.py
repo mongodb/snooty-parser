@@ -417,6 +417,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
 
     # Some directives currently have special handling
     docutils.parsers.rst.directives.register_directive("code-block", CodeDirective)
+    docutils.parsers.rst.directives.register_directive("code", CodeDirective)
     docutils.parsers.rst.directives.register_directive("sourcecode", CodeDirective)
     docutils.parsers.rst.directives.register_directive("guide", LegacyGuideDirective)
     docutils.parsers.rst.directives.register_directive(
