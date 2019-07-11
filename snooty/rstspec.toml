@@ -132,11 +132,18 @@ deprecated = true
 argument_type = "string"
 content_type = "block"
 
+[directive.sidebar]
+help = """A nested document providing related or reference material."""
+argument_type = "string"
+options.subtitle = "string"
+content_type = "block"
+
 [directive.toctree]
 help = """List pages to treat as children of this page."""
 content_type = "block"
 options.titlesonly = "flag"
 options.hidden = "flag"
+options.maxdepth = "nonnegative_integer"
 
 [directive.tabs-pillstrip]
 deprecated = true
