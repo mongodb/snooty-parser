@@ -264,6 +264,10 @@ inherit = "_guides-base"
 content_type = "list"
 options.columns = "nonnegative_integer"
 
+[directive.blockquote]
+help = """A block of content which is quoted from another source."""
+content_type = "block"
+
 [directive.languages]
 help = """A list of languages that this guide supports."""
 example = """.. languages::

@@ -222,6 +222,16 @@ class JSONVisitor:
             self.state[-1]["children"].append(doc)
             raise docutils.nodes.SkipNode()
 
+        # We are uninterested in docutils blockquotes: they're too easy to accidentally
+        # invoke. Treat them as an error.
+        if node_name == "block_quote":
+            self.diagnostics.append(
+                Diagnostic.error(
+                    "Unexpected indentation", util.get_line(node.children[0])
+                )
+            )
+            return
+
         self.state.append(doc)
 
         if node_name == "Text":
@@ -277,6 +287,9 @@ class JSONVisitor:
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         node_name = node.__class__.__name__
         if len(self.state) == 1 or node_name == "definition":
+            return
+
+        if node_name == "block_quote":
             return
 
         popped = self.state.pop()

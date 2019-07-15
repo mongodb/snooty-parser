@@ -4,11 +4,12 @@ from .util import ast_to_testing_string
 from .types import Diagnostic, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
+ROOT_PATH = Path("test_data")
+
 
 def test_tabs() -> None:
-    root = Path("test_data")
-    tabs_path = Path(root).joinpath(Path("test_tabs.rst"))
-    project_config = ProjectConfig(root, "")
+    tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
@@ -41,9 +42,8 @@ def test_tabs() -> None:
 
 
 def test_codeblock() -> None:
-    root = Path("test_data")
-    tabs_path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "")
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple code-block
@@ -104,9 +104,8 @@ def test_codeblock() -> None:
 
 
 def test_literalinclude() -> None:
-    root = Path("test_data")
-    path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "", source="./")
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple code-block
@@ -179,9 +178,8 @@ def test_literalinclude() -> None:
 
 
 def test_include() -> None:
-    root = Path("test_data")
-    path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "", source="./")
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test good include
@@ -189,7 +187,7 @@ def test_include() -> None:
         parser,
         path,
         """
-        .. include:: /driver-examples/rstexample.rst
+.. include:: /driver-examples/rstexample.rst
         """,
     )
     page.finish(diagnostics)
@@ -200,7 +198,7 @@ def test_include() -> None:
         parser,
         path,
         """
-        .. include:: /driver-examples/steps/generated-include.rst
+.. include:: /driver-examples/steps/generated-include.rst
         """,
     )
     page.finish(diagnostics)
@@ -211,7 +209,7 @@ def test_include() -> None:
         parser,
         path,
         """
-        .. include:: /driver-examples/fake-include.rst
+.. include:: /driver-examples/fake-include.rst
         """,
     )
     page.finish(diagnostics)
@@ -219,9 +217,8 @@ def test_include() -> None:
 
 
 def test_admonition() -> None:
-    root = Path("test_data")
-    path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "", source="./")
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -248,9 +245,8 @@ def test_admonition() -> None:
 
 
 def test_rst_replacement() -> None:
-    root = Path("test_data")
-    path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "", source="./")
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -322,9 +318,8 @@ foo |double arrow ->| bar
 
 
 def test_roles() -> None:
-    root = Path("test_data")
-    path = Path(root).joinpath(Path("test.rst"))
-    project_config = ProjectConfig(root, "", source="./")
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test both forms of :manual: (an extlink), :rfc: (explicit title),
@@ -396,3 +391,56 @@ def test_roles() -> None:
             "</root>",
         )
     )
+
+
+def test_accidental_indentation() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. note::
+
+   This is
+
+     a
+
+   test
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert ast_to_testing_string(page.ast) == "".join(
+        (
+            "<root>",
+            '<directive name="note">',
+            "<paragraph><text>This is</text></paragraph>",
+            "<paragraph><text>a</text></paragraph>",
+            "<paragraph><text>test</text></paragraph>",
+            "</directive>",
+            "</root>",
+        )
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 50 25 25
+   :stub-columns: 1
+
+    * - Windows (32- and 64-bit) # ERROR HERE
+      - Windows 7 or later
+      - Windows Server 2008 R2 or later
+
+   * - macOS (64-bit)
+     - 10.10 or later
+     -
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
