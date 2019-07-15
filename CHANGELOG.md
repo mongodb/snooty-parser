@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add support for the following directives (DOCSP-6210):
+
+  - `tabs-top`
+  - `tabs-stitch-auth-provid`
+  - `tabs-deployments`
+  - `tabs-stitch-sdks`
+  - `tabs-stitch-interfaces`
+  - `blockquote`
+
 ## [v0.1.10] - 2019-07-11
 
 ### Added

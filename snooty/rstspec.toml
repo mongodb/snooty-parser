@@ -149,6 +149,9 @@ options.maxdepth = "nonnegative_integer"
 deprecated = true
 argument_type = "string"
 
+[directive.tabs-top]
+deprecated = true
+
 [directive.tabs]
 content_type = "block"
 argument_type = "string"
@@ -167,7 +170,19 @@ inherit = "tabs"
 [directive.tabs-auth]
 inherit = "tabs"
 
+[directive.tabs-stitch-auth-providers]
+inherit = "tabs"
+
+[directive.tabs-deployments]
+inherit = "tabs"
+
 [directive.tabs-cloud-providers]
+inherit = "tabs"
+
+[directive.tabs-stitch-sdks]
+inherit = "tabs"
+
+[directive.tabs-stitch-interfaces]
 inherit = "tabs"
 
 [directive.tab]
