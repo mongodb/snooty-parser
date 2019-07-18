@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `tabs-stitch-sdks`
   - `tabs-stitch-interfaces`
   - `blockquote`
+  - `caution`
+
+- Add support for the `wikipedia` role.
+
 
 ## [v0.1.10] - 2019-07-11
 

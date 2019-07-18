@@ -58,6 +58,9 @@ inherit = "admonition"
 [directive.danger]
 inherit = "admonition"
 
+[directive.caution]
+inherit = "admonition"
+
 [directive.tip]
 inherit = "admonition"
 
@@ -125,6 +128,10 @@ content_type = "block"
 
 [directive.cond]
 inherit = "only"
+
+[directive.role]
+deprecated = true
+argument_type = "string"
 
 [directive.class]
 help = """Set a class on the next element."""
@@ -376,6 +383,10 @@ type = "text"
 help = """Reference an IETF RFC."""
 type = "explicit_title"
 
+[role.wikipedia]
+help = """Reference a Wikipedia page."""
+type = {link = "https://en.wikipedia.org/wiki/%s"}
+
 [role.hardlink]
 help = """Link to a URL in the current project."""
 type = "explicit_title"
@@ -427,6 +438,9 @@ type = {link = "https://github.com/mongodb/mongo/blob/master/%s"}
 [role.ref]
 help = """Link to a named target."""
 type = "explicit_title"
+
+[role."mongodb:ref"]
+inherit = "ref"
 
 [role.term]
 help = """Link to a term in the glossary."""
