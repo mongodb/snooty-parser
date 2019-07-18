@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add support for the `wikipedia` role.
 
+### Fixed
+
+- All YAML parsing errors are caught, rather than just scanning errors (DOCSP-6251).
 
 ## [v0.1.10] - 2019-07-11
 
