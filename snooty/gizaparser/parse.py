@@ -56,7 +56,7 @@ def parse(
 
     try:
         parsed_yaml = load_yaml(text)
-    except yaml.scanner.ScannerError as err:
+    except yaml.error.MarkedYAMLError as err:
         lineno = err.problem_mark.line
         col = err.problem_mark.column
         return [], text, diagnostics + [Diagnostic.error(err.problem, (lineno, col))]
