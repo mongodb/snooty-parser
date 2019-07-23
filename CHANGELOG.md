@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - All YAML parsing errors are caught, rather than just scanning errors (DOCSP-6251).
+- Opening a project with missing static assets no longer triggers an unhandled exception (DOCSP-6267).
 
 ## [v0.1.10] - 2019-07-11
 

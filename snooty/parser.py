@@ -651,7 +651,13 @@ class _Project:
 
         new_assets = page.static_assets.difference(old_assets)
         for asset in new_assets:
-            self.filesystem_watcher.watch_file(asset.path)
+            try:
+                self.filesystem_watcher.watch_file(asset.path)
+            except OSError as err:
+                # Missing static asset directory: don't process it. We've already raised a
+                # diagnostic to the user.
+                logger.debug(f"Failed to set up watch: {err}")
+                page.static_assets.remove(asset)
         for asset in removed_assets:
             self.filesystem_watcher.end_watch(asset.path)
 

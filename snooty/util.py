@@ -169,7 +169,7 @@ class FileWatcher:
 
         watch = self.directories[directory]
         watch.filenames[path.name] -= 1
-        if watch.filenames[path.name] == 0:
+        if watch.filenames[path.name] <= 0:
             del watch.filenames[path.name]
 
         # If there are no files remaining in this watch directory, unwatch it.
