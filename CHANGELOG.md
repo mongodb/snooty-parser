@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.11] - 2019-07-23
+
 ### Added
 
 - Add support for the following directives (DOCSP-6210):
