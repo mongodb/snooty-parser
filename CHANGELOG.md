@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.1.11] - 2019-07-23
 
 ### Added
+- Add validation for links under the `doc` role
+
+### Added
 
 - Add support for the following directives (DOCSP-6210):
 
