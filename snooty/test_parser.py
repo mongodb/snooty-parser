@@ -393,44 +393,6 @@ def test_roles() -> None:
     )
 
 
-def test_doc_role() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
-
-    # Test bad text
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-* :doc:`Testing it <fake-text>`
-* :doc:`Testing this </fake-text>`
-* :doc:`Testing that <./fake-text>`
-* :doc:`fake-text`
-* :doc:`/fake-text`
-* :doc:`./fake-text`
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 6
-
-    # Test valid text
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-* :doc: `Testing it <test_project/index>`
-* :doc: `Testing this </test_project/index>`
-* :doc: `Testing that <./../test_data/test_project/index>`
-* :doc: `test_project/index`
-* :doc: `/test_project/index`
-* :doc: `./../test_data/test_project/index`
-""",
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-
-
 def test_accidental_indentation() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
