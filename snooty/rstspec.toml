@@ -72,6 +72,19 @@ content_type = "block"
 argument_type = "string"
 content_type = "block"
 
+[directive.deprecated]
+argument_type = "string"
+content_type = "block"
+
+[directive.see]
+argument_type = "string"
+content_type = "block"
+
+[directive.todo]
+help = """Describes a task to be completed by a writer in the future."""
+argument_type = "string"
+content_type = "string"
+
 [directive.contents]
 argument_type = "string"
 options.local = "flag"
@@ -82,6 +95,8 @@ options.class = "string"
 [directive.include]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
+options.start-after = "string"
+options.end-before = "string"
 
 [directive.literalinclude]
 help = """Include a file as a block of code."""
@@ -92,6 +107,7 @@ options.linenos = "flag"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
+options.lines = "linenos"
 
 [directive.figure]
 help = """Include an image file."""
@@ -199,6 +215,17 @@ content_type = "block"
 [directive.index]
 argument_type = "string"
 
+[directive.describe]
+argument_type = "string"
+content_type = "block"
+
+[directive.glossary]
+content_type = "block"
+options.sorted = "flag"
+
+[directive.rubric]
+argument_type = "string"
+
 [directive.code-block]
 help = """A block of code to show the user."""
 argument_type = "string"
@@ -212,7 +239,10 @@ help = """A block of code to show the user."""
 inherit = "code-block"
 
 [directive.cssclass]
+help = """Add the given CSS class name to generated HTML of the contained (if content is given) or
+          following (if not) page element."""
 argument_type = "string"
+content_type = "block"
 
 [directive.uriwriter]
 
@@ -342,6 +372,15 @@ type = "text"
 
 [role.file]
 help = """Show a file path."""
+type = "text"
+
+[role.command]
+deprecated = true
+type = "text"
+
+# This is defined with .. role:: in the manual, which for architectural reasons we don't support.
+[role.red]
+deprecated = true
 type = "text"
 
 [role.icon-fa5]
@@ -490,6 +529,10 @@ type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
 help = """Link to the synchronous Java driver's API reference."""
 type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
 
+[role.go-api]
+help = """Link to the Go driver's API reference."""
+type = {link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s"}
+
 [role.atlas]
 help = """Link to the synchronous Atlas documentation."""
 type = {link = "https://docs.atlas.mongodb.com/%s"}
@@ -562,6 +605,14 @@ inherit = "charts-v0.9"
 help = """Link to a page in the Compass docs."""
 type = {link = "https://docs.mongodb.com/compass%s"}
 
+[role.ecosystem]
+help = """Link to a page in the Ecosystem docs."""
+type = {link = "https://docs.mongodb.com/ecosystem%s"}
+
+[role.products]
+help = """Link to a page in the MongoDB Products site."""
+type = {link = "https://www.mongodb.com/products%s"}
+
 [role.driver]
 help = """Link to a driver's page in the Ecosystem docs."""
 type = {link = "https://docs.mongodb.com/ecosystem/drivers%s"}
@@ -578,8 +629,13 @@ type = {link = "http://www.mongodb.com/products/%s?jmp=docs"}
 [role.dl]
 type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 
+[role.wtdocs]
+type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
+[rstobject."py:meth"]
+[rstobject."js:func"]
 [rstobject.action]
 [rstobject.alert]
 
@@ -637,3 +693,4 @@ inherit = "alert"
 [rstobject.urioption]
 [rstobject.variable]
 [rstobject.writeconcern]
+[rstobject.envvar]
