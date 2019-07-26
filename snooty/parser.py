@@ -250,6 +250,9 @@ class JSONVisitor:
                 doc["label"] = node["label"]
             if "target" in node:
                 doc["target"] = node["target"]
+
+            if doc["name"] == "doc":
+                self.validate_doc_role(node)
         elif node_name == "target":
             doc["type"] = "target"
             doc["ids"] = node["ids"]
@@ -402,7 +405,7 @@ class JSONVisitor:
                 ):
                     pass
                 else:
-                    msg = f'"{name}" could not open "{argument_text}: No such file exists"'
+                    msg = f'"{name}" could not open "{argument_text}": No such file exists'
                     self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
         if options:
@@ -410,6 +413,17 @@ class JSONVisitor:
 
         doc["children"] = []
         return True
+
+    def validate_doc_role(self, node: docutils.nodes.Node) -> None:
+        """Validate target for doc role"""
+        target = PurePath(node["target"]).with_suffix(".txt")
+        fileid, target_path = util.reroot_path(target, self.docpath, self.source_path)
+
+        if not target_path.is_file():
+            msg = (
+                f'"{node["name"]}" could not open "{target_path}": No such file exists'
+            )
+            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(path, self.docpath, self.source_path)
