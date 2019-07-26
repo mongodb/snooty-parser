@@ -90,6 +90,15 @@ class Diagnostic:
         )
 
     @classmethod
+    def info(
+        cls,
+        message: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> "Diagnostic":
+        return cls.create(cls.Level.info, message, start, end)
+
+    @classmethod
     def warning(
         cls,
         message: str,
@@ -316,6 +325,8 @@ class ProjectConfig:
                         f"{variable_name} not defined as a source constant", lineno
                     )
                 )
-            return ""
+
+            # Return a zero-width space to avoid breaking syntax
+            return "\u200b"
 
         return PAT_VARIABLE.sub(handle_match, source), diagnostics

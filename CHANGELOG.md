@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.12] - 2019-07-25
+
+### Added
+
+- Add support for the following reStructuredText constructs:
+
+  - `todo`
+  - `deprecated`
+  - `see`
+  - `describe`
+  - `glossary`
+  - `rubric`
+  - `envvar`
+
+- Add support for the following extlinks:
+
+  - `go-api`
+  - `ecosystem`
+  - `products`
+  - `wtdocs`
+
+### Fixed
+
+- No longer create spurious diagnostics about including apiargs artifacts and `hash.rst`.
+
+### Changed
+
+- Undefined source constants are now replaced with a zero-width space (\u200b),
+  preventing them from creating a syntax error.
+
+## [v0.1.11] - 2019-07-23
+
 ### Added
 - Add validation for links under the `doc` role
 
@@ -27,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - All YAML parsing errors are caught, rather than just scanning errors (DOCSP-6251).
+- Opening a project with missing static assets no longer triggers an unhandled exception (DOCSP-6267).
 
 ## [v0.1.10] - 2019-07-11
 

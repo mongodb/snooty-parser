@@ -232,6 +232,11 @@ class JSONVisitor:
             )
             return
 
+        if node_name == "directive":
+            if self.handle_directive(node, doc):
+                self.state.append(doc)
+            return
+
         self.state.append(doc)
 
         if node_name == "Text":
@@ -239,10 +244,7 @@ class JSONVisitor:
             doc["value"] = str(node)
             return
 
-        if node_name == "directive":
-            self.handle_directive(node, doc)
-            return
-        elif node_name == "role":
+        if node_name == "role":
             doc["name"] = node["name"]
             if "label" in node:
                 doc["label"] = node["label"]
@@ -301,12 +303,12 @@ class JSONVisitor:
             self.state[-1]["term"] = popped["children"]
         elif self.state[-1]["type"] not in NO_CHILDREN:
             if "children" not in self.state[-1]:
-                print(self.state[-1])
+                print(self.state[-1], popped)
             self.state[-1]["children"].append(popped)
 
     def handle_directive(
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
-    ) -> None:
+    ) -> bool:
         name = node["name"]
         doc["name"] = name
 
@@ -330,6 +332,15 @@ class JSONVisitor:
         except (IndexError, KeyError):
             pass
 
+        if name == "todo":
+            todo_text = ["TODO"]
+            if argument_text:
+                todo_text.extend([": ", argument_text])
+            self.diagnostics.append(
+                Diagnostic.info("".join(todo_text), util.get_line(node))
+            )
+            return False
+
         if name in {"figure", "image"}:
             if argument_text is None:
                 self.diagnostics.append(
@@ -337,7 +348,7 @@ class JSONVisitor:
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
-                return
+                return True
 
             try:
                 static_asset = self.add_static_asset(Path(argument_text), upload=True)
@@ -353,7 +364,7 @@ class JSONVisitor:
                         '"literalinclude" expected a path argument', lineno
                     )
                 )
-                return
+                return True
 
             try:
                 static_asset = self.add_static_asset(Path(argument_text), False)
@@ -366,7 +377,7 @@ class JSONVisitor:
             except ValueError as err:
                 msg = f'Invalid "literalinclude": {err}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
-            return
+            return True
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(
@@ -374,7 +385,7 @@ class JSONVisitor:
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
-                return
+                return True
 
             fileid, path = util.reroot_path(
                 Path(argument_text), self.docpath, self.source_path
@@ -389,6 +400,8 @@ class JSONVisitor:
                     or fileid.match("release/*.rst")
                     or fileid.match("option/*.rst")
                     or fileid.match("toc/*.rst")
+                    or fileid.match("apiargs/*.rst")
+                    or fileid == FileId("includes/hash.rst")
                 ):
                     pass
                 else:
@@ -399,6 +412,7 @@ class JSONVisitor:
             doc["options"] = options
 
         doc["children"] = []
+        return True
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
@@ -665,7 +679,13 @@ class _Project:
 
         new_assets = page.static_assets.difference(old_assets)
         for asset in new_assets:
-            self.filesystem_watcher.watch_file(asset.path)
+            try:
+                self.filesystem_watcher.watch_file(asset.path)
+            except OSError as err:
+                # Missing static asset directory: don't process it. We've already raised a
+                # diagnostic to the user.
+                logger.debug(f"Failed to set up watch: {err}")
+                page.static_assets.remove(asset)
         for asset in removed_assets:
             self.filesystem_watcher.end_watch(asset.path)
 

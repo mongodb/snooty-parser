@@ -9,7 +9,7 @@ def test_project() -> None:
     assert project_config.constants == {
         "version": "3.4",
         "package_title": "3.4.tar.gz",
-        "invalid": "",
+        "invalid": "\u200b",
     }
 
     path = Path("test_data/empty_project")
