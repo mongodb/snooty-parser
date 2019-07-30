@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add support for the following reStructuredText constructs:
+
+  - `datalakeconf` rstobject
+  - `caption` option to `toctree`
+  - `includehidden` option to `toctree`
+  - `backlinks` option to `contents` is an enum
+  - `gcp` and `azure` extlinks
+
 ## [v0.1.12] - 2019-07-25
 
 ### Added
