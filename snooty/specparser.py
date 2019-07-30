@@ -9,6 +9,7 @@ import docutils.nodes
 import docutils.parsers.rst
 import docutils.parsers.rst.directives
 from .flutter import check_type, checked
+from . import util
 from typing import cast, Any, Callable, Dict, Set, List, Optional, Union, TypeVar
 from typing_extensions import Protocol
 
@@ -56,10 +57,8 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.uri: docutils.parsers.rst.directives.uri,
     PrimitiveType.string: str,
     PrimitiveType.length: docutils.parsers.rst.directives.length_or_percentage_or_unitless,
-    PrimitiveType.boolean: lambda argument: docutils.parsers.rst.directives.choice(
-        argument, ("true", "false", None)
-    ),
-    PrimitiveType.flag: docutils.parsers.rst.directives.flag,
+    PrimitiveType.boolean: util.option_bool,
+    PrimitiveType.flag: util.option_flag,
     PrimitiveType.linenos: str,
 }
 

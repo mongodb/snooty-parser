@@ -25,7 +25,7 @@ def test_tabs() -> None:
             "Trusty content</text></paragraph></directive></directive>",
             '<directive name="tabs" tabset="platforms"><directive name="tab"><text>windows</text>',
             "<paragraph><text>Windows content</text></paragraph></directive></directive>",
-            '<directive name="tabs" hidden="true"><directive name="tab">',
+            '<directive name="tabs" hidden="True"><directive name="tab">',
             "<text>trusty</text><paragraph><text>",
             "Trusty content</text></paragraph></directive>",
             '<directive name="tab"><text>xenial</text><paragraph><text>',
