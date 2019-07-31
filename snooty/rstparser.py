@@ -11,12 +11,13 @@ import docutils.statemachine
 import docutils.utils
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import Any, Dict, Generic, Optional, List, Tuple, Type, TypeVar, Iterable
+from typing import Dict, Generic, Optional, List, Tuple, Type, TypeVar, Iterable
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import Diagnostic, ProjectConfig
 from .flutter import checked, check_type, LoadError
+from . import util
 from . import specparser
 
 PAT_EXPLICIT_TILE = re.compile(
@@ -50,10 +51,6 @@ class LegacyTabDefinition(nodes.Node):
 class LegacyTabsDefinition(nodes.Node):
     hidden: Optional[bool]
     tabs: List[LegacyTabDefinition]
-
-
-def option_bool(argument: str) -> Any:
-    return docutils.parsers.rst.directives.choice(argument, ("true", "false", None))
 
 
 class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
@@ -248,7 +245,7 @@ class TabsDirective(BaseDocutilsDirective):
     optional_arguments = 1
     final_argument_whitespace = True
     has_content = True
-    option_spec = {"tabset": str, "hidden": option_bool}
+    option_spec = {"tabset": str, "hidden": util.option_bool}
 
     def run(self) -> List[docutils.nodes.Node]:
         # Transform the old YAML-based syntax into the new pure-rst syntax.
@@ -320,10 +317,10 @@ class CodeDirective(docutils.parsers.rst.Directive):
     has_content = True
     final_argument_whitespace = True
     option_spec = {
-        "copyable": option_bool,
+        "copyable": util.option_bool,
         "emphasize-lines": str,
         "class": str,
-        "linenos": docutils.parsers.rst.directives.flag,
+        "linenos": util.option_flag,
     }
 
     def run(self) -> List[docutils.nodes.Node]:

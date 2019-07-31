@@ -1,6 +1,7 @@
 import logging
 import os
 import docutils.nodes
+import docutils.parsers.rst.directives
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
@@ -210,3 +211,28 @@ def ast_get_text(ast: Any) -> str:
 
     children = ast.get("children", ())
     return "".join(ast_get_text(child) for child in children)
+
+
+def option_bool(argument: Optional[str]) -> bool:
+    """
+    Check for a valid boolean option return it. If not argument is given,
+    treat it as a flag, and return True.
+    """
+    if argument and argument.strip():
+        return bool(docutils.parsers.rst.directives.choice(argument, ("true", "false")))
+    else:
+        return True
+
+
+def option_flag(argument: Optional[str]) -> bool:
+    """
+    Variant of the docutils flag handler.
+    Check for a valid flag option (no argument) and return ``True``.
+    (Directive option conversion function.)
+
+    Raise ``ValueError`` if an argument is found.
+    """
+    if argument and argument.strip():
+        raise ValueError('no argument is allowed; "%s" supplied' % argument)
+    else:
+        return True

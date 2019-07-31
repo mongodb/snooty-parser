@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add validation for links under the `doc` role (DOCSP-6190).
+
+- Add support for the following reStructuredText constructs:
+
+  - `datalakeconf` rstobject
+  - `caption` option to `toctree`
+  - `includehidden` option to `toctree`
+  - `backlinks` option to `contents` is an enum
+  - `gcp` and `azure` extlinks
+
+### Changed
+
+- Directive "flag" options have a true value in the AST instead of null (DOCSP-6383).
+
 ## [v0.1.12] - 2019-07-25
 
 ### Added

@@ -3,6 +3,7 @@ version = 0
 
 [enum]
 user_level = ["beginner", "intermediate", "advanced"]
+backlinks = ["entry", "top", "none"]
 guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
@@ -88,7 +89,7 @@ content_type = "string"
 [directive.contents]
 argument_type = "string"
 options.local = "flag"
-options.backlinks = "string"
+options.backlinks = "backlinks"
 options.depth = "nonnegative_integer"
 options.class = "string"
 
@@ -164,9 +165,11 @@ content_type = "block"
 [directive.toctree]
 help = """List pages to treat as children of this page."""
 content_type = "block"
+options.caption = "string"
 options.titlesonly = "flag"
 options.hidden = "flag"
 options.maxdepth = "nonnegative_integer"
+options.includehidden = "flag"
 
 [directive.tabs-pillstrip]
 deprecated = true
@@ -442,6 +445,14 @@ type = {link = "https://api.mongodb.com/%s"}
 help = """Link to the Amazon AWS documentation."""
 type = {link = "http://docs.aws.amazon.com%s"}
 
+[role.gcp]
+help = "Link to the Google Cloud Platform documentation"
+type = {link = "https://cloud.google.com%s"}
+
+[role.azure]
+help = "Link to the Microsoft Azure documentation"
+type = {link = "https://docs.microsoft.com/en-us/azure%s"}
+
 [role.gettingstarted]
 help = """Link to the MongoDB Getting Started guide."""
 type = {link = "https://docs.mongodb.org/getting-started%s"}
@@ -694,3 +705,4 @@ inherit = "alert"
 [rstobject.variable]
 [rstobject.writeconcern]
 [rstobject.envvar]
+[rstobject.datalakeconf]

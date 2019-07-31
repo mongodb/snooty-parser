@@ -25,7 +25,7 @@ def test_tabs() -> None:
             "Trusty content</text></paragraph></directive></directive>",
             '<directive name="tabs" tabset="platforms"><directive name="tab"><text>windows</text>',
             "<paragraph><text>Windows content</text></paragraph></directive></directive>",
-            '<directive name="tabs" hidden="true"><directive name="tab">',
+            '<directive name="tabs" hidden="True"><directive name="tab">',
             "<text>trusty</text><paragraph><text>",
             "Trusty content</text></paragraph></directive>",
             '<directive name="tab"><text>xenial</text><paragraph><text>',
@@ -385,6 +385,91 @@ def test_roles() -> None:
             '<role name="guilabel" label="',
             "{'type': 'text', 'value': 'Test <foo>', 'position': {'start': {'line': 8}}}",
             '"></role>',
+            "</paragraph>",
+            "</listItem>",
+            "</list>",
+            "</root>",
+        )
+    )
+
+
+def test_doc_role() -> None:
+    project_root = ROOT_PATH.joinpath("test_project")
+    path = project_root.joinpath(Path("source/test.rst")).resolve()
+    project_config = ProjectConfig(project_root, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test bad text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+* :doc:`Testing it <fake-text>`
+* :doc:`Testing this </fake-text>`
+* :doc:`Testing that <./fake-text>`
+* :doc:`fake-text`
+* :doc:`/fake-text`
+* :doc:`./fake-text`
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 6
+
+    # Test valid text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+* :doc:`Testing this </index>`
+* :doc:`Testing that <./../source/index>`
+* :doc:`index`
+* :doc:`/index`
+* :doc:`./../source/index`
+* :doc:`/index/`
+""",
+    )
+    page.finish(diagnostics)
+    print(ast_to_testing_string(page.ast))
+    assert diagnostics == []
+    assert ast_to_testing_string(page.ast) == "".join(
+        (
+            "<root>",
+            "<list>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" label="',
+            "{'type': 'text', 'value': 'Testing this', 'position': {'start': {'line': 2}}}",
+            '" target="/index">',
+            "</role>",
+            "</paragraph>",
+            "</listItem>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" label="',
+            "{'type': 'text', 'value': 'Testing that', 'position': {'start': {'line': 3}}}",
+            '" target="./../source/index">',
+            "</role>",
+            "</paragraph>",
+            "</listItem>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" target="index"></role>',
+            "</paragraph>",
+            "</listItem>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" target="/index"></role>',
+            "</paragraph>",
+            "</listItem>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" target="./../source/index"></role>',
+            "</paragraph>",
+            "</listItem>",
+            "<listItem>",
+            "<paragraph>",
+            '<role name="doc" target="/index/">',
+            "</role>",
             "</paragraph>",
             "</listItem>",
             "</list>",
