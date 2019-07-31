@@ -12,7 +12,7 @@ from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
 from .types import FileId, SerializableType
-from . import types
+from . import types, util
 from .parser import Project
 
 _F = TypeVar("_F", bound=Callable[..., Any])
@@ -268,7 +268,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         # Ignore this message to avoid logging a pointless warning
         pass
 
-    def m_text_document__resolve(self, path: str) -> str:
+    def m_text_document__resolve(self, filename: str, docpath: str, resolve_type: str) -> str:
         """Given an artifact's path relative to the project's source directory,
         return a corresponding source file path relative to the project's root."""
 
@@ -276,7 +276,13 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             logger.warn("Project uninitialized")
             return path
 
-        return str(self.project.config.source_path) + path
+        if resolve_type == "doc":
+            target = PurePath(filename).with_suffix(".txt")
+            fileid, target_path = util.reroot_path(target, PurePath(docpath), 
+                self.project.config.source_path)
+            return str(target_path)
+
+        return str(self.project.config.source_path) + filename
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
