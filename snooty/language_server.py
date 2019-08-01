@@ -268,21 +268,24 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         # Ignore this message to avoid logging a pointless warning
         pass
 
-    def m_text_document__resolve(self, filename: str, docpath: str, resolve_type: str) -> str:
+    def m_text_document__resolve(
+        self, fileName: str, docPath: str, resolveType: str
+    ) -> str:
         """Given an artifact's path relative to the project's source directory,
         return a corresponding source file path relative to the project's root."""
 
         if self.project is None:
             logger.warn("Project uninitialized")
-            return path
+            return fileName
 
-        if resolve_type == "doc":
-            target = PurePath(filename).with_suffix(".txt")
-            fileid, target_path = util.reroot_path(target, PurePath(docpath), 
-                self.project.config.source_path)
+        if resolveType == "doc":
+            target = PurePath(fileName).with_suffix(".txt")
+            fileid, target_path = util.reroot_path(
+                target, PurePath(docPath), self.project.config.source_path
+            )
             return str(target_path)
 
-        return str(self.project.config.source_path) + filename
+        return str(self.project.config.source_path) + fileName
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
