@@ -82,11 +82,24 @@ def test_text_doc_resolve() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/test_project")
 
-        test_file = "/images/compass-create-database.png"
-
         assert server.project is not None
 
+        # Set up resolve arguments for testing directive file
+        source_path = server.project.config.source_path
+        docpath_str = str(source_path.joinpath("foo.rst"))
+        test_file = "/images/compass-create-database.png"
+        resolveType = "directive"
+
         assert (
-            server.m_text_document__resolve(test_file)
+            server.m_text_document__resolve(test_file, docpath_str, resolveType)
             == str(server.project.config.source_path) + test_file
+        )
+
+        # Resolve arguments for testing doc role target file
+        test_file = "index"  # Testing relative path for example
+        resolveType = "doc"
+
+        assert (
+            server.m_text_document__resolve(test_file, docpath_str, resolveType)
+            == str(server.project.config.source_path) + "/" + test_file + ".txt"
         )
