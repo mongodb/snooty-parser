@@ -284,8 +284,11 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
                 target, PurePath(docPath), self.project.config.source_path
             )
             return str(target_path)
-
-        return str(self.project.config.source_path) + fileName
+        elif resolveType == "directive":
+            return str(self.project.config.source_path) + fileName
+        else:
+            logger.warn("resolveType is not supported")
+            return fileName
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
