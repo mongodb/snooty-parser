@@ -2,7 +2,7 @@
 
 `language_server.py` utilizes RPC methods that the snooty parser uses to communicate with the VS Code extension.
 
-## resolve
+## textDocument/resolve
 Given an artifact's path relative to the project's source directory, return a corresponding source file path relative to the project's root.
 
 ### Parameters
@@ -14,8 +14,8 @@ Given an artifact's path relative to the project's source directory, return a co
 |`resolveType`: `str` | Identifies how the method should resolve the `fileName`. |
 
 Resolve types that are currently supported:
-* `directive`
-* `doc`
+* `directive` - Given an `include`, `literalinclude`, or `figure` directive, the full path to the directive link is returned.
+* `doc` - Given a `doc` role target, the full path to the target with a `.txt` extension is returned.
 
 ### Return
 | Return Type | Description                                              |
