@@ -88,18 +88,24 @@ def test_text_doc_resolve() -> None:
         source_path = server.project.config.source_path
         docpath_str = str(source_path.joinpath("foo.rst"))
         test_file = "/images/compass-create-database.png"
-        resolveType = "directive"
+        resolve_type = "directive"
 
-        assert (
-            server.m_text_document__resolve(test_file, docpath_str, resolveType)
-            == str(server.project.config.source_path) + test_file
+        # Set up assertion
+        resolve_path = Path(
+            server.m_text_document__resolve(test_file, docpath_str, resolve_type)
         )
+        expected_path = source_path.joinpath(test_file[1:])
+
+        assert resolve_path == expected_path
 
         # Resolve arguments for testing doc role target file
         test_file = "index"  # Testing relative path for example
-        resolveType = "doc"
+        resolve_type = "doc"
 
-        assert (
-            server.m_text_document__resolve(test_file, docpath_str, resolveType)
-            == str(server.project.config.source_path) + "/" + test_file + ".txt"
+        # Set up assertion
+        resolve_path = Path(
+            server.m_text_document__resolve(test_file, docpath_str, resolve_type)
         )
+        expected_path = source_path.joinpath(test_file).with_suffix(".txt")
+
+        assert resolve_path == expected_path
