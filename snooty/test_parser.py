@@ -529,3 +529,43 @@ def test_accidental_indentation() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
+
+
+def test_only() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. only:: (not man) or html
+
+   .. note::
+
+      A note.
+
+.. only:: man
+
+   .. note::
+
+      Another note.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    assert ast_to_testing_string(page.ast) == "".join(
+        (
+            "<root>",
+            '<directive name="only">',
+            "<text>(not man) or html</text>"
+            '<directive name="note"><paragraph><text>A note.</text></paragraph></directive>',
+            "</directive>",
+            '<directive name="only">',
+            "<text>man</text>"
+            '<directive name="note"><paragraph><text>Another note.</text></paragraph></directive>',
+            "</directive>",
+            "</root>",
+        )
+    )
