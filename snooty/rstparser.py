@@ -211,7 +211,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 node.append(argument)
 
         # Parse the content
-        if self.name in {"include", "only", "raw"}:
+        if self.name in {"include", "raw"}:
             raw = docutils.nodes.FixedTextElement()
             raw.document = self.state.document
             raw.source, raw.line = source, line
