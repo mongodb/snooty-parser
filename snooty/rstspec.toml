@@ -214,6 +214,7 @@ inherit = "tabs"
 [directive.tab]
 argument_type = "string"
 content_type = "block"
+options.tabid = "string"
 
 [directive.index]
 argument_type = "string"
