@@ -29,13 +29,23 @@
            Windows content
 
 .. tabs::
+   :tabset: platforms
+
+   .. tab::
+      :tabid: windows
+
+      Windows content
+
+.. tabs::
    :hidden: true
 
-   .. tab:: trusty
+   .. tab:: Ubuntu 14.04 (Trusty)
+      :tabid: trusty
 
       Trusty content
 
-   .. tab:: xenial
+   .. tab:: Ubuntu 16.04 (Xenial)
+      :tabid: xenial
 
       Xenial content
 

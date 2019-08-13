@@ -275,7 +275,7 @@ class TabsDirective(BaseDocutilsDirective):
                 options["tabset"] = tabset
 
             for child in loaded.tabs:
-                node.append(self.make_tab_node(source, child))
+                node.append(self.make_tab_node(child.id, child.name, source, child))
 
             return [node]
 
@@ -283,8 +283,9 @@ class TabsDirective(BaseDocutilsDirective):
         return super().run()
 
     def make_tab_node(
-        self, source: str, child: LegacyTabDefinition
+        self, tabid: str, title: Optional[str], source: str, child: LegacyTabDefinition
     ) -> docutils.nodes.Node:
+        """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
         line = self.lineno + child.line
 
         node = directive("tab")
@@ -292,13 +293,16 @@ class TabsDirective(BaseDocutilsDirective):
         node.source = source
         node.line = line
 
-        argument_text = child.id
-        textnodes, messages = self.state.inline_text(argument_text, line)
-        argument = directive_argument(argument_text, "", *textnodes)
-        argument.document = self.state.document
-        argument.source, argument.line = source, line
-        node.append(argument)
-        node["options"] = {}
+        if title is not None:
+            textnodes, messages = self.state.inline_text(title, line)
+            argument = directive_argument(title, "", *textnodes)
+            argument.document = self.state.document
+            argument.source, argument.line = source, line
+            node.append(argument)
+
+        options: Dict[str, object] = {}
+        node["options"] = options
+        options["tabid"] = tabid
 
         content_lines = prepare_viewlist(child.content)
         self.state.nested_parse(

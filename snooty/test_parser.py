@@ -17,18 +17,20 @@ def test_tabs() -> None:
     assert ast_to_testing_string(page.ast) == "".join(
         (
             "<root>",
-            '<directive name="tabs" hidden="True"><directive name="tab"><text>bionic</text>',
+            '<directive name="tabs" hidden="True"><directive name="tab" tabid="bionic"><text>Ubuntu 18.04 (Bionic)</text>',
             "<paragraph><text>Bionic content</text></paragraph></directive>",
-            '<directive name="tab"><text>xenial</text><paragraph><text>',
+            '<directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>',
             "Xenial content</text></paragraph></directive>",
-            '<directive name="tab"><text>trusty</text><paragraph><text>',
+            '<directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>',
             "Trusty content</text></paragraph></directive></directive>",
-            '<directive name="tabs" tabset="platforms"><directive name="tab"><text>windows</text>',
+            '<directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">',
             "<paragraph><text>Windows content</text></paragraph></directive></directive>",
-            '<directive name="tabs" hidden="True"><directive name="tab">',
-            "<text>trusty</text><paragraph><text>",
+            '<directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">',
+            "<paragraph><text>Windows content</text></paragraph></directive></directive>",
+            '<directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">',
+            "<text>Ubuntu 14.04 (Trusty)</text><paragraph><text>",
             "Trusty content</text></paragraph></directive>",
-            '<directive name="tab"><text>xenial</text><paragraph><text>',
+            '<directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>',
             "Xenial content</text></paragraph></directive></directive>",
             "</root>",
         )
@@ -37,7 +39,7 @@ def test_tabs() -> None:
     assert (
         len(diagnostics) == 1
         and diagnostics[0].message.startswith("Unexpected field")
-        and diagnostics[0].start[0] == 44
+        and diagnostics[0].start[0] == 54
     )
 
 
