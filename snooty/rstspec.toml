@@ -37,6 +37,7 @@ example = """.. list-table::
      - |checkmark|
 """
 content_type = "list_table"
+argument_type = "string"
 options.widths = "string"
 options.class = "string"
 options.header-rows = "nonnegative_integer"
