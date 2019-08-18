@@ -1,6 +1,6 @@
 from pathlib import Path
 from . import rstparser
-from .util import ast_to_testing_string
+from .util_test import check_ast_testing_string
 from .types import Diagnostic, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
@@ -14,26 +14,25 @@ def test_tabs() -> None:
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<directive name="tabs" hidden="True"><directive name="tab" tabid="bionic"><text>Ubuntu 18.04 (Bionic)</text>',
-            "<paragraph><text>Bionic content</text></paragraph></directive>",
-            '<directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>',
-            "Xenial content</text></paragraph></directive>",
-            '<directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>',
-            "Trusty content</text></paragraph></directive></directive>",
-            '<directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">',
-            "<paragraph><text>Windows content</text></paragraph></directive></directive>",
-            '<directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">',
-            "<paragraph><text>Windows content</text></paragraph></directive></directive>",
-            '<directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">',
-            "<text>Ubuntu 14.04 (Trusty)</text><paragraph><text>",
-            "Trusty content</text></paragraph></directive>",
-            '<directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>',
-            "Xenial content</text></paragraph></directive></directive>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="tabs" hidden="True"><directive name="tab" tabid="bionic"><text>Ubuntu 18.04 (Bionic)</text>
+        <paragraph><text>Bionic content</text></paragraph></directive>
+        <directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>
+        Xenial content</text></paragraph></directive>
+        <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
+        Trusty content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
+        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
+        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
+        <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
+        Trusty content</text></paragraph></directive>
+        <directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>
+        Xenial content</text></paragraph></directive></directive>
+        </root>""",
     )
 
     assert (
@@ -61,11 +60,11 @@ def test_codeblock() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<code lang="sh" copyable="True">foo bar\n  indented\nend</code>' "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <code lang="sh" copyable="True">foo bar\n  indented\nend</code>
+        </root>""",
     )
 
     # Test parsing of emphasize-lines
@@ -83,12 +82,11 @@ def test_codeblock() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<code lang="sh" emphasize_lines="[(1, 1), (2, 3)]">foo\nbar\nbaz</code>'
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]">foo\nbar\nbaz</code>
+        </root>""",
     )
 
     # Test handling of out-of-range lines
@@ -123,24 +121,23 @@ def test_literalinclude() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<code lang="py">db.inventory.insert_many([\n',
-            '    {"item": "journal",\n',
-            '     "qty": 25,\n',
-            '     "tags": ["blank", "red"],\n',
-            '     "size": {"h": 14, "w": 21, "uom": "cm"}},\n\n',
-            '    {"item": "mat",\n',
-            '     "qty": 85,\n',
-            '     "tags": ["gray"],\n',
-            '     "size": {"h": 27.9, "w": 35.5, "uom": "cm"}},\n\n',
-            '    {"item": "mousepad",\n',
-            '     "qty": 25,\n',
-            '     "tags": ["gel", "blue"],\n',
-            '     "size": {"h": 19, "w": 22.85, "uom": "cm"}}])</code>',
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+<code lang="py">db.inventory.insert_many([
+    {"item": "journal",
+     "qty": 25,
+     "tags": ["blank", "red"],
+     "size": {"h": 14, "w": 21, "uom": "cm"}},\n
+    {"item": "mat",
+     "qty": 85,
+     "tags": ["gray"],
+     "size": {"h": 27.9, "w": 35.5, "uom": "cm"}},\n
+    {"item": "mousepad",
+     "qty": 25,
+     "tags": ["gel", "blue"],
+     "size": {"h": 19, "w": 22.85, "uom": "cm"}}])</code>
+</root>""",
     )
 
     # Test bad code-blocks
@@ -234,15 +231,14 @@ def test_admonition() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<directive name="note">',
-            "<list><listItem><paragraph><text>foo</text></paragraph></listItem>",
-            "<listItem><paragraph><text>bar</text></paragraph></listItem></list>",
-            "</directive>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="note">
+        <list><listItem><paragraph><text>foo</text></paragraph></listItem>
+        <listItem><paragraph><text>bar</text></paragraph></listItem></list>
+        </directive>
+        </root>""",
     )
 
 
@@ -262,19 +258,18 @@ foo |new version| bar
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<substitution_definition name="new version">',
-            "<text>3.4</text>",
-            "</substitution_definition>",
-            "<paragraph>",
-            "<text>foo </text>",
-            '<substitution_reference name="new version"></substitution_reference>',
-            "<text> bar</text>",
-            "</paragraph>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <substitution_definition name="new version">
+        <text>3.4</text>
+        </substitution_definition>
+        <paragraph>
+        <text>foo </text>
+        <substitution_reference name="new version"></substitution_reference>
+        <text> bar</text>
+        </paragraph>
+        </root>""",
     )
 
     page, diagnostics = parse_rst(
@@ -288,34 +283,32 @@ foo |double arrow ->| bar
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<substitution_definition name="double arrow ->">',
-            "<text>foo</text><text>➤</text><text>➤</text>",
-            "</substitution_definition>",
-            "<paragraph>",
-            "<text>foo </text>",
-            '<substitution_reference name="double arrow ->"></substitution_reference>',
-            "<text> bar</text>",
-            "</paragraph>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <substitution_definition name="double arrow ->">
+        <text>foo</text><text>➤</text><text>➤</text>
+        </substitution_definition>
+        <paragraph>
+        <text>foo </text>
+        <substitution_reference name="double arrow ->"></substitution_reference>
+        <text> bar</text>
+        </paragraph>
+        </root>""",
     )
 
     # Ensure that the parser doesn't emit warnings about unresolvable substitution references
     page, diagnostics = parse_rst(parser, path, "foo |bar|")
     page.finish(diagnostics)
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            "<paragraph>",
-            "<text>foo </text>",
-            '<substitution_reference name="bar"></substitution_reference>',
-            "</paragraph>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <paragraph>
+        <text>foo </text>
+        <substitution_reference name="bar"></substitution_reference>
+        </paragraph>
+        </root>""",
     )
 
 
@@ -341,57 +334,55 @@ def test_roles() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    print(ast_to_testing_string(page.ast))
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            "<list>",
-            "<listItem>",
-            "<paragraph>",
-            '<reference refuri="https://docs.mongodb.com/manual/introduction/">',
-            "<text>https://docs.mongodb.com/manual/introduction/</text>"
-            "</reference>"
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<reference refuri="https://docs.mongodb.com/manual/introduction/">',
-            "<text>Introduction to MongoDB</text>" "</reference>" "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="rfc" target="1149"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="rfc" label="',
-            "{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 5}}}",
-            '" target="1149"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="binary" target="~bin.mongod"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="binary" label="',
-            "{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 7}}}",
-            '" target="~bin.mongod"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="guilabel" label="',
-            "{'type': 'text', 'value': 'Test <foo>', 'position': {'start': {'line': 8}}}",
-            '"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "</list>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+            <list>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://docs.mongodb.com/manual/introduction/">
+            <text>https://docs.mongodb.com/manual/introduction/</text>
+            </reference>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://docs.mongodb.com/manual/introduction/">
+            <text>Introduction to MongoDB</text></reference></paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <role name="rfc" target="1149"></role>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <role name="rfc"
+                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 5}}}"
+                  target="1149"></role>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <role name="binary" target="~bin.mongod"></role>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <role name="binary"
+                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 7}}}"
+                  target="~bin.mongod"></role>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <role name="guilabel"
+                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 8}}}">
+            </role>
+            </paragraph>
+            </listItem>
+            </list>
+            </root>""",
     )
 
 
@@ -431,52 +422,48 @@ def test_doc_role() -> None:
 """,
     )
     page.finish(diagnostics)
-    print(ast_to_testing_string(page.ast))
     assert diagnostics == []
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            "<list>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" label="',
-            "{'type': 'text', 'value': 'Testing this', 'position': {'start': {'line': 2}}}",
-            '" target="/index">',
-            "</role>",
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" label="',
-            "{'type': 'text', 'value': 'Testing that', 'position': {'start': {'line': 3}}}",
-            '" target="./../source/index">',
-            "</role>",
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" target="index"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" target="/index"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" target="./../source/index"></role>',
-            "</paragraph>",
-            "</listItem>",
-            "<listItem>",
-            "<paragraph>",
-            '<role name="doc" target="/index/">',
-            "</role>",
-            "</paragraph>",
-            "</listItem>",
-            "</list>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """
+        <root>
+        <list>
+        <listItem>
+        <paragraph>
+        <role name="doc"
+              label="{'type': 'text', 'value': 'Testing this', 'position': {'start': {'line': 2}}}"
+              target="/index"></role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <role name="doc"
+              label="{'type': 'text', 'value': 'Testing that', 'position': {'start': {'line': 3}}}"
+              target="./../source/index"></role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <role name="doc" target="index"></role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <role name="doc" target="/index"></role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <role name="doc" target="./../source/index"></role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <role name="doc" target="/index/"></role>
+        </paragraph>
+        </listItem>
+        </list>
+        </root>""",
     )
 
 
@@ -500,16 +487,15 @@ def test_accidental_indentation() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<directive name="note">',
-            "<paragraph><text>This is</text></paragraph>",
-            "<paragraph><text>a</text></paragraph>",
-            "<paragraph><text>test</text></paragraph>",
-            "</directive>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="note">
+        <paragraph><text>This is</text></paragraph>
+        <paragraph><text>a</text></paragraph>
+        <paragraph><text>test</text></paragraph>
+        </directive>
+        </root>""",
     )
 
     page, diagnostics = parse_rst(
@@ -557,17 +543,16 @@ def test_only() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
-    assert ast_to_testing_string(page.ast) == "".join(
-        (
-            "<root>",
-            '<directive name="only">',
-            "<text>(not man) or html</text>"
-            '<directive name="note"><paragraph><text>A note.</text></paragraph></directive>',
-            "</directive>",
-            '<directive name="only">',
-            "<text>man</text>"
-            '<directive name="note"><paragraph><text>Another note.</text></paragraph></directive>',
-            "</directive>",
-            "</root>",
-        )
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="only">
+        <text>(not man) or html</text>
+        <directive name="note"><paragraph><text>A note.</text></paragraph></directive>
+        </directive>
+        <directive name="only">
+        <text>man</text>
+        <directive name="note"><paragraph><text>Another note.</text></paragraph></directive>
+        </directive>
+        </root>""",
     )

@@ -3,7 +3,7 @@ from typing import Dict, Tuple, List
 from .extracts import GizaExtractsCategory
 from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
 from ..parser import make_embedded_rst_parser
-from ..util import ast_to_testing_string
+from ..util_test import ast_to_testing_string
 
 
 def test_extract() -> None:
