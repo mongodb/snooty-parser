@@ -3,7 +3,7 @@ from typing import Dict, Tuple, List
 from .release import GizaReleaseSpecificationCategory
 from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
 from ..parser import make_embedded_rst_parser
-from ..util import ast_to_testing_string
+from ..util_test import check_ast_testing_string
 
 
 def test_release_specification() -> None:
@@ -49,24 +49,19 @@ def test_release_specification() -> None:
 
     assert all((not diagnostics for diagnostics in all_diagnostics.values()))
 
-    print(ast_to_testing_string(pages[0].ast))
-    assert ast_to_testing_string(pages[0].ast) == "".join(
-        (
-            '<directive name="release_specification">',
-            '<code lang="sh" copyable="True">',
-            "tar -zxvf mongodb-macos-x86_64-3.4.tgz\n" "</code>",
-            "</directive>",
-        )
+    check_ast_testing_string(
+        pages[0].ast,
+        """<directive name="release_specification">
+        <code lang="sh" copyable="True">
+        tar -zxvf mongodb-macos-x86_64-3.4.tgz\n</code>
+        </directive>""",
     )
 
-    print(ast_to_testing_string(pages[1].ast))
-    assert ast_to_testing_string(pages[1].ast) == "".join(
-        (
-            '<directive name="release_specification">',
-            '<code lang="bat" copyable="True">',
-            "msiexec.exe /l*v mdbinstall.log  /qb /i ",
-            "mongodb-win32-x86_64-enterprise-windows-64-3.4-signed.msi\n",
-            "</code>",
-            "</directive>",
-        )
+    check_ast_testing_string(
+        pages[1].ast,
+        """<directive name="release_specification">
+            <code lang="bat" copyable="True">
+            msiexec.exe /l*v mdbinstall.log  /qb /i mongodb-win32-x86_64-enterprise-windows-64-3.4-signed.msi\n
+            </code>
+            </directive>""",
     )
