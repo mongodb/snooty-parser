@@ -139,13 +139,14 @@ deprecated = true
 argument_type = "output_format"
 content_type = "string"
 
-[directive.only]
+[directive.cond]
 help = """Only parse a chunk of content if the condition in the argument is true."""
 argument_type = "string"
 content_type = "block"
 
-[directive.cond]
-inherit = "only"
+[directive.only]
+inherit = "cond"
+deprecated = true
 
 [directive.role]
 deprecated = true

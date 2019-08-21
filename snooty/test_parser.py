@@ -519,7 +519,7 @@ def test_accidental_indentation() -> None:
     assert len(diagnostics) == 1
 
 
-def test_only() -> None:
+def test_cond() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
@@ -528,13 +528,13 @@ def test_only() -> None:
         parser,
         path,
         """
-.. only:: (not man) or html
+.. cond:: (not man) or html
 
    .. note::
 
       A note.
 
-.. only:: man
+.. cond:: man
 
    .. note::
 
@@ -546,11 +546,11 @@ def test_only() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="only">
+        <directive name="cond">
         <text>(not man) or html</text>
         <directive name="note"><paragraph><text>A note.</text></paragraph></directive>
         </directive>
-        <directive name="only">
+        <directive name="cond">
         <text>man</text>
         <directive name="note"><paragraph><text>Another note.</text></paragraph></directive>
         </directive>

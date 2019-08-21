@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Directive "flag" options have a true value in the AST instead of null (DOCSP-6383).
+- The "only" directive is now deprecated in favor of "cond".
 
 ## [v0.1.12] - 2019-07-25
 
