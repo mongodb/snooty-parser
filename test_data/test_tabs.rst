@@ -36,6 +36,13 @@
 
       Windows content
 
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Windows content
+
 .. tabs::
    :hidden: true
 

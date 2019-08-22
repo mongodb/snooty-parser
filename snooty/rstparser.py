@@ -248,6 +248,16 @@ class TabsDirective(BaseDocutilsDirective):
     option_spec = {"tabset": str, "hidden": util.option_bool}
 
     def run(self) -> List[docutils.nodes.Node]:
+        # Support the old-style tabset definition where the tabset is embedded in the
+        # directive's name.
+        if "tabset" in self.options:
+            tabset = self.options["tabset"]
+        else:
+            tabset = self.name.split("-", 1)[-1]
+
+        if tabset in ("tabs", ""):
+            tabset = None
+
         # Transform the old YAML-based syntax into the new pure-rst syntax.
         # This heuristic guesses whether we have the old syntax or the NEW.
         if any(line == "tabs:" for line in self.content):
@@ -259,7 +269,6 @@ class TabsDirective(BaseDocutilsDirective):
                 error_node = self.state.document.reporter.error(str(err), line=line)
                 return [error_node]
 
-            tabset = self.name.split("-", 1)[-1]
             node = directive("tabs")
             node.document = self.state.document
             source, node.line = self.state_machine.get_source_and_line(self.lineno)
@@ -271,7 +280,7 @@ class TabsDirective(BaseDocutilsDirective):
             if loaded.hidden:
                 options["hidden"] = True
 
-            if tabset and tabset != "tabs":
+            if tabset:
                 options["tabset"] = tabset
 
             for child in loaded.tabs:
@@ -279,7 +288,12 @@ class TabsDirective(BaseDocutilsDirective):
 
             return [node]
 
-        # The new syntax needs no special handling
+        # The new syntax needs no special handling beyond a little fixing up
+        # the legacy tabset system.
+        if self.name != "tabs":
+            self.name = "tabs"
+        if tabset:
+            self.options["tabset"] = tabset
         return super().run()
 
     def make_tab_node(
