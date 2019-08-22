@@ -27,6 +27,8 @@ def test_tabs() -> None:
         <paragraph><text>Windows content</text></paragraph></directive></directive>
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
+        <paragraph><text>Windows content</text></paragraph></directive></directive>
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive>
@@ -38,7 +40,7 @@ def test_tabs() -> None:
     assert (
         len(diagnostics) == 1
         and diagnostics[0].message.startswith("Unexpected field")
-        and diagnostics[0].start[0] == 54
+        and diagnostics[0].start[0] == 61
     )
 
 
