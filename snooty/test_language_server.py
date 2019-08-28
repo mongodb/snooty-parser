@@ -2,8 +2,9 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from . import language_server
-from .types import Diagnostic, FileId
+from . import language_server, rstparser
+from .types import Diagnostic, FileId, SerializableType, ProjectConfig
+from .parser import parse_rst, JSONVisitor
 from .flutter import checked, check_type
 
 CWD_URL = "file://" + Path().resolve().as_posix()
@@ -78,7 +79,8 @@ def test_language_server() -> None:
 
 
 def test_text_doc_resolve() -> None:
-    """Tests to see if m_text_document__resolve() returns the proper path combined with """
+    """Tests to see if m_text_document__resolve() returns the proper path combined with 
+    appropriate extension"""
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/test_project")
 
@@ -109,3 +111,56 @@ def test_text_doc_resolve() -> None:
         expected_path = source_path.joinpath(test_file).with_suffix(".txt")
 
         assert resolve_path == expected_path
+
+
+def test_text_doc_get_ast() -> None:
+    """Tests to see if m_text_document__get_ast() returns the proper
+    page ast for .txt file"""
+    language_server_ast: SerializableType = None
+    parser_ast: SerializableType = None
+
+    test_file_text = """
+            .. _guides:
+
+            ======
+            Guides
+            ======
+
+            .. figure:: /images/compass-create-database.png
+            :alt: Sample images
+
+            .. literalinclude:: /driver-examples/DocumentationExamples.cs
+            :language: c#
+            :dedent:
+            :start-after: Start Example 5
+            :end-before: End Example 5
+            """
+
+    # Set up language server
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(None, CWD_URL + "/test_data/test_project")
+
+        assert server.project is not None
+
+        source_path = server.project.config.source_path
+        test_file = "index.txt"
+        test_file_path = source_path.joinpath(test_file)
+
+        language_server_ast = server.m_text_document__get_ast(
+            str(test_file_path), test_file_text
+        )
+
+    # Set up parser
+    root_path = Path("test_data")
+    project_root = root_path.joinpath("test_project")
+    path = project_root.joinpath(Path("source/index.txt")).resolve()
+    project_config = ProjectConfig(project_root, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Parse text
+    page, diagnostics = parse_rst(parser, path, test_file_text)
+    page.finish(diagnostics)
+
+    parser_ast = page.ast
+
+    assert language_server_ast == parser_ast

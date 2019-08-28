@@ -553,6 +553,8 @@ def get_giza_category(path: PurePath) -> str:
 
 
 class ProjectBackend(Protocol):
+    last_updated_ast: SerializableType = None
+
     def on_progress(self, progress: int, total: int, message: str) -> None:
         ...
 
@@ -616,6 +618,10 @@ class _Project:
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.root.joinpath(fileid)
+
+    def get_updated_page_ast(self) -> SerializableType:
+        """Uses the LanguageServer backend to identify the page that has been updated"""
+        return self.backend.last_updated_ast
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
@@ -810,6 +816,9 @@ class Project:
         # We don't need to obtain a lock because this method only operates on
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
+
+    def get_updated_page_ast(self) -> SerializableType:
+        return self._project.get_updated_page_ast()
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""

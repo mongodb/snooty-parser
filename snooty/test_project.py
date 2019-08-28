@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic, ProjectConfig
+from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
 from .parser import Project
 from .util import ast_dive
 
@@ -13,6 +13,7 @@ from .util import ast_dive
 class Backend:
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
+    last_updated_ast: SerializableType = None
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -23,6 +24,7 @@ class Backend:
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         self.pages[page_id] = page
         self.updates.append(page_id)
+        self.last_updated_ast = page.ast
 
     def on_delete(self, page_id: FileId) -> None:
         pass

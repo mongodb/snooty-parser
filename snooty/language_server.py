@@ -146,6 +146,7 @@ def pid_exists(pid: int) -> bool:
 class Backend:
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
+        self.last_updated_ast: SerializableType = None
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -154,7 +155,7 @@ class Backend:
         self.server.set_diagnostics(path, diagnostics)
 
     def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
-        pass
+        self.last_updated_ast = page.ast
 
     def on_delete(self, page_id: FileId) -> None:
         pass
@@ -288,6 +289,18 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         else:
             logger.error("resolveType is not supported")
             return fileName
+
+    def m_text_document__get_ast(
+        self, filePath: str, fileText: str
+    ) -> SerializableType:
+        """Given a .txt file, return the ast of the page that is created 
+        from parsing that file"""
+        if self.project is None:
+            logger.warn("Project uninitialized")
+            return None
+
+        self.project.update(Path(filePath), fileText)
+        return self.project.get_updated_page_ast()
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:

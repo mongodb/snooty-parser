@@ -10,7 +10,7 @@ from typing import List
 
 from . import language_server
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId
+from .types import Page, Diagnostic, FileId, SerializableType
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
@@ -52,6 +52,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 class Backend:
     def __init__(self) -> None:
         self.total_warnings = 0
+        self.last_updated_ast: SerializableType = None
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -70,7 +71,7 @@ class Backend:
             self.total_warnings += 1
 
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
-        pass
+        self.last_updated_ast = page.ast
 
     def on_delete(self, page_id: FileId) -> None:
         pass
