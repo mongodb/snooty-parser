@@ -290,7 +290,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             logger.error("resolveType is not supported")
             return fileName
 
-    def m_text_document__get_ast(
+    def m_text_document__get_page_ast(
         self, filePath: str, fileText: str
     ) -> SerializableType:
         """Given a .txt file, return the ast of the page that is created 

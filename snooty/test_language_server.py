@@ -113,7 +113,7 @@ def test_text_doc_resolve() -> None:
         assert resolve_path == expected_path
 
 
-def test_text_doc_get_ast() -> None:
+def test_text_doc_get_page_ast() -> None:
     """Tests to see if m_text_document__get_ast() returns the proper
     page ast for .txt file"""
     language_server_ast: SerializableType = None
@@ -146,7 +146,7 @@ def test_text_doc_get_ast() -> None:
         test_file = "index.txt"
         test_file_path = source_path.joinpath(test_file)
 
-        language_server_ast = server.m_text_document__get_ast(
+        language_server_ast = server.m_text_document__get_page_ast(
             str(test_file_path), test_file_text
         )
 
