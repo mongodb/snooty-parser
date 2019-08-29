@@ -8,7 +8,7 @@ import subprocess
 import threading
 from functools import partial
 from pathlib import Path, PurePath
-from typing import Any, Dict, Tuple, Optional, Set, List, Iterable
+from typing import cast, Any, Dict, Tuple, Optional, Set, List, Iterable
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
@@ -172,9 +172,12 @@ class JSONVisitor:
     """Node visitor that creates a JSON-serializable structure."""
 
     def __init__(
-        self, source_path: Path, docpath: PurePath, document: docutils.nodes.document
+        self,
+        project_config: ProjectConfig,
+        docpath: PurePath,
+        document: docutils.nodes.document,
     ) -> None:
-        self.source_path = source_path
+        self.project_config = project_config
         self.docpath = docpath
         self.document = document
         self.state: List[Dict[str, Any]] = []
@@ -284,7 +287,16 @@ class JSONVisitor:
             name = node["names"][0]
             doc["name"] = name
         elif node_name == "substitution_reference":
-            doc["name"] = node["refname"]
+            # If this substitution was defined in snooty.toml, append its defined replacement as children nodes
+            if node.astext() in self.project_config.substitution_nodes:
+                substitution_definition = cast(
+                    Dict[str, SerializableType],
+                    self.project_config.substitution_nodes[node.astext()],
+                )["children"]
+                self.state[-1].setdefault("children", [])
+                self.state[-1]["children"].extend(substitution_definition)
+            else:
+                doc["name"] = node["refname"]
             return
 
         doc["children"] = []
@@ -388,7 +400,7 @@ class JSONVisitor:
                 return True
 
             fileid, path = util.reroot_path(
-                Path(argument_text), self.docpath, self.source_path
+                Path(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Validate if file exists
@@ -417,7 +429,9 @@ class JSONVisitor:
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
         target = PurePath(node["target"]).with_suffix(".txt")
-        fileid, target_path = util.reroot_path(target, self.docpath, self.source_path)
+        fileid, target_path = util.reroot_path(
+            target, self.docpath, self.project_config.source_path
+        )
 
         if not target_path.is_file():
             msg = (
@@ -426,7 +440,9 @@ class JSONVisitor:
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
-        fileid, path = util.reroot_path(path, self.docpath, self.source_path)
+        fileid, path = util.reroot_path(
+            path, self.docpath, self.project_config.source_path
+        )
         static_asset = StaticAsset.load(fileid, path, upload)
         self.static_assets.add(static_asset)
         return static_asset
@@ -435,7 +451,7 @@ class JSONVisitor:
         self.diagnostics.extend(diagnostics)
 
     def __make_child_visitor(self) -> "JSONVisitor":
-        visitor = type(self)(self.source_path, self.docpath, self.document)
+        visitor = type(self)(self.project_config, self.docpath, self.document)
         visitor.diagnostics = self.diagnostics
         visitor.static_assets = self.static_assets
         visitor.pending = self.pending
@@ -535,6 +551,16 @@ class _Project:
             "extracts": gizaparser.extracts.GizaExtractsCategory(self.config),
             "release": gizaparser.release.GizaReleaseSpecificationCategory(self.config),
         }
+
+        substitution_nodes: Dict[str, SerializableType] = {}
+        for k, v in self.config.substitutions.items():
+            node, diagnostics = parse_rst(self.parser, root, v)
+            substitution_nodes[k] = node.ast
+
+        self.config.substitution_nodes = substitution_nodes
+
+        # Re-parse using our updated config that now includes substitutions represented as nodes
+        self.parser = rstparser.Parser(self.config, JSONVisitor)
 
         username = pwd.getpwuid(os.getuid()).pw_name
         branch = subprocess.check_output(

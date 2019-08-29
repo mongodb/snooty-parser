@@ -372,7 +372,10 @@ class NoTransformRstParser(docutils.parsers.rst.Parser):
 
 class Visitor(Protocol):
     def __init__(
-        self, project_root: Path, docpath: PurePath, document: docutils.nodes.document
+        self,
+        project_config: ProjectConfig,
+        docpath: PurePath,
+        document: docutils.nodes.document,
     ) -> None:
         ...
 
@@ -485,7 +488,7 @@ class Parser(Generic[_V]):
 
         parser.parse(text, document)
 
-        visitor = self.visitor_class(self.project_config.source_path, path, document)
+        visitor = self.visitor_class(self.project_config, path, document)
         visitor.add_diagnostics(diagnostics)
         document.walkabout(visitor)
         return visitor, text

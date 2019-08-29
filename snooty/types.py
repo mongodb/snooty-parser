@@ -260,6 +260,8 @@ class ProjectConfig:
     name: str
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
+    substitutions: Dict[str, str] = field(default_factory=dict)
+    substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
 
     @property
     def source_path(self) -> Path:

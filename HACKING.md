@@ -68,6 +68,18 @@ helper classes.
 ### `types.py`
 ### `util.py`
 
+# Developing Snooty
+Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
+```shell
+flit install -s
+```
+
+## Running tests
+To run tests for a specific file:
+```shell
+. .venv/bin/activate
+pytest snooty/test_<file>.py
+```
 
 # Problem Areas
 
