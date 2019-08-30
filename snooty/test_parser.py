@@ -244,6 +244,65 @@ def test_admonition() -> None:
     )
 
 
+def test_toml_replacement() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(
+        ROOT_PATH,
+        "",
+        source="./",
+        substitutions={"yaml": "*Yet Another Markup Language*"},
+    )
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    substitution_nodes = {}
+    for k, v in project_config.substitutions.items():
+        node, diagnostics = parse_rst(parser, ROOT_PATH, v)
+        substitution_nodes[k] = node.ast
+
+    project_config.substitution_nodes = substitution_nodes
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+|yaml| ain't markup language.
+""",
+    )
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <paragraph>
+        <substitution_reference>
+        <paragraph>
+        <emphasis><text>Yet Another Markup Language</text></emphasis>
+        </paragraph>
+        </substitution_reference>
+        <text>ain't markup language.</text>
+        </paragraph>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Testing an |undefined| substitution here.
+""",
+    )
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <paragraph>
+        <text>Testing an </text>
+        <substitution_reference name="undefined" />
+        <text> substitution here.</text>
+        </paragraph>
+        </root>""",
+    )
+
+
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
