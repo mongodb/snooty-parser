@@ -81,6 +81,13 @@ To run tests for a specific file:
 pytest snooty/test_<file>.py
 ```
 
+### Code Coverage
+Install [Coverage](https://coverage.readthedocs.io/en/v4.5.x/). After running tests via `make format test`, run:
+```shell
+coverage html
+```
+This will generate an HTML representation of code coverage throughout the repo that can be viewed in the browser.
+
 # Problem Areas
 
 * Transforming docutils nodes into our AST (parser.JSONVisitor) is
