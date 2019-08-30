@@ -261,6 +261,7 @@ class ProjectConfig:
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
     substitutions: Dict[str, str] = field(default_factory=dict)
+    # This variable is populated after parse time with the nodes from `substitutions` strings
     substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
 
     @property

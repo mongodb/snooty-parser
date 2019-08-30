@@ -289,10 +289,14 @@ class JSONVisitor:
         elif node_name == "substitution_reference":
             # If this substitution was defined in snooty.toml, append its defined replacement as children nodes
             if node.astext() in self.project_config.substitution_nodes:
+                # Strip the node of its root and paragraph nodes
                 substitution_definition = cast(
                     Dict[str, SerializableType],
                     self.project_config.substitution_nodes[node.astext()],
                 )["children"]
+                substitution_definition = cast(List[Any], substitution_definition)[0][
+                    "children"
+                ]
                 self.state[-1].setdefault("children", [])
                 self.state[-1]["children"].extend(substitution_definition)
             else:
@@ -552,15 +556,13 @@ class _Project:
             "release": gizaparser.release.GizaReleaseSpecificationCategory(self.config),
         }
 
+        # For each repo-wide substitution, parse the string and save to our project config
         substitution_nodes: Dict[str, SerializableType] = {}
         for k, v in self.config.substitutions.items():
             node, diagnostics = parse_rst(self.parser, root, v)
             substitution_nodes[k] = node.ast
 
         self.config.substitution_nodes = substitution_nodes
-
-        # Re-parse using our updated config that now includes substitutions represented as nodes
-        self.parser = rstparser.Parser(self.config, JSONVisitor)
 
         username = pwd.getpwuid(os.getuid()).pw_name
         branch = subprocess.check_output(

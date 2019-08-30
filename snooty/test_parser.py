@@ -274,9 +274,7 @@ def test_toml_replacement() -> None:
         """<root>
         <paragraph>
         <substitution_reference>
-        <paragraph>
         <emphasis><text>Yet Another Markup Language</text></emphasis>
-        </paragraph>
         </substitution_reference>
         <text>ain't markup language.</text>
         </paragraph>
