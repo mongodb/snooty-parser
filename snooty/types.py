@@ -20,6 +20,7 @@ from typing import (
 )
 import toml
 from .flutter import checked, check_type, LoadError
+from . import intersphinx
 
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
@@ -260,6 +261,7 @@ class ProjectConfig:
     name: str
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
+    intersphinx: List[str] = field(default_factory=list)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
     substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
@@ -333,3 +335,7 @@ class ProjectConfig:
             return "\u200b"
 
         return PAT_VARIABLE.sub(handle_match, source), diagnostics
+
+    def load_inventories(self) -> None:
+        for inventory in self.intersphinx:
+            intersphinx.fetch_inventory(inventory)
