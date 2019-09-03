@@ -68,6 +68,25 @@ helper classes.
 ### `types.py`
 ### `util.py`
 
+# Developing Snooty
+Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
+```shell
+flit install -s
+```
+
+## Running tests
+To run tests for a specific file:
+```shell
+. .venv/bin/activate
+pytest snooty/test_<file>.py
+```
+
+### Code Coverage
+Install [Coverage](https://coverage.readthedocs.io/en/v4.5.x/). After running tests via `make format test`, run:
+```shell
+coverage html
+```
+This will generate an HTML representation of code coverage throughout the repo that can be viewed in the browser.
 
 # Problem Areas
 

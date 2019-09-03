@@ -2,3 +2,6 @@ name = "test_data"
 
 [constants]
 name = "MongoDB"
+
+[substitutions]
+guides = "MongoDB Guides"
