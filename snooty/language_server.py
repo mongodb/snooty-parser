@@ -146,7 +146,6 @@ def pid_exists(pid: int) -> bool:
 class Backend:
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
-        self.last_updated_ast: SerializableType = None
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -155,7 +154,7 @@ class Backend:
         self.server.set_diagnostics(path, diagnostics)
 
     def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
-        self.last_updated_ast = page.ast
+        pass
 
     def on_delete(self, page_id: FileId) -> None:
         pass
@@ -299,8 +298,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             logger.warn("Project uninitialized")
             return None
 
-        self.project.update(Path(filePath), fileText)
-        return self.project.get_updated_page_ast()
+        return self.project.get_page_ast(Path(filePath), fileText)
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:

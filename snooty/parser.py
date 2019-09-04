@@ -553,8 +553,6 @@ def get_giza_category(path: PurePath) -> str:
 
 
 class ProjectBackend(Protocol):
-    last_updated_ast: SerializableType = None
-
     def on_progress(self, progress: int, total: int, message: str) -> None:
         ...
 
@@ -619,9 +617,19 @@ class _Project:
     def get_full_path(self, fileid: FileId) -> Path:
         return self.root.joinpath(fileid)
 
-    def get_updated_page_ast(self) -> SerializableType:
-        """Uses the LanguageServer backend to identify the page that has been updated"""
-        return self.backend.last_updated_ast
+    def get_page_ast(self, path: Path, text: str) -> SerializableType:
+        """Update page file (.txt) with current text and return fully populated page AST"""
+        self.update(path, text)
+
+        # Get incomplete AST of page
+        fileid = self.get_fileid(path)
+        page = self.pages[fileid]
+        # Make SerializableType modifiable using dict methods
+        page_ast = cast(Dict[str, Any], page.ast)
+
+        # Fill in missing include nodes
+        page_ast["children"] = self._populate_include_nodes(page_ast["children"])
+        return cast(SerializableType, page_ast)
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
@@ -730,6 +738,42 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
+    def _populate_include_nodes(
+        self, nodes: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Add include nodes to page AST's children"""
+        def replace_include(node: Dict[str, Any]) -> Dict[str, Any]:
+            # Checks if key in node first to prevent .get() errors of SerializableType
+            if node.get("name") == "include":
+                # Get the name of the file
+                argument = node["argument"][0]
+                include_filename = argument["value"]
+                include_filename = include_filename[1:]
+
+                # Make sure extension is correct
+                tokens = include_filename.split("/")
+                if "steps" in tokens:
+                    include_filename = include_filename.replace(".rst", ".yaml")
+                elif "steps" in tokens or "release" in tokens:
+                    include_filename = include_filename.replace(".rst", "")
+
+                # Get children of include file
+                include_file_page_ast = cast(
+                    Dict[str, Any], self.pages[FileId(include_filename)].ast
+                )
+                include_node_children = include_file_page_ast["children"]
+
+                # Resolve includes within include node
+                replaced_include = list(map(replace_include, include_node_children))
+                node["children"] = replaced_include
+            # Check for include nodes among current node's children
+            elif node.get("children"):
+                for child in node["children"]:
+                    replace_include(child)
+            return node
+
+        return list(map(replace_include, nodes))
+
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
         # Finish any pending tasks
@@ -817,8 +861,10 @@ class Project:
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
 
-    def get_updated_page_ast(self) -> SerializableType:
-        return self._project.get_updated_page_ast()
+    def get_page_ast(self, path: Path, text: str) -> SerializableType:
+        """Return complete AST of page with updated text"""
+        with self._lock:
+            return self._project.get_page_ast(path, text)
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""

@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from . import language_server, rstparser
+from .util_test import check_ast_testing_string
 from .types import Diagnostic, FileId, SerializableType, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 from .flutter import checked, check_type
@@ -129,16 +130,14 @@ def test_text_doc_get_page_ast() -> None:
             .. figure:: /images/compass-create-database.png
             :alt: Sample images
 
-            .. literalinclude:: /driver-examples/DocumentationExamples.cs
-            :language: c#
-            :dedent:
-            :start-after: Start Example 5
-            :end-before: End Example 5
+            .. include:: /includes/test_rst.rst
+
+            .. include:: /includes/steps/migrate-compose-pr.rst
             """
 
     # Set up language server
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
-        server.m_initialize(None, CWD_URL + "/test_data/test_project")
+        server.m_initialize(None, CWD_URL + "/test_data/test_project_ls")
 
         assert server.project is not None
 
@@ -161,6 +160,27 @@ def test_text_doc_get_page_ast() -> None:
     page, diagnostics = parse_rst(parser, path, test_file_text)
     page.finish(diagnostics)
 
-    parser_ast = page.ast
+    # Parser ast should have less information than ast from language server
+    assert language_server_ast != parser_ast
 
-    assert language_server_ast == parser_ast
+    # Check to see that ast has all includes
+    check_ast_testing_string(
+        language_server_ast,
+        """<root alt="Sample images">
+        <target ids="['guides']"></target>
+        <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
+        <text>/images/compass-create-database.png</text></directive>
+        <directive name="include"><text>/includes/test_rst.rst</text>
+        <directive name="include"><text>/includes/include_child.rst</text>
+        <paragraph><text>This is an include in an include</text></paragraph>
+        </directive></directive>
+        <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
+        <directive name="step"><section><heading id="mongodb-atlas-account">
+        <text>MongoDB Atlas account</text></heading>
+        <paragraph><text>If you don't have an Atlas account, </text>
+        <role name="doc" label="{'type': 'text', 'value': 'create one', 'position': {'start': {'line': 1}}}" target="/cloud/atlas"></role>
+        <text> now.</text></paragraph></section></directive>
+        <directive name="step"><section>
+        <heading id="compose-mongodb-deployment"><text>Compose MongoDB deployment</text></heading>
+        </section></directive></directive></root>""",
+    )
