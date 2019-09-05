@@ -366,6 +366,13 @@ class CodeDirective(docutils.parsers.rst.Directive):
 
 
 class VersionDirective(docutils.parsers.rst.Directive):
+    """Special handling for versionadded, versionchanged, and deprecated directives.
+
+    These directives include one required argument and an optional argument on the next line.
+    We need to ensure that these are both included in the `argument` field of the AST, and that
+    subsequent indented directives are included as children of the node.
+    """
+
     required_arguments = 1
     optional_arguments = 1
     has_content = True
