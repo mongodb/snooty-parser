@@ -615,3 +615,62 @@ def test_cond() -> None:
         </directive>
         </root>""",
     )
+
+
+def test_footnote() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. [#footnote-test]
+
+    This is an example of what a footnote looks like.
+
+    It may have multiple children.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <footnote id="footnote-test" name="footnote-test" label="1">
+        <paragraph>
+        <text>This is an example of what a footnote looks like.</text>
+        </paragraph>
+        <paragraph>
+        <text>It may have multiple children.</text>
+        </paragraph>
+        </footnote>
+        </root>""",
+    )
+
+
+def test_footnote_reference() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+This is a footnote [#test-footnote]_ in use.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <paragraph>
+        <text>This is a footnote</text>
+        <footnote_reference label="1" id="id1" refname="test-footnote" />
+        <text> in use.</text>
+        </paragraph>
+        </root>""",
+    )
