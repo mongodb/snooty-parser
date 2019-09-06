@@ -40,6 +40,33 @@ def test_get_files() -> None:
     }
 
 
+def test_add_doc_target_ext() -> None:
+    # Set up target filenames
+    root = Path("root")
+    docpath = PurePath("path/to/doc/")
+    targets = [
+        "dottedfilename",
+        "dotted.filename",
+        "dotted.file.name",
+        "d.o.t.t.e.d.f.i.l.e.n.a.m.e",
+    ]
+
+    # What we want the resulting target paths to be
+    path_to_file = root.joinpath(docpath.parent)
+    resolved_targets = [
+        path_to_file.joinpath(Path("dottedfilename.txt")).resolve(),
+        path_to_file.joinpath(Path("dotted.filename.txt")).resolve(),
+        path_to_file.joinpath(Path("dotted.file.name.txt")).resolve(),
+        path_to_file.joinpath(Path("d.o.t.t.e.d.f.i.l.e.n.a.m.e.txt")).resolve(),
+    ]
+
+    # Compare resulting target paths from add_doc_target_ext()
+    test_results = [
+        util.add_doc_target_ext(target, docpath, root) for target in targets
+    ]
+    assert test_results == resolved_targets
+
+
 @pytest.mark.skipif(
     sys.platform != "darwin",
     reason="file watching has very different behavior on different systems; it's hard to test",
