@@ -365,6 +365,45 @@ class CodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
+class VersionDirective(docutils.parsers.rst.Directive):
+    """Special handling for versionadded, versionchanged, and deprecated directives.
+
+    These directives include one required argument and an optional argument on the next line.
+    We need to ensure that these are both included in the `argument` field of the AST, and that
+    subsequent indented directives are included as children of the node.
+    """
+
+    required_arguments = 1
+    optional_arguments = 1
+    has_content = True
+    final_argument_whitespace = True
+    option_spec: Dict[str, object] = {}
+
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        node = directive(self.name)
+        node.document = self.state.document
+        node.source, node.line = source, line
+        node["options"] = self.options
+
+        if self.arguments is not None:
+            textnodes = []
+            for argument_text in self.arguments:
+                text, messages = self.state.inline_text(argument_text, self.lineno)
+                textnodes.extend(text)
+            argument = directive_argument("", "", *textnodes)
+            argument.document = self.state.document
+            argument.source, argument.line = source, line
+            node.append(argument)
+
+        if self.content:
+            self.state.nested_parse(
+                self.content, self.state_machine.line_offset, node, match_titles=True
+            )
+
+        return [node]
+
+
 class NoTransformRstParser(docutils.parsers.rst.Parser):
     def get_transforms(self) -> List[object]:
         return []
@@ -437,6 +476,11 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     docutils.parsers.rst.directives.register_directive("code-block", CodeDirective)
     docutils.parsers.rst.directives.register_directive("code", CodeDirective)
     docutils.parsers.rst.directives.register_directive("sourcecode", CodeDirective)
+    docutils.parsers.rst.directives.register_directive("deprecated", VersionDirective)
+    docutils.parsers.rst.directives.register_directive("versionadded", VersionDirective)
+    docutils.parsers.rst.directives.register_directive(
+        "versionchanged", VersionDirective
+    )
     docutils.parsers.rst.directives.register_directive("guide", LegacyGuideDirective)
     docutils.parsers.rst.directives.register_directive(
         "guide-index", LegacyGuideIndexDirective
