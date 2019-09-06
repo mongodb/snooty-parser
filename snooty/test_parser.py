@@ -617,6 +617,100 @@ def test_cond() -> None:
     )
 
 
+def test_version() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. versionchanged:: 2.0
+    This is some modified content.
+
+    This is a child that should also be rendered here.
+
+This paragraph is not a child.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="versionchanged">
+        <text>
+        2.0
+        </text>
+        <text>
+        This is some modified content.
+        </text>
+        <paragraph>
+        <text>This is a child that should also be rendered here.</text>
+        </paragraph>
+        </directive>
+        <paragraph>
+        <text>This paragraph is not a child.</text>
+        </paragraph>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. deprecated:: 1.8
+
+A new paragraph.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="deprecated">
+        <text>
+        1.8
+        </text>
+        </directive>
+        <paragraph>
+        <text>A new paragraph.</text>
+        </paragraph>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. versionadded:: 2.1
+    A description that includes *emphasized* text.
+
+    A child paragraph.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="versionadded">
+        <text>
+        2.1
+        </text>
+        <text>A description that includes </text>
+        <emphasis><text>emphasized</text></emphasis>
+        <text> text.</text>
+        <paragraph>
+        <text>A child paragraph.</text>
+        </paragraph>
+        </directive>
+        </root>""",
+    )
+
+
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
