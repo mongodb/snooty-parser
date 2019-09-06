@@ -638,7 +638,7 @@ def test_footnote() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <footnote id="footnote-test" name="footnote-test" label="1">
+        <footnote id="footnote-test" name="footnote-test">
         <paragraph>
         <text>This is an example of what a footnote looks like.</text>
         </paragraph>
@@ -669,7 +669,7 @@ This is a footnote [#test-footnote]_ in use.
         """<root>
         <paragraph>
         <text>This is a footnote</text>
-        <footnote_reference label="1" id="id1" refname="test-footnote" />
+        <footnote_reference id="id1" refname="test-footnote" />
         <text> in use.</text>
         </paragraph>
         </root>""",

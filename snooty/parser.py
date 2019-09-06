@@ -306,13 +306,9 @@ class JSONVisitor:
             name = node["names"][0]
             doc["name"] = name
             doc["id"] = node["ids"][0]
-            if "auto" in node:
-                doc["label"] = node["auto"]
         elif node_name == "footnote_reference":
             doc["refname"] = node["refname"]
             doc["id"] = node["ids"][0]
-            if "auto" in node:
-                doc["label"] = node["auto"]
 
         doc["children"] = []
 
