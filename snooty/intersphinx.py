@@ -8,6 +8,8 @@ import datetime
 import urllib.parse
 import zlib
 from dataclasses import dataclass, field
+from email.utils import formatdate
+from time import mktime
 from pathlib import Path
 from typing import Dict, Tuple, NamedTuple, Optional
 import requests
@@ -104,9 +106,7 @@ def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
 
     if mtime is not None:
         if (datetime.datetime.now() - mtime) < datetime.timedelta(hours=1):
-            request_headers["If-Modified-Since"] = mtime.strftime(
-                "%a, %d %b %Y %H:%M:%S GMT"
-            )
+            request_headers["If-Modified-Since"] = formatdate(mktime(mtime.timetuple()))
 
     res = requests.get(url, headers=request_headers)
     res.raise_for_status()
