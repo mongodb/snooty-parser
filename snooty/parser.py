@@ -432,15 +432,12 @@ class JSONVisitor:
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
-        target = PurePath(node["target"]).with_suffix(".txt")
-        fileid, target_path = util.reroot_path(
-            target, self.docpath, self.project_config.source_path
+        resolved_target_path = util.add_doc_target_ext(
+            node["target"], self.docpath, self.project_config.source_path
         )
 
-        if not target_path.is_file():
-            msg = (
-                f'"{node["name"]}" could not open "{target_path}": No such file exists'
-            )
+        if not resolved_target_path.is_file():
+            msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
