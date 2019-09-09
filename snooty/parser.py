@@ -423,21 +423,27 @@ class JSONVisitor:
                 else:
                     msg = f'"{name}" could not open "{argument_text}": No such file exists'
                     self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
-        elif name == "card":
+        elif name == "cardgroup-card":
             image_argument = None
             try:
                 image_argument = options["image"]
             except (IndexError, KeyError):
                 pass
-            if image_argument is not None:
-                try:
-                    static_asset = self.add_static_asset(
-                        Path(image_argument), upload=True
+
+            if image_argument is None:
+                self.diagnostics.append(
+                    Diagnostic.error(
+                        f'"{name}" expected an image argument', util.get_line(node)
                     )
-                    self.pending.append(PendingFigure(doc, static_asset))
-                except OSError as err:
-                    msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                )
+                return True
+
+            try:
+                static_asset = self.add_static_asset(Path(image_argument), upload=True)
+                self.pending.append(PendingFigure(doc, static_asset))
+            except OSError as err:
+                msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
+                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
         if options:
             doc["options"] = options

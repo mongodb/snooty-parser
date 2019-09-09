@@ -302,7 +302,8 @@ class CardGroupDirective(BaseDocutilsDirective):
         """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
         line = self.lineno + child.line
 
-        node = directive("card")
+        # Give the node a unique name, as "card" is used by landing page cards in docs-tutorials.
+        node = directive("cardgroup-card")
         node.document = self.state.document
         node.source = source
         node.line = line
