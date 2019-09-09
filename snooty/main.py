@@ -115,7 +115,7 @@ class MongoBackend(Backend):
                 {"_id": static_asset.get_checksum()},
                 {
                     "_id": static_asset.get_checksum(),
-                    "filename": static_asset.path.name,
+                    "filename": str(static_asset.fileid),
                     "data": static_asset.data,
                 },
                 upsert=True,
