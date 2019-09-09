@@ -53,6 +53,21 @@ class LegacyTabsDefinition(nodes.Node):
     tabs: List[LegacyTabDefinition]
 
 
+@checked
+@dataclass
+class CardDefinition(nodes.Node):
+    id: str
+    headline: str
+    image: str
+    link: str
+
+
+@checked
+@dataclass
+class CardGroupDefinition(nodes.Node):
+    cards: List[CardDefinition]
+
+
 class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
     pass
 
@@ -238,6 +253,68 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
         lines.append("")
 
     return lines
+
+
+class CardGroupDirective(BaseDocutilsDirective):
+    required_arguments = 0
+    optional_arguments = 0
+    has_content = True
+    option_spec = {"type": str}
+    # option_spec = {"type": lambda type: docutils.parsers.rst.directives.choice(type, ('large', 'small', None))}
+
+    def run(self) -> List[docutils.nodes.Node]:
+        parsed = load_yaml("\n".join(self.content))[0]
+        try:
+            loaded = check_type(CardGroupDefinition, parsed)
+        except LoadError as err:
+            line = self.lineno + getattr(err.bad_data, "_start_line", 0) + 1
+            error_node = self.state.document.reporter.error(str(err), line=line)
+            return [error_node]
+
+        node = directive("card-group")
+        node.document = self.state.document
+        source, node.line = self.state_machine.get_source_and_line(self.lineno)
+        node.source = source
+        self.add_name(node)
+
+        options: Dict[str, object] = {}
+        node["options"] = options
+        options["type"] = self.options["type"]
+
+        for child in loaded.cards:
+            node.append(
+                self.make_card_node(
+                    child.id, child.headline, child.image, child.link, source, child
+                )
+            )
+
+        return [node]
+
+    def make_card_node(
+        self,
+        cardid: str,
+        headline: str,
+        image: str,
+        link: str,
+        source: str,
+        child: CardDefinition,
+    ) -> docutils.nodes.Node:
+        """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
+        line = self.lineno + child.line
+
+        node = directive("card")
+        node.document = self.state.document
+        node.source = source
+        node.line = line
+
+        options: Dict[str, object] = {}
+        node["options"] = options
+        options["cardid"] = cardid
+        options["headline"] = headline
+        options["image"] = image
+        options["link"] = link
+
+        return node
 
 
 class TabsDirective(BaseDocutilsDirective):
@@ -438,6 +515,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     docutils.parsers.rst.directives.register_directive("code", CodeDirective)
     docutils.parsers.rst.directives.register_directive("sourcecode", CodeDirective)
     docutils.parsers.rst.directives.register_directive("guide", LegacyGuideDirective)
+    docutils.parsers.rst.directives.register_directive("card-group", CardGroupDirective)
     docutils.parsers.rst.directives.register_directive(
         "guide-index", LegacyGuideIndexDirective
     )
