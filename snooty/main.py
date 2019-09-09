@@ -1,6 +1,5 @@
 import getpass
 import logging
-import os.path
 import sys
 import pymongo
 import watchdog.events
@@ -116,7 +115,7 @@ class MongoBackend(Backend):
                 {"_id": static_asset.get_checksum()},
                 {
                     "_id": static_asset.get_checksum(),
-                    "type": os.path.splitext(static_asset.fileid)[1],
+                    "filename": static_asset.path.name,
                     "data": static_asset.data,
                 },
                 upsert=True,
