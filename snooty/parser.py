@@ -431,11 +431,7 @@ class JSONVisitor:
                     msg = f'"{name}" could not open "{argument_text}": No such file exists'
                     self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "cardgroup-card":
-            image_argument = None
-            try:
-                image_argument = options["image"]
-            except (IndexError, KeyError):
-                pass
+            image_argument = options.get("image", None)
 
             if image_argument is None:
                 self.diagnostics.append(
