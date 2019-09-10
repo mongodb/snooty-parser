@@ -271,8 +271,8 @@ class CardGroupDirective(BaseDocutilsDirective):
     optional_arguments = 0
     has_content = True
     option_spec = {
-        "type": lambda type: docutils.parsers.rst.directives.choice(
-            type, ("large", "small", None)
+        "type": lambda ty: docutils.parsers.rst.directives.choice(
+            ty, ("large", "small", None)
         )
     }
 
