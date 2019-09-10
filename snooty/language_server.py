@@ -279,11 +279,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return fileName
 
         if resolveType == "doc":
-            target = PurePath(fileName).with_suffix(".txt")
-            fileid, target_path = util.reroot_path(
-                target, PurePath(docPath), self.project.config.source_path
+            resolved_target_path = util.add_doc_target_ext(
+                fileName, PurePath(docPath), self.project.config.source_path
             )
-            return str(target_path)
+            return str(resolved_target_path)
         elif resolveType == "directive":
             return str(self.project.config.source_path) + fileName
         else:

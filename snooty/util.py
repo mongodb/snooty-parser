@@ -79,6 +79,18 @@ def ast_dive(ast: Any) -> Iterator[Dict[str, SerializableType]]:
         yield from ast_dive(child)
 
 
+def add_doc_target_ext(target: str, docpath: PurePath, project_root: Path) -> Path:
+    """Given the target file of a doc role, add the appropriate extension and return full file path"""
+    # Add .txt to end of doc role target path
+    target_path = PurePath(target)
+    # Adding the current suffix first takes into account dotted targets
+    new_suffix = target_path.suffix + ".txt"
+    target_path = target_path.with_suffix(new_suffix)
+
+    fileid, resolved_target_path = reroot_path(target_path, docpath, project_root)
+    return resolved_target_path
+
+
 class FileWatcher:
     """A monitor for file changes."""
 
