@@ -53,6 +53,32 @@ class LegacyTabsDefinition(nodes.Node):
     tabs: List[LegacyTabDefinition]
 
 
+@checked
+@dataclass
+class CardDefinition(nodes.Node):
+    """Represents a Card within a CardGroup.
+
+    Attributes:
+        id          Unique identifier for the card, to be used as an anchor tag
+        headline    Card title heading
+        image       Path to an image used as the body of the card
+        link        URL to be linked to by the card
+    """
+
+    id: str
+    headline: str
+    image: str
+    link: str
+
+
+@checked
+@dataclass
+class CardGroupDefinition(nodes.Node):
+    """A list of cards as specified in CardDefinition"""
+
+    cards: List[CardDefinition]
+
+
 class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
     pass
 
@@ -238,6 +264,61 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
         lines.append("")
 
     return lines
+
+
+class CardGroupDirective(BaseDocutilsDirective):
+    required_arguments = 0
+    optional_arguments = 0
+    has_content = True
+    option_spec = {
+        "type": lambda ty: docutils.parsers.rst.directives.choice(
+            ty, ("large", "small", None)
+        )
+    }
+
+    def run(self) -> List[docutils.nodes.Node]:
+        parsed = load_yaml("\n".join(self.content))[0]
+        try:
+            loaded = check_type(CardGroupDefinition, parsed)
+        except LoadError as err:
+            line = self.lineno + getattr(err.bad_data, "_start_line", 0) + 1
+            error_node = self.state.document.reporter.error(str(err), line=line)
+            return [error_node]
+
+        node = directive("card-group")
+        node.document = self.state.document
+        source, node.line = self.state_machine.get_source_and_line(self.lineno)
+        node.source = source
+        self.add_name(node)
+
+        options: Dict[str, object] = {}
+        node["options"] = options
+        # Default to card type "small" if type is not specified
+        options["type"] = self.options.get("type", "small")
+
+        for child in loaded.cards:
+            node.append(self.make_card_node(source, child))
+
+        return [node]
+
+    def make_card_node(self, source: str, child: CardDefinition) -> docutils.nodes.Node:
+        """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
+        line = self.lineno + child.line
+
+        # Give the node a unique name, as "card" is used by landing page cards in docs-tutorials.
+        node = directive("cardgroup-card")
+        node.document = self.state.document
+        node.source = source
+        node.line = line
+
+        options: Dict[str, object] = {}
+        node["options"] = options
+        options["cardid"] = child.id
+        options["headline"] = child.headline
+        options["image"] = child.image
+        options["link"] = child.link
+
+        return node
 
 
 class TabsDirective(BaseDocutilsDirective):
@@ -482,6 +563,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         "versionchanged", VersionDirective
     )
     docutils.parsers.rst.directives.register_directive("guide", LegacyGuideDirective)
+    docutils.parsers.rst.directives.register_directive("card-group", CardGroupDirective)
     docutils.parsers.rst.directives.register_directive(
         "guide-index", LegacyGuideIndexDirective
     )
