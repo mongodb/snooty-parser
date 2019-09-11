@@ -743,6 +743,27 @@ def test_footnote() -> None:
         </root>""",
     )
 
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. [#]
+    This is an autonumbered footnote.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <footnote id="id1">
+        <paragraph>
+        <text>This is an autonumbered footnote.</text>
+        </paragraph>
+        </footnote>
+        </root>""",
+    )
+
 
 def test_footnote_reference() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -764,6 +785,26 @@ This is a footnote [#test-footnote]_ in use.
         <paragraph>
         <text>This is a footnote</text>
         <footnote_reference id="id1" refname="test-footnote" />
+        <text> in use.</text>
+        </paragraph>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+This is an autonumbered footnote [#]_ in use.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <paragraph>
+        <text>This is an autonumbered footnote</text>
+        <footnote_reference id="id1" />
         <text> in use.</text>
         </paragraph>
         </root>""",

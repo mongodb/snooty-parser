@@ -303,11 +303,19 @@ class JSONVisitor:
                 doc["name"] = node["refname"]
             return
         elif node_name == "footnote":
-            name = node["names"][0]
-            doc["name"] = name
+            # Autonumbered footnotes do not have a name
+            try:
+                name = node["names"][0]
+                doc["name"] = name
+            except IndexError:
+                pass
             doc["id"] = node["ids"][0]
         elif node_name == "footnote_reference":
-            doc["refname"] = node["refname"]
+            # Autonumbered footnotes do not have a refname
+            try:
+                doc["refname"] = node["refname"]
+            except KeyError:
+                pass
             doc["id"] = node["ids"][0]
 
         doc["children"] = []
