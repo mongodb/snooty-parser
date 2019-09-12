@@ -1,4 +1,4 @@
-.PHONY: help lint format test clean flit-publish package
+.PHONY: help lint format test clean flit-publish package cut-release
 
 SYSTEM_PYTHON=$(shell which python3)
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
@@ -18,12 +18,12 @@ help: ## Show this help message
 	touch $@
 
 lint: .venv/.EXISTS ## Run all linting
-	. .venv/bin/activate && python3 -m mypy --strict snooty
-	. .venv/bin/activate && python3 -m pyflakes snooty
-	. .venv/bin/activate && python3 -m black snooty --check
+	. .venv/bin/activate && python3 -m mypy --strict snooty tools
+	. .venv/bin/activate && python3 -m pyflakes snooty tools
+	. .venv/bin/activate && python3 -m black snooty tools --check
 
 format: .venv/.EXISTS ## Format source code with black
-	. .venv/bin/activate && python3 -m black snooty
+	. .venv/bin/activate && python3 -m black snooty tools
 
 test: lint ## Run unit tests
 	. .venv/bin/activate && python3 -m pytest --cov=snooty
@@ -84,3 +84,30 @@ flit-publish: test ## Deploy the package to pypi
 	SOURCE_DATE_EPOCH="$$SOURCE_DATE_EPOCH" flit publish
 
 package: dist/snooty-${VERSION}-${PLATFORM}.zip
+
+cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
+	@if [ -z "${BUMP_TO_VERSION}" ]; then \
+		echo "Must specify BUMP_TO_VERSION"; \
+		exit 1; \
+	fi
+	@if [ `git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'` != 'master' ]; then \
+		echo "Can only cut-release on master"; exit 1; \
+	fi
+	@git diff-index --quiet HEAD -- || { echo "Uncommitted changes found"; exit 1; }
+	$(MAKE) clean
+	tools/bump_version.py "${BUMP_TO_VERSION}"
+	git add snooty/__init__.py
+	git commit -m "Bump to v${BUMP_TO_VERSION}"
+	git tag -s -m "Release v${BUMP_TO_VERSION}" "v${BUMP_TO_VERSION}"
+	$(MAKE) test
+	$(MAKE) package
+
+	# Make sure that the built binary runs properly
+	./dist/snooty/snooty build test_data/test_project/
+
+	# Make a post-release version bump
+	tools/bump_version.py dev
+	git add snooty/__init__.py
+	git commit -m "Post-release bump"
+
+	@echo "Release: [v${BUMP_TO_VERSION}] - $$(date +%Y-%m-%d)"
