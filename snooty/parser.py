@@ -750,11 +750,12 @@ class _Project:
                 include_filename = argument["value"]
                 include_filename = include_filename[1:]
 
-                # Make sure extension is correct
+                # Make sure extension is correct. 'include' files are referenced with a .rst
+                # extension in a page, but have different extensions in the self.pages dict
                 tokens = include_filename.split("/")
                 if "steps" in tokens:
                     include_filename = include_filename.replace(".rst", ".yaml")
-                elif "steps" in tokens or "release" in tokens:
+                elif "extracts" in tokens or "release" in tokens:
                     include_filename = include_filename.replace(".rst", "")
 
                 # Get children of include file
