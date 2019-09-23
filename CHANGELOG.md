@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.13] - 2019-09-23
+
 ### Added
 
 - Support for reStructuredText footnotes (DOCSP-6620).
