@@ -31,7 +31,7 @@ def test_release_changelog() -> None:
 - No longer create spurious diagnostics about including apiargs artifacts and `hash.rst`."""
 
     assert (
-        release_changelog("v0.1.13", TEST_INPUT1)
+        release_changelog("0.1.13", TEST_INPUT1)
         == f"""# Changelog
 
 ## [Unreleased]
