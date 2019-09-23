@@ -91,7 +91,7 @@ def main() -> None:
         f.truncate(0)
         f.write(data)
 
-    if version_to_bump_to is not None:
+    if version_to_bump_to is not None and ".dev" not in version_to_bump_to:
         try:
             new_changelog = release_changelog(
                 version_to_bump_to, CHANGELOG_PATH.read_text()
