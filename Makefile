@@ -97,7 +97,7 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 	@git diff-index --quiet HEAD -- || { echo "Uncommitted changes found"; exit 1; }
 	$(MAKE) clean
 	tools/bump_version.py "${BUMP_TO_VERSION}"
-	git add snooty/__init__.py
+	git add snooty/__init__.py CHANGELOG.md
 	git commit -m "Bump to v${BUMP_TO_VERSION}"
 	git tag -s -m "Release v${BUMP_TO_VERSION}" "v${BUMP_TO_VERSION}"
 	$(MAKE) test
