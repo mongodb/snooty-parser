@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Parsing of extract filenames that include periods (DOCSP-6904)
+
 ## [v0.1.13] - 2019-09-23
 
 ### Added
