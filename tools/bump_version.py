@@ -44,7 +44,7 @@ def release_changelog(version: str, text: str) -> str:
 
     def replace(match: Match[str]) -> str:
         unreleased_block = match["unreleased"].strip()
-        return f"\n## [Unreleased]\n\n## [{version}] - {date_string}\n\n{unreleased_block}\n"
+        return f"\n## [Unreleased]\n\n## [v{version}] - {date_string}\n\n{unreleased_block}\n"
 
     result = CHANGELOG_UNRELEASED_PAT.sub(replace, text)
     if not result:
