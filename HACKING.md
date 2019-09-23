@@ -136,7 +136,8 @@ To release snooty, do the following:
   in the `dist` directory, and check the _This is a pre-release_ checkbox.
 
 If there is an error, use `git reset --hard <previous_commit_hash>` to revert any
-commits that might have been made.
+commits that might have been made, and `git tag --delete v<version>` to remove the
+tag if it was created.
 
 ## Problem Areas
 
