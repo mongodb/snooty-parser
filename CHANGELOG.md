@@ -9,20 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add validation for links under the `doc` role (DOCSP-6190).
+- Support for reStructuredText footnotes (DOCSP-6620).
 
-- Add support for the following reStructuredText constructs:
+- Support for project-wide reStructuredText substitutions (DOCSP-6442).
+
+- Support for downloading and ingesting intersphinx inventories (DOCSP-5776).
+
+- Validation for links under the `doc` role (DOCSP-6190).
+
+- Support for the following reStructuredText constructs:
 
   - `datalakeconf` rstobject
   - `caption` option to `toctree`
   - `includehidden` option to `toctree`
   - `backlinks` option to `contents` is an enum
   - `gcp` and `azure` extlinks
+  - `only` directive
+  - `tab` directive accepts a `tabid` option (DOCSP-6493)
+  - `list-table` directive accepts an argument (DOCSP-6554)
+  - `card-group` directive (DOCSP-6447)
 
 ### Changed
 
+- The original filename of static assets is now saved in the `filename` field of the
+  `snooty.assets` collection, replacing the `type` field (DOCSP-6849).
 - Directive "flag" options have a true value in the AST instead of null (DOCSP-6383).
 - The "only" directive is now deprecated in favor of "cond".
+
+### Fixed
+
+- Parsing of the `versionadded`, `versionchanged`, and `deprecated` directives (DOCSP-6504).
 
 ## [v0.1.12] - 2019-07-25
 
@@ -45,14 +61,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `products`
   - `wtdocs`
 
-### Fixed
-
-- No longer create spurious diagnostics about including apiargs artifacts and `hash.rst`.
-
 ### Changed
 
 - Undefined source constants are now replaced with a zero-width space (\u200b),
   preventing them from creating a syntax error.
+
+### Fixed
+
+- No longer create spurious diagnostics about including apiargs artifacts and `hash.rst`.
 
 ## [v0.1.11] - 2019-07-23
 
@@ -91,16 +107,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `textDocument/resolve` RPC endpoint to return the source file path of an artifact relative to the project's root (DOCSP-5967).
 
+### Changed
+
+- Diagnostic messages when failing to open a static asset are more succinct.
+- Warn about YAML files with duplicated refs (DOCSP-5704).
+
 ### Fixed
 
 - Don't throw exception if saving an asset to the server fails (DOCSP-5998).
 - The language server can now be gracefully shutdown using a context manager,
   for use in tests.
-
-### Changed
-
-- Diagnostic messages when failing to open a static asset are more succinct.
-- Warn about YAML files with duplicated refs (DOCSP-5704).
 
 ## [v0.1.8] - 2019-06-27
 
@@ -122,15 +138,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `charts-v0.10`
   - `charts-v0.9`
 
-### Fixed
-
-- The full `dns` package is included in binary builds, letting them connect to the database.
-
 ### Changed
 
 - Avoid unnecessarily reprocessing figures and literal includes.
 - Automatically rebuild files if their dependent assets change.
 - Heading nodes now have an attached ID.
+
+### Fixed
+
+- The full `dns` package is included in binary builds, letting them connect to the database.
 
 ## [v0.1.7] - 2019-05-21
 
@@ -150,14 +166,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `meta`
   - `topic`
 
+### Changed
+
+- Avoid processing giza substitutions in base nodes to avoid superfluous diagnostics.
+
 ### Fixed
 
 - `raw` directive contents are now ignored.
 - Bundle `docutils.parsers.rst.directives.misc` in binary release to avoid runtime errors when using `unicode`.
-
-### Changed
-
-- Avoid processing giza substitutions in base nodes to avoid superfluous diagnostics.
 
 ## [v0.1.6] - 2019-05-16
 
