@@ -127,8 +127,7 @@ To release snooty, do the following:
   git push --follow-tags
   ```
 
-* Go to <https://github.com/mongodb/snooty-parser>, then go to the _releases_ tab,
-  and click _Draft a new release_.
+* Go to <https://github.com/mongodb/snooty-parser/releases/new> to draft a new release.
 
 * Enter the `v<version>` to reference the tag which was just created, and enter the
   release name that was printed by the `make cut-release` target. Copy the appropriate
