@@ -1,7 +1,7 @@
 import builtins
 from typing import Any, List
 from .types import Diagnostic, FileId
-from . import main
+from . import backends
 
 
 def test_backend() -> None:
@@ -10,7 +10,7 @@ def test_backend() -> None:
     def test_print(*values: Any, **kwargs: Any) -> None:
         messages.extend(str(val) for val in values)
 
-    backend = main.Backend()
+    backend = backends.Backend()
     orig_print = builtins.print
     builtins.print = test_print
     try:

@@ -5,11 +5,10 @@ import pymongo
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import List
 
 from . import language_server
+from . import backends
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
@@ -47,84 +46,6 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
             assert False
 
 
-class Backend:
-    def __init__(self) -> None:
-        self.total_warnings = 0
-
-    def on_progress(self, progress: int, total: int, message: str) -> None:
-        pass
-
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        for diagnostic in diagnostics:
-            # Line numbers are currently... uh, "approximate"
-            print(
-                "{}({}:{}ish): {}".format(
-                    diagnostic.severity_string.upper(),
-                    path,
-                    diagnostic.start[0],
-                    diagnostic.message,
-                )
-            )
-            self.total_warnings += 1
-
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
-        pass
-
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-
-class MongoBackend(Backend):
-    def __init__(self, connection: pymongo.MongoClient) -> None:
-        super(MongoBackend, self).__init__()
-        self.client = connection
-
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
-        checksums = list(
-            asset.get_checksum() for asset in page.static_assets if asset.can_upload()
-        )
-
-        fully_qualified_pageid = "/".join(prefix + [page_id.with_suffix("").as_posix()])
-        self.client["snooty"]["documents"].replace_one(
-            {"_id": fully_qualified_pageid},
-            {
-                "_id": fully_qualified_pageid,
-                "prefix": prefix,
-                "ast": page.ast,
-                "source": page.source,
-                "static_assets": checksums,
-            },
-            upsert=True,
-        )
-
-        remote_assets = set(
-            doc["_id"]
-            for doc in self.client["snooty"]["assets"].find(
-                {"_id": {"$in": checksums}},
-                {"_id": True},
-                cursor_type=pymongo.cursor.CursorType.EXHAUST,
-            )
-        )
-        missing_assets = page.static_assets.difference(remote_assets)
-
-        for static_asset in missing_assets:
-            if not static_asset.can_upload():
-                continue
-
-            self.client["snooty"]["assets"].replace_one(
-                {"_id": static_asset.get_checksum()},
-                {
-                    "_id": static_asset.get_checksum(),
-                    "filename": str(static_asset.fileid),
-                    "data": static_asset.data,
-                },
-                upsert=True,
-            )
-
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-
 def usage(exit_code: int) -> None:
     """Exit and print usage information."""
     print(
@@ -149,7 +70,7 @@ def main() -> None:
     connection = (
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
-    backend = MongoBackend(connection) if connection else Backend()
+    backend = backends.MongoBackend(connection) if connection else backends.Backend()
     root_path = Path(sys.argv[2])
     project = Project(root_path, backend)
 
