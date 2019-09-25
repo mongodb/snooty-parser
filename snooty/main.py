@@ -2,6 +2,7 @@ import getpass
 import logging
 import sys
 import pymongo
+import re
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -84,12 +85,11 @@ class MongoBackend(Backend):
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
-        if "extracts" in page_id.as_posix():
-            fully_qualified_pageid = "/".join(prefix + [page_id.as_posix()])
-        else:
-            fully_qualified_pageid = "/".join(
-                prefix + [page_id.with_suffix("").as_posix()]
-            )
+        page_id = page_id.with_name(
+            re.sub(r"\.((txt)|(rst)|(yaml))$", "", page_id.name)
+        )
+        fully_qualified_pageid = "/".join(prefix + [page_id.as_posix()])
+
         self.client["snooty"]["documents"].replace_one(
             {"_id": fully_qualified_pageid},
             {
