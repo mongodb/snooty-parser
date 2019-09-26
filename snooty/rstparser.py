@@ -9,6 +9,7 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
+import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path, PurePath
 from typing import Dict, Generic, Optional, List, Tuple, Type, TypeVar, Iterable
@@ -485,6 +486,57 @@ class VersionDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
+class TocTreeDirective(docutils.parsers.rst.Directive):
+    """Special handling for toctree directives.
+
+    Produces a node that includes an `entries` property, represented as a list of objects. Each entry in entries includes:
+    - slug OR url: a string representing the absolute url or path of the page to navigate to
+    - [optional] title: a string representing the title to use in the TOC sidebar
+    """
+
+    required_arguments = 0
+    optional_arguments = 0
+    has_content = True
+    final_argument_whitespace = True
+    option_spec = {
+        "caption": str,
+        "hidden": util.option_flag,
+        "includehidden": util.option_flag,
+        "maxdepth": int,
+        "titlesonly": util.option_flag,
+    }
+
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        node = directive(self.name)
+        node.document = self.state.document
+        node.source, node.line = source, line
+        node["options"] = self.options
+
+        entries: List[Dict[str, str]] = []
+        for child in self.content:
+            entries.append(self.make_toc_entry(source, child))
+        node["entries"] = entries
+
+        return [node]
+
+    def make_toc_entry(self, source: str, child: str) -> Dict[str, str]:
+        entry: Dict[str, str] = {}
+        if "<" in child:
+            title, path = child.split("<")
+            path = path.strip(">")
+            entry["title"] = title.strip()
+        else:
+            path = child
+
+        parsed = urllib.parse.urlparse(path)
+        if parsed.scheme:
+            entry["url"] = path
+        else:
+            entry["slug"] = path
+        return entry
+
+
 class NoTransformRstParser(docutils.parsers.rst.Parser):
     def get_transforms(self) -> List[object]:
         return []
@@ -567,6 +619,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     docutils.parsers.rst.directives.register_directive(
         "guide-index", LegacyGuideIndexDirective
     )
+    docutils.parsers.rst.directives.register_directive("toctree", TocTreeDirective)
 
     # Define roles
     for name, role_spec in roles:
