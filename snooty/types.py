@@ -1,6 +1,7 @@
 import enum
 import hashlib
 import re
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
@@ -310,7 +311,16 @@ class ProjectConfig:
         return self, all_diagnostics
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
+
+
+        sys.stdout = open('testlog.txt', 'w') # redirect all prints to this log file
+                    # again nothing appears. it's written to log file instead
+        print(path)
+                       # ordinary file object
+
         text = path.read_text(encoding="utf-8")
+        print(text)
+        sys.stdout.close()
         return self.substitute(text)
 
     def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:

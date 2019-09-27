@@ -33,10 +33,11 @@ def test() -> None:
     n_threads = len(threading.enumerate())
     with Project(Path("test_data/test_project"), backend) as project:
         project.build()
-
+        print(project)
+        print("hi!!!")
         # Ensure that filesystem monitoring threads have been started
         assert len(threading.enumerate()) > n_threads
-
+        print(backend.pages.keys())
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
         assert list(backend.pages.keys()) == [index_id]
