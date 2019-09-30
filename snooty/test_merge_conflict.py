@@ -8,6 +8,7 @@ from .types import FileId, Page, Diagnostic
 from .parser import Project
 from .util import ast_dive
 
+
 @dataclass
 class Backend:
     pages: Dict[FileId, Page] = field(default_factory=dict)
@@ -38,12 +39,12 @@ def test() -> None:
 
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
+        print("hi before keys")
         print(backend.pages.keys())
         assert list(backend.pages.keys()) == [index_id]
         code_length = 0
         checksums = []
         index = backend.pages[index_id]
 
-
     # Ensure that any filesystem monitoring threads have been shut down
-    #assert len(threading.enumerate()) == n_threads
+    # assert len(threading.enumerate()) == n_threads
