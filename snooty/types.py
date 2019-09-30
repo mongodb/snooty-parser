@@ -311,20 +311,22 @@ class ProjectConfig:
         return self, all_diagnostics
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
-
-        sys.stdout = open("testlog.txt", "w")  # redirect all prints to this log file
-        # again nothing appears. it's written to log file instead
-        print(path)
-        # ordinary file object
         text = path.read_text(encoding="utf-8")
-        PAT_GIT_MARKER = re.compile(r"(<<<<<<<)(.+)((?:\n.+)+)(=======)(.*)((?:\n.+)+)(>>>>>>>)", re.M)
-        
-        print(PAT_GIT_MARKER.search(text))
-        merge_conflict_found = PAT_GIT_MARKER.search(text)
-        if merge_conflict_found:
-            print("found!!!")
+        PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
+        match = PAT_GIT_MARKER.search(text)
 
-        sys.stdout.close()
+        if match:
+             diagnostics = []
+             lineno = text.count("\n", 0, match.start())
+             diagnostics.append(
+                Diagnostic.error(
+                    "merge conflict artifact found in source documentation", lineno
+                )
+             )
+             
+             return (text, diagnostics)
+
+
         return self.substitute(text)
 
     def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
