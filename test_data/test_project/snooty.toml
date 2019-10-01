@@ -1,4 +1,4 @@
-name = "merge_conflict"
+name = "test_data"
 
 [constants]
 name = "MongoDB"
