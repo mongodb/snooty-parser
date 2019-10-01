@@ -114,12 +114,10 @@ def test_merge_conflict() -> None:
     project_config, _ = ProjectConfig.open(project_path)
     file_path = Path("test_data/merge_conflict/source/index.txt")
     _, project_diagnostics = project_config.read(file_path)
-    
-    assert (
-        project_diagnostics[-1].message.startswith("git merge conflict") and
-        project_diagnostics[-1].start == (68, 0)
-    )
-    assert (
-        project_diagnostics[-2].message.startswith("git merge conflict") and
-        project_diagnostics[-2].start == (35, 0)
-    )
+
+    assert project_diagnostics[-1].message.startswith(
+        "git merge conflict"
+    ) and project_diagnostics[-1].start == (68, 0)
+    assert project_diagnostics[-2].message.startswith(
+        "git merge conflict"
+    ) and project_diagnostics[-2].start == (35, 0)
