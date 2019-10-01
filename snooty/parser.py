@@ -334,7 +334,14 @@ class JSONVisitor:
             self.state[-1]["term"] = popped["children"]
         elif self.state[-1]["type"] not in NO_CHILDREN:
             if "children" not in self.state[-1]:
-                print(self.state[-1], popped)
+                # This should not happen; unfortunately, it does: see DOCSP-7122.
+                # Log some details so we can hopefully fix it when it happens next.
+                logger.error(
+                    "Malformed node in file %s: %s, %s",
+                    self.docpath.as_posix(),
+                    repr(self.state[-1]),
+                    repr(popped),
+                )
             self.state[-1]["children"].append(popped)
 
     def handle_directive(
