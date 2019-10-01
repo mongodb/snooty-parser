@@ -33,11 +33,14 @@ use in routine operations.
    user with the :authrole:`Global Owner` or
    :authrole:`Project Owner` role has sufficient access.
 
+<<<<<<< HEAD
+=======
 The procedures install a cluster with two :term:`shards <shard>`. Each
 shard comprises a three-member :term:`replica set`. The tutorial
 installs one |mongos| and three
 :term:`config servers <config server>`. Each component of the cluster
 resides on its own server, requiring a total of 10 servers.
+>>>>>>> (DOCSP-5135): Create MongoDB Agent install page.
 
 The tutorial installs the
 :doc:`{+mdbagent+} </tutorial/nav/install-mongodb-agent>` on each

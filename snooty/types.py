@@ -24,6 +24,7 @@ from .flutter import checked, check_type, LoadError
 from . import intersphinx
 
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
+PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
 
@@ -312,22 +313,15 @@ class ProjectConfig:
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
         text = path.read_text(encoding="utf-8")
-        PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
-        match = PAT_GIT_MARKER.search(text)
+        sourceText, diagnostics = self.substitute(text)
+        match_found = PAT_GIT_MARKER.finditer(text)
 
-        if match:
-             diagnostics = []
-             lineno = text.count("\n", 0, match.start())
-             diagnostics.append(
-                Diagnostic.error(
-                    "merge conflict artifact found in source documentation", lineno
-                )
-             )
-             
-             return (text, diagnostics)
+        if match_found:
+            for match in match_found:
+                lineno = text.count("\n", 0, match.start())
+                diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
 
-
-        return self.substitute(text)
+        return (text, diagnostics)
 
     def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
         """Substitute all placeholders within a string."""
