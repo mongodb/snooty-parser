@@ -521,13 +521,14 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         return [node]
 
     def make_toc_entry(self, source: str, child: str) -> Dict[str, str]:
+        """Parse entry for either url or slug and optional title"""
         entry: Dict[str, str] = {}
         if "<" in child:
             title, path = child.split("<")
             path = path.strip(">")
             entry["title"] = title.strip()
         else:
-            path = child
+            path = child.strip()
 
         parsed = urllib.parse.urlparse(path)
         if parsed.scheme:
