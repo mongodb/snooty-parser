@@ -1,7 +1,7 @@
 import enum
 import hashlib
-import re
 from collections import defaultdict
+import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
 from typing import (
