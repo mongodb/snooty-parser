@@ -504,6 +504,9 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         "includehidden": util.option_flag,
         "maxdepth": int,
         "titlesonly": util.option_flag,
+        "reversed": util.option_flag,
+        "numbered": util.option_flag,
+        "glob": util.option_flag,
     }
 
     def run(self) -> List[docutils.nodes.Node]:
