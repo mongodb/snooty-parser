@@ -1,6 +1,6 @@
 import enum
 import hashlib
-import re
+import ref
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
@@ -312,12 +312,12 @@ class ProjectConfig:
 
     def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
         text = path.read_text(encoding="utf-8")
-        sourceText, diagnostics = self.substitute(text)
+        source_text, diagnostics = self.substitute(text)
         match_found = PAT_GIT_MARKER.finditer(text)
 
         if match_found:
             for match in match_found:
-                lineno = text.count("\n", 0, match.start())
+                lineno = source_text.count("\n", 0, match.start())
                 diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
 
         return (text, diagnostics)
