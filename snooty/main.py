@@ -2,6 +2,7 @@ import getpass
 import logging
 import sys
 import pymongo
+import re
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -12,6 +13,7 @@ from .parser import Project, RST_EXTENSIONS
 from .types import Page, Diagnostic, FileId
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
+PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 logger = logging.getLogger(__name__)
 
 
@@ -84,7 +86,10 @@ class MongoBackend(Backend):
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
-        fully_qualified_pageid = "/".join(prefix + [page_id.with_suffix("").as_posix()])
+        # Manually strip file extensions so that filenames that contain periods are not truncated
+        page_id = page_id.with_name(PAT_FILE_EXTENSIONS.sub("", page_id.name))
+        fully_qualified_pageid = "/".join(prefix + [page_id.as_posix()])
+
         self.client["snooty"]["documents"].replace_one(
             {"_id": fully_qualified_pageid},
             {
