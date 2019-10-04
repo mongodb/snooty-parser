@@ -20,7 +20,7 @@ from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
 
-PAT_EXPLICIT_TILE = re.compile(
+PAT_EXPLICIT_TITLE = re.compile(
     r"^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
@@ -137,7 +137,7 @@ def handle_role_explicit_title(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle link-like roles with a target and an optional title."""
-    match = PAT_EXPLICIT_TILE.match(text)
+    match = PAT_EXPLICIT_TITLE.match(text)
     if match:
         node = role(typ, lineno, match["label"], match["target"])
     else:
@@ -162,7 +162,7 @@ class LinkRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TILE.match(text)
+        match = PAT_EXPLICIT_TITLE.match(text)
         label: Optional[str] = None
         if match:
             label, target = match["label"], match["target"]
