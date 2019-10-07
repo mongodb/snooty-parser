@@ -520,15 +520,12 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         errors: List[docutils.nodes.Node] = []
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
+            errors.extend(err)
             if entry:
                 entries.append(entry)
-            if err:
-                errors.extend(err)
         node["entries"] = entries
 
-        result: List[docutils.nodes.Node] = [node]
-        result.extend(errors)
-        return result
+        return [node, *errors]
 
     def make_toc_entry(
         self, source: str, child: str
@@ -544,8 +541,8 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         elif child.startswith("<") and child.endswith(">"):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
             err = "toctree nodes with URLs must include titles"
-            error_node = self.state.document.reporter.error(str(err), line=self.lineno)
-            return (entry, [error_node])
+            error_node = self.state.document.reporter.error(err, line=self.lineno)
+            return entry, [error_node]
         else:
             target = child
 
@@ -554,7 +551,7 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
             entry["url"] = target
         else:
             entry["slug"] = target
-        return (entry, [])
+        return entry, []
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):
