@@ -117,21 +117,6 @@ def test_text_doc_get_page_ast() -> None:
     """Tests to see if m_text_document__get_ast() returns the proper
     page ast for .txt file"""
 
-    test_file_text = """
-.. _guides:
-
-======
-Guides
-======
-
-.. figure:: /images/compass-create-database.png
-:alt: Sample images
-
-.. include:: /includes/test_rst.rst
-
-.. include:: /includes/steps/migrate-compose-pr.rst
-"""
-
     # Set up language server
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(
@@ -140,12 +125,13 @@ Guides
 
         assert server.project is not None
 
+        # Set up file path
         source_path = server.project.config.source_path
         test_file = "index.txt"
         test_file_path = source_path.joinpath(test_file)
 
         language_server_ast: SerializableType = server.m_text_document__get_page_ast(
-            str(test_file_path), test_file_text
+            str(test_file_path)
         )
 
         check_ast_testing_string(

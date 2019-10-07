@@ -617,10 +617,8 @@ class _Project:
     def get_full_path(self, fileid: FileId) -> Path:
         return self.root.joinpath(fileid)
 
-    def get_page_ast(self, path: Path, text: str) -> SerializableType:
+    def get_page_ast(self, path: Path) -> SerializableType:
         """Update page file (.txt) with current text and return fully populated page AST"""
-        self.update(path, text)
-
         # Get incomplete AST of page
         fileid = self.get_fileid(path)
         page = self.pages[fileid]
@@ -862,10 +860,10 @@ class Project:
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
 
-    def get_page_ast(self, path: Path, text: str) -> SerializableType:
+    def get_page_ast(self, path: Path) -> SerializableType:
         """Return complete AST of page with updated text"""
         with self._lock:
-            return self._project.get_page_ast(path, text)
+            return self._project.get_page_ast(path)
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""
