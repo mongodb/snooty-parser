@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
+from .types import FileId, Page, Diagnostic, ProjectConfig
 from .parser import Project
 from .util import ast_dive
 

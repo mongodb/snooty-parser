@@ -740,6 +740,7 @@ class _Project:
         self, nodes: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Add include nodes to page AST's children"""
+
         def replace_include(node: Dict[str, Any]) -> Dict[str, Any]:
             # Checks if key in node first to prevent .get() errors of SerializableType
             if node.get("name") == "include":
