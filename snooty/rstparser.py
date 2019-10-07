@@ -21,7 +21,7 @@ from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
 
-PAT_EXPLICIT_TILE = re.compile(
+PAT_EXPLICIT_TITLE = re.compile(
     r"^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
@@ -138,7 +138,7 @@ def handle_role_explicit_title(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle link-like roles with a target and an optional title."""
-    match = PAT_EXPLICIT_TILE.match(text)
+    match = PAT_EXPLICIT_TITLE.match(text)
     if match:
         node = role(typ, lineno, match["label"], match["target"])
     else:
@@ -163,7 +163,7 @@ class LinkRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TILE.match(text)
+        match = PAT_EXPLICIT_TITLE.match(text)
         label: Optional[str] = None
         if match:
             label, target = match["label"], match["target"]
@@ -523,21 +523,24 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
 
         return [node]
 
-    def make_toc_entry(self, source: str, child: str) -> Dict[str, str]:
+    @staticmethod
+    def make_toc_entry(source: str, child: str) -> Dict[str, str]:
         """Parse entry for either url or slug and optional title"""
         entry: Dict[str, str] = {}
-        if "<" in child:
-            title, path = child.split("<")
-            path = path.strip(">")
-            entry["title"] = title.strip()
-        else:
-            path = child.strip()
 
-        parsed = urllib.parse.urlparse(path)
-        if parsed.scheme:
-            entry["url"] = path
+        match = PAT_EXPLICIT_TITLE.match(child)
+        label: Optional[str] = None
+        if match:
+            label, target = match["label"], match["target"]
+            entry["title"] = label
         else:
-            entry["slug"] = path
+            target = child.replace("<", "").replace(">", "")
+
+        parsed = urllib.parse.urlparse(target)
+        if parsed.scheme:
+            entry["url"] = target
+        else:
+            entry["slug"] = target
         return entry
 
 

@@ -864,10 +864,11 @@ def test_toctree() -> None:
     Title here </test1>
     /test2/faq
     URL with title <https://docs.atlas.mongodb.com>
+    <https://docs.mongodb.com/stitch>
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 0
+    assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
     check_ast_testing_string(
         page.ast,
         """<root>
