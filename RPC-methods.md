@@ -29,9 +29,8 @@ Given a .txt file, return the abstract syntax tree (AST) of the page that is cre
 | Parameter           | Description                                              |
 | :------------------ | :------------------------------------------------------- |
 |`filePath`: `str`    | Path of the `.txt` file we want the AST of.          |
-|`fileText`: `str`     | Text found in the `.txt` file.   |
 
 ### Return
 | Return Type | Description                                              |
 | :---------- | :------------------------------------------------------- |
-| `SerializableType`       | The AST of the page created and updated by the parser. |
+| `SerializableType`       | The AST of the page created by the parser. |
