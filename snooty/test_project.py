@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic
+from .types import FileId, Page, Diagnostic, ProjectConfig
 from .parser import Project
 from .util import ast_dive
 
@@ -33,7 +33,6 @@ def test() -> None:
     n_threads = len(threading.enumerate())
     with Project(Path("test_data/test_project"), backend) as project:
         project.build()
-
         # Ensure that filesystem monitoring threads have been started
         assert len(threading.enumerate()) > n_threads
 
@@ -108,3 +107,17 @@ def test() -> None:
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
+
+
+def test_merge_conflict() -> None:
+    project_path = Path("test_data/merge_conflict")
+    project_config, _ = ProjectConfig.open(project_path)
+    file_path = Path("test_data/merge_conflict/source/index.txt")
+    _, project_diagnostics = project_config.read(file_path)
+
+    assert project_diagnostics[-1].message.startswith(
+        "git merge conflict"
+    ) and project_diagnostics[-1].start == (69, 0)
+    assert project_diagnostics[-2].message.startswith(
+        "git merge conflict"
+    ) and project_diagnostics[-2].start == (35, 0)
