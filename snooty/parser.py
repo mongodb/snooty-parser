@@ -464,14 +464,10 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
 
-            def entry_is_invalid(entry: Dict[str, str]) -> bool:
+            def url_missing_title(entry: Dict[str, str]) -> bool:
                 return "url" in entry and "title" not in entry
 
-            url_missing_title = any(
-                entry_is_invalid(entry) for entry in node["entries"]
-            )
-
-            if url_missing_title:
+            if any(url_missing_title(entry) for entry in node["entries"]):
                 self.diagnostics.append(
                     Diagnostic.error(
                         f'"{name}" with URLs must include titles', util.get_line(node)
@@ -480,7 +476,7 @@ class JSONVisitor:
 
             # Remove entries that are invalid (i.e. contain URLs without titles)
             doc["entries"] = [
-                entry for entry in node["entries"] if not entry_is_invalid(entry)
+                entry for entry in node["entries"] if not url_missing_title(entry)
             ]
 
         if options:
