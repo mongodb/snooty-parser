@@ -534,6 +534,7 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
             label, target = match["label"], match["target"]
             entry["title"] = label
         else:
+            # Strip <> tags so that we can properly parse a lone URL and handle errors appropriately.
             target = child.replace("<", "").replace(">", "")
 
         parsed = urllib.parse.urlparse(target)
