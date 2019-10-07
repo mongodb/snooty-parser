@@ -517,14 +517,22 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
 
         entries: List[Dict[str, str]] = []
+        errors: List[docutils.nodes.Node] = []
         for child in self.content:
-            entries.append(self.make_toc_entry(source, child))
+            entry, err = self.make_toc_entry(source, child)
+            if entry:
+                entries.append(entry)
+            if err:
+                errors.extend(err)
         node["entries"] = entries
 
-        return [node]
+        result: List[docutils.nodes.Node] = [node]
+        result.extend(errors)
+        return result
 
-    @staticmethod
-    def make_toc_entry(source: str, child: str) -> Dict[str, str]:
+    def make_toc_entry(
+        self, source: str, child: str
+    ) -> Tuple[Dict[str, str], List[docutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
         entry: Dict[str, str] = {}
 
@@ -533,16 +541,20 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
         if match:
             label, target = match["label"], match["target"]
             entry["title"] = label
+        elif child.startswith("<") and child.endswith(">"):
+            # If entry is surrounded by <> tags, assume it is a URL and log an error.
+            err = "toctree nodes with URLs must include titles"
+            error_node = self.state.document.reporter.error(str(err), line=self.lineno)
+            return (entry, [error_node])
         else:
-            # Strip <> tags so that we can properly parse a lone URL and handle errors appropriately.
-            target = child.replace("<", "").replace(">", "")
+            target = child
 
         parsed = urllib.parse.urlparse(target)
         if parsed.scheme:
             entry["url"] = target
         else:
             entry["slug"] = target
-        return entry
+        return (entry, [])
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):
