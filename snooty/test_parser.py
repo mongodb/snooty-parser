@@ -847,3 +847,31 @@ def test_cardgroup() -> None:
         </directive>
         </root>""",
     )
+
+
+def test_toctree() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. toctree::
+    :titlesonly:
+
+    Title here </test1>
+    /test2/faq
+    URL with title <https://docs.atlas.mongodb.com>
+    <https://docs.mongodb.com/stitch>
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://docs.atlas.mongodb.com'}]" />
+        </root>""",
+    )
