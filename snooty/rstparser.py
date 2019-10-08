@@ -10,9 +10,22 @@ import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
 import urllib.parse
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, Generic, Optional, List, Tuple, Type, TypeVar, Iterable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    DefaultDict,
+    Generic,
+    Optional,
+    List,
+    Tuple,
+    Type,
+    TypeVar,
+    Iterable,
+)
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
@@ -30,13 +43,8 @@ PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
 
-# Remove the built-in directives we don't want
-# TODO: This hack can be removed once we refactor role and directive handling
-docutils.parsers.rst.directives._directive_registry = {
-    k: v
-    for k, v in docutils.parsers.rst.directives._directive_registry.items()
-    if k in {"replace", "unicode"}
-}
+#: Handler function type for docutils roles
+RoleHandler = Callable[..., Any]
 
 
 @checked
@@ -90,6 +98,11 @@ class directive(docutils.nodes.General, docutils.nodes.Element):
         self["name"] = name
 
 
+class target(docutils.nodes.General, docutils.nodes.Element):
+    def __init__(self, name: str) -> None:
+        super(target, self).__init__()
+
+
 class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
     pass
 
@@ -112,6 +125,26 @@ class role(docutils.nodes.Inline, docutils.nodes.Element):
 
         if target is not None:
             self["target"] = target
+
+
+class ref_role(role):
+    """Docutils node representing a reference to a reStructuredText target."""
+
+    pass
+
+
+def handle_role_null(
+    typ: str,
+    rawtext: str,
+    text: str,
+    lineno: int,
+    inliner: docutils.parsers.rst.states.Inliner,
+    options: Dict[str, object] = {},
+    content: List[object] = [],
+) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    """Handle unnamed roles by raising a warning."""
+    msg = inliner.reporter.error("Monospace text uses two backticks (``)", line=lineno)
+    return [], [msg]
 
 
 def handle_role_text(
@@ -143,6 +176,35 @@ def handle_role_explicit_title(
         node = role(typ, lineno, match["label"], match["target"])
     else:
         node = role(typ, lineno, None, text)
+
+    return [node], []
+
+
+def handle_ref_role(
+    typ: str,
+    rawtext: str,
+    text: str,
+    lineno: int,
+    inliner: docutils.parsers.rst.states.Inliner,
+    options: Dict[str, object] = {},
+    content: List[object] = [],
+) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    match = PAT_EXPLICIT_TITLE.match(text)
+    if match:
+        label: Optional[str] = match["label"]
+        target = match["target"]
+    else:
+        label = None
+        target = text
+
+    flag = ""
+    if target.startswith("~") or target.startswith("!"):
+        flag = target[0]
+        target = target[1:]
+
+    node = ref_role(typ, lineno, label, target)
+    if flag:
+        node["flag"] = flag
 
     return [node], []
 
@@ -581,9 +643,70 @@ class Visitor(Protocol):
 _V = TypeVar("_V", bound=Visitor)
 
 
+@dataclass
+class Domain:
+    directives: Dict[str, Type[Any]] = field(default_factory=dict)
+    roles: Dict[str, RoleHandler] = field(default_factory=dict)
+
+
+@dataclass
+class Registry:
+    domains: DefaultDict[str, Domain] = field(
+        default_factory=lambda: defaultdict(Domain)
+    )
+
+    def add_directive(self, name: str, directive: Type[Any]) -> None:
+        domain, name = util.split_domain(name)
+        self.domains[domain].directives[name] = directive
+
+    def add_role(self, name: str, role: RoleHandler) -> None:
+        domain, name = util.split_domain(name)
+        self.domains[domain].roles[name] = role
+
+    def lookup_directive(
+        self,
+        directive_name: str,
+        language_module: object,
+        document: docutils.nodes.document,
+    ) -> Tuple[Optional[Type[Any]], List[object]]:
+        # Remove the built-in directives we don't want
+        domain_name, directive_name = util.split_domain(directive_name)
+        if domain_name:
+            return self.domains[domain_name].directives.get(directive_name, None), []
+
+        for domain_name in ["mongodb", "std", ""]:
+            domain = self.domains[domain_name]
+            if directive_name in domain.directives:
+                return domain.directives.get(directive_name, None), []
+
+        return None, []
+
+    def lookup_role(
+        self, role_name: str, language_module: object, lineno: int, reporter: object
+    ) -> Tuple[Optional[RoleHandler], List[object]]:
+        domain_name, role_name = util.split_domain(role_name)
+        if domain_name:
+            return self.domains[domain_name].roles.get(role_name, None), []
+
+        for domain_name in ["mongodb", "std", ""]:
+            domain = self.domains[domain_name]
+            if role_name in domain.roles:
+                return domain.roles.get(role_name, None), []
+
+        return None, []
+
+
 def register_spec_with_docutils(spec: specparser.Spec) -> None:
-    """Register all of the definitions in the spec with docutils."""
+    """Register all of the definitions in the spec with docutils, overwriting the previous
+       call to this function. This function should only be called once in the
+       process lifecycle."""
     from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
+
+    # Unfortunately, the docutils API uses global state for dispatching directives
+    # and roles. Bind the docutils dispatchers to this rstspec registry.
+    registry = Registry()
+    docutils.parsers.rst.directives.directive = registry.lookup_directive
+    docutils.parsers.rst.roles.role = registry.lookup_role
 
     directives = list(spec.directive.items())
     roles = list(spec.role.items())
@@ -591,8 +714,8 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     # Define rstobjects
     for name, rst_object in spec.rstobject.items():
         directive = rst_object.create_directive()
-        role = rst_object.create_role()
         directives.append((name, directive))
+        role = rst_object.create_role()
         roles.append((name, role))
 
     for name, directive in directives:
@@ -602,7 +725,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
 
         # Tabs have special handling because of the need to support legacy syntax
         if name == "tabs" or name.startswith("tabs-"):
-            docutils.parsers.rst.directives.register_directive(name, TabsDirective)
+            registry.add_directive(name, TabsDirective)
             continue
 
         options: Dict[str, object] = {
@@ -620,38 +743,41 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
             "".join(e for e in name.title() if e.isalnum() or e == "_") + "Directive"
         )
         DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
-        docutils.parsers.rst.directives.register_directive(name, DocutilsDirective)
+        registry.add_directive(name, DocutilsDirective)
 
     # Some directives currently have special handling
-    docutils.parsers.rst.directives.register_directive("code-block", CodeDirective)
-    docutils.parsers.rst.directives.register_directive("code", CodeDirective)
-    docutils.parsers.rst.directives.register_directive("sourcecode", CodeDirective)
-    docutils.parsers.rst.directives.register_directive("deprecated", VersionDirective)
-    docutils.parsers.rst.directives.register_directive("versionadded", VersionDirective)
-    docutils.parsers.rst.directives.register_directive(
-        "versionchanged", VersionDirective
-    )
-    docutils.parsers.rst.directives.register_directive("guide", LegacyGuideDirective)
-    docutils.parsers.rst.directives.register_directive("card-group", CardGroupDirective)
-    docutils.parsers.rst.directives.register_directive(
-        "guide-index", LegacyGuideIndexDirective
-    )
-    docutils.parsers.rst.directives.register_directive("toctree", TocTreeDirective)
+    registry.add_directive("code-block", CodeDirective)
+    registry.add_directive("code", CodeDirective)
+    registry.add_directive("sourcecode", CodeDirective)
+    registry.add_directive("deprecated", VersionDirective)
+    registry.add_directive("versionadded", VersionDirective)
+    registry.add_directive("versionchanged", VersionDirective)
+    registry.add_directive("guide", LegacyGuideDirective)
+    registry.add_directive("card-group", CardGroupDirective)
+    registry.add_directive("guide-index", LegacyGuideIndexDirective)
+    registry.add_directive("toctree", TocTreeDirective)
+
+    # Docutils builtins
+    registry.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
+    registry.add_directive("replace", docutils.parsers.rst.directives.misc.Replace)
 
     # Define roles
+    registry.add_role("", handle_role_null)
     for name, role_spec in roles:
         handler = None
         if not role_spec.type or role_spec.type == specparser.PrimitiveRoleType.text:
             handler = handle_role_text
         elif isinstance(role_spec.type, specparser.LinkRoleType):
             handler = LinkRoleHandler(role_spec.type.link)
+        elif isinstance(role_spec.type, specparser.RefRoleType):
+            handler = handle_ref_role
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
             handler = handle_role_explicit_title
 
         if not handler:
             raise ValueError('Unknown role type "{}"'.format(role_spec.type))
 
-        docutils.parsers.rst.roles.register_local_role(name, handler)
+        registry.add_role(name, handler)
 
 
 class Parser(Generic[_V]):

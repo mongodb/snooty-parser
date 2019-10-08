@@ -10,12 +10,29 @@ import docutils.parsers.rst
 import docutils.parsers.rst.directives
 from .flutter import check_type, checked
 from . import util
-from typing import cast, Any, Callable, Dict, Set, List, Optional, Union, TypeVar
+from typing import (
+    cast,
+    Any,
+    Callable,
+    Dict,
+    Set,
+    Sequence,
+    List,
+    Optional,
+    Union,
+    TypeVar,
+    Mapping,
+)
 from typing_extensions import Protocol
 
 
 class _Inheritable(Protocol):
     inherit: Optional[str]
+
+
+class _HasNameAndDomain(Protocol):
+    domain: Optional[str]
+    name: str
 
 
 @checked
@@ -24,6 +41,16 @@ class LinkRoleType:
     """Configuration for a role which links to a specific URL template."""
 
     link: str
+
+
+@checked
+@dataclass
+class RefRoleType:
+    """Configuration for a role which links to an optionally namespaced target."""
+
+    domain: Optional[str]
+    name: str
+    tag: Optional[str]
 
 
 _T = TypeVar("_T", bound=_Inheritable)
@@ -47,7 +74,7 @@ PrimitiveRoleType = Enum("PrimitiveRoleType", ("text", "explicit_title"))
 
 #: Spec definition of a role: this can be either a PrimitiveRoleType, or
 #: an object requiring additional configuration.
-RoleType = Union[PrimitiveRoleType, LinkRoleType]
+RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
 
 #: docutils option validation function for each of the above primitive types
 VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
@@ -90,8 +117,10 @@ class Directive:
     content_type: Optional[StringOrStringlist]
     argument_type: ArgumentType
     required_context: Optional[str]
+    domain: Optional[str]
     deprecated: bool = field(default=False)
     options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
+    name: str = field(default="")
 
 
 @checked
@@ -103,9 +132,18 @@ class Role:
     help: Optional[str]
     example: Optional[str]
     type: Optional[RoleType]
+    domain: Optional[str]
     deprecated: bool = field(default=False)
+    name: str = field(default="")
 
 
+# A target consists of the following parts:
+# domain (e.g. "std" or "mongodb")
+# ":"
+# role (e.g. "label" or "authaction")
+# prefix (e.g. "bin" or a program name)
+# "."
+# target
 @checked
 @dataclass
 class RstObject:
@@ -114,7 +152,11 @@ class RstObject:
 
     inherit: Optional[str]
     help: Optional[str]
+    domain: Optional[str]
+    prefix: str = field(default="")
+    callable: bool = field(default=False)
     deprecated: bool = field(default=False)
+    name: str = field(default="")
 
     def create_directive(self) -> Directive:
         return Directive(
@@ -124,8 +166,10 @@ class RstObject:
             content_type="block",
             argument_type="string",
             required_context=None,
+            domain=self.domain,
             deprecated=self.deprecated,
             options={},
+            name=self.name,
         )
 
     def create_role(self) -> Role:
@@ -133,8 +177,10 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
-            type=PrimitiveRoleType.explicit_title,
+            type=RefRoleType(self.domain, self.name, self.prefix),
+            domain=self.domain,
             deprecated=self.deprecated,
+            name=self.name,
         )
 
 
@@ -155,6 +201,18 @@ class Spec:
         root = check_type(cls, toml.loads(data))
         if root.meta.version != SPEC_VERSION:
             raise ValueError(f"Unknown spec version: {root.meta.version}")
+
+        # Inform each section element of its name and domain
+        sections: Sequence[Mapping[str, _HasNameAndDomain]] = (
+            root.directive,
+            root.role,
+            root.rstobject,
+        )
+        for section in sections:
+            for key, value in section.items():
+                domain, value.name = util.split_domain(key)
+                if domain:
+                    value.domain = domain
 
         root._resolve_inheritance()
 

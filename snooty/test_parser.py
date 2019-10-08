@@ -382,6 +382,8 @@ def test_roles() -> None:
         parser,
         path,
         """
+.. binary:: mongod
+
 * :manual:`/introduction/`
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
@@ -396,6 +398,9 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
+            <directive name="binary">
+            <text>mongod</text>
+            </directive>
             <list>
             <listItem>
             <paragraph>
@@ -417,26 +422,27 @@ def test_roles() -> None:
             <listItem>
             <paragraph>
             <role name="rfc"
-                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 5}}}"
+                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 7}}}"
                   target="1149"></role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="binary" target="~bin.mongod"></role>
+            <ref_role flag="~" name="binary" target="bin.mongod"></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="binary"
-                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 7}}}"
-                  target="~bin.mongod"></role>
+            <ref_role flag="~"
+                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 9}}}"
+                  name="binary"
+                  target="bin.mongod"></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <role name="guilabel"
-                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 8}}}">
+                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 10}}}">
             </role>
             </paragraph>
             </listItem>

@@ -219,3 +219,15 @@ def option_flag(argument: Optional[str]) -> bool:
         raise ValueError('no argument is allowed; "%s" supplied' % argument)
     else:
         return True
+
+
+def split_domain(name: str) -> Tuple[str, str]:
+    """
+    Split a fully-qualified reStructuredText directive or role name into its (domain, name) pair.
+    For example, "mongodb:ref" becomes ("mongodb", "ref"), while simply "ref" becomes ("", "ref").
+    """
+    parts = name.split(":", 1)
+    if len(parts) == 1:
+        return "", parts[0]
+
+    return parts[0], parts[1]

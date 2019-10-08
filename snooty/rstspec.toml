@@ -368,6 +368,14 @@ argument_type = "string"
 content_type = "block"
 
 ###### Roles
+[role.sub]
+help = """Used to denote subscript text."""
+type = "text"
+
+[role.sup]
+help = """Used to denote superscript text."""
+type = "text"
+
 [role.guilabel]
 help = """Used to specify a label or button in a GUI."""
 type = "text"
@@ -490,14 +498,14 @@ type = {link = "https://github.com/mongodb/mongo/blob/master/%s"}
 
 [role.ref]
 help = """Link to a named target."""
-type = "explicit_title"
+type = {domain = "std", name = "label"}
 
 [role."mongodb:ref"]
 inherit = "ref"
 
 [role.term]
 help = """Link to a term in the glossary."""
-type = "explicit_title"
+type = {domain = "std", name = "term"}
 
 [role.issue]
 help = """Link to a JIRA ticket."""
@@ -650,62 +658,156 @@ type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 [rstobject."py:class"]
 [rstobject."py:meth"]
 [rstobject."js:func"]
-[rstobject.action]
-[rstobject.alert]
-
-[rstobject.alert-type]
-inherit = "alert"
-
-[rstobject.apierror]
-[rstobject.asetting]
-[rstobject.atlasrole]
-[rstobject.authaction]
-[rstobject.authrole]
-[rstobject.binary]
-[rstobject.bsetting]
-[rstobject.bsontype]
-[rstobject.collflag]
-[rstobject.commandoption]
-[rstobject.configexpansion]
-[rstobject.data]
-[rstobject.dbcommand]
-[rstobject.error]
-[rstobject.event]
-[rstobject.expression]
-[rstobject.group]
-[rstobject.httpaction]
-[rstobject.json-expansion]
-[rstobject.json-operator]
-[rstobject.limit]
-[rstobject.macro]
-[rstobject.mailgunaction]
-[rstobject.method]
+[rstobject."mongodb:httpaction"]
+[rstobject."mongodb:mailgunaction"]
 [rstobject.mongodb]
-[rstobject.msetting]
-[rstobject.operator]
 [rstobject.option]
 [rstobject."mongomirror:option"]
-[rstobject.parameter]
-[rstobject.phpclass]
-[rstobject.phpmethod]
-[rstobject.pipeline]
 [rstobject.program]
-[rstobject.projection]
-[rstobject.query]
-[rstobject.readconcern]
-[rstobject.readmode]
-[rstobject.replstate]
-[rstobject.rsconf]
-[rstobject.s3action]
-[rstobject.serverstatus]
-[rstobject.sesaction]
-[rstobject.setting]
-[rstobject.slackaction]
-[rstobject.toolcommand]
-[rstobject.twilioaction]
-[rstobject.update]
-[rstobject.urioption]
-[rstobject.variable]
-[rstobject.writeconcern]
-[rstobject.envvar]
-[rstobject.datalakeconf]
+[rstobject."mongodb:s3action"]
+[rstobject."mongodb:sesaction"]
+[rstobject."mongodb:slackaction"]
+[rstobject."mongodb:twilioaction"]
+[rstobject."std:envvar"]
+
+# mongodb_conf.py
+[rstobject."mongodb:binary"]
+prefix = "bin"
+
+[rstobject."mongodb:dbcommand"]
+prefix = "dbcmd"
+
+[rstobject."mongodb:expression"]
+help = """aggregation framework transformation expression"""
+prefix = "exp"
+
+[rstobject."mongodb:group"]
+help = """aggregation framework group expression"""
+prefix = "grp"
+
+[rstobject."mongodb:operator"]
+prefix = "metaOp"
+
+[rstobject."mongodb:query"]
+prefix = "op"
+
+[rstobject."mongodb:update"]
+prefix = "up"
+
+[rstobject."mongodb:parameter"]
+help = """setParameter option"""
+prefix = "param"
+
+[rstobject."mongodb:pipeline"]
+help = """aggregation framework pipeline operator"""
+prefix = "pipe"
+
+[rstobject."mongodb:projection"]
+prefix = "proj"
+
+[rstobject."mongodb:method"]
+callable = true
+
+[rstobject."mongodb:authrole"]
+[rstobject."mongodb:authaction"]
+[rstobject."mongodb:bsontype"]
+[rstobject."mongodb:collflag"]
+[rstobject."mongodb:data"]
+help = """MongoDB reporting output"""
+
+[rstobject."mongodb:error"]
+[rstobject."mongodb:limit"]
+help = """MongoDB system limit"""
+
+[rstobject."mongodb:macro"]
+help = """JavaScript shell macro"""
+
+[rstobject."mongodb:readmode"]
+[rstobject."mongodb:setting"]
+
+[rstobject."mongodb:replstate"]
+prefix = "replstate"
+
+[rstobject."mongodb:variable"]
+help = """system variable available in aggregation"""
+prefix = "variable"
+
+[rstobject."mongodb:writeconcern"]
+prefix = "writeconcern"
+
+[rstobject."mongodb:readconcern"]
+prefix = "readconcern"
+
+[rstobject."mongodb:alert"]
+help = """system alert"""
+
+[rstobject."mongodb:alert-type"]
+inherit = "mongodb:alert"
+
+[rstobject."mongodb:event"]
+help = """system event"""
+
+[rstobject."mongodb:rsconf"]
+help = """replica set configuration setting"""
+prefix = "rsconf"
+
+[rstobject."mongodb:serverstatus"]
+prefix = "serverstatus"
+
+[rstobject."mongodb:urioption"]
+prefix = "urioption"
+
+[rstobject."mongodb:configexpansion"]
+help = """expansion directive for mongod/s configuration file"""
+prefix = "configexpansion"
+
+[rstobject."mongodb:toolcommand"]
+help = """mongo tool command"""
+prefix = "toolcommand"
+
+[rstobject."mongodb:commandoption"]
+help = """mongo tool command-specific option"""
+prefix = "commandoption"
+
+[rstobject."mongodb:msetting"]
+prefix = "msetting"
+help = "Monitoring Agent Setting"
+
+[rstobject."mongodb:bsetting"]
+prefix = "bsetting"
+help = "Backup Agent Setting"
+
+[rstobject."mongodb:asetting"]
+help = """Automation Agent Setting"""
+prefix = "asetting"
+
+[rstobject."mongodb:apierror"]
+help = """Error Code for Public API"""
+
+[rstobject.phpclass]
+help = """PHP Library class"""
+prefix = "phpclass"
+
+[rstobject.phpmethod]
+help = """PHP Library method"""
+prefix = "phpmethod"
+
+[rstobject."mongodb:atlasrole"]
+help = """Atlas user role"""
+
+[rstobject."mongodb:json-expansion"]
+help = """JSON Expression Expansion"""
+
+[rstobject."mongodb:json-operator"]
+help = """JSON Expression Operator"""
+
+[rstobject."mongodb:action"]
+help = """Service Actions"""
+prefix = "action"
+
+[rstobject."mongodb:fn-context"]
+help = """Stitch Function Context"""
+
+[rstobject."mongodb:datalakeconf"]
+help = """Data Lake Configuration Object"""
+prefix = "datalakeconf"

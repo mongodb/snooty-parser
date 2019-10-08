@@ -1,5 +1,6 @@
 import enum
 import hashlib
+import logging
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -18,6 +19,7 @@ from typing import (
     Union,
     Match,
 )
+from typing_extensions import Protocol
 import toml
 from .flutter import checked, check_type, LoadError
 from . import intersphinx
@@ -27,6 +29,7 @@ PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
+logger = logging.getLogger(__name__)
 
 
 class SnootyError(Exception):
@@ -170,6 +173,42 @@ class StaticAsset:
 
 
 @dataclass
+class TargetDatabase:
+    """A database of targets known to this project."""
+
+    intersphinx_inventories: Dict[str, intersphinx.Inventory]
+    local_definitions: Dict[str, str]
+
+    def __contains__(self, key: str) -> bool:
+        if key in self.local_definitions:
+            return True
+
+        for inventory in self.intersphinx_inventories:
+            if key in inventory:
+                return True
+
+        return False
+
+    def reset(self, config: "ProjectConfig") -> None:
+        """Reset this database to a "blank" state with intersphinx inventories defined by
+           the given ProjectConfig instance."""
+        self.intersphinx_inventories = {}
+        self.local_definitions = {}
+
+        logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
+        for url in config.intersphinx:
+            self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+
+    @classmethod
+    def load(cls, config: "ProjectConfig") -> "TargetDatabase":
+        """Create a TargetDatabase with the intersphinx inventories specified by the given
+           ProjectConfig."""
+        db = cls({}, {})
+        db.reset(config)
+        return db
+
+
+@dataclass
 class Cache:
     """A versioned cache that associates a (FileId, int) pair with an arbitrary object and
        an integer version. Whenever the key is re-assigned, the version is incremented."""
@@ -206,6 +245,23 @@ class Cache:
                 yield version
 
 
+class ProjectInterface(Protocol):
+    expensive_operation_cache: Cache
+    targets: TargetDatabase
+
+
+@dataclass
+class EmptyProjectInterface:
+    """An empty ProjectInterface implementation for testing."""
+
+    expensive_operation_cache: Cache
+    targets: TargetDatabase
+
+    def __init__(self) -> None:
+        self.expensive_operation_cache = Cache()
+        self.targets = TargetDatabase({}, {})
+
+
 class PendingTask:
     """A thunk which will be executed in the main process after the full tree is
        constructed. This should primarily be used to execute tasks which may need
@@ -214,7 +270,9 @@ class PendingTask:
     def __init__(self, node: Dict[str, SerializableType]) -> None:
         self.node = node
 
-    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+    def __call__(
+        self, diagnostics: List[Diagnostic], project: ProjectInterface
+    ) -> None:
         """Perform an action in the main process once the tree has been built."""
         pass
 
@@ -251,11 +309,13 @@ class Page:
         return self.source_path
 
     def finish(
-        self, diagnostics: List[Diagnostic], cache: Optional[Cache] = None
+        self, diagnostics: List[Diagnostic], project: Optional[ProjectInterface] = None
     ) -> None:
         """Finish all pending tasks for this page. This should be run in the main process."""
         for task in self.pending_tasks:
-            task(diagnostics, cache if cache is not None else Cache())
+            task(
+                diagnostics, project if project is not None else EmptyProjectInterface()
+            )
 
         self.pending_tasks.clear()
 
