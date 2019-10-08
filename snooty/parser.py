@@ -462,6 +462,8 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+        elif name == "toctree":
+            doc["entries"] = node["entries"]
 
         if options:
             doc["options"] = options
