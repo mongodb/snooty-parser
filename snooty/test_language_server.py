@@ -3,7 +3,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from . import language_server
-from .types import Diagnostic, FileId
+from .util_test import check_ast_testing_string
+from .types import Diagnostic, FileId, SerializableType
 from .flutter import checked, check_type
 
 CWD_URL = "file://" + Path().resolve().as_posix()
@@ -78,7 +79,8 @@ def test_language_server() -> None:
 
 
 def test_text_doc_resolve() -> None:
-    """Tests to see if m_text_document__resolve() returns the proper path combined with """
+    """Tests to see if m_text_document__resolve() returns the proper path combined with 
+    appropriate extension"""
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/test_project")
 
@@ -109,3 +111,46 @@ def test_text_doc_resolve() -> None:
         expected_path = source_path.joinpath(test_file).with_suffix(".txt")
 
         assert resolve_path == expected_path
+
+
+def test_text_doc_get_page_ast() -> None:
+    """Tests to see if m_text_document__get_ast() returns the proper
+    page ast for .txt file"""
+
+    # Set up language server
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(
+            None, CWD_URL + "/test_data/test_project_embedding_includes"
+        )
+
+        assert server.project is not None
+
+        # Set up file path
+        source_path = server.project.config.source_path
+        test_file = "index.txt"
+        test_file_path = source_path.joinpath(test_file)
+
+        language_server_ast: SerializableType = server.m_text_document__get_page_ast(
+            str(test_file_path)
+        )
+
+        check_ast_testing_string(
+            language_server_ast,
+            """<root>
+            <target ids="['guides']"></target>
+            <section alt="Sample images">
+            <heading id="id1"><text>Guides</text></heading>
+            <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
+            <text>/images/compass-create-database.png</text></directive></section>
+            <directive name="include"><text>/includes/test_rst.rst</text>
+            <directive name="include"><text>/includes/include_child.rst</text>
+            <paragraph><text>This is an include in an include</text></paragraph></directive></directive>
+            <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
+            <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
+            </heading><paragraph><text>If you don't have an Atlas account, </text>
+            <role name="doc" label="{'type': 'text', 'value': 'create one', 'position': {'start': {'line': 1}}}" target="/cloud/atlas"></role>
+            <text> now.</text></paragraph></section></directive>
+            <directive name="step"><section><heading id="compose-mongodb-deployment">
+            <text>Compose MongoDB deployment</text></heading>
+            </section></directive></directive></root>""",
+        )

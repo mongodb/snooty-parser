@@ -21,3 +21,16 @@ Resolve types that are currently supported:
 | Return Type | Description                                              |
 | :---------- | :------------------------------------------------------- |
 | `str`       | The full path of where the `fileName` should be located. |
+
+## textDocument/get_page_ast
+Given a .txt file, return the abstract syntax tree (AST) of the page that is created from parsing that file.
+
+### Parameters
+| Parameter           | Description                                              |
+| :------------------ | :------------------------------------------------------- |
+|`filePath`: `str`    | Path of the `.txt` file we want the AST of.          |
+
+### Return
+| Return Type | Description                                              |
+| :---------- | :------------------------------------------------------- |
+| `SerializableType`       | The AST of the page created by the parser. |

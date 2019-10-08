@@ -38,6 +38,7 @@ def test_get_files() -> None:
         Path("test_data/empty_project/snooty.toml"),
         Path("test_data/test_project/snooty.toml"),
         Path("test_data/merge_conflict/snooty.toml"),
+        Path("test_data/test_project_embedding_includes/snooty.toml"),
     }
 
 
