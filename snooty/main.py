@@ -138,7 +138,6 @@ class MongoBackend(Backend):
         self, prefix: List[str], published_branches: SerializableType
     ) -> None:
         page_id = "/".join(prefix)
-        print(page_id)
         self.client["snooty"]["metadata"].replace_one(
             {"_id": page_id}, {"publishedBranches": published_branches}, upsert=True
         )

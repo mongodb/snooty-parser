@@ -619,24 +619,28 @@ class _Project:
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self._expensive_operation_cache = Cache()
-        self.get_parsed_branches()
 
-    def get_parsed_branches(self) -> None:
+        self.published_branches: SerializableType = self.get_parsed_branches()
+        self.backend.on_published_branches(self.prefix, self.published_branches)
+
+    def get_parsed_branches(self) -> SerializableType:
+        published_branches: Dict[str, SerializableType] = {}
         path = self.root
         try:
             with path.joinpath("published-branches.yaml").open(encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 try:
-                    loaded = check_type(
+                    result = check_type(
                         gizaparser.published_branches.PublishedBranches, data
                     )
-                    self.backend.on_published_branches(self.prefix, loaded.serialize())
+                    return result.serialize()
                 except LoadError as err:
                     raise ValueError("Error reading file: " + str(err))
         except FileNotFoundError:
             pass
         except LoadError as err:
             raise ValueError("Error loading file: " + str(err))
+        return published_branches
 
     def get_fileid(self, path: PurePath) -> FileId:
         return FileId(path.relative_to(self.root))

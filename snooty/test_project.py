@@ -110,6 +110,12 @@ def test() -> None:
         # Ensure that the page has been reparsed 3 times
         assert backend.updates == [index_id, index_id, index_id]
 
+        # Ensure that published-branches.yaml has been parsed
+        assert project._project.published_branches == {
+            "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
+            "version": {"published": ["1.1", "1.0"], "active": ["1.1", "1.0"]},
+        }
+
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
 
