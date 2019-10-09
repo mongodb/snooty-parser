@@ -10,7 +10,7 @@ from typing import List
 
 from . import language_server
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId
+from .types import Page, Diagnostic, FileId, SerializableType
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
@@ -75,6 +75,11 @@ class Backend:
     def on_delete(self, page_id: FileId) -> None:
         pass
 
+    def on_published_branches(
+        self, prefix: List[str], published_branches: SerializableType
+    ) -> None:
+        pass
+
 
 class MongoBackend(Backend):
     def __init__(self, connection: pymongo.MongoClient) -> None:
@@ -128,6 +133,15 @@ class MongoBackend(Backend):
 
     def on_delete(self, page_id: FileId) -> None:
         pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: SerializableType
+    ) -> None:
+        page_id = "/".join(prefix)
+        print(page_id)
+        self.client["snooty"]["metadata"].replace_one(
+            {"_id": page_id}, {"publishedBranches": published_branches}, upsert=True
+        )
 
 
 def usage(exit_code: int) -> None:

@@ -159,6 +159,11 @@ class Backend:
     def on_delete(self, page_id: FileId) -> None:
         pass
 
+    def on_published_branches(
+        self, prefix: List[str], published_branches: SerializableType
+    ) -> None:
+        pass
+
 
 @dataclass
 class WorkspaceEntry:

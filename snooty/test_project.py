@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic, ProjectConfig
+from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
 from .parser import Project
 from .util import ast_dive
 
@@ -25,6 +25,11 @@ class Backend:
         self.updates.append(page_id)
 
     def on_delete(self, page_id: FileId) -> None:
+        pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: SerializableType
+    ) -> None:
         pass
 
 

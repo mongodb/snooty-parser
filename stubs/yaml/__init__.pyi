@@ -1,7 +1,7 @@
 from .nodes import Node
 from .composer import Composer
 from .constructor import SafeConstructor
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, IO, Union
 
 
 class Loader(Composer, SafeConstructor):
@@ -11,3 +11,6 @@ class Loader(Composer, SafeConstructor):
 
 
 class SafeLoader(Loader): ...
+
+
+def safe_load(stream: Union[str, IO[str]]) -> Any: ...

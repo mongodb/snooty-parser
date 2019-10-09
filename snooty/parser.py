@@ -6,6 +6,7 @@ import os
 import pwd
 import subprocess
 import threading
+import yaml
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast, Any, Dict, Tuple, Optional, Set, List, Iterable
@@ -14,6 +15,7 @@ import docutils.utils
 import watchdog.events
 import networkx
 
+from .flutter import check_type, LoadError
 from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
 from .types import (
@@ -567,6 +569,11 @@ class ProjectBackend(Protocol):
     def on_delete(self, page_id: FileId) -> None:
         ...
 
+    def on_published_branches(
+        self, prefix: List[str], published_branches: SerializableType
+    ) -> None:
+        ...
+
 
 class _Project:
     """Internal representation of a Snooty project with no data locking."""
@@ -612,6 +619,24 @@ class _Project:
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self._expensive_operation_cache = Cache()
+        self.get_parsed_branches()
+
+    def get_parsed_branches(self) -> None:
+        path = self.root
+        try:
+            with path.joinpath("published-branches.yaml").open(encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                try:
+                    loaded = check_type(
+                        gizaparser.published_branches.PublishedBranches, data
+                    )
+                    self.backend.on_published_branches(self.prefix, loaded.serialize())
+                except LoadError as err:
+                    raise ValueError("Error reading file: " + str(err))
+        except FileNotFoundError:
+            pass
+        except LoadError as err:
+            raise ValueError("Error loading file: " + str(err))
 
     def get_fileid(self, path: PurePath) -> FileId:
         return FileId(path.relative_to(self.root))
