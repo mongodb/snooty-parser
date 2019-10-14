@@ -2,7 +2,6 @@ import getpass
 import logging
 import sys
 import pymongo
-import re
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -12,9 +11,9 @@ from . import language_server
 from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType
+from .util import PAT_FILE_EXTENSIONS
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 logger = logging.getLogger(__name__)
 
 

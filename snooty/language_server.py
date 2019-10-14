@@ -15,6 +15,7 @@ from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, SerializableType
 from . import types, util
 from .parser import Project
+from .util import PAT_FILE_EXTENSIONS
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
@@ -308,6 +309,24 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return None
 
         return self.project.get_page_ast(Path(filePath))
+
+    def m_text_document__get_project_name(self) -> SerializableType:
+        """Get the project's name from its snooty.toml file"""
+        if not self.project:
+            logger.warn("Project uninitialized")
+            return None
+
+        return self.project.get_project_name()
+
+    def m_text_document__get_page_fileid(self, filePath: str) -> SerializableType:
+        """Given a path to a file, return its fileid as a string"""
+        if not self.project:
+            logger.warn("Project uninitialized")
+            return None
+
+        fileid = self.project.get_fileid(PurePath(filePath))
+        fileid = fileid.with_name(PAT_FILE_EXTENSIONS.sub("", fileid.name))
+        return fileid.as_posix()
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
