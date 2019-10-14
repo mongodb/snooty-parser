@@ -154,3 +154,55 @@ def test_text_doc_get_page_ast() -> None:
             <text>Compose MongoDB deployment</text></heading>
             </section></directive></directive></root>""",
         )
+
+
+def test_text_doc_get_project_name() -> None:
+    """Tests to see if m_text_document__get_project_name() returns the correct name found
+    in the project's snooty.toml"""
+
+    # Set up language server for test_project
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(None, CWD_URL + "/test_data/test_project")
+        assert server.project is not None
+
+        expected_name = "test_data"  # Found in test_project's snooty.toml
+        assert server.m_text_document__get_project_name() == expected_name
+
+    # Set up language server for merge_conflict project
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(None, CWD_URL + "/test_data/merge_conflict")
+        assert server.project is not None
+
+        expected_name = "merge_conflict"  # Found in test_project's snooty.toml
+        assert server.m_text_document__get_project_name() == expected_name
+
+
+def test_text_doc_get_page_fileid() -> None:
+    """Tests to see if m_text_document__get_page_fileid gets the correct fileid for
+    a file given its path."""
+
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(
+            None, CWD_URL + "/test_data/test_project_embedding_includes"
+        )
+
+        assert server.project is not None
+
+        # Set up file path for index.txt
+        source_path = server.project.config.source_path
+        test_file = "index.txt"
+        test_file_path = str(source_path.joinpath(test_file))
+        expected_fileid = "index"
+
+        assert (
+            server.m_text_document__get_page_fileid(test_file_path) == expected_fileid
+        )
+
+        # Test it on an include file this time
+        test_file = "includes/include_child.rst"
+        test_file_path = str(source_path.joinpath(test_file))
+        expected_fileid = "includes/include_child"
+
+        assert (
+            server.m_text_document__get_page_fileid(test_file_path) == expected_fileid
+        )
