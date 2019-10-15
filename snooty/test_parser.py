@@ -398,9 +398,7 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <directive name="binary">
-            <text>mongod</text>
-            </directive>
+            <target_directive name="binary" target="mongod"></target_directive>
             <list>
             <listItem>
             <paragraph>
@@ -529,6 +527,34 @@ def test_doc_role() -> None:
         </listItem>
         </list>
         </root>""",
+    )
+
+
+def test_rstobject() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test both forms of :manual: (an extlink), :rfc: (explicit title),
+    # :binary: (rstobject), and :guilabel: (plain text)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. option:: --slowms <integer>
+
+   test
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+            <target_directive name="option" target="--slowms &lt;integer&gt;">
+            <paragraph><text>test</text></paragraph>
+            </target_directive>
+            </root>""",
     )
 
 

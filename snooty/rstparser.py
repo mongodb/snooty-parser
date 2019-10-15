@@ -43,6 +43,11 @@ PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
 
+#: Hard-coded sequence of domains in which to search for a directives
+#: and roles if no domain is explicitly provided.. Eventually this should
+#: not be hard-coded.
+DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
+
 #: Handler function type for docutils roles
 RoleHandler = Callable[..., Any]
 
@@ -98,9 +103,10 @@ class directive(docutils.nodes.General, docutils.nodes.Element):
         self["name"] = name
 
 
-class target(docutils.nodes.General, docutils.nodes.Element):
-    def __init__(self, name: str) -> None:
-        super(target, self).__init__()
+class target_directive(directive):
+    """Docutils node representing a named target which can be referenced by the ref_role node."""
+
+    pass
 
 
 class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
@@ -263,41 +269,21 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
 
 class BaseDocutilsDirective(docutils.parsers.rst.Directive):
     required_arguments = 0
+    is_target = False
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
-        node = directive(self.name)
+
+        node = target_directive(self.name) if self.is_target else directive(self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
         self.add_name(node)
 
-        # Parse the directive's argument. An argument spans from the 0th line to the first
-        # non-option line; this is a heuristic that is not part of docutils, since docutils
-        # requires each directive to define its syntax.
-        if self.arguments and not self.arguments[0].startswith(":"):
-            arg_lines = self.arguments[0].split("\n")
-            if (
-                len(arg_lines) > 1
-                and not self.options
-                and PAT_BLOCK_HAS_ARGUMENT.match(self.block_text)
-            ):
-                content_lines = prepare_viewlist(self.arguments[0])
-                self.state.nested_parse(
-                    docutils.statemachine.ViewList(
-                        content_lines, source=self.arguments[0]
-                    ),
-                    self.state_machine.line_offset,
-                    node,
-                    match_titles=True,
-                )
-            else:
-                argument_text = arg_lines[0]
-                textnodes, messages = self.state.inline_text(argument_text, self.lineno)
-                argument = directive_argument(argument_text, "", *textnodes)
-                argument.document = self.state.document
-                argument.source, argument.line = source, line
-                node.append(argument)
+        if self.is_target:
+            node["target"] = self.arguments[0]
+        else:
+            self.parse_argument(node, source, line)
 
         # Parse the content
         if self.name in {"include", "raw"}:
@@ -311,6 +297,37 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             )
 
         return [node]
+
+    def parse_argument(self, node: directive, source: str, line: int) -> None:
+        """Parse the directive's argument.
+
+        An argument spans from the 0th line to the first non-option line; this
+        is a heuristic that is not part of docutils, since docutils requires
+        each directive to define its syntax.
+        """
+        if not self.arguments or self.arguments[0].startswith(":"):
+            return
+
+        arg_lines = self.arguments[0].split("\n")
+        if (
+            len(arg_lines) > 1
+            and not self.options
+            and PAT_BLOCK_HAS_ARGUMENT.match(self.block_text)
+        ):
+            content_lines = prepare_viewlist(self.arguments[0])
+            self.state.nested_parse(
+                docutils.statemachine.ViewList(content_lines, source=self.arguments[0]),
+                self.state_machine.line_offset,
+                node,
+                match_titles=True,
+            )
+        else:
+            argument_text = arg_lines[0]
+            textnodes, messages = self.state.inline_text(argument_text, self.lineno)
+            argument = directive_argument(argument_text, "", *textnodes)
+            argument.document = self.state.document
+            argument.source, argument.line = source, line
+            node.append(argument)
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
@@ -674,7 +691,7 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].directives.get(directive_name, None), []
 
-        for domain_name in ["mongodb", "std", ""]:
+        for domain_name in DOMAIN_RESOLUTION_SEQUENCE:
             domain = self.domains[domain_name]
             if directive_name in domain.directives:
                 return domain.directives.get(directive_name, None), []
@@ -688,7 +705,7 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].roles.get(role_name, None), []
 
-        for domain_name in ["mongodb", "std", ""]:
+        for domain_name in DOMAIN_RESOLUTION_SEQUENCE:
             domain = self.domains[domain_name]
             if role_name in domain.roles:
                 return domain.roles.get(role_name, None), []
@@ -738,6 +755,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
             optional_arguments = 1 if directive.argument_type else 0
             final_argument_whitespace = True
             option_spec = options
+            is_target = directive.is_target
 
         new_name = (
             "".join(e for e in name.title() if e.isalnum() or e == "_") + "Directive"

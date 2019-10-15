@@ -247,7 +247,9 @@ class JSONVisitor:
             )
             return
 
-        if node_name == "directive":
+        if isinstance(node, rstparser.target_directive):
+            self.handle_target_directive(node, doc)
+        elif isinstance(node, rstparser.directive):
             if self.handle_directive(node, doc):
                 self.state.append(doc)
             return
@@ -357,6 +359,17 @@ class JSONVisitor:
                     repr(popped),
                 )
             self.state[-1]["children"].append(popped)
+
+    def handle_target_directive(
+        self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
+    ) -> None:
+        """Handle populating a target_directive AST node."""
+        options = node["options"] or {}
+        name = node["name"]
+        doc["name"] = name
+        doc["target"] = node["target"]
+        doc["options"] = options
+        doc["children"] = []
 
     def handle_directive(
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
