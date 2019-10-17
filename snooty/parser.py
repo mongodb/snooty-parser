@@ -13,7 +13,6 @@ from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
 import networkx
-import copy
 
 from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
