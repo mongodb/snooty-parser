@@ -13,6 +13,7 @@ from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
 import networkx
+import copy
 
 from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
@@ -349,7 +350,6 @@ class JSONVisitor:
     ) -> bool:
         name = node["name"]
         doc["name"] = name
-
         options = node["options"] or {}
         if (
             node.children
@@ -365,7 +365,20 @@ class JSONVisitor:
             doc["argument"] = argument
 
         argument_text = None
+        expected_num_columns = 0
         try:
+            if name == "list-table":
+                # Calculate the expected number of columns for this list-table structure.
+                value_list = argument[1]["value"].split('\n')
+
+                # The value_list may not begin with the ":widths:" element, so we must first
+                # search for it.
+                widths_list = [e for e in value_list if ":widths:" in e]
+                if len(widths_list) > 0:
+                    idx = widths_list[0].rfind(':') + 1
+                    expected_num_columns = len(widths_list[0][idx:].lstrip().split(" "))
+                else:
+                    expected_num_columns = len(value_list[0].lstrip().split(" "))
             argument_text = argument[0]["value"]
         except (IndexError, KeyError):
             pass
@@ -394,6 +407,12 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+        
+        elif name == "list-table":
+            for outer_bullet in node.children:
+                for bullet in outer_bullet.children:
+                    self.validate_toctree(bullet[0], expected_num_columns)
+
         elif name == "literalinclude":
             if argument_text is None:
                 lineno = util.get_line(node)
@@ -464,7 +483,6 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
             doc["entries"] = node["entries"]
-
         if options:
             doc["options"] = options
 
@@ -480,6 +498,15 @@ class JSONVisitor:
         if not resolved_target_path.is_file():
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+    def validate_toctree(self, node: docutils.nodes.Node, expected_num_columns: int) -> None:
+        """Validate list-table structure"""
+        if isinstance(node, docutils.nodes.bullet_list) and len(node.children) != expected_num_columns:
+            msg = f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            return
+        for child in node.children:
+            self.validate_toctree(child, expected_num_columns)
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(

@@ -710,6 +710,48 @@ A new paragraph.
         </root>""",
     )
 
+def test_list_table() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38 72
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38 72
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
 
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
