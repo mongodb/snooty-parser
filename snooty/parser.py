@@ -369,13 +369,13 @@ class JSONVisitor:
         try:
             if name == "list-table":
                 # Calculate the expected number of columns for this list-table structure.
-                value_list = argument[1]["value"].split('\n')
+                value_list = argument[1]["value"].split("\n")
 
                 # The value_list may not begin with the ":widths:" element, so we must first
                 # search for it.
                 widths_list = [e for e in value_list if ":widths:" in e]
                 if len(widths_list) > 0:
-                    idx = widths_list[0].rfind(':') + 1
+                    idx = widths_list[0].rfind(":") + 1
                     expected_num_columns = len(widths_list[0][idx:].lstrip().split(" "))
                 else:
                     expected_num_columns = len(value_list[0].lstrip().split(" "))
@@ -407,7 +407,7 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
-        
+
         elif name == "list-table":
             for outer_bullet in node.children:
                 for bullet in outer_bullet.children:
@@ -499,10 +499,17 @@ class JSONVisitor:
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
-    def validate_toctree(self, node: docutils.nodes.Node, expected_num_columns: int) -> None:
+    def validate_toctree(
+        self, node: docutils.nodes.Node, expected_num_columns: int
+    ) -> None:
         """Validate list-table structure"""
-        if isinstance(node, docutils.nodes.bullet_list) and len(node.children) != expected_num_columns:
-            msg = f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+        if (
+            isinstance(node, docutils.nodes.bullet_list)
+            and len(node.children) != expected_num_columns
+        ):
+            msg = (
+                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+            )
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
             return
         for child in node.children:

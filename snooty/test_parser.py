@@ -710,6 +710,7 @@ A new paragraph.
         </root>""",
     )
 
+
 def test_list_table() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -752,6 +753,7 @@ def test_list_table() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
+
 
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
