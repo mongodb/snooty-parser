@@ -4,7 +4,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
+from .gizaparser.published_branches import PublishedBranches
+from .types import FileId, Page, Diagnostic, ProjectConfig
 from .parser import Project
 from .util import ast_dive
 
@@ -28,7 +29,7 @@ class Backend:
         pass
 
     def on_published_branches(
-        self, prefix: List[str], published_branches: SerializableType
+        self, prefix: List[str], published_branches: PublishedBranches
     ) -> None:
         pass
 
@@ -111,7 +112,7 @@ def test() -> None:
         assert backend.updates == [index_id, index_id, index_id]
 
         # Ensure that published-branches.yaml has been parsed
-        assert project._project.published_branches == {
+        assert project._project.published_branches.serialize() == {
             "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
             "version": {"published": ["1.1", "1.0"], "active": ["1.1", "1.0"]},
         }

@@ -3,6 +3,13 @@ from typing import Dict, List, Optional
 from ..flutter import checked
 from ..types import SerializableType
 
+"""Models for giza's published_branches files.
+
+These files define which branches should be built for the site, and allow for labeling branches
+as published, active, stable, or upcoming. They also populate data for the version selection dropdown
+on the docs front-end.
+"""
+
 
 @checked
 @dataclass
@@ -56,8 +63,7 @@ class PublishedBranchesGit:
     def serialize(self) -> SerializableType:
         branches_node: Dict[str, SerializableType] = {}
 
-        if self.branches:
-            branches_node["branches"] = self.branches.serialize()
+        branches_node["branches"] = self.branches.serialize()
 
         return branches_node
 
@@ -71,10 +77,7 @@ class PublishedBranches:
     def serialize(self) -> SerializableType:
         published_branches_node: Dict[str, SerializableType] = {}
 
-        if self.version:
-            published_branches_node["version"] = self.version.serialize()
-
-        if self.git:
-            published_branches_node["git"] = self.git.serialize()
+        published_branches_node["version"] = self.version.serialize()
+        published_branches_node["git"] = self.git.serialize()
 
         return published_branches_node

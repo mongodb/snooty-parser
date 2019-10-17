@@ -18,6 +18,7 @@ import networkx
 from .flutter import check_type, LoadError
 from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
+from .gizaparser.published_branches import PublishedBranches
 from .types import (
     Diagnostic,
     SerializableType,
@@ -570,7 +571,7 @@ class ProjectBackend(Protocol):
         ...
 
     def on_published_branches(
-        self, prefix: List[str], published_branches: SerializableType
+        self, prefix: List[str], published_branches: PublishedBranches
     ) -> None:
         ...
 
@@ -620,27 +621,28 @@ class _Project:
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self._expensive_operation_cache = Cache()
 
-        self.published_branches: SerializableType = self.get_parsed_branches()
-        self.backend.on_published_branches(self.prefix, self.published_branches)
+        published_branches: Optional[PublishedBranches] = self.get_parsed_branches()
+        if published_branches:
+            self.published_branches: PublishedBranches = published_branches
+            self.backend.on_published_branches(self.prefix, self.published_branches)
 
-    def get_parsed_branches(self) -> SerializableType:
-        published_branches: Dict[str, SerializableType] = {}
-        path = self.root
+    def get_parsed_branches(self) -> Optional[PublishedBranches]:
+        path = self.config.root
         try:
             with path.joinpath("published-branches.yaml").open(encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 try:
-                    result = check_type(
-                        gizaparser.published_branches.PublishedBranches, data
-                    )
-                    return result.serialize()
+                    result = check_type(PublishedBranches, data)
+                    return result
                 except LoadError as err:
                     raise ValueError("Error reading file: " + str(err))
         except FileNotFoundError:
             pass
         except LoadError as err:
-            raise ValueError("Error loading file: " + str(err))
-        return published_branches
+            raise ValueError(f"Error loading file: {err}")
+        except yaml.error.YAMLError as err:
+            raise ValueError(f"Error parsing YAML: {err}")
+        return None
 
     def get_fileid(self, path: PurePath) -> FileId:
         return FileId(path.relative_to(self.root))

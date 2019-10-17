@@ -11,6 +11,7 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
+from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, SerializableType
 from . import types, util
 from .parser import Project
@@ -160,7 +161,7 @@ class Backend:
         pass
 
     def on_published_branches(
-        self, prefix: List[str], published_branches: SerializableType
+        self, prefix: List[str], published_branches: PublishedBranches
     ) -> None:
         pass
 

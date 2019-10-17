@@ -9,8 +9,9 @@ from pathlib import Path, PurePath
 from typing import List
 
 from . import language_server
+from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId, SerializableType
+from .types import Page, Diagnostic, FileId
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
@@ -76,7 +77,7 @@ class Backend:
         pass
 
     def on_published_branches(
-        self, prefix: List[str], published_branches: SerializableType
+        self, prefix: List[str], published_branches: PublishedBranches
     ) -> None:
         pass
 
@@ -135,11 +136,13 @@ class MongoBackend(Backend):
         pass
 
     def on_published_branches(
-        self, prefix: List[str], published_branches: SerializableType
+        self, prefix: List[str], published_branches: PublishedBranches
     ) -> None:
         page_id = "/".join(prefix)
         self.client["snooty"]["metadata"].replace_one(
-            {"_id": page_id}, {"publishedBranches": published_branches}, upsert=True
+            {"_id": page_id},
+            {"publishedBranches": published_branches.serialize()},
+            upsert=True,
         )
 
 
