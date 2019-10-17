@@ -754,6 +754,24 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
 
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+
 
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
