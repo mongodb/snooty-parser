@@ -364,30 +364,7 @@ class JSONVisitor:
             doc["argument"] = argument
 
         argument_text = None
-        expected_num_columns = 0
         try:
-            if name == "list-table":
-                # Calculate the expected number of columns for this list-table structure.
-                width_arg = ""
-                for idx in range(len(argument)):
-                    if argument[idx]["value"] == ":widths:":
-                        width_arg = argument[idx + 1]["value"]
-                    elif ":widths:" in argument[idx]["value"]:
-                        width_arg = argument[idx]["value"]
-
-                if len(width_arg) > 0:
-                    width_values = width_arg.split("\n")
-
-                    # The width_values may not begin with the ":widths:" element, so we must first
-                    # search for it.
-                    widths_list = [e for e in width_values if ":widths:" in e]
-                    if len(widths_list) > 0:
-                        idx = widths_list[0].rfind(":") + 1
-                        expected_num_columns = len(
-                            widths_list[0][idx:].lstrip().split(" ")
-                        )
-                    else:
-                        expected_num_columns = len(width_values[0].lstrip().split(" "))
             argument_text = argument[0]["value"]
         except (IndexError, KeyError):
             pass
@@ -418,13 +395,18 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
         elif name == "list-table":
+            # Calculate the expected number of columns for this list-table structure.
+            expected_num_columns = 0
+            if "widths" in options:
+                expected_num_columns = len(options["widths"].split(" "))
+
             for outer_bullet in node.children:
                 for bullet in outer_bullet.children:
                     # if the :widths: argument was never specified, set the expected
                     # number of columns to be the number of columns in the first sublist.
                     if expected_num_columns == 0:
                         expected_num_columns = len(bullet[0].children)
-                    self.validate_toctree(bullet[0], expected_num_columns)
+                    self.validate_list_table(bullet[0], expected_num_columns)
 
         elif name == "literalinclude":
             if argument_text is None:
@@ -512,7 +494,7 @@ class JSONVisitor:
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
-    def validate_toctree(
+    def validate_list_table(
         self, node: docutils.nodes.Node, expected_num_columns: int
     ) -> None:
         """Validate list-table structure"""
@@ -523,10 +505,12 @@ class JSONVisitor:
             msg = (
                 f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
-            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1))
             return
+
+        # recursively validate the list-table structure of this node's children.
         for child in node.children:
-            self.validate_toctree(child, expected_num_columns)
+            self.validate_list_table(child, expected_num_columns)
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(

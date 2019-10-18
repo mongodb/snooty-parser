@@ -486,44 +486,6 @@ class VersionDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-class ListTableDirective(docutils.parsers.rst.Directive):
-    """Special handling for list-table directive.
-
-    These directives include one required argument and an optional argument on the next line.
-    We need to ensure that these are both included in the `argument` field of the AST, and that
-    subsequent indented directives are included as children of the node. //** MODIFY THIS COMMENT!
-    """
-
-    required_arguments = 1
-    optional_arguments = 1
-    has_content = True
-    final_argument_whitespace = True
-    option_spec: Dict[str, object] = {}
-
-    def run(self) -> List[docutils.nodes.Node]:
-        source, line = self.state_machine.get_source_and_line(self.lineno)
-        node = directive(self.name)
-        node.document = self.state.document
-        node.source, node.line = source, line
-        node["options"] = self.options
-
-        if self.arguments is not None:
-            textnodes = []
-            for argument_text in self.arguments:
-                text, messages = self.state.inline_text(argument_text, self.lineno)
-                textnodes.extend(text)
-            argument = directive_argument("", "", *textnodes)
-            argument.document = self.state.document
-            argument.source, argument.line = source, line
-            node.append(argument)
-
-        if self.content:
-            self.state.nested_parse(
-                self.content, self.state_machine.line_offset, node, match_titles=True
-            )
-
-        return [node]
-
 
 class TocTreeDirective(docutils.parsers.rst.Directive):
     """Special handling for toctree directives.
@@ -676,7 +638,6 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         "guide-index", LegacyGuideIndexDirective
     )
     docutils.parsers.rst.directives.register_directive("toctree", TocTreeDirective)
-    docutils.parsers.rst.directives.register_directive("list-table", ListTableDirective)
 
     # Define roles
     for name, role_spec in roles:
