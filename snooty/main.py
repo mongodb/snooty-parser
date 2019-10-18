@@ -134,9 +134,9 @@ class MongoBackend(Backend):
     def on_update_metadata(
         self, prefix: List[str], field: Dict[str, SerializableType]
     ) -> None:
-        page_id = "/".join(prefix)
+        property_name = "/".join(prefix)
         self.client["snooty"]["metadata"].update_one(
-            {"_id": page_id}, {"$set": field}, upsert=True
+            {"_id": property_name}, {"$set": field}, upsert=True
         )
 
     def on_delete(self, page_id: FileId) -> None:
