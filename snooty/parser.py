@@ -628,8 +628,7 @@ class _Project:
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:
-            self.published_branches = published_branches
-            self.backend.on_published_branches(self.prefix, self.published_branches)
+            self.backend.on_published_branches(self.prefix, published_branches)
 
         if published_branches_diagnostics:
             backend.on_diagnostics(

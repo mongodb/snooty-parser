@@ -112,7 +112,11 @@ def test() -> None:
         assert backend.updates == [index_id, index_id, index_id]
 
         # Ensure that published-branches.yaml has been parsed
-        assert project._project.published_branches.serialize() == {
+        published_branches, published_branch_diagnostics = (
+            project._project.get_parsed_branches()
+        )
+        assert len(published_branch_diagnostics) == 0
+        assert published_branches and published_branches.serialize() == {
             "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
             "version": {"published": ["1.1", "1.0"], "active": ["1.1", "1.0"]},
         }
