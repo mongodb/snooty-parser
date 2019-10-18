@@ -505,7 +505,9 @@ class JSONVisitor:
             msg = (
                 f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
-            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1))
+            self.diagnostics.append(
+                Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
+            )
             return
 
         # recursively validate the list-table structure of this node's children.

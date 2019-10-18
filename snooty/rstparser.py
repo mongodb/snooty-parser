@@ -486,7 +486,6 @@ class VersionDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-
 class TocTreeDirective(docutils.parsers.rst.Directive):
     """Special handling for toctree directives.
 
