@@ -9,6 +9,7 @@ from pathlib import Path, PurePath
 from typing import Dict, List
 
 from . import language_server
+from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType
 
@@ -80,6 +81,11 @@ class Backend:
     def on_delete(self, page_id: FileId) -> None:
         pass
 
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
+        pass
+
 
 class MongoBackend(Backend):
     def __init__(self, connection: pymongo.MongoClient) -> None:
@@ -141,6 +147,16 @@ class MongoBackend(Backend):
 
     def on_delete(self, page_id: FileId) -> None:
         pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
+        page_id = "/".join(prefix)
+        self.client["snooty"]["metadata"].replace_one(
+            {"_id": page_id},
+            {"publishedBranches": published_branches.serialize()},
+            upsert=True,
+        )
 
 
 def usage(exit_code: int) -> None:

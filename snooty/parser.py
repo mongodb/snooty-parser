@@ -6,6 +6,7 @@ import os
 import pwd
 import subprocess
 import threading
+import yaml
 from functools import partial
 from pathlib import Path, PurePath
 from typing import cast, Any, Dict, Tuple, Optional, Set, List, Iterable
@@ -14,8 +15,10 @@ import docutils.utils
 import watchdog.events
 import networkx
 
+from .flutter import check_type, LoadError
 from . import gizaparser, rstparser, semanticparser, util
 from .gizaparser.nodes import GizaCategory
+from .gizaparser.published_branches import PublishedBranches
 from .types import (
     Diagnostic,
     SerializableType,
@@ -572,6 +575,11 @@ class ProjectBackend(Protocol):
     def on_delete(self, page_id: FileId) -> None:
         ...
 
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
+        ...
+
 
 class _Project:
     """Internal representation of a Snooty project with no data locking."""
@@ -603,8 +611,13 @@ class _Project:
         # For each repo-wide substitution, parse the string and save to our project config
         substitution_nodes: Dict[str, SerializableType] = {}
         for k, v in self.config.substitutions.items():
-            node, diagnostics = parse_rst(self.parser, root, v)
+            node, substitution_diagnostics = parse_rst(self.parser, root, v)
             substitution_nodes[k] = node.ast
+
+            if substitution_diagnostics:
+                backend.on_diagnostics(
+                    self.get_fileid(self.config.config_path), substitution_diagnostics
+                )
 
         self.config.substitution_nodes = substitution_nodes
 
@@ -618,6 +631,46 @@ class _Project:
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self._expensive_operation_cache = Cache()
+
+        published_branches, published_branches_diagnostics = self.get_parsed_branches()
+        if published_branches:
+            self.backend.on_published_branches(self.prefix, published_branches)
+
+        if published_branches_diagnostics:
+            backend.on_diagnostics(
+                self.get_fileid(self.config.config_path), published_branches_diagnostics
+            )
+
+    def get_parsed_branches(
+        self
+    ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
+        path = self.config.root
+        try:
+            with path.joinpath("published-branches.yaml").open(encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                try:
+                    result = check_type(PublishedBranches, data)
+                    return result, []
+                except LoadError as err:
+                    line: int = getattr(err.bad_data, "_start_line", 0) + 1
+                    error_node: Diagnostic = Diagnostic.error(
+                        f"Error loading file: {err}", line
+                    )
+                    return None, [error_node]
+        except FileNotFoundError:
+            pass
+        except LoadError as err:
+            load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
+            load_error_node: Diagnostic = Diagnostic.error(
+                f"Error loading file: {err}", load_error_line
+            )
+            return None, [load_error_node]
+        except yaml.error.MarkedYAMLError as err:
+            yaml_error_node: Diagnostic = Diagnostic.error(
+                f"Error parsing YAML: {err}", err.problem_mark.line
+            )
+            return None, [yaml_error_node]
+        return None, []
 
     def get_fileid(self, path: PurePath) -> FileId:
         return FileId(path.relative_to(self.root))
