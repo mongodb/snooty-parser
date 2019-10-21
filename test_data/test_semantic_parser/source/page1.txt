@@ -1,1 +1,3 @@
 .. header:: Another Title
+
+.. header:: This should not be the title

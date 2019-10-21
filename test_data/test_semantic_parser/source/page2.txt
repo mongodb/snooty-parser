@@ -1,1 +1,7 @@
+.. code:: python
+
+  def some_function():
+      "test"
+      print 411
+
 .. header:: MongoDB Java Driver

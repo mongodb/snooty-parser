@@ -41,7 +41,6 @@ def test() -> None:
         project.build()
         # Ensure that the correct pages and assets exist
         assert len(backend.metadata) == 4
-        
         assert backend.metadata['test_data/test_semantic_parser/source/index.txt'] == 'Some Title'
         assert backend.metadata['test_data/test_semantic_parser/source/page1.txt'] == 'Another Title'
         assert backend.metadata['test_data/test_semantic_parser/source/page2.txt'] == 'MongoDB Java Driver'

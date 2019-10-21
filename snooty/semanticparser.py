@@ -25,7 +25,6 @@ class SemanticParser:
         for file_id in pages:
             index = pages[file_id]
             slug = index.source_path
-
             # Get the relative path from the absolute paths of the current file and the index
             common_prefix = os.path.commonprefix([index.source_path, os.getcwd()])
             if common_prefix != "":
@@ -39,8 +38,9 @@ class SemanticParser:
             if "header" not in index.source:
                 title = ""
             else:
-                idx = index.source.find("header::")
+                token = "header:: "
+                idx = index.source.find(token)
                 header = index.source[idx:].split('\n')[0]
-                title = header[idx + len("header"):]
+                title = header[len(token):]
             slug_title_dict[slug] = title
         return slug_title_dict
