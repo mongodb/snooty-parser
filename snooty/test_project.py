@@ -5,13 +5,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
 from .gizaparser.published_branches import PublishedBranches
-from .types import FileId, Page, Diagnostic, ProjectConfig
+from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
 from .parser import Project
 from .util import ast_dive
 
 
 @dataclass
 class Backend:
+    metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
 
@@ -24,6 +25,11 @@ class Backend:
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         self.pages[page_id] = page
         self.updates.append(page_id)
+
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        self.metadata.update(field)
 
     def on_delete(self, page_id: FileId) -> None:
         pass

@@ -157,6 +157,11 @@ class Backend:
     def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
         pass
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        pass
+
     def on_delete(self, page_id: FileId) -> None:
         pass
 
