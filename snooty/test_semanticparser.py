@@ -1,15 +1,16 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List
 from .parser import Project
 from . import rstparser, semanticparser
 from .util import ast_dive
 from .util_test import check_ast_testing_string
-from .types import Diagnostic, ProjectConfig, FileId, Page, Diagnostic, SerializableType, List
+from .types import Diagnostic, ProjectConfig, FileId, Page, Diagnostic, SerializableType
 from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
+
 
 @dataclass
 class Backend:
@@ -35,13 +36,26 @@ class Backend:
     def on_delete(self, page_id: FileId) -> None:
         pass
 
+
 def test() -> None:
     backend = Backend()
     with Project(Path("test_data/test_semantic_parser"), backend) as project:
         project.build()
         # Ensure that the correct pages and assets exist
         assert len(backend.metadata) == 4
-        assert backend.metadata['test_data/test_semantic_parser/source/index.txt'] == 'Some Title'
-        assert backend.metadata['test_data/test_semantic_parser/source/page1.txt'] == 'Another Title'
-        assert backend.metadata['test_data/test_semantic_parser/source/page2.txt'] == 'MongoDB Java Driver'
-        assert backend.metadata['test_data/test_semantic_parser/source/page3.txt'] == 'MongoDB Server'
+        assert (
+            backend.metadata["test_data/test_semantic_parser/source/index.txt"]
+            == "Some Title"
+        )
+        assert (
+            backend.metadata["test_data/test_semantic_parser/source/page1.txt"]
+            == "Another Title"
+        )
+        assert (
+            backend.metadata["test_data/test_semantic_parser/source/page2.txt"]
+            == "MongoDB Java Driver"
+        )
+        assert (
+            backend.metadata["test_data/test_semantic_parser/source/page3.txt"]
+            == "MongoDB Server"
+        )
