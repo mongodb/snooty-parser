@@ -14,7 +14,7 @@ import docutils.utils
 import watchdog.events
 import networkx
 
-from . import gizaparser, rstparser, util
+from . import gizaparser, rstparser, semanticparser, util
 from .gizaparser.nodes import GizaCategory
 from .types import (
     Diagnostic,
@@ -564,6 +564,11 @@ class ProjectBackend(Protocol):
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         ...
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        ...
+
     def on_delete(self, page_id: FileId) -> None:
         ...
 
@@ -587,6 +592,7 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
+        self.semantic_parser = semanticparser.SemanticParser()
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
@@ -683,6 +689,11 @@ class _Project:
         for page in pages:
             self._page_updated(page, diagnostic_list)
 
+        semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
+            self.pages
+        )
+        self.backend.on_update_metadata(self.prefix, semantic_parse)
+
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
@@ -737,6 +748,11 @@ class _Project:
                     self._page_updated(
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
+
+        semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
+            self.pages
+        )
+        self.backend.on_update_metadata(self.prefix, semantic_parse)
 
     def _populate_include_nodes(
         self, nodes: List[Dict[str, Any]]
