@@ -6,11 +6,12 @@ import re
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import List
+from typing import Dict, List
 
 from . import language_server
+from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId
+from .types import Page, Diagnostic, FileId, SerializableType
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
@@ -72,7 +73,17 @@ class Backend:
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         pass
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        pass
+
     def on_delete(self, page_id: FileId) -> None:
+        pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
         pass
 
 
@@ -126,8 +137,28 @@ class MongoBackend(Backend):
                 upsert=True,
             )
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        property_name = "/".join(prefix)
+        # Write to Atlas if field is not an empty dictionary
+        if field:
+            self.client["snooty"]["metadata"].update_one(
+                {"_id": property_name}, {"$set": field}, upsert=True
+            )
+
     def on_delete(self, page_id: FileId) -> None:
         pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
+        page_id = "/".join(prefix)
+        self.client["snooty"]["metadata"].replace_one(
+            {"_id": page_id},
+            {"publishedBranches": published_branches.serialize()},
+            upsert=True,
+        )
 
 
 def usage(exit_code: int) -> None:

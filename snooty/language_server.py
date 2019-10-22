@@ -11,6 +11,7 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
+from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, SerializableType
 from . import types, util
 from .parser import Project
@@ -156,7 +157,17 @@ class Backend:
     def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
         pass
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        pass
+
     def on_delete(self, page_id: FileId) -> None:
+        pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
         pass
 
 

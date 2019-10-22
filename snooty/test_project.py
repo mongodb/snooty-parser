@@ -4,13 +4,15 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast, Any, Dict, List
-from .types import FileId, Page, Diagnostic, ProjectConfig
+from .gizaparser.published_branches import PublishedBranches
+from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
 from .parser import Project
 from .util import ast_dive
 
 
 @dataclass
 class Backend:
+    metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
 
@@ -24,7 +26,17 @@ class Backend:
         self.pages[page_id] = page
         self.updates.append(page_id)
 
+    def on_update_metadata(
+        self, prefix: List[str], field: Dict[str, SerializableType]
+    ) -> None:
+        self.metadata.update(field)
+
     def on_delete(self, page_id: FileId) -> None:
+        pass
+
+    def on_published_branches(
+        self, prefix: List[str], published_branches: PublishedBranches
+    ) -> None:
         pass
 
 
@@ -104,6 +116,16 @@ def test() -> None:
 
         # Ensure that the page has been reparsed 3 times
         assert backend.updates == [index_id, index_id, index_id]
+
+        # Ensure that published-branches.yaml has been parsed
+        published_branches, published_branch_diagnostics = (
+            project._project.get_parsed_branches()
+        )
+        assert len(published_branch_diagnostics) == 0
+        assert published_branches and published_branches.serialize() == {
+            "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
+            "version": {"published": ["1.1", "1.0"], "active": ["1.1", "1.0"]},
+        }
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
