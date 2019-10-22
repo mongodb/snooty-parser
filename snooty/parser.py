@@ -510,9 +510,10 @@ class JSONVisitor:
             )
             return
 
-        # recursively validate the list-table structure of this node's children.
-        for child in node.children:
-            self.validate_list_table(child, expected_num_columns)
+        # unwrap the data structures holding the bullet list
+        if not isinstance(node, docutils.nodes.bullet_list):
+            for child in node.children:
+                self.validate_list_table(child, expected_num_columns)
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(

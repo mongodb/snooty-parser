@@ -766,11 +766,32 @@ def test_list_table() -> None:
  
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
-     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 38 72
+   :header-rows: 1
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+      
+       + More nesting
+       + Some description
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
 
 
 def test_footnote() -> None:
