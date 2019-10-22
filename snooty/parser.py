@@ -400,13 +400,13 @@ class JSONVisitor:
             if "widths" in options:
                 expected_num_columns = len(options["widths"].split(" "))
 
-            for outer_bullet in node.children:
-                for bullet in outer_bullet.children:
+            for row in node.children:
+                for column in row.children:
                     # if the :widths: argument was never specified, set the expected
                     # number of columns to be the number of columns in the first sublist.
                     if expected_num_columns == 0:
-                        expected_num_columns = len(bullet[0].children)
-                    self.validate_list_table(bullet[0], expected_num_columns)
+                        expected_num_columns = len(column[0].children)
+                    self.validate_list_table(column[0], expected_num_columns)
 
         elif name == "literalinclude":
             if argument_text is None:
