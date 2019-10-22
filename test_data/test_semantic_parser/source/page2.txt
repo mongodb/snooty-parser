@@ -1,7 +1,20 @@
-.. code:: python
+:abbr:`AWS (Amazon Web Services)` clusters only.
 
-  def some_function():
-      "test"
-      print 411
+.. |ast| unicode:: U+002A
 
-.. header:: MongoDB Java Driver
+.. note::
+
+   |service| reserves a small portion of connections to each |service|
+   cluster for supporting |service| services. Contact |service| support
+   for more information on |service| reserved connections.
+
+.. _connection-limits:
+
+=========================================
+Heading is not at the top for some reason
+=========================================
+
+.. default-domain:: mongodb
+
+.. meta::
+   :keywords: connect
