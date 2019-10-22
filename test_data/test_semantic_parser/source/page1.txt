@@ -1,3 +1,14 @@
-.. header:: Another Title
+.. _connection-limits:
 
-.. header:: This should not be the title
+====================================
+Print this heading
+====================================
+
+.. default-domain:: mongodb
+
+.. meta::
+   :keywords: connect
+
+====================================
+Not this heading
+====================================
