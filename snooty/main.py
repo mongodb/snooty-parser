@@ -141,9 +141,11 @@ class MongoBackend(Backend):
         self, prefix: List[str], field: Dict[str, SerializableType]
     ) -> None:
         property_name = "/".join(prefix)
-        self.client["snooty"]["metadata"].update_one(
-            {"_id": property_name}, {"$set": field}, upsert=True
-        )
+        # Write to Atlas if field is not an empty dictionary
+        if field:
+            self.client["snooty"]["metadata"].update_one(
+                {"_id": property_name}, {"$set": field}, upsert=True
+            )
 
     def on_delete(self, page_id: FileId) -> None:
         pass
