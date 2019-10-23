@@ -1,0 +1,9 @@
+.. toctree::
+   :titlesonly: 
+
+   /tutorial/create-system-dsn
+   /tutorial/connect-bic-excel
+   /tutorial/connect-bic-tableau
+   /tutorial/connect-bic-qlik
+   /tutorial/connect-bic-workbench
+   /tutorial/connect-bic-powerbi
