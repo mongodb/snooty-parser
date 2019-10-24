@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import docutils.nodes
 import docutils.parsers.rst.directives
 import watchdog.events
@@ -25,8 +24,6 @@ from .types import FileId, SerializableType
 
 logger = logging.getLogger(__name__)
 _K = TypeVar("_K", bound=Hashable)
-
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
 def reroot_path(
@@ -72,10 +69,6 @@ def get_line(node: docutils.nodes.Node) -> int:
         node = node.parent
 
     return cast(int, line_of_node(node)) - 1
-
-
-def remove_file_extension(file_id: FileId) -> FileId:
-    return file_id.with_name(PAT_FILE_EXTENSIONS.sub("", file_id.name))
 
 
 def ast_dive(ast: Any) -> Iterator[Dict[str, SerializableType]]:
