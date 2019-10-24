@@ -711,6 +711,117 @@ A new paragraph.
     )
 
 
+def test_list_table() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38 72
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38 72
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 38 72
+   :header-rows: 1
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+      
+       + More nesting
+       + Some description
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 38 72
+   :header-rows: 1
+
+   * - Stage
+     - Description
+ 
+   * - :pipeline:`$geoNear`
+     - Text here
+      
+       .. list-table::
+          :widths: 30 30 40
+
+          * - Stage
+            - This is a cell
+            - *text*
+         
+          * - :pipeline:`$geoNear`
+            - Table cell
+            - Testing Table cell
+""",
+    )
+    assert len(diagnostics) == 0
+
+
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

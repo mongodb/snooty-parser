@@ -352,7 +352,6 @@ class JSONVisitor:
     ) -> bool:
         name = node["name"]
         doc["name"] = name
-
         options = node["options"] or {}
         if (
             node.children
@@ -397,6 +396,19 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+        elif name == "list-table":
+            # Calculate the expected number of columns for this list-table structure.
+            expected_num_columns = 0
+            if "widths" in options:
+                expected_num_columns = len(options["widths"].split(" "))
+            bullet_list = node.children[0]
+            for list_item in bullet_list.children:
+                if expected_num_columns == 0:
+                    expected_num_columns = len(list_item.children[0].children)
+                for bullets in list_item.children:
+                    self.validate_list_table(bullets, expected_num_columns)
+
         elif name == "literalinclude":
             if argument_text is None:
                 lineno = util.get_line(node)
@@ -467,7 +479,6 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
             doc["entries"] = node["entries"]
-
         if options:
             doc["options"] = options
 
@@ -483,6 +494,22 @@ class JSONVisitor:
         if not resolved_target_path.is_file():
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+    def validate_list_table(
+        self, node: docutils.nodes.Node, expected_num_columns: int
+    ) -> None:
+        """Validate list-table structure"""
+        if (
+            isinstance(node, docutils.nodes.bullet_list)
+            and len(node.children) != expected_num_columns
+        ):
+            msg = (
+                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+            )
+            self.diagnostics.append(
+                Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
+            )
+            return
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(
