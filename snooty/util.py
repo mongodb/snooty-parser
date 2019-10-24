@@ -5,7 +5,6 @@ import docutils.parsers.rst.directives
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
-import re
 from dataclasses import dataclass
 from pathlib import Path, PurePath
 from typing import (
@@ -25,7 +24,6 @@ from .types import FileId, SerializableType
 
 logger = logging.getLogger(__name__)
 _K = TypeVar("_K", bound=Hashable)
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
 def reroot_path(

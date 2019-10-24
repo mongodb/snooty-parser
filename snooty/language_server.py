@@ -15,7 +15,6 @@ from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, SerializableType
 from . import types, util
 from .parser import Project
-from .util import PAT_FILE_EXTENSIONS
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
@@ -311,7 +310,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         return self.project.get_page_ast(Path(filePath))
 
     def m_text_document__get_project_name(self) -> SerializableType:
-        """Get the project's name from its snooty.toml file"""
+        """Get the project's name from its ProjectConfig"""
+        # This method may later be refactored to obtain other ProjectConfig data
+        # (https://github.com/mongodb/snooty-parser/pull/44#discussion_r336749209)
         if not self.project:
             logger.warn("Project uninitialized")
             return None
@@ -325,8 +326,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return None
 
         fileid = self.project.get_fileid(PurePath(filePath))
-        fileid = fileid.with_name(PAT_FILE_EXTENSIONS.sub("", fileid.name))
-        return fileid.as_posix()
+        return fileid.without_known_suffix
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:

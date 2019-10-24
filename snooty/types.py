@@ -24,6 +24,7 @@ from . import intersphinx
 
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
+PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
 
@@ -39,7 +40,11 @@ class ProjectConfigError(SnootyError):
 class FileId(PurePosixPath):
     """An unambiguous file path relative to the local project's root."""
 
-    pass
+    @property
+    def without_known_suffix(self) -> str:
+        """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
+        fileid = self.with_name(PAT_FILE_EXTENSIONS.sub("", self.name))
+        return fileid.as_posix()
 
 
 @dataclass

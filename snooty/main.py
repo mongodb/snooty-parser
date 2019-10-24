@@ -11,7 +11,6 @@ from . import language_server
 from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType
-from .util import PAT_FILE_EXTENSIONS
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
@@ -96,9 +95,7 @@ class MongoBackend(Backend):
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
-        # Manually strip file extensions so that filenames that contain periods are not truncated
-        page_id = page_id.with_name(PAT_FILE_EXTENSIONS.sub("", page_id.name))
-        fully_qualified_pageid = "/".join(prefix + [page_id.as_posix()])
+        fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
         self.client["snooty"]["documents"].replace_one(
             {"_id": fully_qualified_pageid},
