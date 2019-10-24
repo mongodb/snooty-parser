@@ -690,6 +690,9 @@ class _Project:
         page_ast["children"] = self._populate_include_nodes(page_ast["children"])
         return cast(SerializableType, page_ast)
 
+    def get_project_name(self) -> str:
+        return self.config.name
+
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
         prefix = get_giza_category(path)
@@ -936,6 +939,9 @@ class Project:
         """Return complete AST of page with updated text"""
         with self._lock:
             return self._project.get_page_ast(path)
+
+    def get_project_name(self) -> str:
+        return self._project.get_project_name()
 
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""
