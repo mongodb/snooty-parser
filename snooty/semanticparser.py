@@ -1,8 +1,6 @@
-import os
-
 from typing import Callable, Dict, List, Any, cast
-
 from .types import FileId, Page, SerializableType
+from . import util
 
 
 class SemanticParser:
@@ -24,21 +22,13 @@ class SemanticParser:
     def slug_title(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         # Function which returns a dictionary of slug-title mappings
         slug_title_dict: Dict[str, SerializableType] = {}
-        for file_id in pages:
-            page = pages[file_id]
-            slug = str(page.source_path)
 
-            # Get the relative path from the absolute paths of the current file and the page
-            common_prefix = os.path.commonprefix([page.source_path, os.getcwd()])
-            if common_prefix != "":
-                slug = os.path.relpath(page.source_path, common_prefix)
-
-                # remove the file extension from the slug
-                ext_idx = slug.find(".")
-                slug = slug[:ext_idx]
+        for file_id, page in pages.items():
+            # remove the file extension from the slug
+            slug = str(util.remove_file_extension(file_id))
 
             # Skip slug-title mapping if the file is an `includes`
-            if "includes" in slug:
+            if "includes" in slug or "images" in slug:
                 continue
 
             # Parse for title
