@@ -1,7 +1,6 @@
 from typing import Callable, Dict, List, Any, cast
 from .types import FileId, Page, SerializableType
 
-
 class SemanticParser:
     def __init__(self) -> None:
         pass
