@@ -402,14 +402,12 @@ class JSONVisitor:
             expected_num_columns = 0
             if "widths" in options:
                 expected_num_columns = len(options["widths"].split(" "))
-
-            for row in node.children:
-                for column in row.children:
-                    # if the :widths: argument was never specified, set the expected
-                    # number of columns to be the number of columns in the first sublist.
-                    if expected_num_columns == 0:
-                        expected_num_columns = len(column[0].children)
-                    self.validate_list_table(column[0], expected_num_columns)
+            bullet_list = node.children[0]
+            for list_item in bullet_list.children:
+                if expected_num_columns == 0:
+                    expected_num_columns = len(list_item.children[0].children)
+                for bullets in list_item.children:
+                    self.validate_list_table(bullets, expected_num_columns)
 
         elif name == "literalinclude":
             if argument_text is None:
@@ -512,11 +510,6 @@ class JSONVisitor:
                 Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
             )
             return
-
-        # unwrap the data structures holding the bullet list
-        if not isinstance(node, docutils.nodes.bullet_list):
-            for child in node.children:
-                self.validate_list_table(child, expected_num_columns)
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(
