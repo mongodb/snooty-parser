@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, cast
 from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
@@ -44,22 +44,12 @@ def test() -> None:
         project.build()
 
         # Ensure that the correct pages and assets exist
-        slugToTitle: Dict[str, str] = backend.metadata["slugToTitle"]
-        
+        slugToTitle: Dict[str, str] = cast(
+            Dict[str, str], backend.metadata["slugToTitle"]
+        )
+
         assert len(slugToTitle) == 4
-        assert (
-            slugToTitle["test_data/test_semantic_parser/source/index"]
-            == "Connection Limits and Cluster Tier"
-        )
-        assert (
-            slugToTitle["test_data/test_semantic_parser/source/page1"]
-            == "Print this heading"
-        )
-        assert (
-            slugToTitle["test_data/test_semantic_parser/source/page2"]
-            == "Heading is not at the top for some reason"
-        )
-        assert (
-            slugToTitle["test_data/test_semantic_parser/source/page3"]
-            == "A heading!"
-        )
+        assert slugToTitle["index"] == "Connection Limits and Cluster Tier"
+        assert slugToTitle["page1"] == "Print this heading"
+        assert slugToTitle["page2"] == "Heading is not at the top for some reason"
+        assert slugToTitle["page3"] == ""
