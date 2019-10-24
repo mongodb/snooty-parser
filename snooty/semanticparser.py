@@ -1,8 +1,5 @@
 from typing import Callable, Dict, List, Any, cast
-import re
 from .types import FileId, Page, SerializableType
-
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 class SemanticParser:
     def __init__(self) -> None:
@@ -25,7 +22,7 @@ class SemanticParser:
         slug_title_dict: Dict[str, SerializableType] = {}
         for file_id, page in pages.items():
             # remove the file extension from the slug
-            slug = str(file_id.with_name(PAT_FILE_EXTENSIONS.sub("", file_id.name)))
+            slug = file_id.without_known_suffix
 
             # Skip slug-title mapping if the file is an `includes`
             if "includes" in slug or "images" in slug:
