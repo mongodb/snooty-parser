@@ -309,6 +309,25 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         return self.project.get_page_ast(Path(filePath))
 
+    def m_text_document__get_project_name(self) -> SerializableType:
+        """Get the project's name from its ProjectConfig"""
+        # This method may later be refactored to obtain other ProjectConfig data
+        # (https://github.com/mongodb/snooty-parser/pull/44#discussion_r336749209)
+        if not self.project:
+            logger.warn("Project uninitialized")
+            return None
+
+        return self.project.get_project_name()
+
+    def m_text_document__get_page_fileid(self, filePath: str) -> SerializableType:
+        """Given a path to a file, return its fileid as a string"""
+        if not self.project:
+            logger.warn("Project uninitialized")
+            return None
+
+        fileid = self.project.get_fileid(PurePath(filePath))
+        return fileid.without_known_suffix
+
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
         if not self.project:
             return
