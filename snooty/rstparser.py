@@ -98,8 +98,9 @@ class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
 
 
 class directive(docutils.nodes.General, docutils.nodes.Element):
-    def __init__(self, name: str) -> None:
+    def __init__(self, domain: str, name: str) -> None:
         super(directive, self).__init__()
+        self["domain"] = domain
         self["name"] = name
 
 
@@ -268,13 +269,15 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
 
 
 class BaseDocutilsDirective(docutils.parsers.rst.Directive):
+    directive_spec: specparser.Directive
     required_arguments = 0
     is_target = False
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
 
-        node = target_directive(self.name) if self.is_target else directive(self.name)
+        constructor = target_directive if self.is_target else directive
+        node = constructor(self.directive_spec.domain or "", self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
@@ -346,16 +349,7 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
     return lines
 
 
-class CardGroupDirective(BaseDocutilsDirective):
-    required_arguments = 0
-    optional_arguments = 0
-    has_content = True
-    option_spec = {
-        "type": lambda ty: docutils.parsers.rst.directives.choice(
-            ty, ("large", "small", None)
-        )
-    }
-
+class BaseCardGroupDirective(BaseDocutilsDirective):
     def run(self) -> List[docutils.nodes.Node]:
         parsed = load_yaml("\n".join(self.content))[0]
         try:
@@ -365,7 +359,7 @@ class CardGroupDirective(BaseDocutilsDirective):
             error_node = self.state.document.reporter.error(str(err), line=line)
             return [error_node]
 
-        node = directive("card-group")
+        node = directive("", "card-group")
         node.document = self.state.document
         source, node.line = self.state_machine.get_source_and_line(self.lineno)
         node.source = source
@@ -386,7 +380,7 @@ class CardGroupDirective(BaseDocutilsDirective):
         line = self.lineno + child.line
 
         # Give the node a unique name, as "card" is used by landing page cards in docs-tutorials.
-        node = directive("cardgroup-card")
+        node = directive("", "cardgroup-card")
         node.document = self.state.document
         node.source = source
         node.line = line
@@ -401,13 +395,7 @@ class CardGroupDirective(BaseDocutilsDirective):
         return node
 
 
-class TabsDirective(BaseDocutilsDirective):
-    required_arguments = 0
-    optional_arguments = 1
-    final_argument_whitespace = True
-    has_content = True
-    option_spec = {"tabset": str, "hidden": util.option_bool}
-
+class BaseTabsDirective(BaseDocutilsDirective):
     def run(self) -> List[docutils.nodes.Node]:
         # Support the old-style tabset definition where the tabset is embedded in the
         # directive's name.
@@ -430,7 +418,7 @@ class TabsDirective(BaseDocutilsDirective):
                 error_node = self.state.document.reporter.error(str(err), line=line)
                 return [error_node]
 
-            node = directive("tabs")
+            node = directive("", "tabs")
             node.document = self.state.document
             source, node.line = self.state_machine.get_source_and_line(self.lineno)
             node.source = source
@@ -463,7 +451,7 @@ class TabsDirective(BaseDocutilsDirective):
         """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
         line = self.lineno + child.line
 
-        node = directive("tab")
+        node = directive("", "tab")
         node.document = self.state.document
         node.source = source
         node.line = line
@@ -490,18 +478,7 @@ class TabsDirective(BaseDocutilsDirective):
         return node
 
 
-class CodeDirective(docutils.parsers.rst.Directive):
-    required_arguments = 1
-    optional_arguments = 0
-    has_content = True
-    final_argument_whitespace = True
-    option_spec = {
-        "copyable": util.option_bool,
-        "emphasize-lines": str,
-        "class": str,
-        "linenos": util.option_flag,
-    }
-
+class BaseCodeDirective(docutils.parsers.rst.Directive):
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         copyable = "copyable" not in self.options or self.options["copyable"] == "true"
@@ -526,7 +503,7 @@ class CodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-class VersionDirective(docutils.parsers.rst.Directive):
+class BaseVersionDirective(docutils.parsers.rst.Directive):
     """Special handling for versionadded, versionchanged, and deprecated directives.
 
     These directives include one required argument and an optional argument on the next line.
@@ -536,13 +513,10 @@ class VersionDirective(docutils.parsers.rst.Directive):
 
     required_arguments = 1
     optional_arguments = 1
-    has_content = True
-    final_argument_whitespace = True
-    option_spec: Dict[str, object] = {}
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
-        node = directive(self.name)
+        node = directive("", self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
@@ -565,7 +539,7 @@ class VersionDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-class TocTreeDirective(docutils.parsers.rst.Directive):
+class BaseTocTreeDirective(docutils.parsers.rst.Directive):
     """Special handling for toctree directives.
 
     Produces a node that includes an `entries` property, represented as a list of objects. Each entry in entries includes:
@@ -573,24 +547,11 @@ class TocTreeDirective(docutils.parsers.rst.Directive):
     - [optional] title: a string representing the title to use in the TOC sidebar
     """
 
-    required_arguments = 0
-    optional_arguments = 0
-    has_content = True
     final_argument_whitespace = True
-    option_spec = {
-        "caption": str,
-        "hidden": util.option_flag,
-        "includehidden": util.option_flag,
-        "maxdepth": int,
-        "titlesonly": util.option_flag,
-        "reversed": util.option_flag,
-        "numbered": util.option_flag,
-        "glob": util.option_flag,
-    }
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
-        node = directive(self.name)
+        node = directive("", self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
@@ -713,11 +674,27 @@ class Registry:
         return None, []
 
 
+SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
+    "code-block": BaseCodeDirective,
+    "code": BaseCodeDirective,
+    "sourcecode": BaseCodeDirective,
+    "deprecated": BaseVersionDirective,
+    "versionadded": BaseVersionDirective,
+    "versionchanged": BaseVersionDirective,
+    "card-group": BaseCardGroupDirective,
+    "toctree": BaseTocTreeDirective,
+}
+
+
 def register_spec_with_docutils(spec: specparser.Spec) -> None:
     """Register all of the definitions in the spec with docutils, overwriting the previous
        call to this function. This function should only be called once in the
        process lifecycle."""
+
     from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
+
+    SPECIAL_DIRECTIVE_HANDLERS["guide"] = LegacyGuideDirective
+    SPECIAL_DIRECTIVE_HANDLERS["guide-index"] = LegacyGuideIndexDirective
 
     # Unfortunately, the docutils API uses global state for dispatching directives
     # and roles. Bind the docutils dispatchers to this rstspec registry.
@@ -740,17 +717,21 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         if name.startswith("_"):
             continue
 
-        # Tabs have special handling because of the need to support legacy syntax
-        if name == "tabs" or name.startswith("tabs-"):
-            registry.add_directive(name, TabsDirective)
-            continue
-
         options: Dict[str, object] = {
             option_name: spec.get_validator(option)
             for option_name, option in directive.options.items()
         }
 
-        class DocutilsDirective(BaseDocutilsDirective):
+        base_class: Any = BaseDocutilsDirective
+
+        # Tabs have special handling because of the need to support legacy syntax
+        if name == "tabs" or name.startswith("tabs-"):
+            base_class = BaseTabsDirective
+        elif name in SPECIAL_DIRECTIVE_HANDLERS:
+            base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
+
+        class DocutilsDirective(base_class):  # type: ignore
+            directive_spec = directive
             has_content = bool(directive.content_type)
             optional_arguments = 1 if directive.argument_type else 0
             final_argument_whitespace = True
@@ -762,18 +743,6 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         )
         DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
         registry.add_directive(name, DocutilsDirective)
-
-    # Some directives currently have special handling
-    registry.add_directive("code-block", CodeDirective)
-    registry.add_directive("code", CodeDirective)
-    registry.add_directive("sourcecode", CodeDirective)
-    registry.add_directive("deprecated", VersionDirective)
-    registry.add_directive("versionadded", VersionDirective)
-    registry.add_directive("versionchanged", VersionDirective)
-    registry.add_directive("guide", LegacyGuideDirective)
-    registry.add_directive("card-group", CardGroupDirective)
-    registry.add_directive("guide-index", LegacyGuideIndexDirective)
-    registry.add_directive("toctree", TocTreeDirective)
 
     # Docutils builtins
     registry.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)

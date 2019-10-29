@@ -1,6 +1,6 @@
 from pathlib import Path
 from . import rstparser
-from .util_test import check_ast_testing_string
+from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import Diagnostic, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
@@ -14,6 +14,8 @@ def test_tabs() -> None:
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
+    print(ast_to_testing_string(page.ast))
+
     check_ast_testing_string(
         page.ast,
         """<root>
@@ -23,12 +25,16 @@ def test_tabs() -> None:
         Xenial content</text></paragraph></directive>
         <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive>
@@ -668,6 +674,7 @@ This paragraph is not a child.
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
+    print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
         """<root>
@@ -758,7 +765,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
        .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -777,7 +784,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
      - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -795,7 +802,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
        .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -814,10 +821,10 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
-      
+
        + More nesting
        + Some description
 """,
@@ -835,17 +842,17 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - Text here
-      
+
        .. list-table::
           :widths: 30 30 40
 
           * - Stage
             - This is a cell
             - *text*
-         
+
           * - :pipeline:`$geoNear`
             - Table cell
             - Testing Table cell

@@ -172,6 +172,9 @@ options.titlesonly = "flag"
 options.hidden = "flag"
 options.maxdepth = "nonnegative_integer"
 options.includehidden = "flag"
+options.reversed = "flag"
+options.numbered = "flag"
+options.glob = "flag"
 
 [directive.tabs-pillstrip]
 deprecated = true
@@ -235,6 +238,7 @@ argument_type = "string"
 [directive.code-block]
 help = """A block of code to show the user."""
 argument_type = "string"
+content_type = "raw"
 options.copyable = "boolean"
 options.emphasize-lines = "string"
 options.class = "string"
