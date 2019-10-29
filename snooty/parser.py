@@ -619,11 +619,10 @@ class _Project:
 
         if config_diagnostics:
             backend.on_diagnostics(
-                self.get_fileid(self.config.config_path), config_diagnostics
+                FileId(self.config.config_path.relative_to(root)), config_diagnostics
             )
             raise ProjectConfigError()
 
-        self.root = self.config.source_path
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
@@ -700,10 +699,10 @@ class _Project:
         return None, []
 
     def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(path.relative_to(self.root))
+        return FileId(path.relative_to(self.config.source_path))
 
     def get_full_path(self, fileid: FileId) -> Path:
-        return self.root.joinpath(fileid)
+        return self.config.source_path.joinpath(fileid)
 
     def get_page_ast(self, path: Path) -> SerializableType:
         """Update page file (.txt) with current text and return fully populated page AST"""
@@ -787,7 +786,7 @@ class _Project:
     def build(self) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         with multiprocessing.Pool() as pool:
-            paths = util.get_files(self.root, RST_EXTENSIONS)
+            paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
             logger.debug("Processing rst files")
             results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
             for page, diagnostics in results:
@@ -796,7 +795,7 @@ class _Project:
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
-        for path in util.get_files(self.root, (".yaml",)):
+        for path in util.get_files(self.config.source_path, (".yaml",)):
             prefix = get_giza_category(path)
             if prefix in self.yaml_mapping:
                 categorized[prefix].append(path)

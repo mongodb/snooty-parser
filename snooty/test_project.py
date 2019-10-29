@@ -1,11 +1,19 @@
 import sys
 import threading
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Dict, List
+from typing import cast, Any, Dict, DefaultDict, List
 from .gizaparser.published_branches import PublishedBranches
-from .types import FileId, Page, Diagnostic, ProjectConfig, SerializableType
+from .types import (
+    FileId,
+    Page,
+    Diagnostic,
+    ProjectConfig,
+    ProjectConfigError,
+    SerializableType,
+)
 from .parser import Project
 from .util import ast_dive
 
@@ -15,12 +23,15 @@ class Backend:
     metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
+    diagnostics: DefaultDict[FileId, List[Diagnostic]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        pass
+        self.diagnostics[path].extend(diagnostics)
 
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         self.pages[page_id] = page
@@ -143,3 +154,17 @@ def test_merge_conflict() -> None:
     assert project_diagnostics[-2].message.startswith(
         "git merge conflict"
     ) and project_diagnostics[-2].start == (35, 0)
+
+
+def test_bad_project() -> None:
+    backend = Backend()
+    try:
+        Project(Path("test_data/bad_project"), backend)
+    except ProjectConfigError:
+        fileid = FileId("snooty.toml")
+        assert list(backend.diagnostics.keys()) == [fileid]
+        diagnostics = backend.diagnostics[fileid]
+        assert len(diagnostics) == 1
+        assert "source constant" in diagnostics[0].message
+    else:
+        assert False
