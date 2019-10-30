@@ -14,8 +14,6 @@ def test_tabs() -> None:
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
-    print(ast_to_testing_string(page.ast))
-
     check_ast_testing_string(
         page.ast,
         """<root>
@@ -674,7 +672,6 @@ This paragraph is not a child.
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
-    print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
         """<root>
