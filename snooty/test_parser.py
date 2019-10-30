@@ -1,6 +1,6 @@
 from pathlib import Path
 from . import rstparser
-from .util_test import check_ast_testing_string, ast_to_testing_string
+from .util_test import check_ast_testing_string
 from .types import Diagnostic, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
