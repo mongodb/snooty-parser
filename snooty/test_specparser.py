@@ -45,7 +45,9 @@ def test_load() -> None:
         argument_type="user_level",
         required_context=None,
         deprecated=True,
+        domain=None,
         options={"foo": [specparser.PrimitiveType.path, specparser.PrimitiveType.uri]},
+        name="child",
     )
 
     # Test these in the opposite order of the definition to ensure that each "type" of definition

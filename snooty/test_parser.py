@@ -23,12 +23,16 @@ def test_tabs() -> None:
         Xenial content</text></paragraph></directive>
         <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
         <paragraph><text>Windows content</text></paragraph></directive></directive>
+
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive>
@@ -382,6 +386,8 @@ def test_roles() -> None:
         parser,
         path,
         """
+.. binary:: mongod
+
 * :manual:`/introduction/`
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
@@ -396,6 +402,7 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
+            <target_directive name="binary" target="mongod"></target_directive>
             <list>
             <listItem>
             <paragraph>
@@ -417,26 +424,27 @@ def test_roles() -> None:
             <listItem>
             <paragraph>
             <role name="rfc"
-                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 5}}}"
+                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 7}}}"
                   target="1149"></role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="binary" target="~bin.mongod"></role>
+            <ref_role flag="~" name="binary" target="bin.mongod"></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="binary"
-                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 7}}}"
-                  target="~bin.mongod"></role>
+            <ref_role flag="~"
+                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 9}}}"
+                  name="binary"
+                  target="bin.mongod"></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <role name="guilabel"
-                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 8}}}">
+                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 10}}}">
             </role>
             </paragraph>
             </listItem>
@@ -523,6 +531,34 @@ def test_doc_role() -> None:
         </listItem>
         </list>
         </root>""",
+    )
+
+
+def test_rstobject() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test both forms of :manual: (an extlink), :rfc: (explicit title),
+    # :binary: (rstobject), and :guilabel: (plain text)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. option:: --slowms <integer>
+
+   test
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+            <target_directive name="option" target="--slowms &lt;integer&gt;">
+            <paragraph><text>test</text></paragraph>
+            </target_directive>
+            </root>""",
     )
 
 
@@ -726,7 +762,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
        .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -745,7 +781,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
      - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -763,7 +799,7 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
        .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
@@ -782,10 +818,10 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
-      
+
        + More nesting
        + Some description
 """,
@@ -803,17 +839,17 @@ def test_list_table() -> None:
 
    * - Stage
      - Description
- 
+
    * - :pipeline:`$geoNear`
      - Text here
-      
+
        .. list-table::
           :widths: 30 30 40
 
           * - Stage
             - This is a cell
             - *text*
-         
+
           * - :pipeline:`$geoNear`
             - Table cell
             - Testing Table cell

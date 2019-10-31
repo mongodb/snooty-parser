@@ -29,7 +29,9 @@ from .types import (
     ProjectConfig,
     PendingTask,
     FileId,
+    ProjectInterface,
     Cache,
+    TargetDatabase,
 )
 
 NO_CHILDREN = {"substitution_reference"}
@@ -50,8 +52,11 @@ class PendingLiteralInclude(PendingTask):
         self.asset = asset
         self.options = options
 
-    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+    def __call__(
+        self, diagnostics: List[Diagnostic], project: ProjectInterface
+    ) -> None:
         """Load the literalinclude target text into our node."""
+        cache = project.expensive_operation_cache
         # Use the cached node if our parameters match the cache entry
         options_key = hash(tuple(((k, v) for k, v in self.options.items())))
         entry = cache[(self.asset.fileid, options_key)]
@@ -148,8 +153,12 @@ class PendingFigure(PendingTask):
         super().__init__(node)
         self.asset = asset
 
-    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+    def __call__(
+        self, diagnostics: List[Diagnostic], project: ProjectInterface
+    ) -> None:
         """Compute this figure's checksum and store it in our node."""
+        cache = project.expensive_operation_cache
+
         # Use the cached checksum if possible. Note that this does not currently
         # update the underlying asset: if the asset is used by the current backend,
         # the image will still have to be read.
@@ -238,7 +247,9 @@ class JSONVisitor:
             )
             return
 
-        if node_name == "directive":
+        if isinstance(node, rstparser.target_directive):
+            self.handle_target_directive(node, doc)
+        elif isinstance(node, rstparser.directive):
             if self.handle_directive(node, doc):
                 self.state.append(doc)
             return
@@ -250,14 +261,16 @@ class JSONVisitor:
             doc["value"] = str(node)
             return
 
-        if node_name == "role":
-            doc["name"] = node["name"]
+        if isinstance(node, rstparser.role):
+            role_name = node["name"]
+            doc["name"] = role_name
             if "label" in node:
                 doc["label"] = node["label"]
             if "target" in node:
                 doc["target"] = node["target"]
-
-            if doc["name"] == "doc":
+            if "flag" in node:
+                doc["flag"] = node["flag"]
+            if role_name == "doc":
                 self.validate_doc_role(node)
         elif node_name == "target":
             doc["type"] = "target"
@@ -346,6 +359,17 @@ class JSONVisitor:
                     repr(popped),
                 )
             self.state[-1]["children"].append(popped)
+
+    def handle_target_directive(
+        self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
+    ) -> None:
+        """Handle populating a target_directive AST node."""
+        options = node["options"] or {}
+        name = node["name"]
+        doc["name"] = name
+        doc["target"] = node["target"]
+        doc["options"] = options
+        doc["children"] = []
 
     def handle_directive(
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
@@ -616,6 +640,7 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
+        self.targets = TargetDatabase.load(self.config)
 
         if config_diagnostics:
             backend.on_diagnostics(
@@ -656,7 +681,7 @@ class _Project:
         self.pages: Dict[FileId, Page] = {}
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
-        self._expensive_operation_cache = Cache()
+        self.expensive_operation_cache = Cache()
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:
@@ -877,7 +902,7 @@ class _Project:
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
         # Finish any pending tasks
-        page.finish(diagnostics, self._expensive_operation_cache)
+        page.finish(diagnostics, self)
 
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
@@ -923,7 +948,7 @@ class _Project:
 
         # Revoke any caching that might have been performed on this file
         try:
-            del self._expensive_operation_cache[asset_path]
+            del self.expensive_operation_cache[asset_path]
         except KeyError:
             pass
 
