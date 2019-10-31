@@ -11,7 +11,7 @@ class SemanticParser:
         # Specify which transformations should be included in semantic postprocessing
         functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
             self.toctree,
-            self.slug_title
+            self.slug_title,
         ]
         document: Dict[str, SerializableType] = {}
 
@@ -57,7 +57,6 @@ class SemanticParser:
 
         return {"slugToTitle": slug_title_dict}
 
-    
     def toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
         root: Dict[str, Any] = {"toctree": []}
