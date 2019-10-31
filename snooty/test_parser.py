@@ -108,6 +108,24 @@ def test_codeblock() -> None:
     page.finish(diagnostics)
     assert diagnostics[0].severity == Diagnostic.Level.warning
 
+    # Test absent language
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code::
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <code copyable="True">foo</code>
+        </root>""",
+    )
+
 
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

@@ -495,7 +495,8 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         value = "\n".join(self.content)
         node = code(value, value)
         node["name"] = "code"
-        node["lang"] = self.arguments[0]
+        if self.arguments:
+            node["lang"] = self.arguments[0]
         node["copyable"] = copyable
         node["emphasize_lines"] = emphasize_lines
         node.document = self.state.document
