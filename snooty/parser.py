@@ -229,7 +229,8 @@ class JSONVisitor:
             raise docutils.nodes.SkipNode()
         elif node_name == "code":
             doc["type"] = "code"
-            doc["lang"] = node["lang"]
+            if "lang" in node:
+                doc["lang"] = node["lang"]
             doc["copyable"] = node["copyable"]
             if node["emphasize_lines"]:
                 doc["emphasize_lines"] = node["emphasize_lines"]
