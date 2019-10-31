@@ -1,6 +1,5 @@
 from typing import Callable, Dict, List, Any, cast
 from .types import FileId, Page, SerializableType
-import docutils.nodes
 
 
 class SemanticParser:
@@ -65,7 +64,6 @@ class SemanticParser:
         # given a slug. We cannot use the with_suffix method since the type of the slug
         # in find_toctree_nodes(...) is string rather than FileId.
         for fileid in pages:
-            page_ast: Dict[str, Any] = cast(Dict[str, Any], pages[fileid].ast)
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
 
