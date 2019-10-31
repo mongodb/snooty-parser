@@ -44,7 +44,6 @@ def test() -> None:
         project.build()
 
         # Ensure that the correct pages and assets exist
-<<<<<<< HEAD
         print(backend.metadata["toctree"])
         toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
         assert len(toctree) == 4
@@ -54,13 +53,13 @@ def test() -> None:
             and len(node["children"]) == 2
             for node in toctree
         )
-=======
-        toctreeNodes: List[Any] = cast(List[Any], backend.metadata["toctreeNodes"])
 
-        assert len(toctreeNodes) == 14
-        assert {"slug": "/tutorial/create-global-cluster"} in toctreeNodes
-        assert {
-            "title": "Build Aggregation Pipelines",
-            "slug": "/data-explorer/cloud-agg-pipeline",
-        } in toctreeNodes
->>>>>>> 3b82b2c6e7c18c833593883b7cb14384106a3915
+        slugToTitle: Dict[str, str] = cast(
+            Dict[str, str], backend.metadata["slugToTitle"]
+        )
+
+        assert len(slugToTitle) == 4
+        assert slugToTitle["index"] == "Connection Limits and Cluster Tier"
+        assert slugToTitle["page1"] == "Print this heading"
+        assert slugToTitle["page2"] == "Heading is not at the top for some reason"
+        assert slugToTitle["page3"] == ""

@@ -226,7 +226,9 @@ class LoadWrongType(LoadError):
             hint_text = "\n\n" + hint_text
 
         super().__init__(
-            f"Incorrect type. Expected {description}.{hint_text}", ty, bad_data
+            f"Incorrect type. Got {bad_data}, Expected {description}.{hint_text}",
+            ty,
+            bad_data,
         )
 
 
@@ -268,8 +270,15 @@ def check_type(ty: Type[_C], data: object) -> _C:
         missing: Set[str] = set()
         for key in annotations:
             if key not in data:
-                data[key] = None
                 missing.add(key)
+
+        if missing:
+            start_line = getattr(data, "_start_line", None)
+            data = mapping_dict(data)
+            if start_line is not None:
+                setattr(data, "_start_line", start_line)
+            for key in missing:
+                data[key] = None
 
         # Check field types
         for key, value in data.items():

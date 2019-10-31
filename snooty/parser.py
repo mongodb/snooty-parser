@@ -29,7 +29,9 @@ from .types import (
     ProjectConfig,
     PendingTask,
     FileId,
+    ProjectInterface,
     Cache,
+    TargetDatabase,
 )
 
 NO_CHILDREN = {"substitution_reference"}
@@ -50,8 +52,11 @@ class PendingLiteralInclude(PendingTask):
         self.asset = asset
         self.options = options
 
-    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+    def __call__(
+        self, diagnostics: List[Diagnostic], project: ProjectInterface
+    ) -> None:
         """Load the literalinclude target text into our node."""
+        cache = project.expensive_operation_cache
         # Use the cached node if our parameters match the cache entry
         options_key = hash(tuple(((k, v) for k, v in self.options.items())))
         entry = cache[(self.asset.fileid, options_key)]
@@ -148,8 +153,12 @@ class PendingFigure(PendingTask):
         super().__init__(node)
         self.asset = asset
 
-    def __call__(self, diagnostics: List[Diagnostic], cache: Cache) -> None:
+    def __call__(
+        self, diagnostics: List[Diagnostic], project: ProjectInterface
+    ) -> None:
         """Compute this figure's checksum and store it in our node."""
+        cache = project.expensive_operation_cache
+
         # Use the cached checksum if possible. Note that this does not currently
         # update the underlying asset: if the asset is used by the current backend,
         # the image will still have to be read.
@@ -220,7 +229,8 @@ class JSONVisitor:
             raise docutils.nodes.SkipNode()
         elif node_name == "code":
             doc["type"] = "code"
-            doc["lang"] = node["lang"]
+            if "lang" in node:
+                doc["lang"] = node["lang"]
             doc["copyable"] = node["copyable"]
             if node["emphasize_lines"]:
                 doc["emphasize_lines"] = node["emphasize_lines"]
@@ -238,7 +248,9 @@ class JSONVisitor:
             )
             return
 
-        if node_name == "directive":
+        if isinstance(node, rstparser.target_directive):
+            self.handle_target_directive(node, doc)
+        elif isinstance(node, rstparser.directive):
             if self.handle_directive(node, doc):
                 self.state.append(doc)
             return
@@ -250,14 +262,16 @@ class JSONVisitor:
             doc["value"] = str(node)
             return
 
-        if node_name == "role":
-            doc["name"] = node["name"]
+        if isinstance(node, rstparser.role):
+            role_name = node["name"]
+            doc["name"] = role_name
             if "label" in node:
                 doc["label"] = node["label"]
             if "target" in node:
                 doc["target"] = node["target"]
-
-            if doc["name"] == "doc":
+            if "flag" in node:
+                doc["flag"] = node["flag"]
+            if role_name == "doc":
                 self.validate_doc_role(node)
         elif node_name == "target":
             doc["type"] = "target"
@@ -347,12 +361,22 @@ class JSONVisitor:
                 )
             self.state[-1]["children"].append(popped)
 
+    def handle_target_directive(
+        self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
+    ) -> None:
+        """Handle populating a target_directive AST node."""
+        options = node["options"] or {}
+        name = node["name"]
+        doc["name"] = name
+        doc["target"] = node["target"]
+        doc["options"] = options
+        doc["children"] = []
+
     def handle_directive(
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
     ) -> bool:
         name = node["name"]
         doc["name"] = name
-
         options = node["options"] or {}
         if (
             node.children
@@ -397,6 +421,19 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+        elif name == "list-table":
+            # Calculate the expected number of columns for this list-table structure.
+            expected_num_columns = 0
+            if "widths" in options:
+                expected_num_columns = len(options["widths"].split(" "))
+            bullet_list = node.children[0]
+            for list_item in bullet_list.children:
+                if expected_num_columns == 0:
+                    expected_num_columns = len(list_item.children[0].children)
+                for bullets in list_item.children:
+                    self.validate_list_table(bullets, expected_num_columns)
+
         elif name == "literalinclude":
             if argument_text is None:
                 lineno = util.get_line(node)
@@ -467,7 +504,6 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
             doc["entries"] = node["entries"]
-
         if options:
             doc["options"] = options
 
@@ -483,6 +519,22 @@ class JSONVisitor:
         if not resolved_target_path.is_file():
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
             self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
+    def validate_list_table(
+        self, node: docutils.nodes.Node, expected_num_columns: int
+    ) -> None:
+        """Validate list-table structure"""
+        if (
+            isinstance(node, docutils.nodes.bullet_list)
+            and len(node.children) != expected_num_columns
+        ):
+            msg = (
+                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+            )
+            self.diagnostics.append(
+                Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
+            )
+            return
 
     def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(
@@ -589,14 +641,14 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
+        self.targets = TargetDatabase.load(self.config)
 
         if config_diagnostics:
             backend.on_diagnostics(
-                self.get_fileid(self.config.config_path), config_diagnostics
+                FileId(self.config.config_path.relative_to(root)), config_diagnostics
             )
             raise ProjectConfigError()
 
-        self.root = self.config.source_path
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
@@ -630,7 +682,7 @@ class _Project:
         self.pages: Dict[FileId, Page] = {}
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
-        self._expensive_operation_cache = Cache()
+        self.expensive_operation_cache = Cache()
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:
@@ -673,10 +725,10 @@ class _Project:
         return None, []
 
     def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(path.relative_to(self.root))
+        return FileId(path.relative_to(self.config.source_path))
 
     def get_full_path(self, fileid: FileId) -> Path:
-        return self.root.joinpath(fileid)
+        return self.config.source_path.joinpath(fileid)
 
     def get_page_ast(self, path: Path) -> SerializableType:
         """Update page file (.txt) with current text and return fully populated page AST"""
@@ -760,7 +812,7 @@ class _Project:
     def build(self) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         with multiprocessing.Pool() as pool:
-            paths = util.get_files(self.root, RST_EXTENSIONS)
+            paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
             logger.debug("Processing rst files")
             results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
             for page, diagnostics in results:
@@ -769,7 +821,7 @@ class _Project:
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
-        for path in util.get_files(self.root, (".yaml",)):
+        for path in util.get_files(self.config.source_path, (".yaml",)):
             prefix = get_giza_category(path)
             if prefix in self.yaml_mapping:
                 categorized[prefix].append(path)
@@ -851,7 +903,7 @@ class _Project:
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
         # Finish any pending tasks
-        page.finish(diagnostics, self._expensive_operation_cache)
+        page.finish(diagnostics, self)
 
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
@@ -897,7 +949,7 @@ class _Project:
 
         # Revoke any caching that might have been performed on this file
         try:
-            del self._expensive_operation_cache[asset_path]
+            del self.expensive_operation_cache[asset_path]
         except KeyError:
             pass
 
