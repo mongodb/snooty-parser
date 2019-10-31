@@ -44,6 +44,7 @@ def test() -> None:
         project.build()
 
         # Ensure that the correct pages and assets exist
+<<<<<<< HEAD
         print(backend.metadata["toctree"])
         toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
         assert len(toctree) == 4
@@ -53,3 +54,13 @@ def test() -> None:
             and len(node["children"]) == 2
             for node in toctree
         )
+=======
+        toctreeNodes: List[Any] = cast(List[Any], backend.metadata["toctreeNodes"])
+
+        assert len(toctreeNodes) == 14
+        assert {"slug": "/tutorial/create-global-cluster"} in toctreeNodes
+        assert {
+            "title": "Build Aggregation Pipelines",
+            "slug": "/data-explorer/cloud-agg-pipeline",
+        } in toctreeNodes
+>>>>>>> 3b82b2c6e7c18c833593883b7cb14384106a3915

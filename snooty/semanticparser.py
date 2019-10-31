@@ -21,6 +21,7 @@ class SemanticParser:
         return document
 
     def toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+<<<<<<< HEAD
         fileid_dict = {}
         root: Dict[str, Any] = {"toctree": []}
 
@@ -86,3 +87,25 @@ def find_toctree_nodes(
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict)
+=======
+        nodes: List[str] = []
+        for fileid in pages:
+            page = pages[fileid]
+            ast: Dict[str, Any] = cast(Dict[str, Any], page.ast)
+            find_toctree_nodes(ast, nodes)
+        return {"toctreeNodes": nodes}
+
+
+def find_toctree_nodes(node: Dict[str, Any], nodes: List[str]) -> None:
+
+    if "children" not in node.keys():
+        return
+
+    if node["type"] == "directive":
+        if len(node["children"]) == 0 and "entries" in node.keys():
+            for toctree_node in node["entries"]:
+                nodes.append(toctree_node)
+
+    for child in node["children"]:
+        find_toctree_nodes(child, nodes)
+>>>>>>> 3b82b2c6e7c18c833593883b7cb14384106a3915
