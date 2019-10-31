@@ -1,0 +1,17 @@
+  
+.. _connection-limits:
+
+====================================
+Connection Limits and Cluster Tier
+====================================
+
+.. default-domain:: mongodb
+
+.. meta::
+   :keywords: connect
+
+.. toctree::
+   :titlesonly: 
+
+   /page1
+   /page2

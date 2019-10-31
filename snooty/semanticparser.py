@@ -22,7 +22,7 @@ class SemanticParser:
 
     def toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
-        root = {"toctree": []}
+        root: Dict[str, Any] = {"toctree": []}
 
         # Construct a {slug: fileid} mapping so that we can retrieve the full file name
         # given a slug. We cannot use the with_suffix method since the type of the slug
@@ -31,21 +31,29 @@ class SemanticParser:
             page_ast: Dict[str, Any] = cast(Dict[str, Any], pages[fileid].ast)
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
-        
+
         # Build the toctree
         for fileid in pages:
-            child = {}
+            child: Dict["str", Any] = {}
             ast: Dict[str, Any] = cast(Dict[str, Any], pages[fileid].ast)
             find_toctree_nodes(fileid, ast, pages, child, fileid_dict)
 
             # If a toc sub-tree for this page exists, add it to the full tree
             if child:
                 child["slug"] = fileid.without_known_suffix
+                if "title" not in child:
+                    child["title"] = ""
                 root["toctree"].append(child)
         return root
 
 
-def find_toctree_nodes(fileid: FileId, ast: Dict[str, Any], pages: Dict[FileId, Page], node: Dict[Any, Any], fileid_dict: Dict[str, FileId]) -> None:
+def find_toctree_nodes(
+    fileid: FileId,
+    ast: Dict[str, Any],
+    pages: Dict[FileId, Page],
+    node: Dict[Any, Any],
+    fileid_dict: Dict[str, FileId],
+) -> None:
     if "children" not in ast.keys():
         return
 
@@ -64,12 +72,16 @@ def find_toctree_nodes(fileid: FileId, ast: Dict[str, Any], pages: Dict[FileId, 
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
                     slug = toctree_node["slug"][1:]
-                    idx = slug.find('.')
+                    idx = slug.find(".")
                     if idx != -1:
                         slug = slug[:idx]
                     new_fileid = fileid_dict[slug]
-                    new_ast: Dict[str, Any] = cast(Dict[str, Any], pages[new_fileid].ast)
-                    find_toctree_nodes(new_fileid, new_ast, pages, toctree_node, fileid_dict)
+                    new_ast: Dict[str, Any] = cast(
+                        Dict[str, Any], pages[new_fileid].ast
+                    )
+                    find_toctree_nodes(
+                        new_fileid, new_ast, pages, toctree_node, fileid_dict
+                    )
 
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:

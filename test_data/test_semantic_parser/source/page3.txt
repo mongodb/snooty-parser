@@ -1,9 +1,8 @@
+No heading
+
 .. important::
 
    You cannot disable |global-write| for a cluster once deployed.
-
-Additional Global Cluster Reference
------------------------------------
 
 |service| |global-write-clusters| require developers to define 
 single or multi-region :guilabel:`Zones`, where each zone supports
@@ -26,6 +25,4 @@ documentation, see :ref:`de-shard-collection-for-global-writes`.
    .. toctree::
       :titlesonly:
 
-      /tutorial/create-global-cluster
-      /global-write-zones
-      /global-cluster-sharding
+      /page1

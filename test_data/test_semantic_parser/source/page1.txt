@@ -1,0 +1,14 @@
+.. _connection-limits:
+
+====================================
+Print this heading
+====================================
+
+.. default-domain:: mongodb
+
+.. meta::
+   :keywords: connect
+
+====================================
+Not this heading
+====================================

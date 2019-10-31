@@ -44,11 +44,12 @@ def test() -> None:
         project.build()
 
         # Ensure that the correct pages and assets exist
-        toctreeNodes: List[Any] = cast(List[Any], backend.metadata["toctreeNodes"])
-
-        assert len(toctreeNodes) == 14
-        assert {"slug": "/tutorial/create-global-cluster"} in toctreeNodes
-        assert {
-            "title": "Build Aggregation Pipelines",
-            "slug": "/data-explorer/cloud-agg-pipeline",
-        } in toctreeNodes
+        print(backend.metadata["toctree"])
+        toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
+        assert len(toctree) == 4
+        assert any(node["title"] == "Print this heading" for node in toctree)
+        assert any(
+            node["title"] == "Connection Limits and Cluster Tier"
+            and len(node["children"]) == 2
+            for node in toctree
+        )
