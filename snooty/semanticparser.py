@@ -11,7 +11,7 @@ class SemanticParser:
         functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
             self.toctree,
             self.slug_title,
-            self.breadcrumbs
+            self.breadcrumbs,
         ]
         document: Dict[str, SerializableType] = {}
 
@@ -84,8 +84,8 @@ class SemanticParser:
 
     def breadcrumbs(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         page_dict: Dict[str, Any] = {}
-        toctree: Dict[str, SerializableType] = self.toctree(pages)
-        all_paths: List[str] = []
+        toctree: Dict[str, Any] = cast(Dict[str, Any], self.toctree(pages))
+        all_paths: List[Any] = []
 
         # Find all node to leaf paths for each node in the toctree
         for node in toctree["toctree"]:
@@ -109,7 +109,7 @@ class SemanticParser:
 
 
 # Helper function used to retrieve the breadcrumbs for a particular slug
-def get_paths(root: Dict[str, SerializableType], path: List[str], all_paths: List[str]) -> List[Any]:
+def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
     if not root:
         return
     if "children" not in root or "children" in root and len(root["children"]) == 0:
@@ -165,7 +165,8 @@ def find_toctree_nodes(
     for child_ast in ast["children"]:
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict)
 
+
 def remove_leading_slash(path: str) -> str:
-    if path[0] == '/':
+    if path[0] == "/":
         return path[1:]
     return path
