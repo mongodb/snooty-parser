@@ -14,7 +14,11 @@ class SemanticParser:
         functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
             self.toctree,
             self.slug_title,
+<<<<<<< HEAD
             self.breadcrumbs,
+=======
+            self.breadcrumbs
+>>>>>>> implementation and tests
         ]
         document: Dict[str, SerializableType] = {}
 
@@ -191,10 +195,8 @@ def find_toctree_nodes(
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
-        find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict)
-
 
 def remove_leading_slash(path: str) -> str:
-    if path[0] == "/":
+    if path[0] == '/':
         return path[1:]
     return path
