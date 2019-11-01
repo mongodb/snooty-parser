@@ -94,7 +94,7 @@ def test_toctree(backend: Backend) -> None:
         assert slugToTitle["page1"] == "Print this heading"
         assert slugToTitle["page2"] == "Heading is not at the top for some reason"
         assert slugToTitle["page3"] == ""
-        
+
         # Ensure that the correct pages and assets exist for toctree
         toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
 
