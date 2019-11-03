@@ -658,6 +658,7 @@ class _Project:
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
             "extracts": gizaparser.extracts.GizaExtractsCategory(self.config),
             "release": gizaparser.release.GizaReleaseSpecificationCategory(self.config),
+            "options": gizaparser.options.GizaOptionsCategory(self.config),
         }
 
         # For each repo-wide substitution, parse the string and save to our project config

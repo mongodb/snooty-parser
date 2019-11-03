@@ -87,24 +87,81 @@ class Node:
 
 @checked
 @dataclass
-class Inherit(Node):
-    """A Giza node mixin specifies a parent node."""
+class NormalInherit(Node):
+    """A Giza node mixin specifying a parent node."""
 
     file: str
     ref: str
 
 
+@checked
 @dataclass
-class Inheritable(Node):
+class OptionsInherit(Node):
+    """A Giza options file node mixin specifying a parent options node."""
+
+    file: str
+    name: str
+    program: str
+
+    @property
+    def ref(self) -> str:
+        """A shim allowing this class to act somewhat like NormalInherit."""
+        return f"{self.program} {self.name}"
+
+
+Inherit = Union[NormalInherit, OptionsInherit]
+
+
+@dataclass
+class NormalInheritable(Node):
     """A mixin for inheritable Giza nodes."""
 
     ref: Optional[str]
     replacement: Optional[Dict[str, str]]
 
-    source: Optional[Inherit]
-    inherit: Optional[Inherit]
+    source: Optional[NormalInherit]
+    inherit: Optional[NormalInherit]
+
+    def apply_ref_from_parent(self, parent: "Inheritable") -> None:
+        """Apply the node identification fields from a parent node."""
+        assert isinstance(parent, NormalInheritable)
+        self.ref = parent.ref
+
+    def set_empty_ref(self) -> None:
+        """Set the node identification to a non-None empty value."""
+        self.ref = ""
 
 
+@dataclass
+class OptionsInheritable(Node):
+    """A mixin for inheritable Giza options file nodes."""
+
+    program: Optional[str]
+    name: Optional[str]
+    replacement: Optional[Dict[str, str]]
+
+    source: Optional[OptionsInherit]
+    inherit: Optional[OptionsInherit]
+
+    @property
+    def ref(self) -> Optional[str]:
+        """A shim allowing this class to act somewhat like NormalInheritance."""
+        if self.program is not None and self.name is not None:
+            return f"{self.program} {self.name}"
+
+        return None
+
+    def apply_ref_from_parent(self, parent: "Inheritable") -> None:
+        assert isinstance(parent, OptionsInherit)
+        self.program = parent.program
+        self.name = parent.name
+
+    def set_empty_ref(self) -> None:
+        self.program = ""
+        self.name = ""
+
+
+Inheritable = Union[NormalInheritable, OptionsInheritable]
 _I = TypeVar("_I", bound=Inheritable)
 
 
@@ -225,11 +282,11 @@ class GizaCategory(Generic[_I]):
                     x for x in parent_sequence if x.ref == parent_identifier.ref
                 )
                 if _parent.ref is None:
-                    _parent.ref = ""
+                    _parent.set_empty_ref()
 
                 # If the child does not have a ref, inherit it from the parent
                 if not obj.ref:
-                    obj.ref = _parent.ref
+                    obj.apply_ref_from_parent(_parent)
                 parent = _parent
             except StopIteration:
                 diagnostics.append(
@@ -239,7 +296,7 @@ class GizaCategory(Generic[_I]):
                 return obj
 
         if obj.ref is None:
-            obj.ref = ""
+            obj.set_empty_ref()
 
         obj = inherit(self.project_config, obj, parent, diagnostics)
 

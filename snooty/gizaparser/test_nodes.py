@@ -60,7 +60,7 @@ def test_substitution() -> None:
 
 def test_inheritance() -> None:
     @dataclass
-    class TestNode(nodes.Inheritable):
+    class TestNode(nodes.NormalInheritable):
         content: Optional[str]
 
     project_config, diagnostics = ProjectConfig.open(Path("test_data"))
@@ -74,7 +74,37 @@ def test_inheritance() -> None:
     child = TestNode(
         ref="child",
         replacement={"bar": "baz", "old": "new"},
-        source=nodes.Inherit("self.yaml", "parent"),
+        source=nodes.NormalInherit("self.yaml", "parent"),
+        inherit=None,
+        content=None,
+    )
+    parent = nodes.inherit(project_config, parent, None, diagnostics)
+    child = nodes.inherit(project_config, child, parent, diagnostics)
+
+    assert child.replacement == {"foo": "bar", "bar": "baz", "old": "new"}
+    assert child.content == "baz"
+    assert not diagnostics
+
+
+def test_options_inheritance() -> None:
+    @dataclass
+    class TestNode(nodes.OptionsInheritable):
+        content: Optional[str]
+
+    project_config, diagnostics = ProjectConfig.open(Path("test_data"))
+    parent = TestNode(
+        program="_shared",
+        name="foo",
+        replacement={"foo": "bar", "old": ""},
+        source=None,
+        inherit=None,
+        content="{{bar}}",
+    )
+    child = TestNode(
+        program="child",
+        name="foo",
+        replacement={"bar": "baz", "old": "new"},
+        source=nodes.OptionsInherit("self.yaml", "_shared", "foo"),
         inherit=None,
         content=None,
     )

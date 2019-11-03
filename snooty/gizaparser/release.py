@@ -4,12 +4,12 @@ from typing import Callable, Optional, List, Tuple, Sequence
 from ..flutter import checked
 from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
 from .parse import parse
-from .nodes import Inheritable, GizaCategory
+from .nodes import NormalInheritable, GizaCategory
 
 
 @checked
 @dataclass
-class ReleaseSpecification(Inheritable):
+class ReleaseSpecification(NormalInheritable):
     copyable: Optional[bool]
     language: Optional[str]
     code: Optional[str]

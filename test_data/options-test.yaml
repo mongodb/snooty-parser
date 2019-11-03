@@ -1,0 +1,47 @@
+program: conf
+name: systemLog.verbosity
+type: integer
+directive: setting
+inherit:
+  name: verbose
+  program: _shared
+  file: options-shared.yaml
+default: 0
+description: |
+  .. versionchanged:: 3.0
+
+  The default :doc:`log message </reference/log-messages>`
+  verbosity level for :ref:`components <log-message-components>`. The
+  verbosity level determines the amount of :ref:`Informational and
+  Debug <log-severity-levels>` messages MongoDB outputs. [#log-message]_
+
+  .. include:: /includes/log-verbosity-levels.rst
+
+  To use a different verbosity level for a named component, use the
+  component's verbosity setting. For example, use the
+  :setting:`systemLog.component.accessControl.verbosity` to set the
+  verbosity level specifically for :data:`ACCESS` components.
+
+  See the ``systemLog.component.<name>.verbosity`` settings for
+  specific component verbosity settings.
+
+  For various ways to set the log verbosity level, see
+  :ref:`log-messages-configure-verbosity`.
+
+  .. [#log-message]
+
+     .. include:: /includes/extracts/4.2-changes-debug-log-message.rst
+
+optional: true
+---
+program: mongo
+name: shell
+directive: option
+args: null
+description: |
+  Enables the shell interface. If you invoke the {{program}} command
+  and specify a JavaScript file as an argument, or use :option:`--eval` to
+  specify JavaScript on the command line, the {{role}} option
+  provides the user with a shell prompt after the file finishes executing.
+optional: true
+---

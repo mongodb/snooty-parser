@@ -2,14 +2,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Tuple, Sequence, Optional
 from ..flutter import checked
-from .nodes import Inheritable, GizaCategory, HeadingMixin
+from .nodes import NormalInheritable, GizaCategory, HeadingMixin
 from .parse import parse
 from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
 
 
 @checked
 @dataclass
-class Extract(Inheritable, HeadingMixin):
+class Extract(NormalInheritable, HeadingMixin):
     content: Optional[str]
     only: Optional[str]
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Callable, Optional, List, Sequence, Union, Tuple
 from ..flutter import checked
 from .parse import parse
-from .nodes import Inheritable, GizaCategory, HeadingMixin
+from .nodes import NormalInheritable, GizaCategory, HeadingMixin
 from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
 
 
@@ -64,7 +64,7 @@ class Action(HeadingMixin):
 
 @checked
 @dataclass
-class Step(Inheritable, HeadingMixin):
+class Step(NormalInheritable, HeadingMixin):
     stepnum: Optional[int]
     content: Optional[str]
     post: Optional[str]

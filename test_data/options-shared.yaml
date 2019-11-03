@@ -1,0 +1,11 @@
+program: _shared
+name: verbose
+aliases: -v
+args: null
+directive: option
+description: |
+  Increases the amount of internal reporting returned on standard output
+  or in log files. Increase the verbosity with the ``-v`` form by
+  including the option multiple times, (e.g. ``-vvvvv``.)
+optional: true
+...
