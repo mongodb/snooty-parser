@@ -11,11 +11,8 @@ class SemanticParser:
 
     def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         # Specify which transformations should be included in semantic postprocessing
-        functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
-            self.toctree,
-            self.slug_title,
-            self.breadcrumbs,
-        ]
+        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs"]
+        functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = self.functions(fn_names)
         document: Dict[str, SerializableType] = {}
 
         for fn in functions:
@@ -23,6 +20,20 @@ class SemanticParser:
             document.update(field)
         return document
 
+
+    # Returns a list of transformations to include in self.run()
+    def functions(self, fn_names: List[str]) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
+        fn_list = []
+        for name in fn_names:
+            if name == "toctree":
+                fn_list.append(self.toctree)
+            elif name == "slug-title":
+                fn_list.append(self.slug_title)
+            elif name == "breadcrumbs":
+                fn_list.append(self.breadcrumbs)
+        
+        return fn_list
+    
     def slug_title(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         # Function which returns a dictionary of slug-title mappings
         slug_title_dict: Dict[str, SerializableType] = {}
