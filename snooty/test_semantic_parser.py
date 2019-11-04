@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Any, cast
+from typing import Dict, List, cast
 from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
@@ -55,11 +55,23 @@ def test() -> None:
         assert slugToTitle["page3"] == ""
 
         # Ensure that the correct pages and assets exist for toctree
-        toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
-        assert len(toctree) == 5
-        assert any(node["title"] == "Print this heading" for node in toctree)
-        assert any(
-            node["title"] == "Connection Limits and Cluster Tier"
-            and len(node["children"]) == 2
-            for node in toctree
-        )
+        assert backend.metadata["toctree"] == {
+            "children": [
+                {"slug": "page1", "title": "Print this heading"},
+                {
+                    "slug": "page2",
+                    "title": "Heading is not at the top for some reason",
+                    "children": [
+                        {
+                            "slug": "page3",
+                            "title": "",
+                            "children": [
+                                {"slug": "page1", "title": "Print this heading"}
+                            ],
+                        }
+                    ],
+                },
+            ],
+            "title": "test_data",
+            "slug": "/",
+        }

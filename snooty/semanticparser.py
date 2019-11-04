@@ -1,10 +1,10 @@
 from typing import Callable, Dict, List, Any, cast
-from .types import FileId, Page, SerializableType
+from .types import FileId, Page, SerializableType, ProjectConfig
 
 
 class SemanticParser:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, project_config: ProjectConfig) -> None:
+        self.project_config = project_config
 
     def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         # Specify which transformations should be included in semantic postprocessing
@@ -58,7 +58,13 @@ class SemanticParser:
 
     def toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
-        root: Dict[str, Any] = {"toctree": []}
+        toctree: Dict[str, Any] = {"toctree": {}}
+
+        starting_fileid = [
+            fileid
+            for fileid in pages.keys()
+            if str(fileid) == "contents.txt" or str(fileid) == "index.txt"
+        ][0]
 
         # Construct a {slug: fileid} mapping so that we can retrieve the full file name
         # given a slug. We cannot use the with_suffix method since the type of the slug
@@ -67,37 +73,38 @@ class SemanticParser:
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
 
+        slug_title: Dict[str, Any] = cast(Dict[str, Any], self.slug_title(pages))[
+            "slugToTitle"
+        ]
+
         # Build the toctree
-        for fileid in pages:
-            child: Dict["str", Any] = {}
-            ast: Dict[str, Any] = cast(Dict[str, Any], pages[fileid].ast)
-            find_toctree_nodes(fileid, ast, pages, child, fileid_dict)
+        root: Dict["str", Any] = {}
+        ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
+        find_toctree_nodes(starting_fileid, ast, pages, root, fileid_dict, slug_title)
 
-            # If a toc sub-tree for this page exists, add it to the full tree
-            if child:
-                child["slug"] = fileid.without_known_suffix
-                if "title" not in child:
-                    child["title"] = ""
-                root["toctree"].append(child)
-        return root
+        toctree["toctree"] = root
+        toctree["toctree"]["title"] = self.project_config.name
+        toctree["toctree"]["slug"] = "/"
+
+        return toctree
 
 
+# find_toctree_nodes is a helper function for SemanticParser.toctree that recursively builds the toctree
 def find_toctree_nodes(
     fileid: FileId,
     ast: Dict[str, Any],
     pages: Dict[FileId, Page],
     node: Dict[Any, Any],
     fileid_dict: Dict[str, FileId],
+    slug_title: Dict[str, Any],
 ) -> None:
-    if "children" not in ast.keys():
-        return
 
-    # Search for title
-    if "title" not in node and ast["type"] == "section":
-        section_child = ast["children"][0]
-        for child in section_child["children"]:
-            if child["type"] == "text":
-                node["title"] = child["value"]
+    # Base case: create node in toctree
+    if "children" not in ast.keys():
+        if node:
+            node["slug"] = fileid.without_known_suffix
+            node["title"] = slug_title[node["slug"]]
+        return
 
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
@@ -121,9 +128,14 @@ def find_toctree_nodes(
                         Dict[str, Any], pages[new_fileid].ast
                     )
                     find_toctree_nodes(
-                        new_fileid, new_ast, pages, toctree_node, fileid_dict
+                        new_fileid,
+                        new_ast,
+                        pages,
+                        toctree_node,
+                        fileid_dict,
+                        slug_title,
                     )
 
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
-        find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict)
+        find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
