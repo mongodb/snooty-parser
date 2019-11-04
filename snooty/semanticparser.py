@@ -100,13 +100,15 @@ def find_toctree_nodes(
                 node["title"] = child["value"]
 
     if ast["type"] == "directive":
-        if len(ast["children"]) == 0 and "entries" in ast.keys():
+        if ast["name"] == "toctree" and "entries" in ast.keys():
             node["children"] = ast["entries"]
             # Recursively build the tree for each toctree node in this entries list
             for toctree_node in node["children"]:
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
-                    slug = toctree_node["slug"][1:]
+                    slug = toctree_node["slug"]
+                    if slug[0] == "/":
+                        slug = slug[1:]
                     idx = slug.find(".")
                     if idx != -1:
                         slug = slug[:idx]
