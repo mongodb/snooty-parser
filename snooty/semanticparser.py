@@ -101,7 +101,11 @@ def find_toctree_nodes(
 
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
-            node["children"] = ast["entries"]
+            if "children" not in node:
+                node["children"] = ast["entries"]
+            else:
+                node["children"].extend(ast["entries"])
+
             # Recursively build the tree for each toctree node in this entries list
             for toctree_node in node["children"]:
                 if "slug" in toctree_node:
