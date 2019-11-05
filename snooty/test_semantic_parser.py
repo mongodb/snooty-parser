@@ -130,3 +130,7 @@ def test_toctree(backend: Backend) -> None:
 
         assert len(pages["page3"]) == 1
         assert ["/", "page2"] in pages["page3"]
+
+        # Ensure that the correct pages and assets exist for toctree order
+        order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
+        assert order == ["/", "page1", "page2", "page3", "page1"]
