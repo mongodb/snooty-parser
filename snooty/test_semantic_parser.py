@@ -55,6 +55,7 @@ def test() -> None:
         assert slugToTitle["page3"] == ""
 
         # Ensure that the correct pages and assets exist for toctree
+<<<<<<< HEAD
         assert backend.metadata["toctree"] == {
             "children": [
                 {"slug": "page1", "title": "Print this heading"},
@@ -75,11 +76,23 @@ def test() -> None:
             "title": "test_data",
             "slug": "/",
         }
+=======
+        toctree: List[Any] = cast(List[Any], backend.metadata["toctree"])
+
+        assert len(toctree) == 5
+        assert any(node["title"] == "Print this heading" for node in toctree)
+        assert any(
+            node["title"] == "Connection Limits and Cluster Tier"
+            and len(node["children"]) == 2
+            for node in toctree
+        )
+>>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89
 
         # Ensure that the correct pages and assets exist for breadcrumbs
         pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
 
         assert len(pages) == 3
+<<<<<<< HEAD
         assert len(pages["page1"]) == 2
         assert ["/"] in pages["page1"]
         assert ["/", "page2", "page3"] in pages["page1"]
@@ -89,3 +102,17 @@ def test() -> None:
 
         assert len(pages["page3"]) == 1
         assert ["/", "page2"] in pages["page3"]
+=======
+        assert len(pages["page1"]) == 4
+        assert ["index"] in pages["page1"]
+        assert ["page3"] in pages["page1"]
+        assert ["page2", "page3"] in pages["page1"]
+        assert ["index", "page2", "page3"] in pages["page1"]
+
+        assert len(pages["page2"]) == 1
+        assert ["index"] in pages["page2"]
+
+        assert len(pages["page3"]) == 2
+        assert ["index", "page2"] in pages["page3"]
+        assert ["page2"] in pages["page3"]
+>>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89

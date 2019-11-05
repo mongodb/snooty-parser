@@ -23,7 +23,13 @@ Heading is not at the top for some reason
 .. class:: hidden
 
    .. toctree::
+<<<<<<< HEAD
     :titlesonly: 
 
     /page3
     
+=======
+      :titlesonly:
+
+      /page3
+>>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89
