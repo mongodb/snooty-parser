@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import Dict, List, cast, Any
 from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
@@ -80,15 +80,12 @@ def test() -> None:
         pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
 
         assert len(pages) == 3
-        assert len(pages["page1"]) == 4
-        assert ["index"] in pages["page1"]
-        assert ["page3"] in pages["page1"]
-        assert ["page2", "page3"] in pages["page1"]
-        assert ["index", "page2", "page3"] in pages["page1"]
+        assert len(pages["page1"]) == 2
+        assert ["/"] in pages["page1"]
+        assert ["/", "page2", "page3"] in pages["page1"]
 
         assert len(pages["page2"]) == 1
-        assert ["index"] in pages["page2"]
+        assert ["/"] in pages["page2"]
 
-        assert len(pages["page3"]) == 2
-        assert ["index", "page2"] in pages["page3"]
-        assert ["page2"] in pages["page3"]
+        assert len(pages["page3"]) == 1
+        assert ["/", "page2"] in pages["page3"]

@@ -5,11 +5,17 @@ from .types import FileId, Page, SerializableType, ProjectConfig
 class SemanticParser:
     def __init__(self, project_config: ProjectConfig) -> None:
         self.project_config = project_config
+        self.slug_title: Dict[str, Any] = {}
+        self.toctree: Dict[str, Any] = {}
+        self.pages: Dict[str, Any] = {}
 
-    def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+    def run(
+        self, pages: Dict[FileId, Page], fn_names: List[str]
+    ) -> Dict[str, SerializableType]:
         # Specify which transformations should be included in semantic postprocessing
-        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs"]
-        functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = self.functions(fn_names)
+        functions: List[
+            Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]
+        ] = self.functions(fn_names)
         document: Dict[str, SerializableType] = {}
 
         for fn in functions:
@@ -17,21 +23,24 @@ class SemanticParser:
             document.update(field)
         return document
 
-
     # Returns a list of transformations to include in self.run()
-    def functions(self, fn_names: List[str]) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
-        fn_list = []
+    def functions(
+        self, fn_names: List[str]
+    ) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
+        fn_list: List[Any] = []
         for name in fn_names:
             if name == "toctree":
-                fn_list.append(self.toctree)
+                fn_list.append(self.build_toctree)
             elif name == "slug-title":
-                fn_list.append(self.slug_title)
+                fn_list.append(self.build_slug_title)
             elif name == "breadcrumbs":
                 fn_list.append(self.breadcrumbs)
-        
+
         return fn_list
-    
-    def slug_title(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+
+    def build_slug_title(
+        self, pages: Dict[FileId, Page]
+    ) -> Dict[str, SerializableType]:
         # Function which returns a dictionary of slug-title mappings
         slug_title_dict: Dict[str, SerializableType] = {}
         for file_id, page in pages.items():
@@ -66,9 +75,11 @@ class SemanticParser:
                                     title_is_set = True
             slug_title_dict[slug] = title
 
-        return {"slugToTitle": slug_title_dict}
+        self.slug_title = {"slugToTitle": slug_title_dict}
 
-    def toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        return self.slug_title
+
+    def build_toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
         toctree: Dict[str, Any] = {"toctree": {}}
 
@@ -85,34 +96,45 @@ class SemanticParser:
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
 
-        slug_title: Dict[str, Any] = cast(Dict[str, Any], self.slug_title(pages))[
-            "slugToTitle"
-        ]
+        if not self.slug_title:
+            self.build_slug_title(pages)
 
         # Build the toctree
         root: Dict["str", Any] = {}
         ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
-        find_toctree_nodes(starting_fileid, ast, pages, root, fileid_dict, slug_title)
+        find_toctree_nodes(
+            starting_fileid,
+            ast,
+            pages,
+            root,
+            fileid_dict,
+            self.slug_title["slugToTitle"],
+        )
 
         toctree["toctree"] = root
         toctree["toctree"]["title"] = self.project_config.name
         toctree["toctree"]["slug"] = "/"
+        self.toctree = toctree
 
-        return toctree
+        return self.toctree
 
     def breadcrumbs(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         page_dict: Dict[str, Any] = {}
-        toctree: Dict[str, Any] = cast(Dict[str, Any], self.toctree(pages))
+        if not self.toctree:
+            self.build_toctree(pages)
+
         all_paths: List[Any] = []
 
         # Find all node to leaf paths for each node in the toctree
-        for node in toctree["toctree"]:
-            paths: List[str] = []
-            get_paths(node, [], paths)
-            all_paths.extend(paths)
+        if "children" in self.toctree["toctree"]:
+            for node in self.toctree["toctree"]["children"]:
+                paths: List[str] = []
+                get_paths(node, [], paths)
+                all_paths.extend(paths)
 
         # Populate page_dict with a list of all possible paths for each slug
         for path in all_paths:
+            path = [self.toctree["toctree"]["slug"]] + path
             reversed_path = path[::-1]
             for i in range(len(reversed_path)):
                 slug = remove_leading_slash(path[i])
@@ -123,7 +145,9 @@ class SemanticParser:
                         if path[:i] not in page_dict[slug]:
                             page_dict[slug].append(path[:i])
 
-        return {"pages": page_dict}
+        self.pages = {"pages": page_dict}
+
+        return self.pages
 
 
 # Helper function used to retrieve the breadcrumbs for a particular slug
@@ -138,9 +162,9 @@ def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
     else:
         # Recursively build the path
         for child in root["children"]:
-            sub_path = path[:]
-            sub_path.append(remove_leading_slash(root["slug"]))
-            get_paths(child, sub_path, all_paths)
+            subpath = path[:]
+            subpath.append(remove_leading_slash(root["slug"]))
+            get_paths(child, subpath, all_paths)
 
 
 # find_toctree_nodes is a helper function for SemanticParser.toctree that recursively builds the toctree
@@ -162,6 +186,7 @@ def find_toctree_nodes(
 
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
+
             if "children" not in node:
                 node["children"] = ast["entries"]
             else:
@@ -171,9 +196,7 @@ def find_toctree_nodes(
             for toctree_node in node["children"]:
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
-                    slug = toctree_node["slug"]
-                    if slug[0] == "/":
-                        slug = slug[1:]
+                    slug = remove_leading_slash(toctree_node["slug"])
                     idx = slug.find(".")
                     if idx != -1:
                         slug = slug[:idx]
