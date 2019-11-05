@@ -13,17 +13,9 @@ class SemanticParser:
         self, pages: Dict[FileId, Page], fn_names: List[str]
     ) -> Dict[str, SerializableType]:
         # Specify which transformations should be included in semantic postprocessing
-<<<<<<< HEAD
         functions: List[
             Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]
         ] = self.functions(fn_names)
-=======
-        functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
-            self.toctree,
-            self.slug_title,
-            self.breadcrumbs,
-        ]
->>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89
         document: Dict[str, SerializableType] = {}
 
         for fn in functions:
@@ -104,10 +96,8 @@ class SemanticParser:
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
 
-<<<<<<< HEAD
         if not self.slug_title:
             self.build_slug_title(pages)
-=======
         # Build the toctree
         for fileid in pages:
             child: Dict["str", Any] = {}
@@ -164,7 +154,6 @@ def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
             sub_path.append(remove_leading_slash(root["slug"]))
             get_paths(child, sub_path, all_paths)
 
->>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89
 
         # Build the toctree
         root: Dict["str", Any] = {}
@@ -282,11 +271,7 @@ def find_toctree_nodes(
 
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
-<<<<<<< HEAD
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
-=======
-        find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict)
->>>>>>> 01198ba56a2ab7e22c9aa28e8f1ef170053f4f89
 
 
 def remove_leading_slash(path: str) -> str:
