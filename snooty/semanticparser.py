@@ -126,7 +126,7 @@ class SemanticParser:
         all_paths: List[Any] = []
 
         # Find all node to leaf paths for each node in the toctree
-        if "children" in self.toctree["toctree"]:
+        if children_exist(self.toctree["toctree"]):
             for node in self.toctree["toctree"]["children"]:
                 paths: List[str] = []
                 get_paths(node, [], paths)
@@ -154,7 +154,7 @@ class SemanticParser:
 def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
     if not root:
         return
-    if "children" not in root or "children" in root and len(root["children"]) == 0:
+    if not children_exist(root) or children_exist(root) and len(root["children"]) == 0:
         # Skip urls
         if "slug" in root:
             path.append(remove_leading_slash(root["slug"]))
@@ -178,7 +178,7 @@ def find_toctree_nodes(
 ) -> None:
 
     # Base case: create node in toctree
-    if "children" not in ast.keys():
+    if not children_exist(ast):
         if node:
             node["slug"] = fileid.without_known_suffix
             node["title"] = slug_title[node["slug"]]
@@ -187,7 +187,7 @@ def find_toctree_nodes(
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
 
-            if "children" not in node:
+            if not children_exist(node):
                 node["children"] = ast["entries"]
             else:
                 node["children"].extend(ast["entries"])
@@ -216,6 +216,12 @@ def find_toctree_nodes(
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
+
+
+def children_exist(ast: Dict[str, Any]) -> bool:
+    if "children" in ast.keys():
+        return True
+    return False
 
 
 def remove_leading_slash(path: str) -> str:
