@@ -60,7 +60,7 @@ class SemanticParser:
         fileid_dict = {}
         toctree: Dict[str, Any] = {"toctree": {}}
 
-        starting_fileid = [
+        starting_fileid: FileId = [
             fileid
             for fileid in pages.keys()
             if str(fileid) == "contents.txt" or str(fileid) == "index.txt"

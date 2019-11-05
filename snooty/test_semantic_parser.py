@@ -4,6 +4,7 @@ from typing import Dict, List, cast
 from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
+import pytest
 
 ROOT_PATH = Path("test_data")
 
@@ -38,40 +39,43 @@ class Backend:
         pass
 
 
-def test() -> None:
+@pytest.fixture
+def backend() -> Backend:
     backend = Backend()
     with Project(Path("test_data/test_semantic_parser"), backend) as project:
         project.build()
 
-        # Ensure that the correct pages and assets exist for slug-title mapping
-        slugToTitle: Dict[str, str] = cast(
-            Dict[str, str], backend.metadata["slugToTitle"]
-        )
+    return backend
 
-        assert len(slugToTitle) == 4
-        assert slugToTitle["index"] == "Connection Limits and Cluster Tier"
-        assert slugToTitle["page1"] == "Print this heading"
-        assert slugToTitle["page2"] == "Heading is not at the top for some reason"
-        assert slugToTitle["page3"] == ""
 
-        # Ensure that the correct pages and assets exist for toctree
-        assert backend.metadata["toctree"] == {
-            "children": [
-                {"slug": "page1", "title": "Print this heading"},
-                {
-                    "slug": "page2",
-                    "title": "Heading is not at the top for some reason",
-                    "children": [
-                        {
-                            "slug": "page3",
-                            "title": "",
-                            "children": [
-                                {"slug": "page1", "title": "Print this heading"}
-                            ],
-                        }
-                    ],
-                },
-            ],
-            "title": "test_data",
-            "slug": "/",
-        }
+def test_slug_title_mapping(backend: Backend) -> None:
+    slug_to_title: Dict[str, str] = cast(
+        Dict[str, str], backend.metadata["slugToTitle"]
+    )
+
+    assert len(slug_to_title) == 4
+    assert slug_to_title["index"] == "Connection Limits and Cluster Tier"
+    assert slug_to_title["page1"] == "Print this heading"
+    assert slug_to_title["page2"] == "Heading is not at the top for some reason"
+    assert slug_to_title["page3"] == ""
+
+
+def test_toctree(backend: Backend) -> None:
+    assert backend.metadata["toctree"] == {
+        "children": [
+            {"slug": "page1", "title": "Print this heading"},
+            {
+                "slug": "page2",
+                "title": "Heading is not at the top for some reason",
+                "children": [
+                    {
+                        "slug": "page3",
+                        "title": "",
+                        "children": [{"slug": "page1", "title": "Print this heading"}],
+                    }
+                ],
+            },
+        ],
+        "title": "test_data",
+        "slug": "/",
+    }
