@@ -35,6 +35,8 @@ class SemanticParser:
                 fn_list.append(self.build_slug_title)
             elif name == "breadcrumbs":
                 fn_list.append(self.breadcrumbs)
+            elif name == "toctree_order":
+                fn_list.append(self.toctree_order)
 
         return fn_list
 
@@ -149,22 +151,23 @@ class SemanticParser:
 
         return self.pages
 
+    def toctree_order(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        order: List[str] = []
 
-# Helper function used to retrieve the breadcrumbs for a particular slug
-def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
+        if not self.toctree:
+            self.build_toctree(pages)
+        pre_order(self.toctree["toctree"], order)
+        return {"toctreeOrder": order}
+
+
+def pre_order(root: Dict[str, Any], order: List[str]) -> None:
     if not root:
         return
-    if not children_exist(root) or children_exist(root) and len(root["children"]) == 0:
-        # Skip urls
-        if "slug" in root:
-            path.append(remove_leading_slash(root["slug"]))
-            all_paths.append(path)
-    else:
-        # Recursively build the path
+    if "slug" in root:
+        order.append(root["slug"])
+    if children_exist(root):
         for child in root["children"]:
-            subpath = path[:]
-            subpath.append(remove_leading_slash(root["slug"]))
-            get_paths(child, subpath, all_paths)
+            pre_order(child, order)
 
 
 # find_toctree_nodes is a helper function for SemanticParser.toctree that recursively builds the toctree
@@ -216,6 +219,23 @@ def find_toctree_nodes(
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
         find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
+
+
+# Helper function used to retrieve the breadcrumbs for a particular slug
+def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
+    if not root:
+        return
+    if not children_exist(root) or children_exist(root) and len(root["children"]) == 0:
+        # Skip urls
+        if "slug" in root:
+            path.append(remove_leading_slash(root["slug"]))
+            all_paths.append(path)
+    else:
+        # Recursively build the path
+        for child in root["children"]:
+            subpath = path[:]
+            subpath.append(remove_leading_slash(root["slug"]))
+            get_paths(child, subpath, all_paths)
 
 
 def children_exist(ast: Dict[str, Any]) -> bool:
