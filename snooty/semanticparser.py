@@ -98,62 +98,6 @@ class SemanticParser:
 
         if not self.slug_title:
             self.build_slug_title(pages)
-        # Build the toctree
-        for fileid in pages:
-            child: Dict["str", Any] = {}
-            ast: Dict[str, Any] = cast(Dict[str, Any], pages[fileid].ast)
-            find_toctree_nodes(fileid, ast, pages, child, fileid_dict)
-
-            # If a toc sub-tree for this page exists, add it to the full tree
-            if child:
-                child["slug"] = fileid.without_known_suffix
-                if "title" not in child:
-                    child["title"] = ""
-                root["toctree"].append(child)
-        return root
-
-    def breadcrumbs(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
-        page_dict: Dict[str, Any] = {}
-        toctree: Dict[str, Any] = cast(Dict[str, Any], self.toctree(pages))
-        all_paths: List[Any] = []
-
-        # Find all node to leaf paths for each node in the toctree
-        for node in toctree["toctree"]:
-            paths: List[str] = []
-            get_paths(node, [], paths)
-            all_paths.extend(paths)
-
-        # Populate page_dict with a list of all possible paths for each slug
-        for path in all_paths:
-            reversed_path = path[::-1]
-            for i in range(len(reversed_path)):
-                slug = remove_leading_slash(path[i])
-                if path[:i]:
-                    if slug not in page_dict:
-                        page_dict[slug] = [path[:i]]
-                    else:
-                        if path[:i] not in page_dict[slug]:
-                            page_dict[slug].append(path[:i])
-
-        return {"pages": page_dict}
-
-
-# Helper function used to retrieve the breadcrumbs for a particular slug
-def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
-    if not root:
-        return
-    if "children" not in root or "children" in root and len(root["children"]) == 0:
-        # Skip urls
-        if "slug" in root:
-            path.append(remove_leading_slash(root["slug"]))
-            all_paths.append(path)
-    else:
-        # Recursively build the path
-        for child in root["children"]:
-            sub_path = path[:]
-            sub_path.append(remove_leading_slash(root["slug"]))
-            get_paths(child, sub_path, all_paths)
-
 
         # Build the toctree
         root: Dict["str", Any] = {}
