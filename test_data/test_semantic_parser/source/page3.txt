@@ -26,4 +26,3 @@ documentation, see :ref:`de-shard-collection-for-global-writes`.
       :titlesonly:
 
       /page1
-      
