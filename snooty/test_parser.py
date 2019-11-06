@@ -6,6 +6,9 @@ from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
 
+# Some of the tests in this file may seem a little weird around refs: the raw parser output
+# does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
+
 
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
@@ -420,7 +423,10 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target domain="mongodb" name="binary" target="bin.mongod"></target>
+            <target domain="mongodb" name="binary" target="bin.mongod">
+                <directive_argument><literal><text>mongod</text></literal></directive_argument>
+                <target_ref_title><text>mongod</text></target_ref_title>
+            </target>
             <list>
             <listItem>
             <paragraph>
@@ -441,29 +447,27 @@ def test_roles() -> None:
             </listItem>
             <listItem>
             <paragraph>
-            <role name="rfc"
-                  label="{'type': 'text', 'value': 'RFC-1149', 'position': {'start': {'line': 7}}}"
-                  target="1149"></role>
+            <role name="rfc" target="1149"><text>RFC-1149</text></role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <ref_role flag="~" domain="mongodb" name="binary" target="bin.mongod"></ref_role>
+            <ref_role flag="~" domain="mongodb" name="binary" target="bin.mongod"><literal />
+            </ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <ref_role flag="~"
-                  label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 9}}}"
                   domain="mongodb"
                   name="binary"
-                  target="bin.mongod"></ref_role>
+                  target="bin.mongod"><literal><text>mongod</text></literal></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="guilabel"
-                  label="{'type': 'text', 'value': 'Test &lt;foo&gt;', 'position': {'start': {'line': 10}}}">
+            <role name="guilabel">
+            <text>Test &lt;foo&gt;</text>
             </role>
             </paragraph>
             </listItem>
@@ -516,16 +520,16 @@ def test_doc_role() -> None:
         <list>
         <listItem>
         <paragraph>
-        <role name="doc"
-              label="{'type': 'text', 'value': 'Testing this', 'position': {'start': {'line': 2}}}"
-              target="/index"></role>
+        <role name="doc" target="/index">
+        <text>Testing this</text>
+        </role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc"
-              label="{'type': 'text', 'value': 'Testing that', 'position': {'start': {'line': 3}}}"
-              target="./../source/index"></role>
+        <role name="doc" target="./../source/index">
+        <text>Testing that</text>
+        </role>
         </paragraph>
         </listItem>
         <listItem>
@@ -576,6 +580,8 @@ def test_rstobject() -> None:
         page.ast,
         """<root>
             <target name="option" target="--slowms &lt;integer&gt;">
+            <directive_argument><literal><text>--slowms &lt;integer&gt;</text></literal></directive_argument>
+            <target_ref_title><text>--slowms &lt;integer&gt;</text></target_ref_title>
             <paragraph><text>test</text></paragraph>
             </target>
             </root>""",
@@ -1068,16 +1074,18 @@ def test_callable_target() -> None:
         """
 <root>
     <target domain="mongodb" name="method" target="db.collection.ensureIndex">
+    <directive_argument><literal><text>db.collection.ensureIndex(keys, options)</text></literal></directive_argument>
+    <target_ref_title><text>db.collection.ensureIndex()</text></target_ref_title>
     <paragraph>
     <text>Creates an index on the specified field if the index does not already exist.</text>
     </paragraph>
     </target>
     <list>
     <listItem><paragraph>
-        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"/>
+        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"><literal /></ref_role>
     </paragraph></listItem>
     <listItem><paragraph>
-        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"/>
+        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"><literal /></ref_role>
     </paragraph></listItem>
     </list>
 </root>""",

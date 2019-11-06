@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import (
     Any,
+    AbstractSet,
     Callable,
     Dict,
     DefaultDict,
@@ -135,6 +136,13 @@ class target_directive(directive):
     pass
 
 
+class target_ref_title(docutils.nodes.Inline, docutils.nodes.TextElement):
+    """Docutils node representing the title which should be used for refs to this node's
+       parent target, if no explicit title is given."""
+
+    pass
+
+
 class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
     pass
 
@@ -143,23 +151,11 @@ class role(docutils.nodes.Inline, docutils.nodes.Element):
     """Docutils node representing a role."""
 
     def __init__(
-        self,
-        domain: str,
-        name: str,
-        lineno: int,
-        label: Optional[str],
-        target: Optional[str],
+        self, domain: str, name: str, lineno: int, target: Optional[str]
     ) -> None:
         super(role, self).__init__()
         self["domain"] = domain
         self["name"] = name
-
-        if label is not None:
-            self["label"] = {
-                "type": "text",
-                "value": label,
-                "position": {"start": {"line": lineno}},
-            }
 
         if target is not None:
             self["target"] = target
@@ -201,7 +197,8 @@ class TextRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        node = role(self.domain, typ, lineno, text, None)
+        node = role(self.domain, typ, lineno, None)
+        node.append(docutils.nodes.Text(text))
         return [node], []
 
 
@@ -223,21 +220,57 @@ class ExplicitTitleRoleHandler:
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
         match = PAT_EXPLICIT_TITLE.match(text)
         if match:
-            node = role(self.domain, typ, lineno, match["label"], match["target"])
+            node = role(self.domain, typ, lineno, match["target"])
+            node.append(docutils.nodes.Text(match["label"]))
         else:
-            node = role(self.domain, typ, lineno, None, text)
+            node = role(self.domain, typ, lineno, text)
 
         return [node], []
 
 
+FORMATTING_MAP = {
+    specparser.FormattingType.strong: docutils.nodes.strong,
+    specparser.FormattingType.emphasis: docutils.nodes.emphasis,
+    specparser.FormattingType.monospace: docutils.nodes.literal,
+}
+
+
+def format_node(
+    node: docutils.nodes.Node, formatting: AbstractSet[specparser.FormattingType]
+) -> docutils.nodes.Node:
+    """Format a docutils node with a set of inline formatting roles."""
+
+    for hint in formatting:
+        node = FORMATTING_MAP[hint]("", "", *([node] if node else []))
+
+    return node
+
+
+def layer_formatting(
+    formatting: AbstractSet[specparser.FormattingType]
+) -> Optional[docutils.nodes.Node]:
+    """Create a nested sequence of formatting nodes."""
+    node = None
+    for hint in formatting:
+        node = FORMATTING_MAP[hint]("", "", *([node] if node else []))
+
+    return node
+
+
 class RefRoleHandler:
     def __init__(
-        self, domain: str, name: str, prefix: Optional[str], callable: bool
+        self,
+        domain: str,
+        name: str,
+        prefix: Optional[str],
+        callable: bool,
+        format: AbstractSet[specparser.FormattingType],
     ) -> None:
         self.domain = domain
         self.name = name
         self.prefix = prefix
         self.callable = callable
+        self.format = format
 
     def __call__(
         self,
@@ -269,7 +302,22 @@ class RefRoleHandler:
         if self.callable:
             target = strip_parameters(target)
 
-        node = ref_role(self.domain, self.name, lineno, label, target)
+        node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
+
+        label_node: Optional[docutils.nodes.Node] = None
+
+        if label:
+            label_node = docutils.nodes.Text(label)
+            if self.format:
+                label_node = format_node(label_node, self.format)
+        else:
+            # Empty formatting nodes provide a skeleton into which the postprocessor
+            # can inject the needed title.
+            label_node = layer_formatting(self.format)
+
+        if label_node:
+            node.append(label_node)
+
         if flag:
             node["flag"] = flag
 
@@ -279,8 +327,11 @@ class RefRoleHandler:
 class LinkRoleHandler:
     """Handle roles which generate a link from a template."""
 
-    def __init__(self, url_template: str) -> None:
+    def __init__(
+        self, url_template: str, format: AbstractSet[specparser.FormattingType]
+    ) -> None:
         self.url_template = url_template
+        self.format = format
 
     def __call__(
         self,
@@ -302,7 +353,13 @@ class LinkRoleHandler:
         url = self.url_template % target
         if not label:
             label = url
-        node = docutils.nodes.reference(label, label, internal=False, refuri=url)
+        node: docutils.nodes.Node = docutils.nodes.reference(
+            label, label, internal=False, refuri=url
+        )
+
+        if self.format:
+            node = format_node(node, self.format)
+
         return [node], []
 
 
@@ -343,14 +400,28 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
         self.add_name(node)
 
+        # If this is an rstobject, we need to generate a target property
         if rstobject_spec is not None:
             if rstobject_spec.prefix:
                 node["target"] = f"{rstobject_spec.prefix}.{self.arguments[0]}"
             else:
                 node["target"] = self.arguments[0]
 
+            title_text = self.arguments[0]
+
             if rstobject_spec.callable:
                 node["target"] = strip_parameters(node["target"])
+                title_text = strip_parameters(title_text) + "()"
+
+            # title is the node that should be presented at this point in the doctree
+            title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
+            # ref_title is the node that should be inserted for links TO this target.
+            ref_title_node: docutils.nodes.Node = docutils.nodes.Text(title_text)
+            if rstobject_spec.format is not None:
+                title_node = format_node(title_node, rstobject_spec.format)
+
+            node.append(directive_argument(self.arguments[0], "", title_node))
+            node.append(target_ref_title(title_text, "", ref_title_node))
         else:
             self.parse_argument(node, source, line)
 
@@ -832,13 +903,14 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         if not role_spec.type or role_spec.type == specparser.PrimitiveRoleType.text:
             handler = TextRoleHandler(domain)
         elif isinstance(role_spec.type, specparser.LinkRoleType):
-            handler = LinkRoleHandler(role_spec.type.link)
+            handler = LinkRoleHandler(role_spec.type.link, role_spec.type.format)
         elif isinstance(role_spec.type, specparser.RefRoleType):
             handler = RefRoleHandler(
                 role_spec.type.domain or domain,
                 role_spec.type.name,
                 role_spec.type.tag,
                 role_spec.rstobject.callable if role_spec.rstobject else False,
+                role_spec.type.format,
             )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
             handler = ExplicitTitleRoleHandler(domain)

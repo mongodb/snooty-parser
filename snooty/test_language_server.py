@@ -134,7 +134,9 @@ def test_text_doc_get_page_ast() -> None:
         # Change image path to be full path
         index_ast_string = (
             """<root>
-            <target domain="std" name="label" target="guides"></target>
+            <target domain="std" name="label" target="guides">
+            <target_ref_title><text>Guides</text></target_ref_title>
+            </target>
             <section alt="Sample images">
             <heading id="id1"><text>Guides</text></heading>
             <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
@@ -147,7 +149,7 @@ def test_text_doc_get_page_ast() -> None:
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
             <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
-            <role name="doc" label="{'type': 'text', 'value': 'create one', 'position': {'start': {'line': 1}}}" target="/cloud/atlas"></role>
+            <role name="doc" target="/cloud/atlas"><text>create one</text></role>
             <text> now.</text></paragraph></section></directive>
             <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>

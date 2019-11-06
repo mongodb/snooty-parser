@@ -26,6 +26,10 @@ from typing import (
 from typing_extensions import Protocol
 
 
+#: Types of formatting that can be applied to a role.
+FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
+
+
 class _Inheritable(Protocol):
     inherit: Optional[str]
 
@@ -41,6 +45,7 @@ class LinkRoleType:
     """Configuration for a role which links to a specific URL template."""
 
     link: str
+    format: Set[FormattingType] = field(default_factory=set)
 
 
 @checked
@@ -51,6 +56,9 @@ class RefRoleType:
     domain: Optional[str]
     name: str
     tag: Optional[str]
+    format: Set[FormattingType] = field(
+        default_factory=lambda: {FormattingType.monospace}
+    )
 
 
 _T = TypeVar("_T", bound=_Inheritable)
@@ -159,6 +167,9 @@ class RstObject:
     callable: bool = field(default=False)
     deprecated: bool = field(default=False)
     name: str = field(default="")
+    format: Set[FormattingType] = field(
+        default_factory=lambda: {FormattingType.monospace}
+    )
 
     def create_directive(self) -> Directive:
         return Directive(
@@ -180,7 +191,7 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
-            type=RefRoleType(self.domain, self.name, self.prefix),
+            type=RefRoleType(self.domain, self.name, self.prefix, format=self.format),
             domain=self.domain,
             deprecated=self.deprecated,
             name=self.name,
