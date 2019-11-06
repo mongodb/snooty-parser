@@ -135,7 +135,12 @@ def test() -> None:
         assert len(published_branch_diagnostics) == 0
         assert published_branches and published_branches.serialize() == {
             "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
-            "version": {"published": ["1.1", "1.0"], "active": ["1.1", "1.0"]},
+            "version": {
+                "published": ["1.1", "1.0"],
+                "active": ["1.1", "1.0"],
+                "stable": None,
+                "upcoming": None,
+            },
         }
 
     # Ensure that any filesystem monitoring threads have been shut down
