@@ -1,5 +1,8 @@
 from typing import Callable, Dict, List, Any, cast
 from .types import FileId, Page, SerializableType, ProjectConfig
+import re
+
+PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
 class SemanticParser:
@@ -60,6 +63,9 @@ class SemanticParser:
         fileid_dict = {}
         toctree: Dict[str, Any] = {"toctree": {}}
 
+        # The toctree must begin at either `contents.txt` or `index.txt`.
+        # Generally, repositories will have one or the other; but, if a repo has both,
+        # a starting point will be arbitrarily chosen.
         starting_fileid: FileId = [
             fileid
             for fileid in pages.keys()
@@ -120,9 +126,12 @@ def find_toctree_nodes(
                     slug = toctree_node["slug"]
                     if slug[0] == "/":
                         slug = slug[1:]
-                    idx = slug.find(".")
-                    if idx != -1:
-                        slug = slug[:idx]
+                    if slug[-1] == "/":
+                        slug = slug[:-1]
+
+                    # TODO: https://jira.mongodb.org/browse/DOCSP-7595
+                    slug = PAT_FILE_EXTENSIONS.sub("", slug)
+
                     new_fileid = fileid_dict[slug]
                     new_ast: Dict[str, Any] = cast(
                         Dict[str, Any], pages[new_fileid].ast
