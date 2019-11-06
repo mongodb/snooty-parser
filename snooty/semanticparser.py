@@ -65,7 +65,7 @@ class SemanticParser:
 
         # The toctree must begin at either `contents.txt` or `index.txt`.
         # Generally, repositories will have one or the other; but, if a repo has both,
-        # a starting point will be arbitrarily chosen.
+        # the starting point will be `contents.txt`.
         starting_fileid: FileId = [
             fileid
             for fileid in pages.keys()
