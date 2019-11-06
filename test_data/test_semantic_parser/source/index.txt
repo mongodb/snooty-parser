@@ -8,3 +8,9 @@ Connection Limits and Cluster Tier
 
 .. meta::
    :keywords: connect
+
+.. toctree::
+   :titlesonly: 
+
+   /page1
+   /page2

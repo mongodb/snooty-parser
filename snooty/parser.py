@@ -652,7 +652,7 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
-        self.semantic_parser = semanticparser.SemanticParser()
+        self.semantic_parser = semanticparser.SemanticParser(self.config)
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
