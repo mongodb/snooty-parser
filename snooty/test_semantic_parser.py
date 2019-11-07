@@ -105,3 +105,4 @@ def test_toctree_order(backend: Backend)
     # Ensure that the correct pages and assets exist for toctree order
     order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
     assert order == ["/", "page1", "page2", "page3", "page1"]
+

@@ -14,4 +14,3 @@ Connection Limits and Cluster Tier
 
    /page1
    /page2
-   

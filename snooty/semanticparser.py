@@ -110,6 +110,7 @@ class SemanticParser:
         # Build the toctree
         root: Dict["str", Any] = {}
         ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
+
         find_toctree_nodes(
             starting_fileid,
             ast,
@@ -122,6 +123,7 @@ class SemanticParser:
         toctree["toctree"] = root
         toctree["toctree"]["title"] = self.project_config.name
         toctree["toctree"]["slug"] = "/"
+
         self.toctree = toctree
 
         return self.toctree
@@ -195,7 +197,6 @@ def find_toctree_nodes(
 
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
-
             if not children_exist(node):
                 node["children"] = ast["entries"]
             else:
