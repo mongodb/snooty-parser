@@ -10,7 +10,7 @@ class SemanticParser:
         self.project_config = project_config
         self.slug_title: Dict[str, Any] = {}
         self.toctree: Dict[str, Any] = {}
-        self.pages: Dict[str, Any] = {}
+        self.parent_paths: Dict[str, Any] = {}
 
     def run(
         self, pages: Dict[FileId, Page], fn_names: List[str]
@@ -32,16 +32,13 @@ class SemanticParser:
     def functions(
         self, fn_names: List[str]
     ) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
-        fn_list: List[Any] = []
-        for name in fn_names:
-            if name == "toctree":
-                fn_list.append(self.build_toctree)
-            elif name == "slug-title":
-                fn_list.append(self.build_slug_title)
-            elif name == "breadcrumbs":
-                fn_list.append(self.breadcrumbs)
+        fn_mapping = {
+            "toctree": self.build_toctree,
+            "slug-title": self.build_slug_title,
+            "breadcrumbs": self.breadcrumbs,
+        }
 
-        return fn_list
+        return [fn_mapping[name] for name in fn_names]
 
     def build_slug_title(
         self, pages: Dict[FileId, Page]
@@ -159,16 +156,19 @@ class SemanticParser:
             if len(paths) == 1:
                 page_dict[slug] = paths[0]
 
-        self.pages = {"pages": page_dict}
+        self.parent_paths = {"pages": page_dict}
 
-        return self.pages
+        return self.parent_paths
 
 
 # Helper function used to retrieve the breadcrumbs for a particular slug
 def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
     if not root:
         return
-    if not children_exist(root) or children_exist(root) and len(root["children"]) == 0:
+    if (
+        not children_exist(root)
+        or (children_exist(root) and len(root["children"])) == 0
+    ):
         # Skip urls
         if "slug" in root:
             path.append(remove_leading_slash(root["slug"]))
