@@ -85,16 +85,17 @@ def test_toctree(backend: Backend) -> None:
         "slug": "/",
     }
 
-        # Ensure that the correct pages and assets exist for breadcrumbs
-        pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
+def test_breadcrumbs(backend: Backend) -> None:
+    # Ensure that the correct pages and assets exist for breadcrumbs
+    pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
 
-        assert len(pages) == 3
-        assert len(pages["page1"]) == 2
-        assert ["/"] in pages["page1"]
-        assert ["/", "page2", "page3"] in pages["page1"]
+    assert len(pages) == 3
+    assert len(pages["page1"]) == 2
+    assert ["/"] in pages["page1"]
+    assert ["/", "page2", "page3"] in pages["page1"]
 
-        assert len(pages["page2"]) == 1
-        assert ["/"] in pages["page2"]
+    assert len(pages["page2"]) == 1
+    assert ["/"] in pages["page2"]
 
-        assert len(pages["page3"]) == 1
-        assert ["/", "page2"] in pages["page3"]
+    assert len(pages["page3"]) == 1
+    assert ["/", "page2"] in pages["page3"]

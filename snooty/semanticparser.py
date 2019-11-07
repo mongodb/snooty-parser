@@ -202,9 +202,7 @@ def find_toctree_nodes(
             for toctree_node in node["children"]:
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
-                    slug = toctree_node["slug"]
-                    if slug[0] == "/":
-                        slug = slug[1:]
+                    slug = remove_leading_slash(toctree_node["slug"])
                     if slug[-1] == "/":
                         slug = slug[:-1]
 
