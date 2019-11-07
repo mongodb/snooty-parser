@@ -22,17 +22,10 @@ class PublishedBranchesVersion:
     def serialize(self) -> SerializableType:
         node: Dict[str, SerializableType] = {}
 
-        if self.published:
-            node["published"] = self.published
-
-        if self.active:
-            node["active"] = self.active
-
-        if self.stable:
-            node["stable"] = self.stable
-
-        if self.upcoming:
-            node["upcoming"] = self.upcoming
+        node["published"] = self.published or None
+        node["active"] = self.active or None
+        node["stable"] = self.stable or None
+        node["upcoming"] = self.upcoming or None
 
         return node
 
@@ -46,11 +39,8 @@ class PublishedBranchesGitBranches:
     def serialize(self) -> SerializableType:
         node: Dict[str, SerializableType] = {}
 
-        if self.manual:
-            node["manual"] = self.manual
-
-        if self.published:
-            node["published"] = self.published
+        node["manual"] = self.manual or None
+        node["published"] = self.published or None
 
         return node
 
