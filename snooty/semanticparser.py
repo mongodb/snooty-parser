@@ -241,4 +241,3 @@ def remove_leading_slash(path: str) -> str:
     if path[0] == "/":
         return path[1:]
     return path
-
