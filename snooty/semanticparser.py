@@ -1,56 +1,130 @@
-from typing import Callable, Dict, List, Any, cast
+from typing import Any, Callable, cast, Dict, List, Set
 from .types import FileId, Page, SerializableType
 
 
 class SemanticParser:
     def __init__(self) -> None:
-        pass
+        self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
+
+    def construct_slug_title_mapping(
+        self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
+    ) -> None:
+        obj = cast(Dict[str, SerializableType], kwargs.get("obj"))
+        slug = filename.without_known_suffix
+
+        if "includes" in slug or "images" in slug:
+            return
+
+        # Save the first heading we encounter to the slug title mapping
+        if self.slug_title_mapping.get(slug) is None and obj.get("type") == "heading":
+            self.slug_title_mapping[slug] = cast(
+                List[SerializableType], obj.get("children")
+            )
 
     def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
-        # Specify which transformations should be included in semantic postprocessing
-        functions: List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]] = [
-            self.slug_title
-        ]
-        document: Dict[str, SerializableType] = {}
+        self.run_event_parser(pages)
+        return {"slugToTitle": self.slug_title_mapping}
 
-        for fn in functions:
-            field: Dict[str, SerializableType] = fn(pages)
-            document.update(field)
-        return document
+    def run_event_parser(self, pages: Dict[FileId, Page]) -> None:
+        event_parser = EventParser()
+        event_parser.add_event_listener("object_start", self.construct_slug_title_mapping)
+        event_parser.consume(pages)
 
-    def slug_title(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
-        # Function which returns a dictionary of slug-title mappings
-        slug_title_dict: Dict[str, SerializableType] = {}
-        for file_id, page in pages.items():
-            # remove the file extension from the slug
-            slug = file_id.without_known_suffix
 
-            # Skip slug-title mapping if the file is an `includes`
-            if "includes" in slug or "images" in slug:
-                continue
+class EventListeners:
+    def __init__(self) -> None:
+        self._universal_listeners: Set[Callable[..., Any]] = set()
+        self._event_listeners: Dict[str, Set[Callable[..., Any]]] = {}
 
-            # Parse for title
-            title = ""
-            ast: Dict[str, Any] = cast(Dict[str, Any], page.ast)
-            title_is_set = False
+    def add_universal_listener(self, listener: Callable[..., Any]) -> None:
+        """Add a listener to be called on any event"""
+        self._universal_listeners.add(listener)
 
-            if ast is None:
-                return {}
+    def add_event_listener(self, event: str, listener: Callable[..., Any]) -> None:
+        """Add a listener to be called when a particular type of event occurs"""
+        event = event.upper()
+        listeners: Set[Callable[..., Any]] = self._event_listeners.get(event, set())
+        listeners.add(listener)
+        self._event_listeners[event] = listeners
 
-            for child in ast["children"]:
-                if title_is_set:
-                    break
-                if child["type"] == "section":
-                    for section_child in child["children"]:
-                        if title_is_set:
-                            break
-                        if section_child["type"] == "heading":
-                            for heading_child in section_child["children"]:
-                                if title_is_set:
-                                    break
-                                if heading_child["type"] == "text":
-                                    title = heading_child["value"]
-                                    title_is_set = True
-            slug_title_dict[slug] = title
+    def get_event_listeners(self, event: str) -> Set[Callable[..., Any]]:
+        event = event.upper()
+        return self._event_listeners.get(event, set())
 
-        return {"slugToTitle": slug_title_dict}
+    def fire(
+        self,
+        event: str,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType
+    ) -> None:
+        for listener in self.get_event_listeners(event):
+            listener(filename, *args, **kwargs)
+
+        for listener in self._universal_listeners:
+            listener(filename, *args, **kwargs)
+
+
+class EventParser(EventListeners):
+    PAGE_START_EVENT = "page_start"
+    OBJECT_START_EVENT = "object_start"
+    ARRAY_START_EVENT = "array_start"
+    PAIR_EVENT = "pair"
+    ELEMENT_EVENT = "element"
+
+    def __init__(self) -> None:
+        super(EventParser, self).__init__()
+
+    def consume(self, pages: Dict[FileId, Page]) -> None:
+        for filename, page in pages.items():
+            self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
+
+    def _iterate(self, d: SerializableType, filename: FileId) -> None:
+        if isinstance(d, dict):
+            self._on_object_enter_event(d, filename)
+            for k, v in d.items():
+                self._on_pair_event(k, v, filename)
+                self._iterate(v, filename)
+        elif isinstance(d, list):
+            self._on_array_enter_event(d, filename)
+            for child in d:
+                self._iterate(child, filename)
+        else:
+            self._on_element_event(d, filename)
+
+    def _on_object_enter_event(
+        self,
+        obj: Dict[str, SerializableType],
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType
+    ) -> None:
+        self.fire(self.OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
+
+    def _on_array_enter_event(
+        self,
+        arr: List[SerializableType],
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType
+    ) -> None:
+        self.fire(self.ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
+
+    def _on_pair_event(
+        self,
+        key: SerializableType,
+        value: SerializableType,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType
+    ) -> None:
+        self.fire(self.PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
+
+    def _on_element_event(
+        self,
+        element: SerializableType,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType
+    ) -> None:
+        self.fire(self.ELEMENT_EVENT, filename, element=element, *args, **kwargs)
