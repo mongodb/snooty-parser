@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import Dict, List, cast, Any
 from .gizaparser.published_branches import PublishedBranches
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
@@ -84,3 +84,18 @@ def test_toctree(backend: Backend) -> None:
         "title": "test_data",
         "slug": "/",
     }
+
+
+def test_breadcrumbs(backend: Backend) -> None:
+    # Ensure that the correct pages and assets exist for breadcrumbs
+    pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
+
+    assert len(pages) == 3
+    assert len(pages["page1"]) == 2
+    assert [] in pages["page1"]
+    assert ["page2", "page3"] in pages["page1"]
+
+    assert len(pages["page2"]) == 0
+
+    assert len(pages["page3"]) == 1
+    assert pages["page3"] == ["page2"]
