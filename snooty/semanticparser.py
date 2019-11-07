@@ -16,9 +16,11 @@ class SemanticParser:
         self, pages: Dict[FileId, Page], fn_names: List[str]
     ) -> Dict[str, SerializableType]:
         # Specify which transformations should be included in semantic postprocessing
+
         functions: List[
             Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]
         ] = self.functions(fn_names)
+
         document: Dict[str, SerializableType] = {}
 
         for fn in functions:
@@ -108,6 +110,7 @@ class SemanticParser:
         # Build the toctree
         root: Dict["str", Any] = {}
         ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
+
         find_toctree_nodes(
             starting_fileid,
             ast,
@@ -120,6 +123,7 @@ class SemanticParser:
         toctree["toctree"] = root
         toctree["toctree"]["title"] = self.project_config.name
         toctree["toctree"]["slug"] = "/"
+
         self.toctree = toctree
 
         return self.toctree
@@ -192,7 +196,6 @@ def find_toctree_nodes(
 
     if ast["type"] == "directive":
         if ast["name"] == "toctree" and "entries" in ast.keys():
-
             if not children_exist(node):
                 node["children"] = ast["entries"]
             else:
@@ -203,6 +206,7 @@ def find_toctree_nodes(
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
                     slug = remove_leading_slash(toctree_node["slug"])
+
                     if slug[-1] == "/":
                         slug = slug[:-1]
 
@@ -237,3 +241,4 @@ def remove_leading_slash(path: str) -> str:
     if path[0] == "/":
         return path[1:]
     return path
+
