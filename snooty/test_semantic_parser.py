@@ -92,11 +92,10 @@ def test_breadcrumbs(backend: Backend) -> None:
 
     assert len(pages) == 3
     assert len(pages["page1"]) == 2
-    assert ["/"] in pages["page1"]
-    assert ["/", "page2", "page3"] in pages["page1"]
+    assert [] in pages["page1"]
+    assert ["page2", "page3"] in pages["page1"]
 
-    assert len(pages["page2"]) == 1
-    assert ["/"] in pages["page2"]
+    assert len(pages["page2"]) == 0
 
     assert len(pages["page3"]) == 1
-    assert ["/", "page2"] in pages["page3"]
+    assert pages["page3"] == ["page2"]

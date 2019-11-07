@@ -144,16 +144,20 @@ class SemanticParser:
 
         # Populate page_dict with a list of all possible paths for each slug
         for path in all_paths:
-            path = [self.toctree["toctree"]["slug"]] + path
             reversed_path = path[::-1]
             for i in range(len(reversed_path)):
                 slug = remove_leading_slash(path[i])
-                if path[:i]:
-                    if slug not in page_dict:
-                        page_dict[slug] = [path[:i]]
-                    else:
-                        if path[:i] not in page_dict[slug]:
-                            page_dict[slug].append(path[:i])
+
+                if slug not in page_dict:
+                    page_dict[slug] = [path[:i]]
+                else:
+                    if path[:i] not in page_dict[slug]:
+                        page_dict[slug].append(path[:i])
+
+        # Flatten the list of paths if possible
+        for slug, paths in page_dict.items():
+            if len(paths) == 1:
+                page_dict[slug] = paths[0]
 
         self.pages = {"pages": page_dict}
 
