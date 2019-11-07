@@ -85,6 +85,7 @@ def test_toctree(backend: Backend) -> None:
         "slug": "/",
     }
 
+
 def test_breadcrumbs(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for breadcrumbs
     pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
