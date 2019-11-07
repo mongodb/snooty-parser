@@ -84,53 +84,22 @@ def test_toctree(backend: Backend) -> None:
         "title": "test_data",
         "slug": "/",
     }
-        # Ensure that the correct pages and assets exist for slug-title mapping
-        slugToTitle: Dict[str, str] = cast(
-            Dict[str, str], backend.metadata["slugToTitle"]
-        )
 
-        assert len(slugToTitle) == 4
-        assert slugToTitle["index"] == "Connection Limits and Cluster Tier"
-        assert slugToTitle["page1"] == "Print this heading"
-        assert slugToTitle["page2"] == "Heading is not at the top for some reason"
-        assert slugToTitle["page3"] == ""
+def test_breadcrumbs(backend: Backend) -> None:
+    # Ensure that the correct pages and assets exist for breadcrumbs
+    pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
 
-        # Ensure that the correct pages and assets exist for toctree
-        assert backend.metadata["toctree"] == {
-            "children": [
-                {"slug": "page1", "title": "Print this heading"},
-                {
-                    "slug": "page2",
-                    "title": "Heading is not at the top for some reason",
-                    "children": [
-                        {
-                            "slug": "page3",
-                            "title": "",
-                            "children": [
-                                {"slug": "page1", "title": "Print this heading"}
-                            ],
-                        }
-                    ],
-                },
-            ],
-            "title": "test_data",
-            "slug": "/",
-        }
+    assert len(pages) == 3
+    assert len(pages["page1"]) == 2
+    assert ["/"] in pages["page1"]
+    assert ["/", "page2", "page3"] in pages["page1"]
 
-        # Ensure that the correct pages and assets exist for breadcrumbs
-        pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
+    assert len(pages["page2"]) == 1
+    assert ["/"] in pages["page2"]
 
-        assert len(pages) == 3
-        assert len(pages["page1"]) == 2
-        assert ["/"] in pages["page1"]
-        assert ["/", "page2", "page3"] in pages["page1"]
+    assert len(pages["page3"]) == 1
+    assert ["/", "page2"] in pages["page3"]
 
-        assert len(pages["page2"]) == 1
-        assert ["/"] in pages["page2"]
-
-        assert len(pages["page3"]) == 1
-        assert ["/", "page2"] in pages["page3"]
-
-        # Ensure that the correct pages and assets exist for toctree order
-        order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
-        assert order == ["/", "page1", "page2", "page3", "page1"]
+    # Ensure that the correct pages and assets exist for toctree order
+    order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
+    assert order == ["/", "page1", "page2", "page3", "page1"]
