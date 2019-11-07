@@ -85,6 +85,7 @@ def test_toctree(backend: Backend) -> None:
         "slug": "/",
     }
 
+
 def test_breadcrumbs(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for breadcrumbs
     pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
@@ -105,4 +106,3 @@ def test_toctree_order(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for toctree order
     order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
     assert order == ["/", "page1", "page2", "page3", "page1"]
-
