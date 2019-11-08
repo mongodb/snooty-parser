@@ -798,7 +798,7 @@ class _Project:
             self._page_updated(page, diagnostic_list)
 
         # Specify which transformations should be included in semantic postprocessing
-        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs"]
+        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs", "toctree order"]
         semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
             self.pages, fn_names
         )
@@ -859,7 +859,7 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs"]
+        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs", "toctree order"]
         semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
             self.pages, fn_names
         )

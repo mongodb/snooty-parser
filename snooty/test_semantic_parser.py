@@ -99,3 +99,9 @@ def test_breadcrumbs(backend: Backend) -> None:
 
     assert len(pages["page3"]) == 1
     assert pages["page3"] == ["page2"]
+
+
+def test_toctree_order(backend: Backend) -> None:
+    # Ensure that the correct pages and assets exist for toctree order
+    order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
+    assert order == ["/", "page1", "page2", "page3", "page1"]

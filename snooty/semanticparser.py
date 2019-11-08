@@ -36,6 +36,7 @@ class SemanticParser:
             "toctree": self.build_toctree,
             "slug-title": self.build_slug_title,
             "breadcrumbs": self.breadcrumbs,
+            "toctree order": self.toctree_order,
         }
 
         return [fn_mapping[name] for name in fn_names]
@@ -159,6 +160,25 @@ class SemanticParser:
         self.parent_paths = {"pages": page_dict}
 
         return self.parent_paths
+
+    def toctree_order(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        order: List[str] = []
+
+        if not self.toctree:
+            self.build_toctree(pages)
+
+        pre_order(self.toctree["toctree"], order)
+        return {"toctreeOrder": order}
+
+
+def pre_order(root: Dict[str, Any], order: List[str]) -> None:
+    if not root:
+        return
+    if "slug" in root:
+        order.append(root["slug"])
+    if children_exist(root):
+        for child in root["children"]:
+            pre_order(child, order)
 
 
 # Helper function used to retrieve the breadcrumbs for a particular slug
