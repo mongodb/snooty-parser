@@ -88,7 +88,7 @@ def test_toctree(backend: Backend) -> None:
 
 def test_breadcrumbs(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for breadcrumbs
-    pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["pages"])
+    pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["parentPaths"])
 
     assert len(pages) == 3
     assert len(pages["page1"]) == 2
