@@ -1,0 +1,10 @@
+project: 'test_data'
+master_doc: 'contents'
+paths:
+  static: ['source/.static']
+theme:
+  name: 'test_data'
+  nav_excluded:
+    - /page1
+    - /page3
+...

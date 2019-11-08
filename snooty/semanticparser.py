@@ -1,6 +1,7 @@
 from typing import Callable, Dict, List, Any, cast
 from .types import FileId, Page, SerializableType, ProjectConfig
 import re
+import yaml
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
@@ -36,6 +37,7 @@ class SemanticParser:
             "toctree": self.build_toctree,
             "slug-title": self.build_slug_title,
             "breadcrumbs": self.breadcrumbs,
+            "drawers": self.drawers
         }
 
         return [fn_mapping[name] for name in fn_names]
@@ -159,6 +161,36 @@ class SemanticParser:
         self.parent_paths = {"parentPaths": page_dict}
 
         return self.parent_paths
+
+    def drawers(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        if not self.toctree:
+            self.build_toctree(pages)
+
+        # parse `config/sphinx_local.yaml`
+        config: Dict[str, str] = yaml.load(
+            open(self.project_config.root.joinpath("config/sphinx_local.yaml")),
+            Loader=yaml.FullLoader,
+        )
+        non_drawers: List[str] = []
+        if "nav_excluded" in config["theme"]:
+            non_drawers = [
+                remove_leading_slash(slug) for slug in config["theme"]["nav_excluded"]
+            ]
+
+        add_drawers(self.toctree["toctree"], non_drawers)
+
+        return self.toctree
+
+
+def add_drawers(node: Dict[Any, Any], non_drawers: List[str]) -> None:
+    if "slug" in node and node["slug"] not in non_drawers:
+        if "options" not in node:
+            node["options"] = {}
+        node["options"]["drawer"] = True
+
+    if "children" in node:
+        for child in node["children"]:
+            add_drawers(child, non_drawers)
 
 
 # Helper function used to retrieve the breadcrumbs for a particular slug
