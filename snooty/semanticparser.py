@@ -156,7 +156,7 @@ class SemanticParser:
             if len(paths) == 1:
                 page_dict[slug] = paths[0]
 
-        self.parent_paths = {"pages": page_dict}
+        self.parent_paths = {"parentPaths": page_dict}
 
         return self.parent_paths
 
