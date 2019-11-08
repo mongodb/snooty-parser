@@ -92,6 +92,7 @@ def test_breadcrumbs(backend: Backend) -> None:
 
     assert len(pages) == 3
     assert len(pages["page1"]) == 2
+
     assert ["/"] in pages["page1"]
     assert ["/", "page2", "page3"] in pages["page1"]
 
