@@ -61,7 +61,6 @@ def test_slug_title_mapping(backend: Backend) -> None:
 
 
 def test_toctree(backend: Backend) -> None:
-    print(backend.metadata["toctree"])
     assert backend.metadata["toctree"] == {
         "children": [
             {"slug": "page1", "title": "Print this heading"},
@@ -100,3 +99,18 @@ def test_breadcrumbs(backend: Backend) -> None:
 
     assert len(pages["page3"]) == 1
     assert ["/", "page2"] in pages["page3"]
+
+def test_drawers(backend: Backend) -> None:
+    drawers: List[str] = ["page1", "page3"]
+    check_order(backend.metadata["toctree"], drawers)
+
+def check_order(node: Dict[str, Any], drawers: List[str]) -> None:
+    if node:
+        if "slug" in node["slug"]:
+            slug = node["slug"]
+            if "options" in node:
+                if node["options"]["drawer"] and slug not in drawers:
+                    assert False
+            else:
+                if slug in drawers:
+                    assert False
