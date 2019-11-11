@@ -5,6 +5,6 @@ paths:
 theme:
   name: 'test_data'
   nav_excluded:
-    - /page1
-    - /page3
+    - /page2
+    - /includes
 ...

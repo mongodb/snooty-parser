@@ -61,29 +61,40 @@ def test_slug_title_mapping(backend: Backend) -> None:
 
 
 def test_toctree(backend: Backend) -> None:
-    print(backend.metadata["toctree"])
-    assert backend.metadata["toctree"] == {
-        "children": [
-            {"slug": "page1", "title": "Print this heading"},
-            {
-                "slug": "page2",
-                "title": "Heading is not at the top for some reason",
-                "children": [
-                    {
-                        "title": "MongoDB Connector for Business Intelligence",
-                        "url": "https://docs.mongodb.com/bi-connector/current/",
-                    },
-                    {
-                        "slug": "page3",
-                        "title": "",
-                        "children": [{"slug": "page1", "title": "Print this heading"}],
-                    },
-                ],
-            },
-        ],
-        "title": "test_data",
-        "slug": "/",
-    }
+    toctree: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["toctree"])
+
+    assert toctree["slug"] == "/"
+    assert toctree["title"] == "test_data"
+    assert "children" in toctree
+    assert len(toctree["children"]) == 2
+
+    assert toctree["children"][0]["slug"] == "page1"
+    assert toctree["children"][0]["title"] == "Print this heading"
+
+    assert toctree["children"][1]["slug"] == "page2"
+    assert (
+        toctree["children"][1]["title"] == "Heading is not at the top for some reason"
+    )
+    assert len(toctree["children"][1]["children"]) == 2
+
+    assert (
+        toctree["children"][1]["children"][0]["title"]
+        == "MongoDB Connector for Business Intelligence"
+    )
+    assert (
+        toctree["children"][1]["children"][0]["url"]
+        == "https://docs.mongodb.com/bi-connector/current/"
+    )
+
+    assert toctree["children"][1]["children"][1]["slug"] == "page3"
+    assert toctree["children"][1]["children"][1]["title"] == ""
+
+    assert len(toctree["children"][1]["children"][1]["children"]) == 1
+    assert toctree["children"][1]["children"][1]["children"][0]["slug"] == "page1"
+    assert (
+        toctree["children"][1]["children"][1]["children"][0]["title"]
+        == "Print this heading"
+    )
 
 
 def test_breadcrumbs(backend: Backend) -> None:
@@ -103,7 +114,10 @@ def test_breadcrumbs(backend: Backend) -> None:
 
 def test_drawers(backend: Backend) -> None:
     drawers: List[str] = ["page1", "page3"]
-    check_order(backend.metadata["toctree"], drawers)
+    toctree: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["toctree"])
+
+    check_order(toctree, drawers)
+
 
 def check_order(node: Dict[str, Any], drawers: List[str]) -> None:
     if node:
@@ -114,4 +128,4 @@ def check_order(node: Dict[str, Any], drawers: List[str]) -> None:
                     assert False
             else:
                 if slug in drawers:
-                    assert False 
+                    assert False
