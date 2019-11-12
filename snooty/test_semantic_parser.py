@@ -61,7 +61,6 @@ def test_slug_title_mapping(backend: Backend) -> None:
 
 
 def test_toctree(backend: Backend) -> None:
-    print(backend.metadata["toctree"])
     assert backend.metadata["toctree"] == {
         "children": [
             {"slug": "page1", "title": "Print this heading"},
@@ -73,11 +72,7 @@ def test_toctree(backend: Backend) -> None:
                         "title": "MongoDB Connector for Business Intelligence",
                         "url": "https://docs.mongodb.com/bi-connector/current/",
                     },
-                    {
-                        "slug": "page3",
-                        "title": "",
-                        "children": [{"slug": "page1", "title": "Print this heading"}],
-                    },
+                    {"slug": "page3", "title": ""},
                 ],
             },
         ],
@@ -91,9 +86,7 @@ def test_breadcrumbs(backend: Backend) -> None:
     pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["parentPaths"])
 
     assert len(pages) == 3
-    assert len(pages["page1"]) == 2
-    assert [] in pages["page1"]
-    assert ["page2", "page3"] in pages["page1"]
+    assert len(pages["page1"]) == 0
 
     assert len(pages["page2"]) == 0
 
@@ -104,4 +97,4 @@ def test_breadcrumbs(backend: Backend) -> None:
 def test_toctree_order(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for toctree order
     order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
-    assert order == ["/", "page1", "page2", "page3", "page1"]
+    assert order == ["/", "page1", "page2", "page3"]
