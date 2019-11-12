@@ -161,6 +161,7 @@ class SemanticParser:
 
         return self.parent_paths
 
+    # toctree_order returns a pre-order traversal of the toctree
     def toctree_order(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         order: List[str] = []
 
