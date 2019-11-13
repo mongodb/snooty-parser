@@ -2,6 +2,7 @@ import enum
 import hashlib
 import logging
 import re
+import os.path
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
@@ -22,6 +23,7 @@ from typing import (
 from typing_extensions import Protocol
 import toml
 from .flutter import checked, check_type, LoadError
+from .download_cache import download_url
 from . import intersphinx
 
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -328,6 +330,7 @@ class ProjectConfig:
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
     intersphinx: List[str] = field(default_factory=list)
+    assets: List[Union[str, Tuple[str, str]]] = field(default_factory=list)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
     substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
@@ -413,3 +416,13 @@ class ProjectConfig:
     def load_inventories(self) -> None:
         for inventory in self.intersphinx:
             intersphinx.fetch_inventory(inventory)
+
+    def load_assets(self) -> None:
+        for asset in self.assets:
+            if isinstance(asset, str):
+                url = asset
+                name = os.path.basename(url)
+            else:
+                url, name = asset
+
+            base_url, cache_entry_path, data = download_url(url)
