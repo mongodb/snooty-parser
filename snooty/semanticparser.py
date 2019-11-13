@@ -228,6 +228,9 @@ def find_toctree_nodes(
 
             # Recursively build the tree for each toctree node in this entries list
             for toctree_node in ast["entries"]:
+                if not children_exist(toctree_node):
+                    # If the node has no children, save `children` as an empty list
+                    toctree_node["children"] = []
                 if "slug" in toctree_node:
                     # Only recursively build the tree for internal links
                     slug = remove_leading_slash(toctree_node["slug"])
