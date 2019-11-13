@@ -63,16 +63,17 @@ def test_slug_title_mapping(backend: Backend) -> None:
 def test_toctree(backend: Backend) -> None:
     assert backend.metadata["toctree"] == {
         "children": [
-            {"slug": "page1", "title": "Print this heading"},
+            {"children": [], "slug": "page1", "title": "Print this heading"},
             {
                 "slug": "page2",
                 "title": "Heading is not at the top for some reason",
                 "children": [
                     {
+                        "children": [],
                         "title": "MongoDB Connector for Business Intelligence",
                         "url": "https://docs.mongodb.com/bi-connector/current/",
                     },
-                    {"slug": "page3", "title": ""},
+                    {"children": [], "slug": "page3", "title": ""},
                 ],
             },
         ],
