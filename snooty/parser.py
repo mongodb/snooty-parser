@@ -652,7 +652,7 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
-        self.semantic_parser = semanticparser.SemanticParser()
+        self.semantic_parser = semanticparser.SemanticParser(self.config)
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
@@ -797,11 +797,6 @@ class _Project:
         for page in pages:
             self._page_updated(page, diagnostic_list)
 
-        semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
-            self.pages
-        )
-        self.backend.on_update_metadata(self.prefix, semantic_parse)
-
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
@@ -857,8 +852,9 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
+        fn_names: List[str] = ["toctree", "breadcrumbs", "toctree order"]
         semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
-            self.pages
+            self.pages, fn_names
         )
         self.backend.on_update_metadata(self.prefix, semantic_parse)
 
@@ -867,7 +863,7 @@ class _Project:
     ) -> List[Dict[str, Any]]:
         """Add include nodes to page AST's children"""
 
-        def replace_include(node: Dict[str, Any]) -> Dict[str, Any]:
+        def replace_nodes(node: Dict[str, Any]) -> Dict[str, Any]:
             # Checks if key in node first to prevent .get() errors of SerializableType
             if node.get("name") == "include":
                 # Get the name of the file
@@ -890,15 +886,35 @@ class _Project:
                 include_node_children = include_file_page_ast["children"]
 
                 # Resolve includes within include node
-                replaced_include = list(map(replace_include, include_node_children))
+                replaced_include = list(map(replace_nodes, include_node_children))
                 node["children"] = replaced_include
+            # Replace instances of an image's name with its full path. This allows Snooty Preview to render an image by
+            # using the location of the image on the user's local machine
+            elif node.get("name") == "figure":
+                # Obtain subset of the image's path (name)
+                argument = node["argument"][0]
+                image_value = argument["value"]
+
+                # Prevents the image from having a redundant path if Snooty Preview already replaced
+                # its original value.
+                source_path_str = self.config.source_path.as_posix()
+                index_match = image_value.find(source_path_str)
+                if index_match != -1:
+                    repeated_offset = index_match + len(source_path_str)
+                    image_value = image_value[repeated_offset:]
+
+                # Replace subset of path with full path of image
+                if image_value[0] == "/":
+                    image_value = image_value[1:]
+                full_path = self.get_full_path(FileId(image_value))
+                argument["value"] = full_path.as_posix()
             # Check for include nodes among current node's children
             elif node.get("children"):
                 for child in node["children"]:
-                    replace_include(child)
+                    replace_nodes(child)
             return node
 
-        return list(map(replace_include, nodes))
+        return list(map(replace_nodes, nodes))
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""

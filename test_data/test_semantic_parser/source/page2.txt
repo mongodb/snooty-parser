@@ -2,6 +2,11 @@
 
 .. |ast| unicode:: U+002A
 
+.. toctree::
+   :maxdepth: 1
+
+   MongoDB Connector for Business Intelligence <https://docs.mongodb.com/bi-connector/current/>
+
 .. note::
 
    |service| reserves a small portion of connections to each |service|
@@ -18,3 +23,11 @@ Heading is not at the top for some reason
 
 .. meta::
    :keywords: connect
+
+
+.. class:: hidden
+
+   .. toctree::
+    :titlesonly: 
+
+    /page3

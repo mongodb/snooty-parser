@@ -1,10 +1,58 @@
 from typing import Any, Callable, cast, Dict, List, Set
-from .types import FileId, Page, SerializableType
+from .types import FileId, Page, ProjectConfig, SerializableType
+import re
+
+PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
 class SemanticParser:
-    def __init__(self) -> None:
+    def __init__(self, project_config: ProjectConfig) -> None:
+        self.project_config = project_config
         self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
+        self.toctree: Dict[str, Any] = {}
+        self.parent_paths: Dict[str, Any] = {}
+
+    def run(
+        self, pages: Dict[FileId, Page], fn_names: List[str]
+    ) -> Dict[str, SerializableType]:
+
+        document: Dict[str, SerializableType] = {}
+
+        # Update metadata document with key-value pairs defined in event parser
+        document.update(self.run_event_parser(pages))
+
+        # Specify which transformations should be included in semantic postprocessing
+        functions: List[
+            Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]
+        ] = self.functions(fn_names)
+
+        for fn in functions:
+            field: Dict[str, SerializableType] = fn(pages)
+            document.update(field)
+        return document
+
+    def run_event_parser(
+        self, pages: Dict[FileId, Page]
+    ) -> Dict[str, SerializableType]:
+        event_parser = EventParser()
+        event_parser.add_event_listener(
+            "object_start", self.construct_slug_title_mapping
+        )
+        event_parser.consume(pages)
+        # Return dict containing fields updated in event-based parse
+        return {"slugToTitle": self.slug_title_mapping}
+
+    # Returns a list of transformations to include in self.run()
+    def functions(
+        self, fn_names: List[str]
+    ) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
+        fn_mapping = {
+            "toctree": self.build_toctree,
+            "breadcrumbs": self.breadcrumbs,
+            "toctree order": self.toctree_order,
+        }
+
+        return [fn_mapping[name] for name in fn_names]
 
     def construct_slug_title_mapping(
         self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
@@ -22,16 +70,190 @@ class SemanticParser:
                 List[SerializableType], obj.get("children")
             )
 
-    def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
-        self.run_event_parser(pages)
-        return {"slugToTitle": self.slug_title_mapping}
+    def build_toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        fileid_dict = {}
+        toctree: Dict[str, Any] = {"toctree": {}}
 
-    def run_event_parser(self, pages: Dict[FileId, Page]) -> None:
-        event_parser = EventParser()
-        event_parser.add_event_listener(
-            "object_start", self.construct_slug_title_mapping
+        # The toctree must begin at either `contents.txt` or `index.txt`.
+        # Generally, repositories will have one or the other; but, if a repo has both,
+        # the starting point will be `contents.txt`.
+        starting_fileid: FileId = [
+            fileid
+            for fileid in pages.keys()
+            if str(fileid) == "contents.txt" or str(fileid) == "index.txt"
+        ][0]
+
+        # Construct a {slug: fileid} mapping so that we can retrieve the full file name
+        # given a slug. We cannot use the with_suffix method since the type of the slug
+        # in find_toctree_nodes(...) is string rather than FileId.
+        for fileid in pages:
+            slug = fileid.without_known_suffix
+            fileid_dict[slug] = fileid
+
+        if not self.slug_title_mapping:
+            self.run_event_parser(pages)
+
+        # Build the toctree
+        root: Dict["str", Any] = {}
+        ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
+
+        find_toctree_nodes(
+            starting_fileid, ast, pages, root, fileid_dict, self.slug_title_mapping
         )
-        event_parser.consume(pages)
+
+        toctree["toctree"] = root
+        toctree["toctree"]["title"] = self.project_config.name
+        toctree["toctree"]["slug"] = "/"
+
+        self.toctree = toctree
+
+        return self.toctree
+
+    def breadcrumbs(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        page_dict: Dict[str, Any] = {}
+        if not self.toctree:
+            self.build_toctree(pages)
+
+        all_paths: List[Any] = []
+
+        # Find all node to leaf paths for each node in the toctree
+        if children_exist(self.toctree["toctree"]):
+            for node in self.toctree["toctree"]["children"]:
+                paths: List[str] = []
+                get_paths(node, [], paths)
+                all_paths.extend(paths)
+
+        # Populate page_dict with a list of all possible paths for each slug
+        for path in all_paths:
+            reversed_path = path[::-1]
+            for i in range(len(reversed_path)):
+                slug = remove_leading_slash(path[i])
+
+                if slug not in page_dict:
+                    page_dict[slug] = [path[:i]]
+                else:
+                    if path[:i] not in page_dict[slug]:
+                        page_dict[slug].append(path[:i])
+
+        # Flatten the list of paths if possible
+        for slug, paths in page_dict.items():
+            if len(paths) == 1:
+                page_dict[slug] = paths[0]
+
+        self.parent_paths = {"parentPaths": page_dict}
+
+        return self.parent_paths
+
+    # toctree_order returns a pre-order traversal of the toctree
+    def toctree_order(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+        order: List[str] = []
+
+        if not self.toctree:
+            self.build_toctree(pages)
+
+        pre_order(self.toctree["toctree"], order)
+        return {"toctreeOrder": order}
+
+
+def pre_order(root: Dict[str, Any], order: List[str]) -> None:
+    if not root:
+        return
+    if "slug" in root:
+        order.append(root["slug"])
+    if children_exist(root):
+        for child in root["children"]:
+            pre_order(child, order)
+
+
+# Helper function used to retrieve the breadcrumbs for a particular slug
+def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> None:
+    if not root:
+        return
+    if (
+        not children_exist(root)
+        or (children_exist(root) and len(root["children"])) == 0
+    ):
+        # Skip urls
+        if "slug" in root:
+            path.append(remove_leading_slash(root["slug"]))
+            all_paths.append(path)
+    else:
+        # Recursively build the path
+        for child in root["children"]:
+            subpath = path[:]
+            subpath.append(remove_leading_slash(root["slug"]))
+            get_paths(child, subpath, all_paths)
+
+
+# find_toctree_nodes is a helper function for SemanticParser.toctree that recursively builds the toctree
+def find_toctree_nodes(
+    fileid: FileId,
+    ast: Dict[str, Any],
+    pages: Dict[FileId, Page],
+    node: Dict[Any, Any],
+    fileid_dict: Dict[str, FileId],
+    slug_title_mapping: Dict[str, Any],
+) -> None:
+
+    # Base case: create node in toctree
+    if not children_exist(ast):
+        if node:
+            node["slug"] = fileid.without_known_suffix
+            node["title"] = slug_title_mapping[node["slug"]]
+        return
+
+    if ast["type"] == "directive":
+        if ast["name"] == "toctree" and "entries" in ast.keys():
+            if not children_exist(node):
+                node["children"] = ast["entries"]
+            else:
+                node["children"].extend(ast["entries"])
+
+            # Recursively build the tree for each toctree node in this entries list
+            for toctree_node in ast["entries"]:
+                if not children_exist(toctree_node):
+                    # If the node has no children, save `children` as an empty list
+                    toctree_node["children"] = []
+                if "slug" in toctree_node:
+                    # Only recursively build the tree for internal links
+                    slug = remove_leading_slash(toctree_node["slug"])
+
+                    if slug[-1] == "/":
+                        slug = slug[:-1]
+
+                    # TODO: https://jira.mongodb.org/browse/DOCSP-7595
+                    slug = PAT_FILE_EXTENSIONS.sub("", slug)
+
+                    new_fileid = fileid_dict[slug]
+                    new_ast: Dict[str, Any] = cast(
+                        Dict[str, Any], pages[new_fileid].ast
+                    )
+                    find_toctree_nodes(
+                        new_fileid,
+                        new_ast,
+                        pages,
+                        toctree_node,
+                        fileid_dict,
+                        slug_title_mapping,
+                    )
+
+    # Locate the correct directive object containing the toctree within this AST
+    for child_ast in ast["children"]:
+        find_toctree_nodes(
+            fileid, child_ast, pages, node, fileid_dict, slug_title_mapping
+        )
+
+
+def children_exist(ast: Dict[str, Any]) -> bool:
+    if "children" in ast.keys():
+        return True
+    return False
+
+
+def remove_leading_slash(path: str) -> str:
+    if path[0] == "/":
+        return path[1:]
+    return path
 
 
 class EventListeners:
