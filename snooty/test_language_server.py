@@ -2,6 +2,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 from . import language_server
 from .util_test import check_ast_testing_string
 from .types import Diagnostic, FileId, SerializableType
@@ -125,20 +126,13 @@ def test_text_doc_get_page_ast() -> None:
 
         assert server.project is not None
 
-        # Set up file path
         source_path = server.project.config.source_path
-        test_file = "index.txt"
-        test_file_path = source_path.joinpath(test_file)
-
-        language_server_ast: SerializableType = server.m_text_document__get_page_ast(
-            test_file_path.as_posix()
-        )
 
         # Image found in test file
         image_path = Path("images/compass-create-database.png")
         full_image_path = source_path.joinpath(image_path)
         # Change image path to be full path
-        expected_ast_string = (
+        index_ast_string = (
             """<root>
             <target ids="['guides']"></target>
             <section alt="Sample images">
@@ -160,7 +154,21 @@ def test_text_doc_get_page_ast() -> None:
             </section></directive></directive></root>"""
         )
 
-        check_ast_testing_string(language_server_ast, expected_ast_string)
+        # ast string for included rst file
+        include_child_ast_string = """<root><directive name="include"><text>includes/include_child.rst</text>
+            <paragraph><text>This is an include in an include</text></paragraph>
+            </directive></root>"""
+
+        # Test it such that for each test file, we get the file's respective ast string
+        test_files = ["index.txt", "includes/include_child.rst"]
+        expected_ast_strings: List[str] = [index_ast_string, include_child_ast_string]
+
+        for i in range(len(test_files)):
+            test_file_path = source_path.joinpath(test_files[i])
+            language_server_ast: SerializableType = server.m_text_document__get_page_ast(
+                test_file_path.as_posix()
+            )
+            check_ast_testing_string(language_server_ast, expected_ast_strings[i])
 
 
 def test_text_doc_get_project_name() -> None:
