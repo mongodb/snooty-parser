@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added infrastructure to support editor preview.
+
+- Added infrastructure to support TOC generation.
+
+- Added diagnostic for merge conflict markers.
+
+- Parse published-branches.yaml and persist data to a metadata collection (DOCSP-7193).
+
 ### Fixed
 
 - Parsing of extract filenames that include periods (DOCSP-6904).
+
+- Miscellaneous reStructuredText support improvements.
+
+- Properly report snooty.toml errors.
 
 ## [v0.1.13] - 2019-09-23
 
