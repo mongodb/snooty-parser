@@ -44,12 +44,16 @@ def test() -> None:
         project.build()
 
         # Ensure that the correct pages and assets exist
-        slugToTitle: Dict[str, str] = cast(
-            Dict[str, str], backend.metadata["slugToTitle"]
+        slugToTitle: Dict[str, List[Dict[str, SerializableType]]] = cast(
+            Dict[str, List[Dict[str, SerializableType]]],
+            backend.metadata["slugToTitle"],
         )
 
-        assert len(slugToTitle) == 4
-        assert slugToTitle["index"] == "Connection Limits and Cluster Tier"
-        assert slugToTitle["page1"] == "Print this heading"
-        assert slugToTitle["page2"] == "Heading is not at the top for some reason"
-        assert slugToTitle["page3"] == ""
+        # page3 is not included in slug-title mapping because it lacks a heading.
+        assert len(slugToTitle) == 3
+        assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
+        assert slugToTitle["page1"][0]["value"] == "Print this heading"
+        assert (
+            slugToTitle["page2"][0]["value"]
+            == "Heading is not at the top for some reason"
+        )
