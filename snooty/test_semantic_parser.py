@@ -49,36 +49,50 @@ def backend() -> Backend:
 
 
 def test_slug_title_mapping(backend: Backend) -> None:
-        # Ensure that the correct pages and assets exist
-        slugToTitle: Dict[str, List[Dict[str, SerializableType]]] = cast(
-            Dict[str, List[Dict[str, SerializableType]]],
-            backend.metadata["slugToTitle"],
-        )
+    # Ensure that the correct pages and assets exist
+    slugToTitle: Dict[str, List[Dict[str, SerializableType]]] = cast(
+        Dict[str, List[Dict[str, SerializableType]]], backend.metadata["slugToTitle"]
+    )
 
-        # page3 is not included in slug-title mapping because it lacks a heading.
-        assert len(slugToTitle) == 3
-        assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
-        assert slugToTitle["page1"][0]["value"] == "Print this heading"
-        assert (
-            slugToTitle["page2"][0]["value"]
-            == "Heading is not at the top for some reason"
-        )
+    # page3 is not included in slug-title mapping because it lacks a heading.
+    assert len(slugToTitle) == 3
+    assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
+    assert slugToTitle["page1"][0]["value"] == "Print this heading"
+    assert (
+        slugToTitle["page2"][0]["value"] == "Heading is not at the top for some reason"
+    )
 
 
 def test_toctree(backend: Backend) -> None:
     assert backend.metadata["toctree"] == {
         "children": [
-            {"children": [], "slug": "page1", "title": "Print this heading"},
+            {
+                "children": [],
+                "slug": "page1",
+                "title": [
+                    {
+                        "position": {"start": {"line": 4}},
+                        "type": "text",
+                        "value": "Print this heading",
+                    }
+                ],
+            },
             {
                 "slug": "page2",
-                "title": "Heading is not at the top for some reason",
+                "title": [
+                    {
+                        "position": {"start": {"line": 19}},
+                        "type": "text",
+                        "value": "Heading is not at the top for some reason",
+                    }
+                ],
                 "children": [
                     {
                         "children": [],
                         "title": "MongoDB Connector for Business Intelligence",
                         "url": "https://docs.mongodb.com/bi-connector/current/",
                     },
-                    {"children": [], "slug": "page3", "title": ""},
+                    {"children": [], "slug": "page3", "title": []},
                 ],
             },
         ],
