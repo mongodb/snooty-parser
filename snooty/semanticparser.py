@@ -15,6 +15,8 @@ class SemanticParser:
     def run(
         self, pages: Dict[FileId, Page], fn_names: List[str]
     ) -> Dict[str, SerializableType]:
+        if not pages:
+            return {}
 
         document: Dict[str, SerializableType] = {}
 
@@ -104,11 +106,12 @@ class SemanticParser:
         # The toctree must begin at either `contents.txt` or `index.txt`.
         # Generally, repositories will have one or the other; but, if a repo has both,
         # the starting point will be `contents.txt`.
-        starting_fileid: FileId = [
-            fileid
-            for fileid in pages.keys()
-            if str(fileid) == "contents.txt" or str(fileid) == "index.txt"
-        ][0]
+        candidates = (FileId("contents.txt"), FileId("index.txt"))
+        starting_fileid = next(
+            (candidate for candidate in candidates if candidate in pages), None
+        )
+        if starting_fileid is None:
+            return {}
 
         # Construct a {slug: fileid} mapping so that we can retrieve the full file name
         # given a slug. We cannot use the with_suffix method since the type of the slug
