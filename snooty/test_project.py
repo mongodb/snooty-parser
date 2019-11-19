@@ -155,7 +155,7 @@ def test_merge_conflict() -> None:
 
     assert project_diagnostics[-1].message.startswith(
         "git merge conflict"
-    ) and project_diagnostics[-1].start == (69, 0)
+    ) and project_diagnostics[-1].start == (68, 0)
     assert project_diagnostics[-2].message.startswith(
         "git merge conflict"
     ) and project_diagnostics[-2].start == (35, 0)
