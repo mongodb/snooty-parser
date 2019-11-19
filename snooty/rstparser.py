@@ -783,10 +783,7 @@ class Parser(Generic[_V]):
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         diagnostics: List[Diagnostic] = []
-        if text is None:
-            text, diagnostics = self.project_config.read(path)
-        else:
-            text, diagnostics = self.project_config.substitute(text)
+        text, diagnostics = self.project_config.read(path, text)
 
         parser = NoTransformRstParser()
         settings = docutils.frontend.OptionParser(
