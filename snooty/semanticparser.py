@@ -4,6 +4,12 @@ import re
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
+PAGE_START_EVENT = "page_start"
+OBJECT_START_EVENT = "object_start"
+ARRAY_START_EVENT = "array_start"
+PAIR_EVENT = "pair"
+ELEMENT_EVENT = "element"
+
 
 class SemanticParser:
     def __init__(self, project_config: ProjectConfig) -> None:
@@ -37,8 +43,11 @@ class SemanticParser:
         self, pages: Dict[FileId, Page]
     ) -> Dict[str, SerializableType]:
         event_parser = EventParser()
-        event_parser.add_event_listener("object_start", self.build_slug_title_mapping)
+        event_parser.add_event_listener(
+            OBJECT_START_EVENT, self.build_slug_title_mapping
+        )
         event_parser.consume(pages)
+
         # Return dict containing fields updated in event-based parse
         return {"slugToTitle": self.slug_title_mapping}
 
@@ -299,19 +308,14 @@ class EventListeners:
 class EventParser(EventListeners):
     """Initialize an event-based parse on a python dictionary"""
 
-    PAGE_START_EVENT = "page_start"
-    OBJECT_START_EVENT = "object_start"
-    ARRAY_START_EVENT = "array_start"
-    PAIR_EVENT = "pair"
-    ELEMENT_EVENT = "element"
-
     def __init__(self) -> None:
         super(EventParser, self).__init__()
 
     def consume(self, d: Dict[FileId, Page]) -> None:
         """Initializes a parse on the provided key-value map of pages"""
-        for key, value in d.items():
-            self._iterate(cast(Dict[str, SerializableType], value.ast), key)
+        for filename, page in d.items():
+            self._on_page_enter_event(filename)
+            self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
 
     def _iterate(self, d: SerializableType, filename: FileId) -> None:
         if isinstance(d, dict):
@@ -326,6 +330,12 @@ class EventParser(EventListeners):
         else:
             self._on_element_event(d, filename)
 
+    def _on_page_enter_event(
+        self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
+    ) -> None:
+        """Called when an array is first encountered in tree"""
+        self.fire(PAGE_START_EVENT, filename, *args, **kwargs)
+
     def _on_object_enter_event(
         self,
         obj: Dict[str, SerializableType],
@@ -334,7 +344,7 @@ class EventParser(EventListeners):
         **kwargs: SerializableType
     ) -> None:
         """Called when an object is first encountered in tree"""
-        self.fire(self.OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
+        self.fire(OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
 
     def _on_array_enter_event(
         self,
@@ -344,7 +354,7 @@ class EventParser(EventListeners):
         **kwargs: SerializableType
     ) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
+        self.fire(ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
 
     def _on_pair_event(
         self,
@@ -355,7 +365,7 @@ class EventParser(EventListeners):
         **kwargs: SerializableType
     ) -> None:
         """Called when a key-value pair is encountered in tree"""
-        self.fire(self.PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
+        self.fire(PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
 
     def _on_element_event(
         self,
@@ -365,4 +375,4 @@ class EventParser(EventListeners):
         **kwargs: SerializableType
     ) -> None:
         """Called when an array element is encountered in tree"""
-        self.fire(self.ELEMENT_EVENT, filename, element=element, *args, **kwargs)
+        self.fire(ELEMENT_EVENT, filename, element=element, *args, **kwargs)
