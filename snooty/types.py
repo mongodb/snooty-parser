@@ -375,14 +375,18 @@ class ProjectConfig:
         self.constants = constants
         return self, all_diagnostics
 
-    def read(self, path: Path) -> Tuple[str, List[Diagnostic]]:
-        text = path.read_text(encoding="utf-8")
-        source_text, diagnostics = self.substitute(text)
+    def read(
+        self, path: Path, text: Optional[str] = None
+    ) -> Tuple[str, List[Diagnostic]]:
+        if text is None:
+            text = path.read_text(encoding="utf-8")
+
+        text, diagnostics = self.substitute(text)
         match_found = PAT_GIT_MARKER.finditer(text)
 
         if match_found:
             for match in match_found:
-                lineno = source_text.count("\n", 0, match.start())
+                lineno = text.count("\n", 0, match.start())
                 diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
 
         return (text, diagnostics)

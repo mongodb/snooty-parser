@@ -102,9 +102,7 @@ def test_breadcrumbs(backend: Backend) -> None:
     pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["parentPaths"])
 
     assert len(pages) == 3
-    assert len(pages["page1"]) == 2
-    assert [] in pages["page1"]
-    assert ["page2", "page3"] in pages["page1"]
+    assert len(pages["page1"]) == 0
 
     assert len(pages["page2"]) == 0
 
@@ -129,3 +127,4 @@ def check_order(node: Dict[str, Any], drawers: List[str]) -> None:
             else:
                 if slug in drawers:
                     assert False
+

@@ -155,7 +155,7 @@ def test_merge_conflict() -> None:
 
     assert project_diagnostics[-1].message.startswith(
         "git merge conflict"
-    ) and project_diagnostics[-1].start == (69, 0)
+    ) and project_diagnostics[-1].start == (68, 0)
     assert project_diagnostics[-2].message.startswith(
         "git merge conflict"
     ) and project_diagnostics[-2].start == (35, 0)
@@ -173,3 +173,9 @@ def test_bad_project() -> None:
         assert "source constant" in diagnostics[0].message
     else:
         assert False
+
+
+def test_not_a_project() -> None:
+    backend = Backend()
+    project = Project(Path("test_data/not_a_project"), backend)
+    project.build()

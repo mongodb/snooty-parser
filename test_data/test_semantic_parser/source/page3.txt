@@ -20,9 +20,3 @@ The |service| :ref:`data-explorer` supports creating sharded
 collections with specific validations for |global-write|. For complete
 documentation, see :ref:`de-shard-collection-for-global-writes`.
 
-.. class:: hidden
-
-   .. toctree::
-      :titlesonly:
-
-      /page1
