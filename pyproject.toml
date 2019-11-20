@@ -28,7 +28,7 @@ dev = [
     "black ~= 19.3b0",
     "pyflakes ~= 2.1.1",
     "mypy ~= 0.701",
-    "nuitka == 0.6.2" # 0.6.3 causes segfaults on start
+    "pyinstaller ~= 3.5"
 ]
 test = [
     "pytest ~= 4.4.1",
