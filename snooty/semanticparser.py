@@ -8,7 +8,7 @@ PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 class SemanticParser:
     def __init__(self, project_config: ProjectConfig) -> None:
         self.project_config = project_config
-        self.slug_title: Dict[str, Any] = {}
+        self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
         self.toctree: Dict[str, Any] = {}
         self.parent_paths: Dict[str, Any] = {}
 
@@ -37,13 +37,10 @@ class SemanticParser:
         self, pages: Dict[FileId, Page]
     ) -> Dict[str, SerializableType]:
         event_parser = EventParser()
-
-        # Add event listeners here before calling consume()
-
+        event_parser.add_event_listener("object_start", self.build_slug_title_mapping)
         event_parser.consume(pages)
-
         # Return dict containing fields updated in event-based parse
-        return {}
+        return {"slugToTitle": self.slug_title_mapping}
 
     # Returns a list of transformations to include in self.run()
     def functions(
@@ -51,53 +48,28 @@ class SemanticParser:
     ) -> List[Callable[[Dict[FileId, Page]], Dict[str, SerializableType]]]:
         fn_mapping = {
             "toctree": self.build_toctree,
-            "slug-title": self.build_slug_title,
             "breadcrumbs": self.breadcrumbs,
             "toctree order": self.toctree_order,
         }
 
         return [fn_mapping[name] for name in fn_names]
 
-    def build_slug_title(
-        self, pages: Dict[FileId, Page]
-    ) -> Dict[str, SerializableType]:
-        # Function which returns a dictionary of slug-title mappings
-        slug_title_dict: Dict[str, SerializableType] = {}
-        for file_id, page in pages.items():
-            # remove the file extension from the slug
-            slug = file_id.without_known_suffix
+    def build_slug_title_mapping(
+        self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
+    ) -> None:
+        """Construct a slug-title mapping of all pages in property"""
+        obj = cast(Dict[str, SerializableType], kwargs.get("obj"))
+        slug = filename.without_known_suffix
 
-            # Skip slug-title mapping if the file is an `includes`
-            if "includes" in slug or "images" in slug:
-                continue
+        # Don't parse these files for headings
+        if "includes" in slug or "images" in slug:
+            return
 
-            # Parse for title
-            title = ""
-            ast: Dict[str, Any] = cast(Dict[str, Any], page.ast)
-            title_is_set = False
-
-            if ast is None:
-                return {}
-
-            for child in ast["children"]:
-                if title_is_set:
-                    break
-                if child["type"] == "section":
-                    for section_child in child["children"]:
-                        if title_is_set:
-                            break
-                        if section_child["type"] == "heading":
-                            for heading_child in section_child["children"]:
-                                if title_is_set:
-                                    break
-                                if heading_child["type"] == "text":
-                                    title = heading_child["value"]
-                                    title_is_set = True
-            slug_title_dict[slug] = title
-
-        self.slug_title = {"slugToTitle": slug_title_dict}
-
-        return self.slug_title
+        # Save the first heading we encounter to the slug title mapping
+        if self.slug_title_mapping.get(slug) is None and obj.get("type") == "heading":
+            self.slug_title_mapping[slug] = cast(
+                List[SerializableType], obj.get("children")
+            )
 
     def build_toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
@@ -120,20 +92,15 @@ class SemanticParser:
             slug = fileid.without_known_suffix
             fileid_dict[slug] = fileid
 
-        if not self.slug_title:
-            self.build_slug_title(pages)
+        if not self.slug_title_mapping:
+            self.run_event_parser(pages)
 
         # Build the toctree
         root: Dict["str", Any] = {}
         ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
 
         find_toctree_nodes(
-            starting_fileid,
-            ast,
-            pages,
-            root,
-            fileid_dict,
-            self.slug_title["slugToTitle"],
+            starting_fileid, ast, pages, root, fileid_dict, self.slug_title_mapping
         )
 
         toctree["toctree"] = root
@@ -227,14 +194,14 @@ def find_toctree_nodes(
     pages: Dict[FileId, Page],
     node: Dict[Any, Any],
     fileid_dict: Dict[str, FileId],
-    slug_title: Dict[str, Any],
+    slug_title_mapping: Dict[str, Any],
 ) -> None:
 
     # Base case: create node in toctree
     if not children_exist(ast):
         if node:
             node["slug"] = fileid.without_known_suffix
-            node["title"] = slug_title.get(node["slug"], "")
+            node["title"] = slug_title_mapping.get(node["slug"], [])
         return
 
     if ast["type"] == "directive":
@@ -269,12 +236,14 @@ def find_toctree_nodes(
                         pages,
                         toctree_node,
                         fileid_dict,
-                        slug_title,
+                        slug_title_mapping,
                     )
 
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
-        find_toctree_nodes(fileid, child_ast, pages, node, fileid_dict, slug_title)
+        find_toctree_nodes(
+            fileid, child_ast, pages, node, fileid_dict, slug_title_mapping
+        )
 
 
 def children_exist(ast: Dict[str, Any]) -> bool:

@@ -852,7 +852,7 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        fn_names: List[str] = ["toctree", "slug-title", "breadcrumbs", "toctree order"]
+        fn_names: List[str] = ["toctree", "breadcrumbs", "toctree order"]
         semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
             self.pages, fn_names
         )
