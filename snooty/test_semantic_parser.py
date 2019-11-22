@@ -49,15 +49,18 @@ def backend() -> Backend:
 
 
 def test_slug_title_mapping(backend: Backend) -> None:
-    slug_to_title: Dict[str, str] = cast(
-        Dict[str, str], backend.metadata["slugToTitle"]
+    # Ensure that the correct pages and assets exist
+    slugToTitle: Dict[str, List[Dict[str, SerializableType]]] = cast(
+        Dict[str, List[Dict[str, SerializableType]]], backend.metadata["slugToTitle"]
     )
 
-    assert len(slug_to_title) == 4
-    assert slug_to_title["index"] == "Connection Limits and Cluster Tier"
-    assert slug_to_title["page1"] == "Print this heading"
-    assert slug_to_title["page2"] == "Heading is not at the top for some reason"
-    assert slug_to_title["page3"] == ""
+    # page3 is not included in slug-title mapping because it lacks a heading.
+    assert len(slugToTitle) == 3
+    assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
+    assert slugToTitle["page1"][0]["value"] == "Print this heading"
+    assert (
+        slugToTitle["page2"][0]["value"] == "Heading is not at the top for some reason"
+    )
 
 
 def test_toctree(backend: Backend) -> None:
