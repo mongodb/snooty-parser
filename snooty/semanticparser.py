@@ -1,4 +1,4 @@
-from typing import Any, Callable, cast, Dict, List, Set
+from typing import Any, Callable, cast, Dict, List, Optional, Set
 from .types import FileId, Page, ProjectConfig, SerializableType
 import re
 
@@ -64,21 +64,26 @@ class SemanticParser:
         return [fn_mapping[name] for name in fn_names]
 
     def build_slug_title_mapping(
-        self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]]
     ) -> None:
         """Construct a slug-title mapping of all pages in property"""
         obj = cast(Dict[str, SerializableType], kwargs.get("obj"))
         slug = filename.without_known_suffix
 
-        # Don't parse these files for headings
-        if "includes" in slug or "images" in slug:
+        assert obj is not None
+
+        # Only parse pages for their headings
+        if filename.suffix != ".txt":
             return
 
         # Save the first heading we encounter to the slug title mapping
-        if self.slug_title_mapping.get(slug) is None and obj.get("type") == "heading":
-            self.slug_title_mapping[slug] = cast(
-                List[SerializableType], obj.get("children")
-            )
+        if slug not in self.slug_title_mapping and obj.get("type") == "heading":
+            children = cast(Optional[List[SerializableType]], obj.get("children"))
+            assert children is not None
+            self.slug_title_mapping[slug] = children
 
     def build_toctree(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         fileid_dict = {}
