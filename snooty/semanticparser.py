@@ -208,7 +208,7 @@ def find_toctree_nodes(
     pages: Dict[FileId, Page],
     node: Dict[Any, Any],
     fileid_dict: Dict[str, FileId],
-    slug_title_mapping: Dict[str, Any],
+    slug_title_mapping: Dict[str, List[SerializableType]],
 ) -> None:
 
     # Base case: create node in toctree
