@@ -70,7 +70,7 @@ class SemanticParser:
         **kwargs: Optional[Dict[str, SerializableType]]
     ) -> None:
         """Construct a slug-title mapping of all pages in property"""
-        obj = cast(Dict[str, SerializableType], kwargs.get("obj"))
+        obj = kwargs.get("obj")
         slug = filename.without_known_suffix
 
         assert obj is not None
