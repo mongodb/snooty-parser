@@ -300,14 +300,47 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             logger.error("resolveType is not supported")
             return fileName
 
-    def m_text_document__get_page_ast(self, filePath: str) -> SerializableType:
-        """Given a .txt file, return the ast of the page that is created 
-        from parsing that file"""
+    def m_text_document__get_page_ast(self, fileName: str) -> SerializableType:
+        """
+        Given the filename, return the ast of the page that is created from parsing that file. 
+        If the file is a .rst file, we return an ast that emulates the ast of a .txt 
+        file containing a single include directive to said .rst file.
+        """
+
         if self.project is None:
             logger.warn("Project uninitialized")
             return None
 
-        return self.project.get_page_ast(Path(filePath))
+        filePath = Path(fileName)
+        page_ast = self.project.get_page_ast(filePath)
+        page_ast = cast(Dict[str, Any], page_ast)
+
+        # If rst file, insert its ast into a pseudo ast object
+        if filePath.suffix == ".rst":
+            # Copy ast of previewed file into a modified version
+            rst_ast = {
+                "type": "directive",
+                "position": page_ast["position"],
+                "name": "include",
+                "argument": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 0}},
+                        "value": self.project.get_fileid(filePath).as_posix(),
+                    }
+                ],
+                "children": page_ast["children"],
+            }
+
+            # Insert modified ast as a child of a pseudo empty page ast
+            pseudo_ast = {
+                "type": "root",
+                "children": [rst_ast],
+                "position": {"start": {"line": 0}},
+            }
+            return pseudo_ast
+
+        return page_ast
 
     def m_text_document__get_project_name(self) -> SerializableType:
         """Get the project's name from its ProjectConfig"""

@@ -861,10 +861,16 @@ class _Project:
     def _populate_include_nodes(
         self, nodes: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Add include nodes to page AST's children"""
+        """
+        Add include nodes to page AST's children. 
+
+        To render images on the Snooty extension's Snooty Preview,
+        we must use the full path of the image on the user's local machine. Note that this does change the 
+        figure's value within the parser's dict. However, this should not change the value when using the parser 
+        outside of Snooty Preview, since this function is currently only called by the language server.
+        """
 
         def replace_nodes(node: Dict[str, Any]) -> Dict[str, Any]:
-            # Checks if key in node first to prevent .get() errors of SerializableType
             if node.get("name") == "include":
                 # Get the name of the file
                 argument = node["argument"][0]

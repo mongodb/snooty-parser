@@ -10,7 +10,7 @@ Given a .txt file, return the abstract syntax tree (AST) of the page that is cre
 
 | Parameter | Description |
 | :--- | :--- |
-| `filePath`: `str` | Path of the current file the user is focused on in VS Code. |
+| `fileName`: `str` | Name of the current file the user is focused on in VS Code. |
 
 ### Return
 
