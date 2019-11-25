@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The following extlink roles:
+
+  - `fb-dev-docs`
+  - `fcm`
+  - `google-dev`
+  - `google-android-ref`
+  - `github`
+  - `github-dev`
+  - `electricimp`
+  - `twilio`
+  - `mdn`
+  - `aws-go`
+  - `aws-iam`
+  - `aws-reference`
+  - `reactjs`
+  - `jwt-io`
+
 ## [v0.1.14] - 2019-11-19
 
 ### Added
