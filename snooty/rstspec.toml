@@ -658,6 +658,48 @@ type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
+[role."fb-dev-docs"]
+type = {link = "https://developers.facebook.com/docs/%s"}
+
+[role."fcm"]
+type = {link = "https://firebase.google.com/docs/%s"}
+
+[role."google-dev"]
+type = {link = "https://developers.google.com/%s"}
+
+[role."google-android-ref"]
+type = {link = "https://developers.google.com/android/reference/com/google/android/gms/%s"}
+
+[role."github"]
+type = {link = "https://github.com/%s"}
+
+[role."github-dev"]
+type = {link = "https://developer.github.com/%s"}
+
+[role."electricimp"]
+type = {link = "https://electricimp.com/%s"}
+
+[role."twilio"]
+type = {link = "https://www.twilio.com/%s"}
+
+[role."mdn"]
+type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
+
+[role."aws-go"]
+type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
+
+[role."aws-iam"]
+type = {link = "https://docs.aws.amazon.com/IAM/latest/%s"}
+
+[role."aws-reference"]
+type = {link = "https://docs.aws.amazon.com/general/latest/gr/%s"}
+
+[role."reactjs"]
+type = {link = "https://reactjs.org/%s"}
+
+[role."jwt-io"]
+type = {link = "https://jwt.io/%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 [rstobject."py:meth"]
@@ -815,3 +857,11 @@ help = """Stitch Function Context"""
 [rstobject."mongodb:datalakeconf"]
 help = """Data Lake Configuration Object"""
 prefix = "datalakeconf"
+
+[rstobject."mongodb:opsmgrkube"]
+help = """Kubernetes Operator Ops Manager Resource Setting"""
+prefix = "opsmgrkube"
+
+[rstobject."mongodb:autoencryptkeyword"]
+help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
+prefix = "autoencryptkeyword"
