@@ -216,7 +216,7 @@ def find_toctree_nodes(
         if node:
             node["slug"] = fileid.without_known_suffix
             # Look up title in slug-title mapping if it has not been specified
-            if "title" not in node or node.get("title") is None:
+            if node.get("title") is None:
                 node["title"] = slug_title_mapping.get(node["slug"], None)
         return
 
