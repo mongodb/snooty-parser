@@ -102,6 +102,7 @@ class MongoBackend(Backend):
             {
                 "_id": fully_qualified_pageid,
                 "prefix": prefix,
+                "filename": page_id.as_posix(),
                 "ast": page.ast,
                 "source": page.source,
                 "static_assets": checksums,
