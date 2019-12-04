@@ -215,7 +215,9 @@ def find_toctree_nodes(
     if not children_exist(ast):
         if node:
             node["slug"] = fileid.without_known_suffix
-            node["title"] = slug_title_mapping.get(node["slug"], [])
+            # Look up title in slug-title mapping if it has not been specified
+            if node.get("title") is None:
+                node["title"] = slug_title_mapping.get(node["slug"], None)
         return
 
     if ast["type"] == "directive":
