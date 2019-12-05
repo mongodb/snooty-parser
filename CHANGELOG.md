@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `reactjs`
   - `jwt-io`
 
+- More semantic analysis postprocessing infrastructure (DOCSP-7574).
+
+- A new release process (DOCSP-7800).
+
+### Fixed
+
+- Don't crash if opening an empty project.
+
 ## [v0.1.14] - 2019-11-19
 
 ### Added

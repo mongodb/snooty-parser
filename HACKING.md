@@ -112,30 +112,29 @@ To release snooty, do the following:
 
 * Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date.
 
-* Run `make cut-release BUMP_TO_VERSION="<new_version>"`, and make
-  note of the release name that is printed at the end.
+* Run `make cut-release BUMP_TO_VERSION="<new_version>"`.
 
   The new version number should follow [semantic versioning](https://semver.org):
   `MAJOR.MINOR.PATCH`. For example, `make cut-release BUMP_TO_VERSION="0.1.2"`.
   Refer to `snooty/__init__.py` for the current version number.
 
-* Ensure that everything looks okay, and that the binary generated in `dist/` works correctly.
+  This will create a new tag named `v<new_version>` and push it to your origin,
+  causing Github Actions to trigger the release process. After several minutes
+  (you can monitor its progress at <https://github.com/mongodb/snooty-parser/actions>),
+  a new release should be created with binaries for supported platforms.
 
-* Run:
+  You can instruct the `cut-release` target to avoid pushing the tag by passing the
+  `PUSH_TO=""` option. For example, `make cut-release BUMP_TO_VERSION="0.1.2" PUSH_TO=""`.
 
-  ```shell
-  git push --follow-tags
-  ```
+* Go to <https://github.com/mongodb/snooty-parser/releases/> to locate the newly-created
+  release.
 
-* Go to <https://github.com/mongodb/snooty-parser/releases/new> to draft a new release.
-
-* Enter the `v<version>` to reference the tag which was just created, and enter the
-  release name that was printed by the `make cut-release` target. Copy the appropriate
-  section from CHANGELOG.md into the release description. Upload the release zip file
-  in the `dist` directory, and check the _This is a pre-release_ checkbox.
+* Copy the appropriate section from CHANGELOG.md into the release description, and
+  check the _This is a pre-release_ checkbox.
 
 If there is an error, use `git reset --hard <previous_commit_hash>` to revert any
-commits that might have been made, and `git tag --delete v<version>` to remove the
+commits that might have been made, and
+`git tag --delete v<version>; git push --delete origin v<version>` to remove the
 tag if it was created.
 
 ## Problem Areas
