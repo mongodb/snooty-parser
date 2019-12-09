@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Support for defining non-drawer TOC nodes via `toc_landing_pages` array in snooty.toml (DOCSP-7573).
+
 ## [v0.1.15] - 2019-12-05
 
 ### Added

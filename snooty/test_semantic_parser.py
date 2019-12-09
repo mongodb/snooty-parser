@@ -68,6 +68,7 @@ def test_toctree(backend: Backend) -> None:
         "children": [
             {
                 "children": [],
+                "options": {"drawer": True},
                 "slug": "page1",
                 "title": [
                     {
@@ -78,6 +79,7 @@ def test_toctree(backend: Backend) -> None:
                 ],
             },
             {
+                "options": {"drawer": False},
                 "slug": "page2",
                 "title": [
                     {
@@ -92,7 +94,12 @@ def test_toctree(backend: Backend) -> None:
                         "title": "MongoDB Connector for Business Intelligence",
                         "url": "https://docs.mongodb.com/bi-connector/current/",
                     },
-                    {"children": [], "slug": "page3", "title": None},
+                    {
+                        "children": [],
+                        "options": {"drawer": False},
+                        "slug": "page3",
+                        "title": None,
+                    },
                 ],
             },
         ],
