@@ -114,7 +114,13 @@ class SemanticParser:
         ast: Dict[str, Any] = cast(Dict[str, Any], pages[starting_fileid].ast)
 
         find_toctree_nodes(
-            starting_fileid, ast, pages, root, fileid_dict, self.slug_title_mapping
+            starting_fileid,
+            ast,
+            pages,
+            root,
+            fileid_dict,
+            self.slug_title_mapping,
+            [slug.strip("/") for slug in self.project_config.toc_landing_pages],
         )
 
         toctree["toctree"] = root
@@ -143,7 +149,7 @@ class SemanticParser:
         for path in all_paths:
             reversed_path = path[::-1]
             for i in range(len(reversed_path)):
-                slug = remove_leading_slash(path[i])
+                slug = path[i].strip("/")
 
                 if slug not in page_dict:
                     page_dict[slug] = [path[:i]]
@@ -191,13 +197,13 @@ def get_paths(root: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
     ):
         # Skip urls
         if "slug" in root:
-            path.append(remove_leading_slash(root["slug"]))
+            path.append(root["slug"].strip("/"))
             all_paths.append(path)
     else:
         # Recursively build the path
         for child in root["children"]:
             subpath = path[:]
-            subpath.append(remove_leading_slash(root["slug"]))
+            subpath.append(root["slug"].strip("/"))
             get_paths(child, subpath, all_paths)
 
 
@@ -209,15 +215,11 @@ def find_toctree_nodes(
     node: Dict[Any, Any],
     fileid_dict: Dict[str, FileId],
     slug_title_mapping: Dict[str, List[SerializableType]],
+    toc_landing_pages: List[str],
 ) -> None:
 
-    # Base case: create node in toctree
+    # Base case: stop iterating over AST
     if not children_exist(ast):
-        if node:
-            node["slug"] = fileid.without_known_suffix
-            # Look up title in slug-title mapping if it has not been specified
-            if node.get("title") is None:
-                node["title"] = slug_title_mapping.get(node["slug"], None)
         return
 
     if ast["type"] == "directive":
@@ -233,32 +235,50 @@ def find_toctree_nodes(
                     # If the node has no children, save `children` as an empty list
                     toctree_node["children"] = []
                 if "slug" in toctree_node:
-                    # Only recursively build the tree for internal links
-                    slug = remove_leading_slash(toctree_node["slug"])
+                    # Recursively build the tree for internal links
+                    slug_cleaned = toctree_node["slug"].strip("/")
 
-                    if slug[-1] == "/":
-                        slug = slug[:-1]
+                    # TODO: remove file extensions in initial parse layer
+                    # https://jira.mongodb.org/browse/DOCSP-7595
+                    slug_cleaned = PAT_FILE_EXTENSIONS.sub("", slug_cleaned)
 
-                    # TODO: https://jira.mongodb.org/browse/DOCSP-7595
-                    slug = PAT_FILE_EXTENSIONS.sub("", slug)
+                    # Ensure that the user-specified slug is an existing page. We want to add this error
+                    # handling to the initial parse layer, but this works for now.
+                    # https://jira.mongodb.org/browse/DOCSP-7941
+                    slug_fileid: Optional[FileId] = fileid_dict.get(slug_cleaned)
+                    assert slug_fileid is not None
+                    slug: str = slug_fileid.without_known_suffix
+                    toctree_node["slug"] = slug
 
-                    new_fileid = fileid_dict[slug]
+                    if toctree_node.get("title") is None:
+                        toctree_node["title"] = slug_title_mapping.get(slug, None)
+
+                    toctree_node["options"] = {}
+                    toctree_node["options"]["drawer"] = slug not in toc_landing_pages
+
                     new_ast: Dict[str, Any] = cast(
-                        Dict[str, Any], pages[new_fileid].ast
+                        Dict[str, Any], pages[slug_fileid].ast
                     )
                     find_toctree_nodes(
-                        new_fileid,
+                        slug_fileid,
                         new_ast,
                         pages,
                         toctree_node,
                         fileid_dict,
                         slug_title_mapping,
+                        toc_landing_pages,
                     )
 
     # Locate the correct directive object containing the toctree within this AST
     for child_ast in ast["children"]:
         find_toctree_nodes(
-            fileid, child_ast, pages, node, fileid_dict, slug_title_mapping
+            fileid,
+            child_ast,
+            pages,
+            node,
+            fileid_dict,
+            slug_title_mapping,
+            toc_landing_pages,
         )
 
 
@@ -266,12 +286,6 @@ def children_exist(ast: Dict[str, Any]) -> bool:
     if "children" in ast.keys():
         return True
     return False
-
-
-def remove_leading_slash(path: str) -> str:
-    if path[0] == "/":
-        return path[1:]
-    return path
 
 
 class EventListeners:

@@ -1,4 +1,5 @@
 name = "test_data"
+toc_landing_pages = ["/page2", "page3"]
 
 [constants]
 name = "MongoDB"
