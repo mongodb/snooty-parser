@@ -796,6 +796,8 @@ class _Project:
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
+            fileid = self.get_fileid(page.fake_full_path())
+            self.backend.on_update(self.prefix, fileid, page)
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
@@ -857,8 +859,8 @@ class _Project:
             self.pages, fn_names
         )
 
-        for page in self.semantic_parser.pages.values():
-            self._page_updated(page, all_yaml_diagnostics.get(page.source_path, []))
+        for fileid, page in self.semantic_parser.pages.items():
+            self.backend.on_update(self.prefix, fileid, page)
         self.backend.on_update_metadata(self.prefix, semantic_parse)
 
     def _populate_include_nodes(
@@ -966,7 +968,6 @@ class _Project:
 
         # Report to our backend
         self.pages[fileid] = page
-        self.backend.on_update(self.prefix, fileid, page)
         self.backend.on_diagnostics(self.get_fileid(page.source_path), diagnostics)
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:

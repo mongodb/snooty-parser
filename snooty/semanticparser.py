@@ -72,6 +72,13 @@ class SemanticParser:
         `children` property with the contents of the include file.
         Because the include contents are added to the tree on which the event parser is
         running, they will automatically be parsed and have their includes expanded, too."""
+
+        def get_include_argument(node: Dict[str, Any]) -> str:
+            argument_list = node["argument"]
+            assert len(argument_list) > 0
+            argument: str = argument_list[0]["value"]
+            return argument
+
         obj = kwargs.get("obj")
         assert obj is not None
 
@@ -275,14 +282,6 @@ def children_exist(ast: Dict[str, Any]) -> bool:
     if "children" in ast.keys():
         return True
     return False
-
-
-def get_include_argument(node: Dict[str, Any]) -> str:
-    argument_list = node.get("argument")
-    assert argument_list is not None and len(argument_list) > 0
-    argument: str = argument_list[0].get("value")
-    assert argument is not None
-    return argument
 
 
 class EventListeners:
