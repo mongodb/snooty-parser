@@ -47,6 +47,7 @@ class SemanticParser:
 
     def run_event_parser(self) -> Dict[str, SerializableType]:
         event_parser = EventParser()
+        event_parser.add_event_listener(OBJECT_START_EVENT, self.populate_include_nodes)
         event_parser.add_event_listener(
             OBJECT_START_EVENT, self.build_slug_title_mapping
         )
@@ -54,6 +55,42 @@ class SemanticParser:
 
         # Return dict containing fields updated in event-based parse
         return {"slugToTitle": self.slug_title_mapping}
+
+    def populate_include_nodes(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]]
+    ) -> None:
+        """Iterate over all pages to find include directives. When found, replace their
+        `children` property with the contents of the include file.
+        Because the include contents are added to the tree on which the event parser is
+        running, they will automatically be parsed and have their includes expanded, too."""
+        obj = kwargs.get("obj")
+        assert obj is not None
+
+        # Only parse pages for include nodes
+        if filename.suffix != ".txt":
+            return
+
+        if obj.get("name") == "include":
+            argument = get_include_argument(obj)
+            include_slug = clean_slug(argument)
+            include_fileid = self.slug_fileid_mapping.get(include_slug)
+            # Some includes in the mapping include file extensions (.yaml) and others do not
+            # Perhaps try to find the logic in this, but for now handle both cases
+            if include_fileid is None:
+                include_slug = argument.strip("/")
+                include_fileid = self.slug_fileid_mapping.get(include_slug)
+
+            # End if we can't find a file
+            if include_fileid is None:
+                return
+
+            include_page = self.pages.get(include_fileid)
+            assert include_page is not None
+            include_ast = cast(Dict[str, SerializableType], include_page.ast)
+            obj["children"] = include_ast["children"]
 
     def build_slug_title_mapping(
         self,
@@ -244,6 +281,14 @@ def children_exist(ast: Dict[str, Any]) -> bool:
     if "children" in ast.keys():
         return True
     return False
+
+
+def get_include_argument(node: Dict[str, Any]) -> str:
+    argument_list = node.get("argument")
+    assert argument_list is not None and len(argument_list) > 0
+    argument: str = argument_list[0].get("value")
+    assert argument is not None
+    return argument
 
 
 class EventListeners:

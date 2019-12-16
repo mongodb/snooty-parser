@@ -856,6 +856,9 @@ class _Project:
         semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
             self.pages, fn_names
         )
+
+        for page in self.semantic_parser.pages.values():
+            self._page_updated(page, all_yaml_diagnostics.get(page.source_path, []))
         self.backend.on_update_metadata(self.prefix, semantic_parse)
 
     def _populate_include_nodes(
