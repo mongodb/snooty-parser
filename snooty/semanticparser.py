@@ -12,6 +12,11 @@ ELEMENT_EVENT = "element"
 
 
 class SemanticParser:
+    """SemanticParser handles all operations on parsed AST files.
+
+    The only method that should be called on an instance of SemanticParser is run(). This method
+    handles calling all other methods and ensures that parse operations are run in the correct order."""
+
     def __init__(self, project_config: ProjectConfig) -> None:
         self.project_config = project_config
         self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
@@ -24,6 +29,7 @@ class SemanticParser:
     def run(
         self, pages: Dict[FileId, Page], fn_names: List[str]
     ) -> Dict[str, SerializableType]:
+        """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return {}
 
@@ -100,9 +106,6 @@ class SemanticParser:
         if starting_fileid is None:
             return {}
 
-        if not self.slug_title_mapping:
-            self.run_event_parser()
-
         # Build the toctree
         root: Dict[str, SerializableType] = {
             "title": self.project_config.name,
@@ -146,10 +149,7 @@ class SemanticParser:
                     # Ensure that the user-specified slug is an existing page. We want to add this error
                     # handling to the initial parse layer, but this works for now.
                     # https://jira.mongodb.org/browse/DOCSP-7941
-                    slug_fileid: Optional[FileId] = self.slug_fileid_mapping.get(
-                        slug_cleaned
-                    )
-                    assert slug_fileid is not None
+                    slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
                     slug: str = slug_fileid.without_known_suffix
 
                     toctree_node = {
@@ -173,9 +173,6 @@ class SemanticParser:
     def breadcrumbs(self) -> Dict[str, List[str]]:
         """Generate breadcrumbs for each page represented in the toctree"""
         page_dict: Dict[str, List[str]] = {}
-        if not self.toctree:
-            self.build_toctree()
-
         all_paths: List[Any] = []
 
         # Find all node to leaf paths for each node in the toctree
@@ -196,9 +193,6 @@ class SemanticParser:
     def toctree_order(self) -> List[str]:
         """Return a pre-order traversal of the toctree to be used for internal page navigation"""
         order: List[str] = []
-
-        if not self.toctree:
-            self.build_toctree()
 
         pre_order(self.toctree, order)
         return order
