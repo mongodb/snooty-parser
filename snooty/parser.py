@@ -806,12 +806,18 @@ class _Project:
 
     def build(self) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-        with multiprocessing.Pool() as pool:
+        pool = multiprocessing.Pool()
+        try:
             paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
             logger.debug("Processing rst files")
             results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
             for page, diagnostics in results:
                 self._page_updated(page, diagnostics)
+        finally:
+            # We cannot use the multiprocessing.Pool context manager API due to the following:
+            # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+            pool.close()
+            pool.join()
 
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
