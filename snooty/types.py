@@ -286,12 +286,25 @@ class PendingTask:
 @dataclass
 class Page:
     source_path: Path
+    output_filename: str
     source: str
     ast: SerializableType
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
-    output_filename: Optional[str] = None
+
+    @classmethod
+    def create(
+        self,
+        source_path: Path,
+        output_filename: Optional[str],
+        source: str,
+        ast: SerializableType,
+    ) -> "Page":
+        if output_filename is None:
+            output_filename = source_path.name
+
+        return Page(source_path, output_filename, source, ast)
 
     def fake_full_path(self) -> PurePath:
         """Return a fictitious path (hopefully) uniquely identifying this output artifact."""
@@ -299,12 +312,7 @@ class Page:
             # Giza wrote out yaml file artifacts under a directory. e.g. steps-foo.yaml becomes
             # steps/foo.rst
             return self.source_path.parent.joinpath(
-                PurePath(self.category),
-                (
-                    self.output_filename
-                    if self.output_filename
-                    else self.source_path.name.replace(f"{self.category}-", "", 1)
-                ),
+                PurePath(self.category), self.output_filename
             )
         return self.source_path
 

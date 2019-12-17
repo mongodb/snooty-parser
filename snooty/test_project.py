@@ -16,6 +16,7 @@ from .types import (
 )
 from .parser import Project
 from .util import ast_dive
+from .util_test import check_ast_testing_string
 
 
 @dataclass
@@ -179,3 +180,33 @@ def test_not_a_project() -> None:
     backend = Backend()
     project = Project(Path("test_data/not_a_project"), backend)
     project.build()
+
+
+def test_get_ast() -> None:
+    backend = Backend()
+    project = Project(Path("test_data/get-preview"), backend)
+    project.build()
+    ast = project.get_page_ast(
+        Path("test_data/get-preview/source/index.txt").absolute()
+    )
+    check_ast_testing_string(
+        ast,
+        """<root>
+        <section>
+        <heading id="index"><text>Index</text></heading>
+        <paragraph><text>Test.</text></paragraph>
+        <directive name="include"><text>/includes/steps/test.rst</text>
+            <directive name="step"><section><heading id="identify-the-privileges-granted-by-a-role">
+            <text>Identify the privileges granted by a role.</text></heading>
+            <paragraph><text>this is a test step.</text></paragraph></section></directive>
+        </directive>
+        <directive name="include"><text>/includes/extracts/test.rst</text>
+            <paragraph><text>test extract</text></paragraph>
+        </directive>
+        <directive name="include">
+            <text>/includes/release/pin-version-intro.rst</text>
+            <paragraph><text>To install a specific release, you must specify each component package
+individually along with the version number, as in the
+following example:</text></paragraph>
+        </directive></section></root>""",
+    )

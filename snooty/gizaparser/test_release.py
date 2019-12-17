@@ -1,5 +1,5 @@
 from pathlib import Path, PurePath
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from .release import GizaReleaseSpecificationCategory
 from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
 from ..parser import make_embedded_rst_parser
@@ -34,17 +34,17 @@ def test_release_specification() -> None:
     assert len(category) == 2
     file_id, giza_node = next(category.reify_all_files(all_diagnostics))
 
-    def create_page() -> Tuple[Page, EmbeddedRstParser]:
-        page = Page(path, "", {})
+    def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
+        page = Page.create(path, filename, "", {})
         return (
             page,
             make_embedded_rst_parser(project_config, page, all_diagnostics[path]),
         )
 
-    pages = category.to_pages(create_page, giza_node.data)
+    pages = category.to_pages(path, create_page, giza_node.data)
     assert [str(page.fake_full_path()) for page in pages] == [
-        "test_data/release/untar-release-osx-x86_64",
-        "test_data/release/install-ent-windows-default",
+        "test_data/release/untar-release-osx-x86_64.rst",
+        "test_data/release/install-ent-windows-default.rst",
     ]
 
     assert all((not diagnostics for diagnostics in all_diagnostics.values()))

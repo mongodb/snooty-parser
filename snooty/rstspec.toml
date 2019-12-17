@@ -376,8 +376,15 @@ content_type = "block"
 help = """Used to denote subscript text."""
 type = "text"
 
-[role.sup]
+[role.superscript]
 help = """Used to denote superscript text."""
+type = "text"
+
+[role.sup]
+inherit = "superscript"
+
+[role.samp]
+help = """Literal text where you may use curly braces to denote a "variable". For example, "samp:`print(1+{x})`"."""
 type = "text"
 
 [role.guilabel]

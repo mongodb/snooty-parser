@@ -1,0 +1,6 @@
+ref: pin-version-intro
+pre: |
+   To install a specific release, you must specify each component package
+   individually along with the version number, as in the
+   following example:
+...

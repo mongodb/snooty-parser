@@ -61,7 +61,8 @@ class GizaExtractsCategory(GizaCategory[Extract]):
 
     def to_pages(
         self,
-        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        source_path: Path,
+        page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         extracts: Sequence[Extract],
     ) -> List[Page]:
         pages: List[Page] = []
@@ -70,9 +71,8 @@ class GizaExtractsCategory(GizaCategory[Extract]):
             if extract.ref.startswith("_"):
                 continue
 
-            page, rst_parser = page_factory()
+            page, rst_parser = page_factory(f"{extract.ref}.rst")
             page.category = "extracts"
-            page.output_filename = extract.ref
             page.ast = extract_to_page(page, extract, rst_parser)
             pages.append(page)
 

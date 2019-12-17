@@ -576,10 +576,10 @@ def parse_rst(
 ) -> Tuple[Page, List[Diagnostic]]:
     visitor, text = parser.parse(path, text)
 
-    return (
-        Page(path, text, visitor.state[-1], visitor.static_assets, visitor.pending),
-        visitor.diagnostics,
-    )
+    page = Page.create(path, None, text, visitor.state[-1])
+    page.static_assets = visitor.static_assets
+    page.pending_tasks = visitor.pending
+    return (page, visitor.diagnostics)
 
 
 def make_embedded_rst_parser(
@@ -779,15 +779,17 @@ class _Project:
                 )
                 file_diagnostics.extend(parse_diagnostics)
 
-                def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page(giza_node.path, text, {})
+                def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
+                    page = Page.create(giza_node.path, filename, text, {})
                     return (
                         page,
                         make_embedded_rst_parser(self.config, page, file_diagnostics),
                     )
 
                 giza_category.add(path, text, steps)
-                pages = giza_category.to_pages(create_page, giza_node.data)
+                pages = giza_category.to_pages(
+                    giza_node.path, create_page, giza_node.data
+                )
                 path = giza_node.path
                 diagnostics.setdefault(path).extend(file_diagnostics)
         else:
@@ -846,8 +848,8 @@ class _Project:
                 all_yaml_diagnostics
             ):
 
-                def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page(giza_node.path, giza_node.text, {})
+                def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
+                    page = Page.create(giza_node.path, filename, giza_node.text, {})
                     return (
                         page,
                         make_embedded_rst_parser(
@@ -857,7 +859,9 @@ class _Project:
                         ),
                     )
 
-                for page in giza_category.to_pages(create_page, giza_node.data):
+                for page in giza_category.to_pages(
+                    giza_node.path, create_page, giza_node.data
+                ):
                     self._page_updated(
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
@@ -888,14 +892,6 @@ class _Project:
                 argument = node["argument"][0]
                 include_filename = argument["value"]
                 include_filename = include_filename[1:]
-
-                # Make sure extension is correct. 'include' files are referenced with a .rst
-                # extension in a page, but have different extensions in the self.pages dict
-                tokens = include_filename.split("/")
-                if "steps" in tokens:
-                    include_filename = include_filename.replace(".rst", ".yaml")
-                elif "extracts" in tokens or "release" in tokens:
-                    include_filename = include_filename.replace(".rst", "")
 
                 # Get children of include file
                 include_file_page_ast = cast(
