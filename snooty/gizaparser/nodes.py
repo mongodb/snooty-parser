@@ -182,7 +182,8 @@ class GizaCategory(Generic[_I]):
 
     def to_pages(
         self,
-        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        source_path: Path,
+        page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         data: Sequence[_I],
     ) -> List[Page]:
         """Abstract method to generate pages from a given set of Giza nodes."""

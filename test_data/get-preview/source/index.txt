@@ -1,0 +1,11 @@
+=====
+Index
+=====
+
+Test.
+
+.. include:: /includes/steps/test.rst
+
+.. include:: /includes/extracts/test.rst
+
+.. include:: /includes/release/pin-version-intro.rst

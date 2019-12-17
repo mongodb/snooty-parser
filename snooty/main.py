@@ -188,6 +188,9 @@ def main() -> None:
 
     try:
         project.build()
+        project.get_page_ast(
+            Path("/Users/andrew.aldridge/Documents/docs/source/installation.txt")
+        )
 
         if sys.argv[1] == "watch":
             observer = watchdog.observers.Observer()

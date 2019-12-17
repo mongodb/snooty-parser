@@ -126,10 +126,13 @@ class GizaStepsCategory(GizaCategory[Step]):
 
     def to_pages(
         self,
-        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        source_path: Path,
+        page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         steps: Sequence[Step],
     ) -> List[Page]:
-        page, rst_parser = page_factory()
+        output_filename = source_path.with_suffix(".rst").name
+        output_filename = output_filename[6:]
+        page, rst_parser = page_factory(output_filename)
         page.category = "steps"
         page.ast = {
             "type": "directive",

@@ -1,5 +1,5 @@
 from pathlib import Path, PurePath
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from .steps import GizaStepsCategory
 from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
 from ..parser import make_embedded_rst_parser
@@ -34,15 +34,17 @@ def test_step() -> None:
     assert len(category) == 2
     file_id, giza_node = next(category.reify_all_files(all_diagnostics))
 
-    def create_page() -> Tuple[Page, EmbeddedRstParser]:
-        page = Page(path, "", {})
+    def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
+        page = Page.create(path, filename, "", {})
         return (
             page,
             make_embedded_rst_parser(project_config, page, all_diagnostics[path]),
         )
 
-    pages = category.to_pages(create_page, giza_node.data)
-    assert len(pages) == 1
+    pages = category.to_pages(path, create_page, giza_node.data)
+    assert [str(page.fake_full_path()) for page in pages] == [
+        "test_data/steps/test.rst"
+    ]
     print(repr(ast_to_testing_string(pages[0].ast)))
     assert ast_to_testing_string(pages[0].ast) == "".join(
         (
