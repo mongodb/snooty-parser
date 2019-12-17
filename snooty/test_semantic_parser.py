@@ -55,12 +55,68 @@ def test_slug_title_mapping(backend: Backend) -> None:
     )
 
     # page3 is not included in slug-title mapping because it lacks a heading.
-    assert len(slugToTitle) == 3
+    assert len(slugToTitle) == 4
     assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
     assert slugToTitle["page1"][0]["value"] == "Print this heading"
     assert (
         slugToTitle["page2"][0]["value"] == "Heading is not at the top for some reason"
     )
+    assert slugToTitle["page4"][0]["value"] == "Skip includes"
+
+
+def test_expand_includes(backend: Backend) -> None:
+    page4_id = FileId("page4.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page4_id].ast)
+    children = cast(Dict[str, Any], ast["children"][0])
+    assert children["name"] == "include"
+    assert len(children["children"]) > 1
+    assert children["children"] == [
+        {
+            "type": "target",
+            "position": {"start": {"line": 1}},
+            "ids": ["connection-limits"],
+            "children": [],
+        },
+        {
+            "type": "section",
+            "position": {"start": {"line": 5}},
+            "children": [
+                {
+                    "type": "heading",
+                    "position": {"start": {"line": 5}},
+                    "id": "skip-includes",
+                    "children": [
+                        {
+                            "type": "text",
+                            "position": {"start": {"line": 5}},
+                            "value": "Skip includes",
+                        }
+                    ],
+                },
+                {
+                    "type": "directive",
+                    "position": {"start": {"line": 7}},
+                    "name": "default-domain",
+                    "argument": [
+                        {
+                            "type": "text",
+                            "position": {"start": {"line": 7}},
+                            "value": "mongodb",
+                        }
+                    ],
+                    "children": [],
+                },
+                {
+                    "type": "directive",
+                    "position": {"start": {"line": 9}},
+                    "name": "meta",
+                    "argument": [],
+                    "options": {"keywords": "connect"},
+                    "children": [],
+                },
+            ],
+        },
+    ]
 
 
 def test_toctree(backend: Backend) -> None:

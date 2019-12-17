@@ -26,9 +26,7 @@ class SemanticParser:
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
 
-    def run(
-        self, pages: Dict[FileId, Page], fn_names: List[str]
-    ) -> Dict[str, SerializableType]:
+    def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return {}
@@ -74,6 +72,7 @@ class SemanticParser:
         running, they will automatically be parsed and have their includes expanded, too."""
 
         def get_include_argument(node: Dict[str, Any]) -> str:
+            """Get filename of include"""
             argument_list = node["argument"]
             assert len(argument_list) > 0
             argument: str = argument_list[0]["value"]
@@ -90,15 +89,15 @@ class SemanticParser:
             argument = get_include_argument(obj)
             include_slug = clean_slug(argument)
             include_fileid = self.slug_fileid_mapping.get(include_slug)
-            # Some includes in the mapping include file extensions (.yaml) and others do not
-            # Perhaps try to find the logic in this, but for now handle both cases
+            # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
+            # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
             if include_fileid is None:
                 include_slug = argument.strip("/")
                 include_fileid = self.slug_fileid_mapping.get(include_slug)
 
-            # End if we can't find a file
-            if include_fileid is None:
-                return
+                # End if we can't find a file
+                if include_fileid is None:
+                    return
 
             include_page = self.pages.get(include_fileid)
             assert include_page is not None
