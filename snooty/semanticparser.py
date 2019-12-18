@@ -26,9 +26,7 @@ class SemanticParser:
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
 
-    def run(
-        self, pages: Dict[FileId, Page], fn_names: List[str]
-    ) -> Dict[str, SerializableType]:
+    def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
         """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return {}
@@ -53,6 +51,7 @@ class SemanticParser:
 
     def run_event_parser(self) -> Dict[str, SerializableType]:
         event_parser = EventParser()
+        event_parser.add_event_listener(OBJECT_START_EVENT, self.populate_include_nodes)
         event_parser.add_event_listener(
             OBJECT_START_EVENT, self.build_slug_title_mapping
         )
@@ -60,6 +59,50 @@ class SemanticParser:
 
         # Return dict containing fields updated in event-based parse
         return {"slugToTitle": self.slug_title_mapping}
+
+    def populate_include_nodes(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]]
+    ) -> None:
+        """Iterate over all pages to find include directives. When found, replace their
+        `children` property with the contents of the include file.
+        Because the include contents are added to the tree on which the event parser is
+        running, they will automatically be parsed and have their includes expanded, too."""
+
+        def get_include_argument(node: Dict[str, Any]) -> str:
+            """Get filename of include"""
+            argument_list = node["argument"]
+            assert len(argument_list) > 0
+            argument: str = argument_list[0]["value"]
+            return argument
+
+        obj = kwargs.get("obj")
+        assert obj is not None
+
+        # Only parse pages for include nodes
+        if filename.suffix != ".txt":
+            return
+
+        if obj.get("name") == "include":
+            argument = get_include_argument(obj)
+            include_slug = clean_slug(argument)
+            include_fileid = self.slug_fileid_mapping.get(include_slug)
+            # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
+            # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
+            if include_fileid is None:
+                include_slug = argument.strip("/")
+                include_fileid = self.slug_fileid_mapping.get(include_slug)
+
+                # End if we can't find a file
+                if include_fileid is None:
+                    return
+
+            include_page = self.pages.get(include_fileid)
+            assert include_page is not None
+            include_ast = cast(Dict[str, SerializableType], include_page.ast)
+            obj["children"] = include_ast["children"]
 
     def build_slug_title_mapping(
         self,
