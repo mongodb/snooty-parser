@@ -521,11 +521,11 @@ type = {link = "https://metacpan.org/pod/MongoDB::%s"}
 
 [role.node-docs]
 help = """Link to a page in the Node.js driver's documentation."""
-type = {link = "http://mongodb.github.io/node-mongodb-native/3.0/%s"}
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.4/%s"}
 
 [role.node-api]
 help = """Link to a page in the Node.js driver's API reference."""
-type = {link = "http://mongodb.github.io/node-mongodb-native/3.0/api/%s"}
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.4/api/%s"}
 
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
