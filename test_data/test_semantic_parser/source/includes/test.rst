@@ -1,9 +1,9 @@
   
 .. _connection-limits:
 
-==============
+=============
 Skip includes
-==============
+=============
 
 .. default-domain:: mongodb
 
