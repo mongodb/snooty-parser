@@ -10,12 +10,17 @@ from .nodes import Inheritable, GizaCategory
 @checked
 @dataclass
 class ReleaseSpecification(Inheritable):
+    pre: Optional[str]
     copyable: Optional[bool]
     language: Optional[str]
     code: Optional[str]
 
     def render(self, page: Page, parse_rst: EmbeddedRstParser) -> SerializableType:
         children: List[SerializableType] = []
+        if self.pre:
+            result = parse_rst(self.pre, self.line, False)
+            children.extend(result)
+
         if self.code:
             children.append(
                 {
@@ -66,7 +71,8 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
 
     def to_pages(
         self,
-        page_factory: Callable[[], Tuple[Page, EmbeddedRstParser]],
+        source_path: Path,
+        page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         nodes: Sequence[ReleaseSpecification],
     ) -> List[Page]:
         pages: List[Page] = []
@@ -75,9 +81,8 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
             if node.ref.startswith("_"):
                 continue
 
-            page, rst_parser = page_factory()
+            page, rst_parser = page_factory(f"{node.ref}.rst")
             page.category = "release"
-            page.output_filename = node.ref
             page.ast = release_specification_to_page(page, node, rst_parser)
             pages.append(page)
 

@@ -55,9 +55,5 @@ def test_static_asset() -> None:
 
 
 def test_page() -> None:
-    page = Page(Path("foo.rst"), "", {})
+    page = Page.create(Path("foo.rst"), None, "", {})
     assert page.fake_full_path() == PurePath("foo.rst")
-
-    page = Page(Path("steps-foo.yaml"), "", {})
-    page.category = "steps"
-    assert page.fake_full_path() == PurePath("steps/foo.yaml")
