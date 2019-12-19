@@ -686,7 +686,9 @@ class _Project:
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:
-            self.backend.on_published_branches(self.prefix, published_branches)
+            self.backend.on_update_metadata(
+                self.prefix, {"publishedBranches": published_branches.serialize()}
+            )
 
         if published_branches_diagnostics:
             backend.on_diagnostics(
