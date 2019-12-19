@@ -147,16 +147,6 @@ class MongoBackend(Backend):
     def on_delete(self, page_id: FileId) -> None:
         pass
 
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
-        page_id = "/".join(prefix)
-        self.client["snooty"]["metadata"].replace_one(
-            {"_id": page_id},
-            {"publishedBranches": published_branches.serialize()},
-            upsert=True,
-        )
-
 
 def usage(exit_code: int) -> None:
     """Exit and print usage information."""
