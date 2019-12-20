@@ -365,6 +365,7 @@ inherit = "_guides-base"
 help = """Add metadata to the site for SEO."""
 options.keywords = "string"
 options.description = "string"
+options.robots = "string"
 
 [directive.topic]
 help = """A block with a self-contained chunk of information."""
