@@ -28,6 +28,14 @@ from .types import Page, Diagnostic, FileId, SerializableType
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
 
+PROD_DB = "snooty"
+TEST_DB = "snooty_test"
+DB = PROD_DB
+
+COLL_DOCUMENTS = "documents"
+COLL_METADATA = "metadata"
+COLL_ASSETS = "assets"
+
 
 class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
     def __init__(self, project: Project) -> None:
@@ -107,6 +115,12 @@ class MongoBackend(Backend):
         super(MongoBackend, self).__init__()
         self.client = connection
 
+        # Create unique index on page_id if nonexistent
+        # page_id structure: project/user/branch/path/to/file
+        documents_collection = self.client[DB][COLL_DOCUMENTS]
+        if "page_id" not in documents_collection.index_information():
+            documents_collection.create_index("page_id", name="page_id", unique=True)
+
     def on_update(
         self,
         prefix: List[str],
@@ -120,13 +134,13 @@ class MongoBackend(Backend):
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
-        document_filter = {"_id": fully_qualified_pageid}
+        document_filter = {"page_id": fully_qualified_pageid}
         document_filter.update(build_identifiers)
 
-        self.client["snooty"]["documents"].replace_one(
+        self.client[DB][COLL_DOCUMENTS].replace_one(
             document_filter,
             {
-                "_id": fully_qualified_pageid,
+                "page_id": fully_qualified_pageid,
                 "prefix": prefix,
                 "filename": page_id.as_posix(),
                 "ast": page.ast,
@@ -138,7 +152,7 @@ class MongoBackend(Backend):
 
         remote_assets = set(
             doc["_id"]
-            for doc in self.client["snooty"]["assets"].find(
+            for doc in self.client[DB][COLL_ASSETS].find(
                 {"_id": {"$in": checksums}},
                 {"_id": True},
                 cursor_type=pymongo.cursor.CursorType.EXHAUST,
@@ -150,7 +164,7 @@ class MongoBackend(Backend):
             if not static_asset.can_upload():
                 continue
 
-            self.client["snooty"]["assets"].replace_one(
+            self.client[DB][COLL_ASSETS].replace_one(
                 {"_id": static_asset.get_checksum()},
                 {
                     "_id": static_asset.get_checksum(),
@@ -172,7 +186,7 @@ class MongoBackend(Backend):
         # Write to Atlas if field is not an empty dictionary
 
         if field:
-            self.client["snooty"]["metadata"].update_one(
+            self.client[DB][COLL_METADATA].update_one(
                 document_filter, {"$set": field}, upsert=True
             )
 
