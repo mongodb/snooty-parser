@@ -1,3 +1,15 @@
+"""Snooty.
+
+Usage:
+  snooty build <source-path> <mongodb-url> [(--commit=<commit_hash> |(--commit=<commit_hash> --patch=<patch_id>))]
+  snooty watch <source-path>
+  snooty language-server
+
+Options:
+  -h --help                 Show this screen.
+  --commit=<commit_hash>    Commit hash of build.
+  --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+"""
 import getpass
 import logging
 import sys
@@ -6,6 +18,7 @@ import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
 from typing import Dict, List
+from docopt import docopt
 
 from . import language_server
 from .gizaparser.published_branches import PublishedBranches
@@ -68,20 +81,24 @@ class Backend:
             )
             self.total_warnings += 1
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, str],
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         pass
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, str],
+        field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifers: Dict[str, str]) -> None:
         pass
 
 
@@ -90,15 +107,24 @@ class MongoBackend(Backend):
         super(MongoBackend, self).__init__()
         self.client = connection
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, str],
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         checksums = list(
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
+        document_filter = {"_id": fully_qualified_pageid}
+        document_filter.update(build_identifiers)
+
         self.client["snooty"]["documents"].replace_one(
-            {"_id": fully_qualified_pageid},
+            document_filter,
             {
                 "_id": fully_qualified_pageid,
                 "prefix": prefix,
@@ -135,16 +161,22 @@ class MongoBackend(Backend):
             )
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, str],
+        field: Dict[str, SerializableType],
     ) -> None:
         property_name = "/".join(prefix)
+        document_filter = {"_id": property_name}
+        document_filter.update(build_identifiers)
         # Write to Atlas if field is not an empty dictionary
+
         if field:
             self.client["snooty"]["metadata"].update_one(
-                {"_id": property_name}, {"$set": field}, upsert=True
+                document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(self, page_id: FileId) -> None:
+    def on_delete(self, page_id: FileId, build_identifers: Dict[str, str]) -> None:
         pass
 
 
@@ -158,28 +190,40 @@ def usage(exit_code: int) -> None:
     sys.exit(exit_code)
 
 
+def _generate_build_identifiers(args: Dict[str, str]) -> Dict[str, str]:
+    identifiers = {}
+
+    if args["--commit"]:
+        identifiers["commit_hash"] = args["--commit"]
+    if args["--patch"]:
+        identifiers["patch_id"] = args["--patch"]
+
+    return identifiers
+
+
 def main() -> None:
+    # docopt will terminate here and display usage instructions if snooty is run improperly
+    args = docopt(__doc__)
+    print(args)
+
     logging.basicConfig(level=logging.INFO)
 
-    if len(sys.argv) == 2 and sys.argv[1] == "language-server":
+    if args["language-server"]:
         language_server.start()
         return
 
-    if len(sys.argv) not in (3, 4) or sys.argv[1] not in ("watch", "build"):
-        usage(1)
-
-    url = sys.argv[3] if len(sys.argv) == 4 else None
+    url = args["<mongodb-url>"]
     connection = (
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
     backend = MongoBackend(connection) if connection else Backend()
-    root_path = Path(sys.argv[2])
-    project = Project(root_path, backend)
+    root_path = Path(args["<source-path>"])
+    project = Project(root_path, backend, _generate_build_identifiers(args))
 
     try:
         project.build()
 
-        if sys.argv[1] == "watch":
+        if args["watch"]:
             observer = watchdog.observers.Observer()
             handler = ObserveHandler(project)
             logger.info("Watching for changes...")
@@ -193,5 +237,5 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
-    if sys.argv[1] == "build" and backend.total_warnings > 0:
+    if args["build"] and backend.total_warnings > 0:
         sys.exit(1)

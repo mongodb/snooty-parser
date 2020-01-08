@@ -20,7 +20,8 @@ requires = [
     "typing-extensions ~= 3.7.2",
     "python-jsonrpc-server ~= 0.1.2",
     "fett ~= 0.3.2",
-    "networkx ~= 2.3"
+    "networkx ~= 2.3",
+    "docopt ~= 0.6.2"
 ]
 
 [tool.flit.metadata.requires-extra]
