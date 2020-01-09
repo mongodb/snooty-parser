@@ -4,8 +4,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Dict, DefaultDict, List
-from .gizaparser.published_branches import PublishedBranches
+from typing import cast, Any, Dict, DefaultDict, List, Optional
 from .types import (
     FileId,
     Page,
@@ -17,6 +16,8 @@ from .types import (
 from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
+
+build_identifiers = {"commit_hash": "123456", "patch_id": None}
 
 
 @dataclass
@@ -34,20 +35,26 @@ class Backend:
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[path].extend(diagnostics)
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, Optional[str]],
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         self.pages[page_id] = page
         self.updates.append(page_id)
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, Optional[str]],
+        field: Dict[str, SerializableType],
     ) -> None:
         self.metadata.update(field)
 
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
+    def on_delete(
+        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
     ) -> None:
         pass
 
@@ -55,7 +62,7 @@ class Backend:
 def test() -> None:
     backend = Backend()
     n_threads = len(threading.enumerate())
-    with Project(Path("test_data/test_project"), backend) as project:
+    with Project(Path("test_data/test_project"), backend, build_identifiers) as project:
         project.build()
         # Ensure that filesystem monitoring threads have been started
         assert len(threading.enumerate()) > n_threads
@@ -165,7 +172,7 @@ def test_merge_conflict() -> None:
 def test_bad_project() -> None:
     backend = Backend()
     try:
-        Project(Path("test_data/bad_project"), backend)
+        Project(Path("test_data/bad_project"), backend, build_identifiers)
     except ProjectConfigError:
         fileid = FileId("snooty.toml")
         assert list(backend.diagnostics.keys()) == [fileid]
@@ -178,13 +185,13 @@ def test_bad_project() -> None:
 
 def test_not_a_project() -> None:
     backend = Backend()
-    project = Project(Path("test_data/not_a_project"), backend)
+    project = Project(Path("test_data/not_a_project"), backend, build_identifiers)
     project.build()
 
 
 def test_get_ast() -> None:
     backend = Backend()
-    project = Project(Path("test_data/get-preview"), backend)
+    project = Project(Path("test_data/get-preview"), backend, build_identifiers)
     project.build()
     ast = project.get_page_ast(
         Path("test_data/get-preview/source/index.txt").absolute()

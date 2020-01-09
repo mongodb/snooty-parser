@@ -1,0 +1,3 @@
+from typing import Dict, Optional
+
+def docopt(doc: str) -> Dict[str, Optional[str]]: ...

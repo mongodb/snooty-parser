@@ -619,7 +619,7 @@ class ProjectBackend(Protocol):
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -628,12 +628,14 @@ class ProjectBackend(Protocol):
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         field: Dict[str, SerializableType],
     ) -> None:
         ...
 
-    def on_delete(self, page_id: FileId, build_identifiers: Dict[str, str]) -> None:
+    def on_delete(
+        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
+    ) -> None:
         ...
 
 
@@ -645,7 +647,7 @@ class _Project:
         root: Path,
         backend: ProjectBackend,
         filesystem_watcher: util.FileWatcher,
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
@@ -1009,7 +1011,10 @@ class Project:
     __slots__ = ("_project", "_lock", "_filesystem_watcher")
 
     def __init__(
-        self, root: Path, backend: ProjectBackend, build_identifiers: Dict[str, str]
+        self,
+        root: Path,
+        backend: ProjectBackend,
+        build_identifiers: Dict[str, Optional[str]],
     ) -> None:
         self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
         self._project = _Project(

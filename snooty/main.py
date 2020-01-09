@@ -17,18 +17,18 @@ import pymongo
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
+from pymongo.operations import IndexModel
 
 from . import language_server
-from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
 
-PROD_DB = "snooty"
+PROD_DB = "snooty_prod"
 TEST_DB = "snooty_test"
 DB = PROD_DB
 
@@ -92,7 +92,7 @@ class Backend:
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -101,12 +101,14 @@ class Backend:
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(self, page_id: FileId, build_identifers: Dict[str, str]) -> None:
+    def on_delete(
+        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
+    ) -> None:
         pass
 
 
@@ -114,17 +116,45 @@ class MongoBackend(Backend):
     def __init__(self, connection: pymongo.MongoClient) -> None:
         super(MongoBackend, self).__init__()
         self.client = connection
+        self._manage_indexes()
 
-        # Create unique index on page_id if nonexistent
-        # page_id structure: project/user/branch/path/to/file
-        documents_collection = self.client[DB][COLL_DOCUMENTS]
-        if "page_id" not in documents_collection.index_information():
-            documents_collection.create_index("page_id", name="page_id", unique=True)
+    def _manage_indexes(self) -> None:
+        # List of indexes to be created. For now, metadata and documents collections use the same indexes.
+        indexes = [
+            IndexModel("page_id"),
+            IndexModel(
+                [("page_id", pymongo.ASCENDING), ("commit_hash", pymongo.ASCENDING)],
+                sparse=True,
+            ),
+            IndexModel(
+                [
+                    ("page_id", pymongo.ASCENDING),
+                    ("commit_hash", pymongo.ASCENDING),
+                    ("patch_id", pymongo.ASCENDING),
+                ],
+                unique=True,
+                sparse=True,
+            ),
+        ]
+
+        self.client[DB][COLL_DOCUMENTS].create_indexes(indexes)
+        self.client[DB][COLL_METADATA].create_indexes(indexes)
+
+    def _construct_build_identifiers_filter(
+        self, build_identifiers: Dict[str, Optional[str]]
+    ) -> Dict[str, Union[str, Dict[str, Any]]]:
+        filters: Dict[str, Union[str, Dict[str, Any]]] = {}
+        for key, value in build_identifiers.items():
+            if value:
+                filters[key] = value
+            else:
+                filters[key] = {"$exists": False}
+        return filters
 
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -134,13 +164,23 @@ class MongoBackend(Backend):
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
-        document_filter = {"page_id": fully_qualified_pageid}
-        document_filter.update(build_identifiers)
+        # Construct filter for retrieving build documents
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": fully_qualified_pageid
+        }
+        document_filter.update(
+            self._construct_build_identifiers_filter(build_identifiers)
+        )
 
         self.client[DB][COLL_DOCUMENTS].replace_one(
             document_filter,
             {
                 "page_id": fully_qualified_pageid,
+                **{
+                    key: value
+                    for (key, value) in build_identifiers.items()
+                    if value is not None
+                },
                 "prefix": prefix,
                 "filename": page_id.as_posix(),
                 "ast": page.ast,
@@ -177,40 +217,38 @@ class MongoBackend(Backend):
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, str],
+        build_identifiers: Dict[str, Optional[str]],
         field: Dict[str, SerializableType],
     ) -> None:
         property_name = "/".join(prefix)
-        document_filter = {"_id": property_name}
-        document_filter.update(build_identifiers)
-        # Write to Atlas if field is not an empty dictionary
 
+        # Construct filter for retrieving build documents
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": property_name
+        }
+        document_filter.update(
+            self._construct_build_identifiers_filter(build_identifiers)
+        )
+
+        # Write to Atlas if field is not an empty dictionary
         if field:
             self.client[DB][COLL_METADATA].update_one(
                 document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(self, page_id: FileId, build_identifers: Dict[str, str]) -> None:
+    def on_delete(
+        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
+    ) -> None:
         pass
 
 
-def usage(exit_code: int) -> None:
-    """Exit and print usage information."""
-    print(
-        "Usage: {} <build|watch|language-server> <source-path> <mongodb-url>".format(
-            sys.argv[0]
-        )
-    )
-    sys.exit(exit_code)
-
-
-def _generate_build_identifiers(args: Dict[str, str]) -> Dict[str, str]:
+def _generate_build_identifiers(
+    args: Dict[str, Optional[str]]
+) -> Dict[str, Optional[str]]:
     identifiers = {}
 
-    if args["--commit"]:
-        identifiers["commit_hash"] = args["--commit"]
-    if args["--patch"]:
-        identifiers["patch_id"] = args["--patch"]
+    identifiers["commit_hash"] = args["--commit"]
+    identifiers["patch_id"] = args["--patch"]
 
     return identifiers
 
@@ -218,7 +256,6 @@ def _generate_build_identifiers(args: Dict[str, str]) -> Dict[str, str]:
 def main() -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
     args = docopt(__doc__)
-    print(args)
 
     logging.basicConfig(level=logging.INFO)
 
@@ -231,6 +268,7 @@ def main() -> None:
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
     backend = MongoBackend(connection) if connection else Backend()
+    assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
     project = Project(root_path, backend, _generate_build_identifiers(args))
 

@@ -1,7 +1,7 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, cast, Any
-from .gizaparser.published_branches import PublishedBranches
+from typing import DefaultDict, Dict, List, cast, Any, Optional
 from .types import FileId, Page, Diagnostic, SerializableType
 from .parser import Project
 import pytest
@@ -14,27 +14,36 @@ class Backend:
     metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
+    diagnostics: DefaultDict[FileId, List[Diagnostic]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        pass
+        self.diagnostics[path].extend(diagnostics)
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, Optional[str]],
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         self.pages[page_id] = page
         self.updates.append(page_id)
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: Dict[str, Optional[str]],
+        field: Dict[str, SerializableType],
     ) -> None:
         self.metadata.update(field)
 
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
+    def on_delete(
+        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
     ) -> None:
         pass
 
@@ -42,7 +51,10 @@ class Backend:
 @pytest.fixture
 def backend() -> Backend:
     backend = Backend()
-    with Project(Path("test_data/test_semantic_parser"), backend) as project:
+    build_identifiers = {"commit_hash": "123456", "patch_id": None}
+    with Project(
+        Path("test_data/test_semantic_parser"), backend, build_identifiers
+    ) as project:
         project.build()
 
     return backend

@@ -1,6 +1,7 @@
 from .database import Database
 from typing import Optional
 
+ASCENDING: int = ...
 
 class MongoClient:
     def __init__(self, url: str, password: Optional[str]=None) -> None: ...
