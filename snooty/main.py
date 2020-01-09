@@ -15,7 +15,7 @@ from .types import Page, Diagnostic, FileId, SerializableType
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
 
-PROD_DB = "snooty"
+PROD_DB = "snooty_prod"
 TEST_DB = "snooty_test"
 DB = PROD_DB
 
