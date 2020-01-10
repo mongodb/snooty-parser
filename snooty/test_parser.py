@@ -420,7 +420,7 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target_directive name="binary" target="mongod"></target_directive>
+            <target_directive domain="mongodb" name="binary" target="mongod"></target_directive>
             <list>
             <listItem>
             <paragraph>
@@ -448,13 +448,14 @@ def test_roles() -> None:
             </listItem>
             <listItem>
             <paragraph>
-            <ref_role flag="~" name="binary" target="bin.mongod"></ref_role>
+            <ref_role flag="~" domain="mongodb" name="binary" target="bin.mongod"></ref_role>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <ref_role flag="~"
                   label="{'type': 'text', 'value': 'mongod', 'position': {'start': {'line': 9}}}"
+                  domain="mongodb"
                   name="binary"
                   target="bin.mongod"></ref_role>
             </paragraph>
