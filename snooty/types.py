@@ -183,8 +183,8 @@ class TargetDatabase:
         if key in self.local_definitions:
             return True
 
-        for inventory in self.intersphinx_inventories:
-            if key in inventory:
+        for inventory in self.intersphinx_inventories.values():
+            if inventory.__contains__(key):
                 return True
 
         return False

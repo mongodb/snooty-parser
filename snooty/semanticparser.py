@@ -56,10 +56,30 @@ class SemanticParser:
         event_parser.add_event_listener(
             OBJECT_START_EVENT, self.build_slug_title_mapping
         )
+        event_parser.add_event_listener(OBJECT_START_EVENT, self.validate_ref_targets)
         event_parser.consume(self.pages)
 
         # Return dict containing fields updated in event-based parse
         return {"slugToTitle": self.slug_title_mapping}
+
+    def validate_ref_targets(
+        self,
+        filename,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]]
+    ) -> None:
+
+        obj = kwargs.get("obj")
+        assert obj is not None
+
+        if obj.get("type") == "ref_role":
+            domain = obj.get("domain")
+            name = obj.get("name")
+            target = obj.get("target")
+            assert all([isinstance(var, str) for var in [domain, name, target]])
+
+            key = f"{domain}:{name}:{target}"
+            print(key, self.targets.__contains__(key))
 
     def populate_include_nodes(
         self,
