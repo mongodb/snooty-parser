@@ -1,5 +1,5 @@
 from typing import Any, Callable, cast, Dict, List, Optional, Set
-from .types import FileId, Page, ProjectConfig, SerializableType
+from .types import FileId, Page, ProjectConfig, SerializableType, TargetDatabase
 import re
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
@@ -17,11 +17,12 @@ class SemanticParser:
     The only method that should be called on an instance of SemanticParser is run(). This method
     handles calling all other methods and ensures that parse operations are run in the correct order."""
 
-    def __init__(self, project_config: ProjectConfig) -> None:
+    def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
         self.project_config = project_config
         self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
         self.toctree: Dict[str, SerializableType] = {}
         self.pages: Dict[FileId, Page] = {}
+        self.targets = targets
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]

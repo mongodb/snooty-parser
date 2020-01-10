@@ -34,6 +34,18 @@ from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
 
+RoleHandlerType = Callable[
+    [
+        str,
+        str,
+        str,
+        int,
+        docutils.parsers.rst.states.Inliner,
+        Dict[str, object],
+        List[object],
+    ],
+    Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]],
+]
 PAT_EXPLICIT_TITLE = re.compile(
     r"^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
@@ -118,9 +130,15 @@ class role(docutils.nodes.Inline, docutils.nodes.Element):
     """Docutils node representing a role."""
 
     def __init__(
-        self, name: str, lineno: int, label: Optional[str], target: Optional[str]
+        self,
+        domain: str,
+        name: str,
+        lineno: int,
+        label: Optional[str],
+        target: Optional[str],
     ) -> None:
         super(role, self).__init__()
+        self["domain"] = domain
         self["name"] = name
 
         if label is not None:
@@ -154,66 +172,83 @@ def handle_role_null(
     return [], [msg]
 
 
-def handle_role_text(
-    typ: str,
-    rawtext: str,
-    text: str,
-    lineno: int,
-    inliner: docutils.parsers.rst.states.Inliner,
-    options: Dict[str, object] = {},
-    content: List[object] = [],
-) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+class TextRoleHandler:
     """Handle roles with plain text content."""
-    node = role(typ, lineno, text, None)
-    return [node], []
+
+    def __init__(self, domain: str) -> None:
+        self.domain = domain
+
+    def __call__(
+        self,
+        typ: str,
+        rawtext: str,
+        text: str,
+        lineno: int,
+        inliner: docutils.parsers.rst.states.Inliner,
+        options: Dict[str, object] = {},
+        content: List[object] = [],
+    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+        node = role(self.domain, typ, lineno, text, None)
+        return [node], []
 
 
-def handle_role_explicit_title(
-    typ: str,
-    rawtext: str,
-    text: str,
-    lineno: int,
-    inliner: docutils.parsers.rst.states.Inliner,
-    options: Dict[str, object] = {},
-    content: List[object] = [],
-) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+class ExplicitTitleRoleHandler:
     """Handle link-like roles with a target and an optional title."""
-    match = PAT_EXPLICIT_TITLE.match(text)
-    if match:
-        node = role(typ, lineno, match["label"], match["target"])
-    else:
-        node = role(typ, lineno, None, text)
 
-    return [node], []
+    def __init__(self, domain: str) -> None:
+        self.domain = domain
+
+    def __call__(
+        self,
+        typ: str,
+        rawtext: str,
+        text: str,
+        lineno: int,
+        inliner: docutils.parsers.rst.states.Inliner,
+        options: Dict[str, object] = {},
+        content: List[object] = [],
+    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+        match = PAT_EXPLICIT_TITLE.match(text)
+        if match:
+            node = role(self.domain, typ, lineno, match["label"], match["target"])
+        else:
+            node = role(self.domain, typ, lineno, None, text)
+
+        return [node], []
 
 
-def handle_ref_role(
-    typ: str,
-    rawtext: str,
-    text: str,
-    lineno: int,
-    inliner: docutils.parsers.rst.states.Inliner,
-    options: Dict[str, object] = {},
-    content: List[object] = [],
-) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-    match = PAT_EXPLICIT_TITLE.match(text)
-    if match:
-        label: Optional[str] = match["label"]
-        target = match["target"]
-    else:
-        label = None
-        target = text
+class RefRoleHandler:
+    def __init__(self, domain: str) -> None:
+        self.domain = domain
 
-    flag = ""
-    if target.startswith("~") or target.startswith("!"):
-        flag = target[0]
-        target = target[1:]
+    def __call__(
+        self,
+        typ: str,
+        rawtext: str,
+        text: str,
+        lineno: int,
+        inliner: docutils.parsers.rst.states.Inliner,
+        options: Dict[str, object] = {},
+        content: List[object] = [],
+    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+        match = PAT_EXPLICIT_TITLE.match(text)
+        if match:
+            label: Optional[str] = match["label"]
+            target = match["target"]
+        else:
+            label = None
+            target = text
 
-    node = ref_role(typ, lineno, label, target)
-    if flag:
-        node["flag"] = flag
+        flag = ""
+        if target.startswith("~") or target.startswith("!"):
+            flag = target[0]
+            target = target[1:]
 
-    return [node], []
+        node = ref_role(self.domain, typ, lineno, label, target)
+        if flag:
+            node["flag"] = flag
+
+        return [node], []
 
 
 class LinkRoleHandler:
@@ -752,15 +787,16 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
     # Define roles
     registry.add_role("", handle_role_null)
     for name, role_spec in roles:
-        handler = None
+        handler: Optional[RoleHandlerType] = None
+        domain = role_spec.domain or ""
         if not role_spec.type or role_spec.type == specparser.PrimitiveRoleType.text:
-            handler = handle_role_text
+            handler = TextRoleHandler(domain)
         elif isinstance(role_spec.type, specparser.LinkRoleType):
             handler = LinkRoleHandler(role_spec.type.link)
         elif isinstance(role_spec.type, specparser.RefRoleType):
-            handler = handle_ref_role
+            handler = RefRoleHandler(domain)
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
-            handler = handle_role_explicit_title
+            handler = ExplicitTitleRoleHandler(domain)
 
         if not handler:
             raise ValueError('Unknown role type "{}"'.format(role_spec.type))

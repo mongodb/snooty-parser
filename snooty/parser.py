@@ -264,6 +264,7 @@ class JSONVisitor:
 
         if isinstance(node, rstparser.role):
             role_name = node["name"]
+            doc["domain"] = node["domain"]
             doc["name"] = role_name
             if "label" in node:
                 doc["label"] = node["label"]
@@ -367,6 +368,7 @@ class JSONVisitor:
         """Handle populating a target_directive AST node."""
         options = node["options"] or {}
         name = node["name"]
+        doc["domain"] = node["domain"]
         doc["name"] = name
         doc["target"] = node["target"]
         doc["options"] = options
@@ -376,6 +378,7 @@ class JSONVisitor:
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
     ) -> bool:
         name = node["name"]
+        doc["domain"] = node["domain"]
         doc["name"] = name
         options = node["options"] or {}
         if (
@@ -652,7 +655,7 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
-        self.semantic_parser = semanticparser.SemanticParser(self.config)
+        self.semantic_parser = semanticparser.SemanticParser(self.config, self.targets)
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
