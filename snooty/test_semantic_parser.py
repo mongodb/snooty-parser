@@ -96,6 +96,7 @@ def test_expand_includes(backend: Backend) -> None:
                 {
                     "type": "directive",
                     "position": {"start": {"line": 7}},
+                    "domain": "",
                     "name": "default-domain",
                     "argument": [
                         {
@@ -109,6 +110,7 @@ def test_expand_includes(backend: Backend) -> None:
                 {
                     "type": "directive",
                     "position": {"start": {"line": 9}},
+                    "domain": "",
                     "name": "meta",
                     "argument": [],
                     "options": {"keywords": "connect"},
