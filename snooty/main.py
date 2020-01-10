@@ -12,8 +12,10 @@ Options:
 """
 import getpass
 import logging
-import sys
+import os
 import pymongo
+import sys
+import toml
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -27,10 +29,10 @@ from .types import Page, Diagnostic, FileId, SerializableType
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
-
-PROD_DB = "snooty_prod"
-TEST_DB = "snooty_test"
-DB = PROD_DB
+SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
+PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
+if PACKAGE_ROOT.is_file():
+    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 COLL_DOCUMENTS = "documents"
 COLL_METADATA = "metadata"
@@ -117,6 +119,14 @@ class MongoBackend(Backend):
         super(MongoBackend, self).__init__()
         self.client = connection
         self._manage_indexes()
+        self.db = self._config_db()
+
+    def _config_db(self) -> str:
+        with PACKAGE_ROOT.joinpath("config.toml").open(encoding="utf-8") as f:
+            config = toml.load(f)
+            db_name = config["environments"][SNOOTY_ENV]["db"]
+            assert isinstance(db_name, str)
+            return db_name
 
     def _manage_indexes(self) -> None:
         # List of indexes to be created. For now, metadata and documents collections use the same indexes.
@@ -137,8 +147,8 @@ class MongoBackend(Backend):
             ),
         ]
 
-        self.client[DB][COLL_DOCUMENTS].create_indexes(indexes)
-        self.client[DB][COLL_METADATA].create_indexes(indexes)
+        self.client[self.db][COLL_DOCUMENTS].create_indexes(indexes)
+        self.client[self.db][COLL_METADATA].create_indexes(indexes)
 
     def _construct_build_identifiers_filter(
         self, build_identifiers: Dict[str, Optional[str]]
@@ -172,7 +182,7 @@ class MongoBackend(Backend):
             self._construct_build_identifiers_filter(build_identifiers)
         )
 
-        self.client[DB][COLL_DOCUMENTS].replace_one(
+        self.client[self.db][COLL_DOCUMENTS].replace_one(
             document_filter,
             {
                 "page_id": fully_qualified_pageid,
@@ -192,7 +202,7 @@ class MongoBackend(Backend):
 
         remote_assets = set(
             doc["_id"]
-            for doc in self.client[DB][COLL_ASSETS].find(
+            for doc in self.client[self.db][COLL_ASSETS].find(
                 {"_id": {"$in": checksums}},
                 {"_id": True},
                 cursor_type=pymongo.cursor.CursorType.EXHAUST,
@@ -204,7 +214,7 @@ class MongoBackend(Backend):
             if not static_asset.can_upload():
                 continue
 
-            self.client[DB][COLL_ASSETS].replace_one(
+            self.client[self.db][COLL_ASSETS].replace_one(
                 {"_id": static_asset.get_checksum()},
                 {
                     "_id": static_asset.get_checksum(),
@@ -232,7 +242,7 @@ class MongoBackend(Backend):
 
         # Write to Atlas if field is not an empty dictionary
         if field:
-            self.client[DB][COLL_METADATA].update_one(
+            self.client[self.db][COLL_METADATA].update_one(
                 document_filter, {"$set": field}, upsert=True
             )
 
