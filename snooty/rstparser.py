@@ -188,7 +188,6 @@ class TextRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        print(typ, rawtext, text, lineno)
         node = role(self.domain, typ, lineno, text, None)
         return [node], []
 
