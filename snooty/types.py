@@ -178,7 +178,7 @@ class TargetDatabase:
     """A database of targets known to this project."""
 
     intersphinx_inventories: Dict[str, intersphinx.Inventory]
-    local_definitions: Dict[str, str]
+    local_definitions: Dict[str, Tuple[FileId, str]]
 
     def __contains__(self, key: str) -> bool:
         if key in self.local_definitions:
@@ -190,16 +190,26 @@ class TargetDatabase:
 
         return False
 
-    def get_url(self, key: str) -> str:
-        # TODO: add check for local definitions here
+    def get_url(self, key: str) -> Tuple[str, str]:
+        # Check to see if the target is defined locally
+        try:
+            return ("fileid", self.local_definitions[key][0].as_posix())
+        except KeyError:
+            pass
 
         # Get URL from intersphinx inventories
         for inventory in self.intersphinx_inventories.values():
             if key in inventory:
                 base_url = inventory.base_url
                 path = inventory[key].uri
-                return urllib.parse.urljoin(base_url, path)
+                return ("url", urllib.parse.urljoin(base_url, path))
+
         raise KeyError(key)
+
+    def define_local_target(
+        self, domain: str, name: str, target: str, pageid: FileId
+    ) -> None:
+        self.local_definitions[f"{domain}:{name}:{target}"] = (pageid, "")
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by

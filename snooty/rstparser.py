@@ -218,8 +218,9 @@ class ExplicitTitleRoleHandler:
 
 
 class RefRoleHandler:
-    def __init__(self, domain: str) -> None:
+    def __init__(self, domain: str, name: str) -> None:
         self.domain = domain
+        self.name = name
 
     def __call__(
         self,
@@ -244,7 +245,7 @@ class RefRoleHandler:
             flag = target[0]
             target = target[1:]
 
-        node = ref_role(self.domain, typ, lineno, label, target)
+        node = ref_role(self.domain, self.name, lineno, label, target)
         if flag:
             node["flag"] = flag
 
@@ -794,7 +795,9 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         elif isinstance(role_spec.type, specparser.LinkRoleType):
             handler = LinkRoleHandler(role_spec.type.link)
         elif isinstance(role_spec.type, specparser.RefRoleType):
-            handler = RefRoleHandler(domain)
+            handler = RefRoleHandler(
+                role_spec.type.domain or domain, role_spec.type.name
+            )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
             handler = ExplicitTitleRoleHandler(domain)
 

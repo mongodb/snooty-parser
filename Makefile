@@ -16,7 +16,7 @@ help: ## Show this help message
 	. .venv/bin/activate && \
 		python3 -m pip install --upgrade pip && \
 		python3 -m pip install flit && \
-		flit install --deps=develop
+		flit install -s --deps=develop
 	touch $@
 
 lint: .venv/.EXISTS ## Run all linting

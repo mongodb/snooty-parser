@@ -80,7 +80,7 @@ def test_language_server() -> None:
 
 
 def test_text_doc_resolve() -> None:
-    """Tests to see if m_text_document__resolve() returns the proper path combined with 
+    """Tests to see if m_text_document__resolve() returns the proper path combined with
     appropriate extension"""
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/test_project")
@@ -134,7 +134,7 @@ def test_text_doc_get_page_ast() -> None:
         # Change image path to be full path
         index_ast_string = (
             """<root>
-            <target ids="['guides']"></target>
+            <target domain="std" name="label" target=\"guides\"></target>
             <section alt="Sample images">
             <heading id="id1"><text>Guides</text></heading>
             <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">

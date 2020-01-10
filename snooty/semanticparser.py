@@ -1,6 +1,6 @@
 import re
 from collections import defaultdict
-from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple, Iterable
 from .types import (
     Diagnostic,
     FileId,
@@ -48,8 +48,18 @@ class SemanticParser:
 
         document: Dict[str, SerializableType] = {}
 
+        self.run_event_parser(
+            [
+                (OBJECT_START_EVENT, self.populate_include_nodes),
+                (OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (OBJECT_START_EVENT, self.handle_target),
+            ]
+        )
+
         # Update metadata document with key-value pairs defined in event parser
-        document.update(self.run_event_parser())
+        document.update({"slugToTitle": self.slug_title_mapping})
+
+        self.run_event_parser([(OBJECT_START_EVENT, self.validate_ref_targets)])
 
         # Run semantic parse operations related to toctree and append to metadata document
         document.update(
@@ -62,17 +72,14 @@ class SemanticParser:
 
         return document, self.diagnostics
 
-    def run_event_parser(self) -> Dict[str, SerializableType]:
+    def run_event_parser(
+        self, listeners: Iterable[Tuple[str, Callable[[Any], None]]]
+    ) -> None:
         event_parser = EventParser()
-        event_parser.add_event_listener(OBJECT_START_EVENT, self.populate_include_nodes)
-        event_parser.add_event_listener(
-            OBJECT_START_EVENT, self.build_slug_title_mapping
-        )
-        event_parser.add_event_listener(OBJECT_START_EVENT, self.validate_ref_targets)
-        event_parser.consume(self.pages)
+        for event, listener in listeners:
+            event_parser.add_event_listener(event, listener)
 
-        # Return dict containing fields updated in event-based parse
-        return {"slugToTitle": self.slug_title_mapping}
+        event_parser.consume(self.pages.items())
 
     def validate_ref_targets(
         self,
@@ -92,9 +99,11 @@ class SemanticParser:
             name = obj.get("name")
             target = obj.get("target")
             key = f"{domain}:{name}:{target}"
+
             try:
                 # Append URL to AST
-                obj["url"] = self.targets.get_url(key)
+                field_name, target = self.targets.get_url(key)
+                obj[field_name] = target
             except KeyError:
                 position = cast(Any, obj.get("position"))
                 start = position["start"]
@@ -102,6 +111,29 @@ class SemanticParser:
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
+
+    def handle_target(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        if filename.suffix != ".txt":
+            return
+
+        obj = kwargs["obj"]
+        assert obj is not None
+
+        if obj.get("type") != "target":
+            return
+
+        domain = obj["domain"]
+        assert isinstance(domain, str)
+        name = obj["name"]
+        assert isinstance(name, str)
+        target = obj["target"]
+        assert isinstance(target, str)
+        self.targets.define_local_target(domain, name, target, filename)
 
     def populate_include_nodes(
         self,
@@ -370,9 +402,9 @@ class EventParser(EventListeners):
     def __init__(self) -> None:
         super(EventParser, self).__init__()
 
-    def consume(self, d: Dict[FileId, Page]) -> None:
+    def consume(self, d: Iterable[Tuple[FileId, Page]]) -> None:
         """Initializes a parse on the provided key-value map of pages"""
-        for filename, page in d.items():
+        for filename, page in d:
             self._on_page_enter_event(filename)
             self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
 

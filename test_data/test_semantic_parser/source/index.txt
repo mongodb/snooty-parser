@@ -9,8 +9,18 @@ Connection Limits and Cluster Tier
 .. meta::
    :keywords: connect
 
+
+.. _global-writes-zones:
+
+Global Writes Zones
+-------------------
+
+.. method:: amethod
+
+   Testing
+
 .. toctree::
-   :titlesonly: 
+   :titlesonly:
 
    /page1
    /page2

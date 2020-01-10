@@ -1,6 +1,6 @@
 from pathlib import Path
 from . import rstparser
-from .util_test import check_ast_testing_string
+from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import Diagnostic, ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
@@ -420,7 +420,7 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target_directive domain="mongodb" name="binary" target="mongod"></target_directive>
+            <target domain="mongodb" name="binary" target="mongod"></target>
             <list>
             <listItem>
             <paragraph>
@@ -571,12 +571,13 @@ def test_rstobject() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
+    print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target_directive name="option" target="--slowms &lt;integer&gt;">
+            <target name="option" target="--slowms &lt;integer&gt;">
             <paragraph><text>test</text></paragraph>
-            </target_directive>
+            </target>
             </root>""",
     )
 
