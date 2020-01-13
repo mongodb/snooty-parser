@@ -1,1 +1,1 @@
-.. include:: /includes/test.yaml
+.. include:: /includes/test.rst

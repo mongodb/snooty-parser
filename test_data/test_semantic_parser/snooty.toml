@@ -1,5 +1,6 @@
 name = "test_data"
 toc_landing_pages = ["/page2", "page3"]
+intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
 
 [constants]
 name = "MongoDB"
