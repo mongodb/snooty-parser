@@ -94,7 +94,7 @@ class SemanticParser:
             assert all([isinstance(var, str) for var in [domain, name, target]])
 
             key = f"{domain}:{name}:{target}"
-            if not self.targets.__contains__(key):
+            if key not in self.targets:
                 position = cast(Any, obj.get("position"))
                 start = position.get("start")
                 line = start.get("line")

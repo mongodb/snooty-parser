@@ -185,7 +185,7 @@ class TargetDatabase:
             return True
 
         for inventory in self.intersphinx_inventories.values():
-            if inventory.__contains__(key):
+            if key in inventory:
                 return True
 
         return False
@@ -198,9 +198,9 @@ class TargetDatabase:
 
         # Get URL from intersphinx inventories
         for inventory in self.intersphinx_inventories.values():
-            if inventory.__contains__(key):
+            if key in inventory:
                 base_url = inventory.base_url
-                path = inventory.__get__(key).uri
+                path = inventory[key].uri
                 return urllib.parse.urljoin(base_url, path)
 
         return None

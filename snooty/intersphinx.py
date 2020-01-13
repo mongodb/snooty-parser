@@ -42,7 +42,7 @@ class Inventory:
     def __contains__(self, target: str) -> bool:
         return target in self.targets
 
-    def __get__(self, target: str) -> TargetDefinition:
+    def __getitem__(self, target: str) -> TargetDefinition:
         return self.targets[target]
 
     @classmethod
