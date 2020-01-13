@@ -20,6 +20,7 @@ from typing import (
     Match,
 )
 from typing_extensions import Protocol
+import urllib.parse
 import toml
 from .flutter import checked, check_type, LoadError
 from . import intersphinx
@@ -188,6 +189,21 @@ class TargetDatabase:
                 return True
 
         return False
+
+    def get_url(self, key: str) -> Optional[str]:
+        if not self.__contains__(key):
+            return None
+
+        # TODO: add check for local definitions here
+
+        # Get URL from intersphinx inventories
+        for inventory in self.intersphinx_inventories.values():
+            if inventory.__contains__(key):
+                base_url = inventory.base_url
+                path = inventory.__get__(key).uri
+                return urllib.parse.urljoin(base_url, path)
+
+        return None
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by

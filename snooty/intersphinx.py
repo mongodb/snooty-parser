@@ -42,6 +42,9 @@ class Inventory:
     def __contains__(self, target: str) -> bool:
         return target in self.targets
 
+    def __get__(self, target: str) -> TargetDefinition:
+        return self.targets[target]
+
     @classmethod
     def parse(cls, base_url: str, text: bytes) -> "Inventory":
         """Parse an intersphinx inventory from the given URL prefix and raw inventory contents."""
@@ -57,6 +60,8 @@ class Inventory:
                 continue
 
             name, domain_and_role, raw_priority, uri, dispname = line.split(None, 4)
+            if uri.endswith("$"):
+                uri = uri[:-1] + name
 
             # The spec says that only {dispname} can contain spaces. In practice, this is a lie.
             # Just silently skip invalid lines.

@@ -9,7 +9,6 @@ from .types import (
     SerializableType,
     TargetDatabase,
 )
-from . import util
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
@@ -45,9 +44,9 @@ class SemanticParser:
 
         self.pages = pages
         self.build_slug_fileid_mapping()
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
 
         document: Dict[str, SerializableType] = {}
-        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
 
         # Update metadata document with key-value pairs defined in event parser
         document.update(self.run_event_parser())
@@ -81,7 +80,10 @@ class SemanticParser:
         *args: SerializableType,
         **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
+        """When a node of type ref_role is encountered, ensure that it references a valid target.
 
+        If so, append the full URL to the AST node. If not, throw an error.
+        """
         obj = kwargs.get("obj")
         assert obj is not None
 
@@ -93,15 +95,15 @@ class SemanticParser:
 
             key = f"{domain}:{name}:{target}"
             if not self.targets.__contains__(key):
-                position: Dict[str, Any] = obj.get("position")
-                assert position is not None
+                position = cast(Any, obj.get("position"))
                 start = position.get("start")
-                assert start is not None
                 line = start.get("line")
-                assert isinstance(line, int)
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
+            else:
+                # Append URL to AST
+                obj["url"] = self.targets.get_url(key)
 
     def populate_include_nodes(
         self,
