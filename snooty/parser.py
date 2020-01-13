@@ -869,12 +869,12 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        semantic_parse: Dict[str, SerializableType] = self.semantic_parser.run(
-            self.pages
-        )
+        semantic_parse, semantic_diagnostics = self.semantic_parser.run(self.pages)
 
         for fileid, page in self.semantic_parser.pages.items():
             self.backend.on_update(self.prefix, fileid, page)
+        for fileid, diagnostics in semantic_diagnostics.items():
+            self.backend.on_diagnostics(fileid, diagnostics)
         self.backend.on_update_metadata(self.prefix, semantic_parse)
 
     def _populate_include_nodes(
