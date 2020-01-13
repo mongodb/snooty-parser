@@ -190,10 +190,7 @@ class TargetDatabase:
 
         return False
 
-    def get_url(self, key: str) -> Optional[str]:
-        if not self.__contains__(key):
-            return None
-
+    def get_url(self, key: str) -> str:
         # TODO: add check for local definitions here
 
         # Get URL from intersphinx inventories
@@ -202,8 +199,7 @@ class TargetDatabase:
                 base_url = inventory.base_url
                 path = inventory[key].uri
                 return urllib.parse.urljoin(base_url, path)
-
-        return None
+        raise KeyError(key)
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
