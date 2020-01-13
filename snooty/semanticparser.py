@@ -91,19 +91,17 @@ class SemanticParser:
             domain = obj.get("domain")
             name = obj.get("name")
             target = obj.get("target")
-            assert all([isinstance(var, str) for var in [domain, name, target]])
-
             key = f"{domain}:{name}:{target}"
-            if key not in self.targets:
+            try:
+                # Append URL to AST
+                obj["url"] = self.targets.get_url(key)
+            except KeyError:
                 position = cast(Any, obj.get("position"))
-                start = position.get("start")
-                line = start.get("line")
+                start = position["start"]
+                line = start["line"]
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
-            else:
-                # Append URL to AST
-                obj["url"] = self.targets.get_url(key)
 
     def populate_include_nodes(
         self,
