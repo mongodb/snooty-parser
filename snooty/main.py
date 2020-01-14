@@ -1,7 +1,7 @@
 """Snooty.
 
 Usage:
-  snooty build <source-path> <mongodb-url> [(--commit=<commit_hash> |(--commit=<commit_hash> --patch=<patch_id>))]
+  snooty build <source-path> [<mongodb-url>] [(--commit=<commit_hash> |(--commit=<commit_hash> --patch=<patch_id>))]
   snooty watch <source-path>
   snooty language-server
 
@@ -113,6 +113,21 @@ class Backend:
         pass
 
 
+def construct_build_identifiers_filter(
+    build_identifiers: Dict[str, Optional[str]]
+) -> Dict[str, Union[str, Dict[str, Any]]]:
+    """Given a dictionary of build identifiers associated with build, construct
+    a filter to properly query MongoDB for associated documents.
+    """
+    filters: Dict[str, Union[str, Dict[str, Any]]] = {}
+    for key, value in build_identifiers.items():
+        if value:
+            filters[key] = value
+        else:
+            filters[key] = {"$exists": False}
+    return filters
+
+
 class MongoBackend(Backend):
     def __init__(self, connection: pymongo.MongoClient) -> None:
         super(MongoBackend, self).__init__()
@@ -125,17 +140,6 @@ class MongoBackend(Backend):
             db_name = config["environments"][SNOOTY_ENV]["db"]
             assert isinstance(db_name, str)
             return db_name
-
-    def _construct_build_identifiers_filter(
-        self, build_identifiers: Dict[str, Optional[str]]
-    ) -> Dict[str, Union[str, Dict[str, Any]]]:
-        filters: Dict[str, Union[str, Dict[str, Any]]] = {}
-        for key, value in build_identifiers.items():
-            if value:
-                filters[key] = value
-            else:
-                filters[key] = {"$exists": False}
-        return filters
 
     def on_update(
         self,
@@ -152,11 +156,9 @@ class MongoBackend(Backend):
 
         # Construct filter for retrieving build documents
         document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": fully_qualified_pageid
+            "page_id": fully_qualified_pageid,
+            **construct_build_identifiers_filter(build_identifiers),
         }
-        document_filter.update(
-            self._construct_build_identifiers_filter(build_identifiers)
-        )
 
         self.client[self.db][COLL_DOCUMENTS].replace_one(
             document_filter,
@@ -210,11 +212,9 @@ class MongoBackend(Backend):
 
         # Construct filter for retrieving build documents
         document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": property_name
+            "page_id": property_name,
+            **construct_build_identifiers_filter(build_identifiers),
         }
-        document_filter.update(
-            self._construct_build_identifiers_filter(build_identifiers)
-        )
 
         # Write to Atlas if field is not an empty dictionary
         if field:
