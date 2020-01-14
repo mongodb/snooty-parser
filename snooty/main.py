@@ -21,7 +21,6 @@ import watchdog.observers
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
-from pymongo.operations import IndexModel
 
 from . import language_server
 from .parser import Project, RST_EXTENSIONS
@@ -118,7 +117,6 @@ class MongoBackend(Backend):
     def __init__(self, connection: pymongo.MongoClient) -> None:
         super(MongoBackend, self).__init__()
         self.client = connection
-        self._manage_indexes()
         self.db = self._config_db()
 
     def _config_db(self) -> str:
@@ -127,28 +125,6 @@ class MongoBackend(Backend):
             db_name = config["environments"][SNOOTY_ENV]["db"]
             assert isinstance(db_name, str)
             return db_name
-
-    def _manage_indexes(self) -> None:
-        # List of indexes to be created. For now, metadata and documents collections use the same indexes.
-        indexes = [
-            IndexModel("page_id"),
-            IndexModel(
-                [("page_id", pymongo.ASCENDING), ("commit_hash", pymongo.ASCENDING)],
-                sparse=True,
-            ),
-            IndexModel(
-                [
-                    ("page_id", pymongo.ASCENDING),
-                    ("commit_hash", pymongo.ASCENDING),
-                    ("patch_id", pymongo.ASCENDING),
-                ],
-                unique=True,
-                sparse=True,
-            ),
-        ]
-
-        self.client[self.db][COLL_DOCUMENTS].create_indexes(indexes)
-        self.client[self.db][COLL_METADATA].create_indexes(indexes)
 
     def _construct_build_identifiers_filter(
         self, build_identifiers: Dict[str, Optional[str]]
