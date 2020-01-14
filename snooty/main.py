@@ -7,7 +7,6 @@ import toml
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from pymongo.operations import IndexModel
 from typing import Dict, List
 
 from . import language_server
@@ -108,13 +107,6 @@ class MongoBackend(Backend):
             db_name = config["environments"][SNOOTY_ENV]["db"]
             assert isinstance(db_name, str)
             return db_name
-
-    def _manage_indexes(self) -> None:
-        # List of indexes to be created. For now, metadata and documents collections use the same indexes.
-        indexes = [IndexModel("page_id", unique=True)]
-
-        self.client[self.db][COLL_DOCUMENTS].create_indexes(indexes)
-        self.client[self.db][COLL_METADATA].create_indexes(indexes)
 
     def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
         checksums = list(
