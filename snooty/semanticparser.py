@@ -1,6 +1,14 @@
-from typing import Any, Callable, cast, Dict, List, Optional, Set
-from .types import FileId, Page, ProjectConfig, SerializableType, TargetDatabase
 import re
+from collections import defaultdict
+from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple
+from .types import (
+    Diagnostic,
+    FileId,
+    Page,
+    ProjectConfig,
+    SerializableType,
+    TargetDatabase,
+)
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
@@ -27,13 +35,17 @@ class SemanticParser:
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
 
-    def run(self, pages: Dict[FileId, Page]) -> Dict[str, SerializableType]:
+    def run(
+        self, pages: Dict[FileId, Page]
+    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
         """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
-            return {}
+            return {}, {}
 
         self.pages = pages
         self.build_slug_fileid_mapping()
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+
         document: Dict[str, SerializableType] = {}
 
         # Update metadata document with key-value pairs defined in event parser
@@ -48,7 +60,7 @@ class SemanticParser:
             }
         )
 
-        return document
+        return document, self.diagnostics
 
     def run_event_parser(self) -> Dict[str, SerializableType]:
         event_parser = EventParser()
@@ -56,16 +68,46 @@ class SemanticParser:
         event_parser.add_event_listener(
             OBJECT_START_EVENT, self.build_slug_title_mapping
         )
+        event_parser.add_event_listener(OBJECT_START_EVENT, self.validate_ref_targets)
         event_parser.consume(self.pages)
 
         # Return dict containing fields updated in event-based parse
         return {"slugToTitle": self.slug_title_mapping}
 
+    def validate_ref_targets(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        """When a node of type ref_role is encountered, ensure that it references a valid target.
+
+        If so, append the full URL to the AST node. If not, throw an error.
+        """
+        obj = kwargs.get("obj")
+        assert obj is not None
+
+        if obj.get("type") == "ref_role":
+            domain = obj.get("domain")
+            name = obj.get("name")
+            target = obj.get("target")
+            key = f"{domain}:{name}:{target}"
+            try:
+                # Append URL to AST
+                obj["url"] = self.targets.get_url(key)
+            except KeyError:
+                position = cast(Any, obj.get("position"))
+                start = position["start"]
+                line = start["line"]
+                self.diagnostics[filename].append(
+                    Diagnostic.error(f'Target not found: "{name}:{target}"', line)
+                )
+
     def populate_include_nodes(
         self,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: Optional[Dict[str, SerializableType]]
+        **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
@@ -109,7 +151,7 @@ class SemanticParser:
         self,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: Optional[Dict[str, SerializableType]]
+        **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
         """Construct a slug-title mapping of all pages in property"""
         obj = kwargs.get("obj")
@@ -312,7 +354,7 @@ class EventListeners:
         event: str,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType
+        **kwargs: SerializableType,
     ) -> None:
         """Iterate through all universal listeners and all listeners of the specified type and call them"""
         for listener in self.get_event_listeners(event):
@@ -358,7 +400,7 @@ class EventParser(EventListeners):
         obj: Dict[str, SerializableType],
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType
+        **kwargs: SerializableType,
     ) -> None:
         """Called when an object is first encountered in tree"""
         self.fire(OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
@@ -368,7 +410,7 @@ class EventParser(EventListeners):
         arr: List[SerializableType],
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType
+        **kwargs: SerializableType,
     ) -> None:
         """Called when an array is first encountered in tree"""
         self.fire(ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
@@ -379,7 +421,7 @@ class EventParser(EventListeners):
         value: SerializableType,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType
+        **kwargs: SerializableType,
     ) -> None:
         """Called when a key-value pair is encountered in tree"""
         self.fire(PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
@@ -389,7 +431,7 @@ class EventParser(EventListeners):
         element: SerializableType,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType
+        **kwargs: SerializableType,
     ) -> None:
         """Called when an array element is encountered in tree"""
         self.fire(ELEMENT_EVENT, filename, element=element, *args, **kwargs)

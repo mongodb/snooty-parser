@@ -1,42 +1,12 @@
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, cast, Any
-from .gizaparser.published_branches import PublishedBranches
-from .types import FileId, Page, Diagnostic, SerializableType
+from .types import FileId, SerializableType
 from .parser import Project
+from .test_project import Backend
 import pytest
 
+
 ROOT_PATH = Path("test_data")
-
-
-@dataclass
-class Backend:
-    metadata: Dict[str, SerializableType] = field(default_factory=dict)
-    pages: Dict[FileId, Page] = field(default_factory=dict)
-    updates: List[FileId] = field(default_factory=list)
-
-    def on_progress(self, progress: int, total: int, message: str) -> None:
-        pass
-
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        pass
-
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
-        self.pages[page_id] = page
-        self.updates.append(page_id)
-
-    def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
-    ) -> None:
-        self.metadata.update(field)
-
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
-        pass
 
 
 @pytest.fixture
@@ -119,6 +89,23 @@ def test_expand_includes(backend: Backend) -> None:
             ],
         },
     ]
+
+
+def test_validate_ref_targets(backend: Backend) -> None:
+    page_id = FileId("refrole.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    paragraph = cast(Dict[str, Any], ast["children"][0])
+    ref_role = paragraph["children"][0]
+    assert ref_role["type"] == "ref_role"
+    assert "url" in ref_role
+    assert (
+        ref_role["url"]
+        == "https://docs.mongodb.com/manual/reference/configuration-options/#net.port"
+    )
+
+    diagnostics = backend.diagnostics[page_id]
+    assert len(diagnostics) == 2
+    assert all(["Target" in diagnostic.message for diagnostic in diagnostics])
 
 
 def test_toctree(backend: Backend) -> None:
