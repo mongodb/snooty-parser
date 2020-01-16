@@ -10,7 +10,6 @@ from .types import (
     Page,
     Diagnostic,
     ProjectConfig,
-    ProjectConfigError,
     SerializableType,
     BuildIdentifierSet,
 )
@@ -170,16 +169,12 @@ def test_merge_conflict() -> None:
 
 def test_bad_project() -> None:
     backend = Backend()
-    try:
-        Project(Path("test_data/bad_project"), backend, build_identifiers)
-    except ProjectConfigError:
-        fileid = FileId("snooty.toml")
-        assert list(backend.diagnostics.keys()) == [fileid]
-        diagnostics = backend.diagnostics[fileid]
-        assert len(diagnostics) == 1
-        assert "source constant" in diagnostics[0].message
-    else:
-        assert False
+    Project(Path("test_data/bad_project"), backend, build_identifiers)
+    fileid = FileId("snooty.toml")
+    assert list(backend.diagnostics.keys()) == [fileid]
+    diagnostics = backend.diagnostics[fileid]
+    assert len(diagnostics) == 1
+    assert "source constant" in diagnostics[0].message
 
 
 def test_not_a_project() -> None:

@@ -1,4 +1,4 @@
-import re
+import os.path
 import logging
 from collections import defaultdict
 from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable, Sequence
@@ -11,10 +11,9 @@ from .types import (
     SerializableType,
     TargetDatabase,
 )
-from .util import get_child_of_type
+from .util import get_child_of_type, SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
 # XXX: The following two functions should probably be combined at some point
@@ -438,11 +437,15 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
 
 def clean_slug(slug: str) -> str:
     """Strip file extension and leading/trailing slashes (/) from string"""
-    slug_cleaned = slug.strip("/")
+    slug = slug.strip("/")
 
     # TODO: remove file extensions in initial parse layer
     # https://jira.mongodb.org/browse/DOCSP-7595
-    return PAT_FILE_EXTENSIONS.sub("", slug_cleaned)
+    root, ext = os.path.splitext(slug)
+    if ext in SOURCE_FILE_EXTENSIONS:
+        return root
+
+    return slug
 
 
 def children_exist(ast: Dict[str, Any]) -> bool:
