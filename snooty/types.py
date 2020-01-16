@@ -44,10 +44,6 @@ class SnootyError(Exception):
     pass
 
 
-class ProjectConfigError(SnootyError):
-    pass
-
-
 class FileId(PurePosixPath):
     """An unambiguous file path relative to the local project's root."""
 

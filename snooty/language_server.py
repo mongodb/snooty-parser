@@ -6,10 +6,22 @@ import urllib.parse
 import pyls_jsonrpc.dispatchers
 import pyls_jsonrpc.endpoint
 import pyls_jsonrpc.streams
+from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path, PurePath
-from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
+from typing import (
+    cast,
+    Any,
+    BinaryIO,
+    Callable,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Union,
+    TypeVar,
+)
 from .flutter import checked, check_type
 from .types import BuildIdentifierSet, FileId, SerializableType
 from . import types, util
@@ -146,12 +158,18 @@ def pid_exists(pid: int) -> bool:
 class Backend:
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
+        self.pending_diagnostics: DefaultDict[
+            FileId, List[types.Diagnostic]
+        ] = defaultdict(list)
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: FileId, diagnostics: List[types.Diagnostic]) -> None:
-        self.server.set_diagnostics(path, diagnostics)
+    def on_diagnostics(
+        self, fileid: FileId, diagnostics: List[types.Diagnostic]
+    ) -> None:
+        self.pending_diagnostics[fileid].extend(diagnostics)
+        self.server.notify_diagnostics()
 
     def on_update(
         self,
@@ -199,6 +217,7 @@ class WorkspaceEntry:
 
 class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def __init__(self, rx: BinaryIO, tx: BinaryIO) -> None:
+        self.backend = Backend(self)
         self.project: Optional[Project] = None
         self.workspace: Dict[str, WorkspaceEntry] = {}
         self.diagnostics: Dict[PurePath, List[types.Diagnostic]] = {}
@@ -213,7 +232,27 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
 
-    def set_diagnostics(
+    def notify_diagnostics(self) -> None:
+        """Handle the backend notifying us that diagnostics are available to be pulled."""
+        if not self.project:
+            logger.debug("Received diagnostics, but project not ready")
+            return
+
+        for fileid, diagnostics in self.backend.pending_diagnostics.items():
+            self._set_diagnostics(fileid, diagnostics)
+
+        self.backend.pending_diagnostics.clear()
+
+    def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
+        if not self.project:
+            return
+
+        if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
+            return
+
+        self.project.update(page_path, change)
+
+    def _set_diagnostics(
         self, fileid: FileId, diagnostics: List[types.Diagnostic]
     ) -> None:
         self.diagnostics[fileid] = diagnostics
@@ -253,7 +292,8 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     ) -> SerializableType:
         if rootUri:
             root_path = Path(rootUri.replace("file://", "", 1))
-            self.project = Project(root_path, Backend(self), {})
+            self.project = Project(root_path, self.backend, {})
+            self.notify_diagnostics()
             self.project.build()
 
         if processId is not None:
@@ -305,8 +345,8 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
     def m_text_document__get_page_ast(self, fileName: str) -> SerializableType:
         """
-        Given the filename, return the ast of the page that is created from parsing that file. 
-        If the file is a .rst file, we return an ast that emulates the ast of a .txt 
+        Given the filename, return the ast of the page that is created from parsing that file.
+        If the file is a .rst file, we return an ast that emulates the ast of a .txt
         file containing a single include directive to said .rst file.
         """
 
@@ -373,7 +413,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         page_path = self.project.get_full_path(fileid)
         entry = WorkspaceEntry(fileid, item.uri, [])
         self.workspace[item.uri] = entry
-        self.project.update(page_path, item.text)
+        self.update_file(page_path, item.text)
 
     @debounce(0.2)
     def m_text_document__did_change(
@@ -388,7 +428,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
         )
-        self.project.update(page_path, change.text)
+        self.update_file(page_path, change.text)
 
     def m_text_document__did_close(self, textDocument: SerializableType) -> None:
         if not self.project:
@@ -397,7 +437,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         identifier = check_type(TextDocumentIdentifier, textDocument)
         page_path = self.project.get_full_path(self.uri_to_fileid(identifier.uri))
         del self.workspace[identifier.uri]
-        self.project.update(page_path)
+        self.update_file(page_path)
 
     def m_shutdown(self, **_kwargs: object) -> None:
         self._shutdown = True
