@@ -223,3 +223,16 @@ def test_text_doc_get_page_fileid() -> None:
         assert (
             server.m_text_document__get_page_fileid(test_file_path) == expected_fileid
         )
+
+
+def test_reporting_config_error() -> None:
+    with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
+        server.m_initialize(None, CWD_URL + "/test_data/bad_project")
+        doc = {
+            "uri": f"file://{CWD_URL}/test_data/bad_project/snooty.toml",
+            "languageId": "",
+            "version": 0,
+            "text": "",
+        }
+        server.m_text_document__did_open(doc)
+        server.m_text_document__did_close({"uri": doc["uri"]})

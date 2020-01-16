@@ -20,13 +20,13 @@ from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches
 from .postprocess import DevhubPostprocessor, Postprocessor
+from .util import RST_EXTENSIONS
 from .types import (
     Diagnostic,
     SerializableType,
     EmbeddedRstParser,
     Page,
     StaticAsset,
-    ProjectConfigError,
     ProjectConfig,
     PendingTask,
     FileId,
@@ -41,7 +41,6 @@ from .types import (
 multiprocessing.set_start_method("fork")
 
 NO_CHILDREN = {"substitution_reference"}
-RST_EXTENSIONS = {".rst", ".txt"}
 logger = logging.getLogger(__name__)
 
 
@@ -671,7 +670,6 @@ class _Project:
             backend.on_diagnostics(
                 FileId(self.config.config_path.relative_to(root)), config_diagnostics
             )
-            raise ProjectConfigError()
 
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
@@ -759,7 +757,7 @@ class _Project:
         return None, []
 
     def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(path.relative_to(self.config.source_path))
+        return FileId(os.path.relpath(path, self.config.source_path))
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.config.source_path.joinpath(fileid)

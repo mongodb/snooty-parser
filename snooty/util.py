@@ -28,6 +28,8 @@ from .types import FileId, SerializableType
 
 logger = logging.getLogger(__name__)
 _K = TypeVar("_K", bound=Hashable)
+SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
+RST_EXTENSIONS = {".txt", ".rst"}
 
 
 def reroot_path(

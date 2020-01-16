@@ -22,10 +22,11 @@ from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
 
 from . import language_server
-from .parser import Project, RST_EXTENSIONS
+from .parser import Project
+from .util import SOURCE_FILE_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType, BuildIdentifierSet
 
-PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
+PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
@@ -49,7 +50,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
         # Ignore non-text files; the Project handles changed static assets.
         # Eventually this logic should probably be moved into the Project's
         # filesystem monitor.
-        if PurePath(event.src_path).suffix not in {".txt", ".rst", ".yaml"}:
+        if PurePath(event.src_path).suffix not in SOURCE_FILE_EXTENSIONS:
             return
 
         if event.event_type in (
