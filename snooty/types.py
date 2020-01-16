@@ -193,7 +193,7 @@ class TargetDatabase:
     def get_url(self, key: str) -> Tuple[str, str]:
         # Check to see if the target is defined locally
         try:
-            return ("fileid", self.local_definitions[key][0].as_posix())
+            return ("fileid", self.local_definitions[key][0].without_known_suffix)
         except KeyError:
             pass
 

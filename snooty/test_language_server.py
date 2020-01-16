@@ -134,7 +134,7 @@ def test_text_doc_get_page_ast() -> None:
         # Change image path to be full path
         index_ast_string = (
             """<root>
-            <target domain="std" name="label" target=\"guides\"></target>
+            <target domain="std" name="label" target="guides"></target>
             <section alt="Sample images">
             <heading id="id1"><text>Guides</text></heading>
             <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
