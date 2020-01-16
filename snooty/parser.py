@@ -32,6 +32,7 @@ from .types import (
     ProjectInterface,
     Cache,
     TargetDatabase,
+    BuildIdentifierSet,
 )
 
 NO_CHILDREN = {"substitution_reference"}
@@ -622,7 +623,7 @@ class ProjectBackend(Protocol):
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -631,14 +632,12 @@ class ProjectBackend(Protocol):
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
         ...
 
-    def on_delete(
-        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         ...
 
 
@@ -650,7 +649,7 @@ class _Project:
         root: Path,
         backend: ProjectBackend,
         filesystem_watcher: util.FileWatcher,
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
@@ -1014,10 +1013,7 @@ class Project:
     __slots__ = ("_project", "_lock", "_filesystem_watcher")
 
     def __init__(
-        self,
-        root: Path,
-        backend: ProjectBackend,
-        build_identifiers: Dict[str, Optional[str]],
+        self, root: Path, backend: ProjectBackend, build_identifiers: BuildIdentifierSet
     ) -> None:
         self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
         self._project = _Project(

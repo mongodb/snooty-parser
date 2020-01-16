@@ -11,7 +11,7 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
-from .types import FileId, SerializableType
+from .types import BuildIdentifierSet, FileId, SerializableType
 from . import types, util
 from .parser import Project
 
@@ -156,7 +156,7 @@ class Backend:
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: types.Page,
     ) -> None:
@@ -165,14 +165,12 @@ class Backend:
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(
-        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 

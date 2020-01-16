@@ -24,7 +24,7 @@ from docopt import docopt
 
 from . import language_server
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId, SerializableType
+from .types import Page, Diagnostic, FileId, SerializableType, BuildIdentifierSet
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class Backend:
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -102,30 +102,25 @@ class Backend:
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(
-        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 
 def construct_build_identifiers_filter(
-    build_identifiers: Dict[str, Optional[str]]
+    build_identifiers: BuildIdentifierSet
 ) -> Dict[str, Union[str, Dict[str, Any]]]:
     """Given a dictionary of build identifiers associated with build, construct
     a filter to properly query MongoDB for associated documents.
     """
-    filters: Dict[str, Union[str, Dict[str, Any]]] = {}
-    for key, value in build_identifiers.items():
-        if value:
-            filters[key] = value
-        else:
-            filters[key] = {"$exists": False}
-    return filters
+    return {
+        key: (value if value else {"$exists": False})
+        for (key, value) in build_identifiers.items()
+    }
 
 
 class MongoBackend(Backend):
@@ -144,7 +139,7 @@ class MongoBackend(Backend):
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -205,7 +200,7 @@ class MongoBackend(Backend):
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
         property_name = "/".join(prefix)
@@ -222,15 +217,11 @@ class MongoBackend(Backend):
                 document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(
-        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 
-def _generate_build_identifiers(
-    args: Dict[str, Optional[str]]
-) -> Dict[str, Optional[str]]:
+def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
     identifiers = {}
 
     identifiers["commit_hash"] = args["--commit"]

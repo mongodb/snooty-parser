@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Dict, DefaultDict, List, Optional
+from typing import cast, Any, Dict, DefaultDict, List
 from .types import (
     FileId,
     Page,
@@ -12,6 +12,7 @@ from .types import (
     ProjectConfig,
     ProjectConfigError,
     SerializableType,
+    BuildIdentifierSet,
 )
 from .parser import Project
 from .util import ast_dive
@@ -38,7 +39,7 @@ class Backend:
     def on_update(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: Page,
     ) -> None:
@@ -48,14 +49,12 @@ class Backend:
     def on_update_metadata(
         self,
         prefix: List[str],
-        build_identifiers: Dict[str, Optional[str]],
+        build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
         self.metadata.update(field)
 
-    def on_delete(
-        self, page_id: FileId, build_identifiers: Dict[str, Optional[str]]
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 
