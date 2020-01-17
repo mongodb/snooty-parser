@@ -1042,3 +1042,43 @@ def test_toctree() -> None:
         <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://docs.atlas.mongodb.com'}]" />
         </root>""",
     )
+
+
+def test_callable_target() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. method:: db.collection.ensureIndex(keys, options)
+
+   Creates an index on the specified field if the index does not already exist.
+
+* :method:`db.collection.ensureIndex(keys, options)`
+* :method:`db.collection.ensureIndex()`
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <target domain="mongodb" name="method" target="db.collection.ensureIndex">
+    <paragraph>
+    <text>Creates an index on the specified field if the index does not already exist.</text>
+    </paragraph>
+    </target>
+    <list>
+    <listItem><paragraph>
+        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"/>
+    </paragraph></listItem>
+    <listItem><paragraph>
+        <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"/>
+    </paragraph></listItem>
+    </list>
+</root>""",
+    )
