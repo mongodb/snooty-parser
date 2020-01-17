@@ -121,7 +121,13 @@ class Directive:
     deprecated: bool = field(default=False)
     options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
     name: str = field(default="")
-    is_target: bool = field(default=False)
+
+    #: A tri-state flag indicating whether this directive creates a directive node
+    #: or a target node. If this flag is a string, it indicates a prefix to which to add
+    #: to the target field of the output AST node; e.g. if creates_target="bin", then
+    #: the target "mongod" would be come "bin.mongod". This is for compatibility with the
+    #: legacy Sphinx stack.
+    creates_target: Union[str, bool] = field(default=False)
 
 
 @checked
@@ -171,7 +177,7 @@ class RstObject:
             deprecated=self.deprecated,
             options={},
             name=self.name,
-            is_target=True,
+            creates_target=self.prefix if self.prefix else True,
         )
 
     def create_role(self) -> Role:

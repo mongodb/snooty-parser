@@ -218,9 +218,10 @@ class ExplicitTitleRoleHandler:
 
 
 class RefRoleHandler:
-    def __init__(self, domain: str, name: str) -> None:
+    def __init__(self, domain: str, name: str, prefix: Optional[str]) -> None:
         self.domain = domain
         self.name = name
+        self.prefix = prefix
 
     def __call__(
         self,
@@ -244,6 +245,10 @@ class RefRoleHandler:
         if target.startswith("~") or target.startswith("!"):
             flag = target[0]
             target = target[1:]
+
+        # Add the giza prefix/tag, if necessary
+        if self.prefix and not target.startswith(self.prefix):
+            target = f"{self.prefix}.{target}"
 
         node = ref_role(self.domain, self.name, lineno, label, target)
         if flag:
@@ -307,20 +312,22 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
 class BaseDocutilsDirective(docutils.parsers.rst.Directive):
     directive_spec: specparser.Directive
     required_arguments = 0
-    is_target = False
+    creates_target = False
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
 
-        constructor = target_directive if self.is_target else directive
+        constructor = target_directive if self.creates_target else directive
         node = constructor(self.directive_spec.domain or "", self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
         self.add_name(node)
 
-        if self.is_target:
+        if self.creates_target is True:
             node["target"] = self.arguments[0]
+        elif isinstance(self.creates_target, str):
+            node["target"] = f"{self.creates_target}.{self.arguments[0]}"
         else:
             self.parse_argument(node, source, line)
 
@@ -773,7 +780,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
             optional_arguments = 1 if directive.argument_type else 0
             final_argument_whitespace = True
             option_spec = options
-            is_target = directive.is_target
+            creates_target = directive.creates_target
 
         new_name = (
             "".join(e for e in name.title() if e.isalnum() or e == "_") + "Directive"
@@ -796,7 +803,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
             handler = LinkRoleHandler(role_spec.type.link)
         elif isinstance(role_spec.type, specparser.RefRoleType):
             handler = RefRoleHandler(
-                role_spec.type.domain or domain, role_spec.type.name
+                role_spec.type.domain or domain, role_spec.type.name, role_spec.type.tag
             )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
             handler = ExplicitTitleRoleHandler(domain)

@@ -33,6 +33,12 @@ EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
 logger = logging.getLogger(__name__)
 
 
+def normalize_target(target: str) -> str:
+    """Normalize targets to allow easy matching against the target
+       database: normalize whitespace and convert to lowercase."""
+    return re.sub(r"\s+", " ", target).lower()
+
+
 class SnootyError(Exception):
     pass
 
@@ -181,6 +187,7 @@ class TargetDatabase:
     local_definitions: Dict[str, Tuple[FileId, str]]
 
     def __contains__(self, key: str) -> bool:
+        key = normalize_target(key)
         if key in self.local_definitions:
             return True
 
@@ -191,6 +198,7 @@ class TargetDatabase:
         return False
 
     def get_url(self, key: str) -> Tuple[str, str]:
+        key = normalize_target(key)
         # Check to see if the target is defined locally
         try:
             return ("fileid", self.local_definitions[key][0].without_known_suffix)
@@ -209,6 +217,7 @@ class TargetDatabase:
     def define_local_target(
         self, domain: str, name: str, target: str, pageid: FileId
     ) -> None:
+        target = normalize_target(target)
         self.local_definitions[f"{domain}:{name}:{target}"] = (pageid, "")
 
     def reset(self, config: "ProjectConfig") -> None:

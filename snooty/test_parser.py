@@ -420,7 +420,7 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target domain="mongodb" name="binary" target="mongod"></target>
+            <target domain="mongodb" name="binary" target="bin.mongod"></target>
             <list>
             <listItem>
             <paragraph>

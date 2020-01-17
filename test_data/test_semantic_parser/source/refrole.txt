@@ -13,3 +13,5 @@ requirements for sharding collections for |global-write|, see
 :ref:`global-writes-collections`.
 
 And this is a link to :method:`amethod`.
+
+And this is a link to :binary:`mongod`.

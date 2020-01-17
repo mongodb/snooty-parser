@@ -121,7 +121,20 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="method"
         target="amethod"
-        fileid="index.txt"></ref_role>""",
+        fileid="index"></ref_role>""",
+    )
+
+    # Assert that local targets with a prefix correctly resolved
+    paragraph = cast(Dict[str, Any], ast["children"][4])
+    ref_role = paragraph["children"][1]
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="mongodb"
+        name="binary"
+        target="bin.mongod"
+        url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod"></ref_role>""",
     )
 
     # Check that undeclared targets raise an error
