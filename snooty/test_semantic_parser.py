@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
-from .types import FileId, SerializableType
+from .types import BuildIdentifierSet, FileId, SerializableType
 from .parser import Project
 from .test_project import Backend
 import pytest
@@ -12,7 +12,7 @@ ROOT_PATH = Path("test_data")
 @pytest.fixture
 def backend() -> Backend:
     backend = Backend()
-    build_identifiers = {"commit_hash": "123456", "patch_id": None}
+    build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
         Path("test_data/test_semantic_parser"), backend, build_identifiers
     ) as project:

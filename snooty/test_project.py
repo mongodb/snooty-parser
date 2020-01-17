@@ -18,7 +18,7 @@ from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
 
-build_identifiers = {"commit_hash": "123456", "patch_id": None}
+build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
 
 
 @dataclass
