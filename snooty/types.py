@@ -184,7 +184,7 @@ class TargetDatabase:
     """A database of targets known to this project."""
 
     intersphinx_inventories: Dict[str, intersphinx.Inventory]
-    local_definitions: Dict[str, Tuple[FileId, str]]
+    local_definitions: Dict[str, FileId]
 
     def __contains__(self, key: str) -> bool:
         key = normalize_target(key)
@@ -201,7 +201,7 @@ class TargetDatabase:
         key = normalize_target(key)
         # Check to see if the target is defined locally
         try:
-            return ("fileid", self.local_definitions[key][0].without_known_suffix)
+            return ("fileid", self.local_definitions[key].without_known_suffix)
         except KeyError:
             pass
 
@@ -218,7 +218,7 @@ class TargetDatabase:
         self, domain: str, name: str, target: str, pageid: FileId
     ) -> None:
         target = normalize_target(target)
-        self.local_definitions[f"{domain}:{name}:{target}"] = (pageid, "")
+        self.local_definitions[f"{domain}:{name}:{target}"] = pageid
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
