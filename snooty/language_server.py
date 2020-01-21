@@ -11,8 +11,7 @@ from functools import wraps
 from pathlib import Path, PurePath
 from typing import cast, Any, BinaryIO, Callable, Dict, List, Optional, Union, TypeVar
 from .flutter import checked, check_type
-from .gizaparser.published_branches import PublishedBranches
-from .types import FileId, SerializableType
+from .types import BuildIdentifierSet, FileId, SerializableType
 from . import types, util
 from .parser import Project
 
@@ -154,20 +153,24 @@ class Backend:
     def on_diagnostics(self, path: FileId, diagnostics: List[types.Diagnostic]) -> None:
         self.server.set_diagnostics(path, diagnostics)
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: types.Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
+        page: types.Page,
+    ) -> None:
         pass
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(self, page_id: FileId) -> None:
-        pass
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 
@@ -250,7 +253,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     ) -> SerializableType:
         if rootUri:
             root_path = Path(rootUri.replace("file://", "", 1))
-            self.project = Project(root_path, Backend(self))
+            self.project = Project(root_path, Backend(self), {})
             self.project.build()
 
         if processId is not None:

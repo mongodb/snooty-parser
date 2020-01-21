@@ -1,3 +1,14 @@
+"""Snooty.
+
+Usage:
+  snooty build <source-path> [<mongodb-url>] [--commit=<commit_hash>]
+  snooty watch <source-path>
+  snooty language-server
+
+Options:
+  -h --help                 Show this screen.
+  --commit=<commit_hash>    Commit hash of build.
+"""
 import getpass
 import logging
 import os
@@ -7,12 +18,12 @@ import toml
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Union
+from docopt import docopt
 
 from . import language_server
-from .gizaparser.published_branches import PublishedBranches
 from .parser import Project, RST_EXTENSIONS
-from .types import Page, Diagnostic, FileId, SerializableType
+from .types import Page, Diagnostic, FileId, SerializableType, BuildIdentifierSet
 
 PATTERNS = ["*" + ext for ext in RST_EXTENSIONS] + ["*.yaml"]
 logger = logging.getLogger(__name__)
@@ -78,21 +89,37 @@ class Backend:
             )
             self.total_warnings += 1
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         pass
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
     ) -> None:
         pass
 
-    def on_delete(self, page_id: FileId) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
-        pass
+
+def construct_build_identifiers_filter(
+    build_identifiers: BuildIdentifierSet
+) -> Dict[str, Union[str, Dict[str, Any]]]:
+    """Given a dictionary of build identifiers associated with build, construct
+    a filter to properly query MongoDB for associated documents.
+    """
+    return {
+        key: (value if value else {"$exists": False})
+        for (key, value) in build_identifiers.items()
+    }
 
 
 class MongoBackend(Backend):
@@ -108,17 +135,34 @@ class MongoBackend(Backend):
             assert isinstance(db_name, str)
             return db_name
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         checksums = list(
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
+        # Construct filter for retrieving build documents
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": fully_qualified_pageid,
+            **construct_build_identifiers_filter(build_identifiers),
+        }
+
         self.client[self.db][COLL_DOCUMENTS].replace_one(
-            {"page_id": fully_qualified_pageid},
+            document_filter,
             {
                 "page_id": fully_qualified_pageid,
+                **{
+                    key: value
+                    for (key, value) in build_identifiers.items()
+                    if value is not None
+                },
                 "prefix": prefix,
                 "filename": page_id.as_posix(),
                 "ast": page.ast,
@@ -153,51 +197,60 @@ class MongoBackend(Backend):
             )
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
     ) -> None:
         property_name = "/".join(prefix)
+
+        # Construct filter for retrieving build documents
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": property_name,
+            **construct_build_identifiers_filter(build_identifiers),
+        }
+
         # Write to Atlas if field is not an empty dictionary
         if field:
             self.client[self.db][COLL_METADATA].update_one(
-                {"page_id": property_name}, {"$set": field}, upsert=True
+                document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(self, page_id: FileId) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
 
-def usage(exit_code: int) -> None:
-    """Exit and print usage information."""
-    print(
-        "Usage: {} <build|watch|language-server> <source-path> <mongodb-url>".format(
-            sys.argv[0]
-        )
-    )
-    sys.exit(exit_code)
+def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
+    identifiers = {}
+
+    identifiers["commit_hash"] = args["--commit"]
+
+    return identifiers
 
 
 def main() -> None:
+    # docopt will terminate here and display usage instructions if snooty is run improperly
+    args = docopt(__doc__)
+
     logging.basicConfig(level=logging.INFO)
 
-    if len(sys.argv) == 2 and sys.argv[1] == "language-server":
+    if args["language-server"]:
         language_server.start()
         return
 
-    if len(sys.argv) not in (3, 4) or sys.argv[1] not in ("watch", "build"):
-        usage(1)
-
-    url = sys.argv[3] if len(sys.argv) == 4 else None
+    url = args["<mongodb-url>"]
     connection = (
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
     backend = MongoBackend(connection) if connection else Backend()
-    root_path = Path(sys.argv[2])
-    project = Project(root_path, backend)
+    assert args["<source-path>"] is not None
+    root_path = Path(args["<source-path>"])
+    project = Project(root_path, backend, _generate_build_identifiers(args))
 
     try:
         project.build()
 
-        if sys.argv[1] == "watch":
+        if args["watch"]:
             observer = watchdog.observers.Observer()
             handler = ObserveHandler(project)
             logger.info("Watching for changes...")
@@ -211,5 +264,5 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
-    if sys.argv[1] == "build" and backend.total_warnings > 0:
+    if args["build"] and backend.total_warnings > 0:
         sys.exit(1)

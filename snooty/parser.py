@@ -32,6 +32,7 @@ from .types import (
     ProjectInterface,
     Cache,
     TargetDatabase,
+    BuildIdentifierSet,
 )
 
 NO_CHILDREN = {"substitution_reference"}
@@ -619,20 +620,24 @@ class ProjectBackend(Protocol):
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         ...
 
-    def on_update(self, prefix: List[str], page_id: FileId, page: Page) -> None:
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
+        page: Page,
+    ) -> None:
         ...
 
     def on_update_metadata(
-        self, prefix: List[str], field: Dict[str, SerializableType]
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
     ) -> None:
         ...
 
-    def on_delete(self, page_id: FileId) -> None:
-        ...
-
-    def on_published_branches(
-        self, prefix: List[str], published_branches: PublishedBranches
-    ) -> None:
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         ...
 
 
@@ -640,7 +645,11 @@ class _Project:
     """Internal representation of a Snooty project with no data locking."""
 
     def __init__(
-        self, root: Path, backend: ProjectBackend, filesystem_watcher: util.FileWatcher
+        self,
+        root: Path,
+        backend: ProjectBackend,
+        filesystem_watcher: util.FileWatcher,
+        build_identifiers: BuildIdentifierSet,
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
@@ -656,6 +665,7 @@ class _Project:
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
         self.semantic_parser = semanticparser.SemanticParser(self.config, self.targets)
+        self.build_identifiers = build_identifiers
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
@@ -690,7 +700,9 @@ class _Project:
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:
             self.backend.on_update_metadata(
-                self.prefix, {"publishedBranches": published_branches.serialize()}
+                self.prefix,
+                self.build_identifiers,
+                {"publishedBranches": published_branches.serialize()},
             )
 
         if published_branches_diagnostics:
@@ -804,14 +816,14 @@ class _Project:
         for page in pages:
             self._page_updated(page, diagnostic_list)
             fileid = self.get_fileid(page.fake_full_path())
-            self.backend.on_update(self.prefix, fileid, page)
+            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
             del giza_category[file_id]
 
-        self.backend.on_delete(self.get_fileid(path))
+        self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
     def build(self) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
@@ -872,10 +884,12 @@ class _Project:
         semantic_parse, semantic_diagnostics = self.semantic_parser.run(self.pages)
 
         for fileid, page in self.semantic_parser.pages.items():
-            self.backend.on_update(self.prefix, fileid, page)
+            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
         for fileid, diagnostics in semantic_diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
-        self.backend.on_update_metadata(self.prefix, semantic_parse)
+        self.backend.on_update_metadata(
+            self.prefix, self.build_identifiers, semantic_parse
+        )
 
     def _populate_include_nodes(
         self, nodes: List[Dict[str, Any]]
@@ -998,9 +1012,13 @@ class Project:
 
     __slots__ = ("_project", "_lock", "_filesystem_watcher")
 
-    def __init__(self, root: Path, backend: ProjectBackend) -> None:
+    def __init__(
+        self, root: Path, backend: ProjectBackend, build_identifiers: BuildIdentifierSet
+    ) -> None:
         self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
-        self._project = _Project(root, backend, self._filesystem_watcher)
+        self._project = _Project(
+            root, backend, self._filesystem_watcher, build_identifiers
+        )
         self._lock = threading.Lock()
         self._filesystem_watcher.start()
 
