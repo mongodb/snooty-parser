@@ -3,6 +3,7 @@ from typing import Dict, List, cast, Any
 from .types import BuildIdentifierSet, FileId, SerializableType
 from .parser import Project
 from .test_project import Backend
+from .util_test import ast_to_testing_string, check_ast_testing_string
 import pytest
 
 
@@ -47,7 +48,9 @@ def test_expand_includes(backend: Backend) -> None:
         {
             "type": "target",
             "position": {"start": {"line": 1}},
-            "ids": ["connection-limits"],
+            "domain": "std",
+            "name": "label",
+            "target": "connection-limits",
             "children": [],
         },
         {
@@ -97,18 +100,53 @@ def test_expand_includes(backend: Backend) -> None:
 def test_validate_ref_targets(backend: Backend) -> None:
     page_id = FileId("refrole.txt")
     ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    # Assert that targets found in intersphinx inventories are correctly resolved
     paragraph = cast(Dict[str, Any], ast["children"][0])
     ref_role = paragraph["children"][0]
-    assert ref_role["type"] == "ref_role"
-    assert "url" in ref_role
-    assert (
-        ref_role["url"]
-        == "https://docs.mongodb.com/manual/reference/configuration-options/#net.port"
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="mongodb"
+        name="setting"
+        target="net.port"
+        url="https://docs.mongodb.com/manual/reference/configuration-options/#net.port"></ref_role>""",
     )
 
+    # Assert that local targets are correctly resolved
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    ref_role = paragraph["children"][1]
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="mongodb"
+        name="method"
+        target="amethod"
+        fileid="index"></ref_role>""",
+    )
+
+    # Assert that local targets with a prefix correctly resolved
+    paragraph = cast(Dict[str, Any], ast["children"][4])
+    ref_role = paragraph["children"][1]
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="mongodb"
+        name="binary"
+        target="bin.mongod"
+        url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod"></ref_role>""",
+    )
+
+    # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 2
-    assert all(["Target" in diagnostic.message for diagnostic in diagnostics])
+    assert len(diagnostics) == 1
+    assert (
+        "Target" in diagnostics[0].message
+        and "global-writes-collections" in diagnostics[0].message
+    )
 
 
 def test_toctree(backend: Backend) -> None:

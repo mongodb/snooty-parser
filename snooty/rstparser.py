@@ -64,6 +64,19 @@ DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
 RoleHandler = Callable[..., Any]
 
 
+def strip_parameters(target: str) -> str:
+    """Remove trailing ALGOL-style parameters from a target name;
+       e.g. foo(bar, baz) -> foo."""
+    if not target.endswith(")"):
+        return target
+
+    starting_index = target.rfind("(")
+    if starting_index == -1:
+        return target
+
+    return target[0:starting_index]
+
+
 @checked
 @dataclass
 class LegacyTabDefinition(nodes.Node):
@@ -218,8 +231,13 @@ class ExplicitTitleRoleHandler:
 
 
 class RefRoleHandler:
-    def __init__(self, domain: str) -> None:
+    def __init__(
+        self, domain: str, name: str, prefix: Optional[str], callable: bool
+    ) -> None:
         self.domain = domain
+        self.name = name
+        self.prefix = prefix
+        self.callable = callable
 
     def __call__(
         self,
@@ -244,7 +262,14 @@ class RefRoleHandler:
             flag = target[0]
             target = target[1:]
 
-        node = ref_role(self.domain, typ, lineno, label, target)
+        # Add the giza prefix/tag, if necessary
+        if self.prefix and not target.startswith(self.prefix):
+            target = f"{self.prefix}.{target}"
+
+        if self.callable:
+            target = strip_parameters(target)
+
+        node = ref_role(self.domain, self.name, lineno, label, target)
         if flag:
             node["flag"] = flag
 
@@ -306,20 +331,26 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
 class BaseDocutilsDirective(docutils.parsers.rst.Directive):
     directive_spec: specparser.Directive
     required_arguments = 0
-    is_target = False
 
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
 
-        constructor = target_directive if self.is_target else directive
+        rstobject_spec = self.directive_spec.rstobject
+        constructor = target_directive if rstobject_spec else directive
         node = constructor(self.directive_spec.domain or "", self.name)
         node.document = self.state.document
         node.source, node.line = source, line
         node["options"] = self.options
         self.add_name(node)
 
-        if self.is_target:
-            node["target"] = self.arguments[0]
+        if rstobject_spec is not None:
+            if rstobject_spec.prefix:
+                node["target"] = f"{rstobject_spec.prefix}.{self.arguments[0]}"
+            else:
+                node["target"] = self.arguments[0]
+
+            if rstobject_spec.callable:
+                node["target"] = strip_parameters(node["target"])
         else:
             self.parse_argument(node, source, line)
 
@@ -722,6 +753,24 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
 }
 
 
+def make_docutils_directive_handler(
+    directive: specparser.Directive,
+    base_class: Type[docutils.parsers.rst.Directive],
+    name: str,
+    options: Dict[str, object],
+) -> Type[docutils.parsers.rst.Directive]:
+    class DocutilsDirective(base_class):  # type: ignore
+        directive_spec = directive
+        has_content = bool(directive.content_type)
+        optional_arguments = 1 if directive.argument_type else 0
+        final_argument_whitespace = True
+        option_spec = options
+
+    new_name = "".join(e for e in name.title() if e.isalnum() or e == "_") + "Directive"
+    DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
+    return DocutilsDirective
+
+
 def register_spec_with_docutils(spec: specparser.Spec) -> None:
     """Register all of the definitions in the spec with docutils, overwriting the previous
        call to this function. This function should only be called once in the
@@ -766,18 +815,9 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         elif name in SPECIAL_DIRECTIVE_HANDLERS:
             base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
 
-        class DocutilsDirective(base_class):  # type: ignore
-            directive_spec = directive
-            has_content = bool(directive.content_type)
-            optional_arguments = 1 if directive.argument_type else 0
-            final_argument_whitespace = True
-            option_spec = options
-            is_target = directive.is_target
-
-        new_name = (
-            "".join(e for e in name.title() if e.isalnum() or e == "_") + "Directive"
+        DocutilsDirective = make_docutils_directive_handler(
+            directive, base_class, name, options
         )
-        DocutilsDirective.__name__ = DocutilsDirective.__qualname__ = new_name
         registry.add_directive(name, DocutilsDirective)
 
     # Docutils builtins
@@ -794,7 +834,12 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
         elif isinstance(role_spec.type, specparser.LinkRoleType):
             handler = LinkRoleHandler(role_spec.type.link)
         elif isinstance(role_spec.type, specparser.RefRoleType):
-            handler = RefRoleHandler(domain)
+            handler = RefRoleHandler(
+                role_spec.type.domain or domain,
+                role_spec.type.name,
+                role_spec.type.tag,
+                role_spec.rstobject.callable if role_spec.rstobject else False,
+            )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:
             handler = ExplicitTitleRoleHandler(domain)
 

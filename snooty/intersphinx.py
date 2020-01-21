@@ -3,6 +3,7 @@
 
    This module is responsible for loading and parsing these inventories."""
 
+import re
 import logging
 import datetime
 import urllib.parse
@@ -16,6 +17,7 @@ import requests
 
 __all__ = ("TargetDefinition", "Inventory")
 DEFAULT_CACHE_DIR = Path.home().joinpath(".cache", "snooty")
+INVENTORY_PATTERN = re.compile(r"(?x)(.+?)\s+(\S*:\S*)\s+(-?\d+)\s+(\S+)\s+(.*)")
 logger = logging.Logger(__name__)
 
 
@@ -59,7 +61,13 @@ class Inventory:
             if not line.strip():
                 continue
 
-            name, domain_and_role, raw_priority, uri, dispname = line.split(None, 4)
+            match = INVENTORY_PATTERN.match(line.rstrip())
+            if match is None:
+                logger.debug(f"Invalid intersphinx line: {line}")
+                continue
+
+            name, domain_and_role, raw_priority, uri, dispname = match.groups()
+
             if uri.endswith("$"):
                 uri = uri[:-1] + name
 
@@ -80,7 +88,7 @@ class Inventory:
             target_definition = TargetDefinition(
                 name, (domain, role), priority, uri, dispname
             )
-            inventory.targets[f"{domain_and_role}:{name}"] = target_definition
+            inventory.targets[f"{domain_and_role}:{name}".lower()] = target_definition
 
         return inventory
 

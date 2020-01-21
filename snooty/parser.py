@@ -277,7 +277,14 @@ class JSONVisitor:
                 self.validate_doc_role(node)
         elif node_name == "target":
             doc["type"] = "target"
-            doc["ids"] = node["ids"]
+            doc["domain"] = "std"
+            doc["name"] = "label"
+
+            # It's unclear why this is a list; I can't find any examples of it being
+            # a list in our corpus.
+            assert len(node["ids"]) == 1
+            doc["target"] = node["ids"][0]
+
             if "refuri" in node:
                 doc["refuri"] = node["refuri"]
         elif node_name == "definition_list":
@@ -368,9 +375,9 @@ class JSONVisitor:
     ) -> None:
         """Handle populating a target_directive AST node."""
         options = node["options"] or {}
-        name = node["name"]
+        doc["type"] = "target"
         doc["domain"] = node["domain"]
-        doc["name"] = name
+        doc["name"] = node["name"]
         doc["target"] = node["target"]
         doc["options"] = options
         doc["children"] = []
@@ -895,11 +902,11 @@ class _Project:
         self, nodes: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Add include nodes to page AST's children. 
+        Add include nodes to page AST's children.
 
         To render images on the Snooty extension's Snooty Preview,
-        we must use the full path of the image on the user's local machine. Note that this does change the 
-        figure's value within the parser's dict. However, this should not change the value when using the parser 
+        we must use the full path of the image on the user's local machine. Note that this does change the
+        figure's value within the parser's dict. However, this should not change the value when using the parser
         outside of Snooty Preview, since this function is currently only called by the language server.
         """
 

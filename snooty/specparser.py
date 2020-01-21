@@ -121,7 +121,7 @@ class Directive:
     deprecated: bool = field(default=False)
     options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
     name: str = field(default="")
-    is_target: bool = field(default=False)
+    rstobject: "Optional[RstObject]" = field(default=None)
 
 
 @checked
@@ -136,6 +136,7 @@ class Role:
     domain: Optional[str]
     deprecated: bool = field(default=False)
     name: str = field(default="")
+    rstobject: "Optional[RstObject]" = field(default=None)
 
 
 # A target consists of the following parts:
@@ -171,7 +172,7 @@ class RstObject:
             deprecated=self.deprecated,
             options={},
             name=self.name,
-            is_target=True,
+            rstobject=self,
         )
 
     def create_role(self) -> Role:
@@ -183,6 +184,7 @@ class RstObject:
             domain=self.domain,
             deprecated=self.deprecated,
             name=self.name,
+            rstobject=self,
         )
 
 
