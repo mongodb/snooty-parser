@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Target/Ref validation & resolution (DOCSP-5776, DOCSP-6657).
+
+- Commit IDs may now be passed into the parser (DOCSP-8277).
+
+### Changed
+
+- Domains are now included in AST nodes when relevant.
+
 ## [v0.1.16] - 2019-12-20
 
 ### Added
