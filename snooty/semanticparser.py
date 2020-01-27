@@ -226,7 +226,8 @@ class SemanticParser:
 
         # Build the toctree
         root: Dict[str, SerializableType] = {
-            "title": self.project_config.name,
+            "title": self.project_config.title,
+            "name": self.project_config.name,
             "slug": "/",
             "children": [],
         }
@@ -256,7 +257,7 @@ class SemanticParser:
                 toctree_node: Dict[str, SerializableType] = {}
                 if "url" in entry:
                     toctree_node = {
-                        "title": entry.get("title", None),
+                        "title": entry.get("title"),
                         "url": entry.get("url", None),
                         "children": [],
                     }

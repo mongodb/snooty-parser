@@ -189,7 +189,8 @@ def test_toctree(backend: Backend) -> None:
                 ],
             },
         ],
-        "title": "test_data",
+        "name": "test_name",
+        "title": "untitled",
         "slug": "/",
     }
 
