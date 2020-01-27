@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for defining a project's verbose title (DOCSP-7988)
+- Support for defining a project's title (DOCSP-7988)
 
 ## [v0.2.0] - 2020-01-23
 
