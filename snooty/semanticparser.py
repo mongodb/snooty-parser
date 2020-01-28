@@ -48,6 +48,8 @@ class SemanticParser:
 
         document: Dict[str, SerializableType] = {}
 
+        document.update({"title": self.project_config.title})
+
         self.run_event_parser(
             [
                 (OBJECT_START_EVENT, self.populate_include_nodes),
@@ -226,7 +228,7 @@ class SemanticParser:
 
         # Build the toctree
         root: Dict[str, SerializableType] = {
-            "title": self.project_config.name,
+            "title": self.project_config.title,
             "slug": "/",
             "children": [],
         }

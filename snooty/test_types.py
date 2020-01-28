@@ -21,7 +21,8 @@ def test_project() -> None:
 
     # Test missing project behavior
     project_config, project_diagnostics = ProjectConfig.open(Path(".").resolve())
-    assert project_config.name == "untitled"
+    assert project_config.name == "unnamed"
+    assert project_config.title == "untitled"
     assert len(project_diagnostics) == 0
 
 

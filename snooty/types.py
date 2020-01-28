@@ -365,6 +365,7 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
+    title: str = field(default="untitled")
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
     intersphinx: List[str] = field(default_factory=list)
@@ -401,7 +402,7 @@ class ProjectConfig:
 
             path = path.parent
 
-        return cls(root, "untitled"), diagnostics
+        return cls(root, name="unnamed"), diagnostics
 
     def render_constants(self) -> Tuple["ProjectConfig", List[Diagnostic]]:
         if not self.constants:

@@ -769,6 +769,9 @@ class _Project:
     def get_project_name(self) -> str:
         return self.config.name
 
+    def get_project_title(self) -> str:
+        return self.config.title
+
     def update(self, path: Path, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
         prefix = get_giza_category(path)
