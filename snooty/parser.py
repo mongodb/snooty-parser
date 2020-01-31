@@ -35,6 +35,10 @@ from .types import (
     BuildIdentifierSet,
 )
 
+# XXX: Work around to get snooty working with Python 3.8 until we can fix
+# our implicit data flow issues.
+multiprocessing.set_start_method("fork")
+
 NO_CHILDREN = {"substitution_reference"}
 RST_EXTENSIONS = {".rst", ".txt"}
 logger = logging.getLogger(__name__)
