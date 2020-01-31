@@ -1,4 +1,4 @@
-.PHONY: help lint format test clean flit-publish package cut-release
+.PHONY: help lint format test clean flit-publish package cut-release performance-report
 
 SYSTEM_PYTHON=$(shell which python3)
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
@@ -51,6 +51,7 @@ dist/${PACKAGE_NAME}.asc: dist/snooty-${VERSION}-${PLATFORM}.zip ## Build and si
 clean: ## Remove all build artifacts
 	-rm -r snooty.tar.zip* snootycli.py .venv
 	-rm -rf dist
+	-rm -rf .docs
 
 flit-publish: test ## Deploy the package to pypi
 	SOURCE_DATE_EPOCH="$$SOURCE_DATE_EPOCH" flit publish
@@ -83,3 +84,9 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 	@echo
 	@echo "Creating the release may now take several minutes. Check https://github.com/mongodb/snooty-parser/actions for status."
 	@echo "Release will be created at: https://github.com/mongodb/snooty-parser/releases/tag/v${BUMP_TO_VERSION}"
+
+DOCS_COMMIT=1c6dfe71fd45fbdcdf5c7b73f050f615f4279064
+performance-report: .venv/.EXISTS ## Fetch a sample corpus, and generate a timing report for each part of the parse
+	if [ ! -d .docs ]; then git clone https://github.com/mongodb/docs.git .docs; fi
+	cd .docs; if [ `git rev-parse HEAD` != "${DOCS_COMMIT}" ]; then git fetch && git reset --hard "${DOCS_COMMIT}"; fi
+	. .venv/bin/activate && python3 -m snooty.performance_report .docs

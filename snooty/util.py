@@ -1,11 +1,14 @@
 import logging
 import os
+import time
 import docutils.nodes
 import docutils.parsers.rst.directives
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
+from contextlib import contextmanager
 from dataclasses import dataclass
+from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import (
     cast,
@@ -13,6 +16,7 @@ from typing import (
     Callable,
     Container,
     Counter,
+    List,
     Dict,
     Optional,
     Tuple,
@@ -233,3 +237,29 @@ def split_domain(name: str) -> Tuple[str, str]:
         return "", parts[0]
 
     return parts[0], parts[1]
+
+
+class PerformanceLogger:
+    _singleton: Optional["PerformanceLogger"] = None
+
+    def __init__(self) -> None:
+        self._times: Dict[str, List[float]] = defaultdict(list)
+
+    @contextmanager
+    def start(self, name: str) -> Iterator[None]:
+        start_time = time.perf_counter()
+        try:
+            yield None
+        finally:
+            self._times[name].append(time.perf_counter() - start_time)
+
+    def times(self) -> Dict[str, float]:
+        return {k: min(v) for k, v in self._times.items()}
+
+    @classmethod
+    def singleton(cls) -> "PerformanceLogger":
+        assert cls._singleton is not None
+        return cls._singleton
+
+
+PerformanceLogger._singleton = PerformanceLogger()
