@@ -241,13 +241,13 @@ def split_domain(name: str) -> Tuple[str, str]:
     return parts[0], parts[1]
 
 
-def get_child_of_type(node: SerializableType, ty: str) -> SerializableType:
+def get_child_of_type(
+    node: SerializableType, ty: str
+) -> Iterator[Dict[str, SerializableType]]:
     """Return the first immediate child node with a given type, or None."""
     for child in node["children"]:  # type: ignore
         if child["type"] == ty:  # type: ignore
-            return child
-
-    return None
+            yield child  # type: ignore
 
 
 class PerformanceLogger:
