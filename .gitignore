@@ -9,3 +9,4 @@ node_modules/
 htmlcov/
 .venv/
 dist/
+test_data/docs/

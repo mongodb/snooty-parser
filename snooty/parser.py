@@ -835,20 +835,21 @@ class _Project:
 
         self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
-    def build(self) -> None:
+    def build(self, max_workers: Optional[int] = None) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-        pool = multiprocessing.Pool()
-        try:
-            paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
-            logger.debug("Processing rst files")
-            results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-            for page, diagnostics in results:
-                self._page_updated(page, diagnostics)
-        finally:
-            # We cannot use the multiprocessing.Pool context manager API due to the following:
-            # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
-            pool.close()
-            pool.join()
+        pool = multiprocessing.Pool(max_workers)
+        with util.PerformanceLogger.singleton().start("parse rst"):
+            try:
+                paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
+                logger.debug("Processing rst files")
+                results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
+                for page, diagnostics in results:
+                    self._page_updated(page, diagnostics)
+            finally:
+                # We cannot use the multiprocessing.Pool context manager API due to the following:
+                # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+                pool.close()
+                pool.join()
 
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
@@ -891,7 +892,8 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        semantic_parse, semantic_diagnostics = self.semantic_parser.run(self.pages)
+        with util.PerformanceLogger.singleton().start("postprocessing"):
+            semantic_parse, semantic_diagnostics = self.semantic_parser.run(self.pages)
 
         for fileid, page in self.semantic_parser.pages.items():
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
@@ -1065,10 +1067,10 @@ class Project:
         with self._lock:
             self._project.delete(path)
 
-    def build(self) -> None:
+    def build(self, max_workers: Optional[int] = None) -> None:
         """Build the full project."""
         with self._lock:
-            self._project.build()
+            self._project.build(max_workers)
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""
