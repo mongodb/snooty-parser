@@ -12,10 +12,10 @@ Connection Limits and Cluster Tier
 
 .. _global-writes-zones:
 
-Global Writes Zones
--------------------
+*Global* Writes Zones
+---------------------
 
-.. method:: amethod
+.. method:: amethod(param1, param2)
 
    Testing
 

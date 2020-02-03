@@ -64,9 +64,7 @@ def test_step() -> None:
             '<heading id="create-a-etc-apt-sources-list-d-mongodb-org-3-4-list-file-for-mongodb">',
             "<text>Create a </text><literal><text>",
             "/etc/apt/sources.list.d/mongodb-org-3.4.list</text></literal><text> file for </text>",
-            '<role name="guilabel" label="',
-            "{'type': 'text', 'value': 'MongoDB', 'position': {'start': {'line': 1}}}",
-            '"></role>',
+            '<role name="guilabel"><text>MongoDB</text></role>',
             "<text>.</text></heading>",
             '<section><heading id="optional-action-heading">',
             "<text>Optional: action heading</text></heading>"

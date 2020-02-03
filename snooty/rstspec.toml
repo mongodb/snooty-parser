@@ -510,7 +510,7 @@ type = {link = "https://github.com/mongodb/mongo/blob/master/%s"}
 
 [role.ref]
 help = """Link to a named target."""
-type = {domain = "std", name = "label"}
+type = {domain = "std", name = "label", format = []}
 
 [role."mongodb:ref"]
 inherit = "ref"

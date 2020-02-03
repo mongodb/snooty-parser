@@ -166,6 +166,8 @@ def english_description_of_type(ty: type) -> Tuple[str, Dict[type, str]]:
             args = getattr(ty, "__args__")
             if origin is list:
                 return f"list{plural_suffix} of {inner(args[0], True, level)}"
+            elif origin is set:
+                return f"set{plural_suffix} of {inner(args[0], True, level)}"
             elif origin is dict:
                 key_type = inner(args[0], True, level)
                 value_type = inner(args[1], True, level)
@@ -310,6 +312,10 @@ def check_type(ty: Type[_C], data: object) -> _C:
             if not isinstance(data, list):
                 raise LoadWrongType(ty, data)
             return cast(_C, [check_type(args[0], x) for x in data])
+        elif origin is set:
+            if not isinstance(data, list):
+                raise LoadWrongType(ty, data)
+            return cast(_C, set(check_type(args[0], x) for x in data))
         elif origin is dict:
             if not isinstance(data, dict):
                 raise LoadWrongType(ty, data)
