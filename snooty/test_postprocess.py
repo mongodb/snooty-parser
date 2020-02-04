@@ -15,7 +15,7 @@ def backend() -> Backend:
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
-        Path("test_data/test_semantic_parser"), backend, build_identifiers
+        Path("test_data/test_postprocessor"), backend, build_identifiers
     ) as project:
         project.build()
 

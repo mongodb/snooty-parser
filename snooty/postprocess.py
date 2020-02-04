@@ -61,10 +61,10 @@ def deep_copy_position(source: SerializableType, dest: SerializableType) -> None
         deep_copy_position(source, child)
 
 
-class SemanticParser:
-    """SemanticParser handles all operations on parsed AST files.
+class Postprocessor:
+    """Handles all postprocessing operations on parsed AST files.
 
-    The only method that should be called on an instance of SemanticParser is run(). This method
+    The only method that should be called on an instance of Postprocessor is run(). This method
     handles calling all other methods and ensures that parse operations are run in the correct order."""
 
     def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
@@ -80,7 +80,7 @@ class SemanticParser:
     def run(
         self, pages: Dict[FileId, Page]
     ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
-        """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
+        """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return {}, {}
 
@@ -106,7 +106,7 @@ class SemanticParser:
 
         self.run_event_parser([(OBJECT_START_EVENT, self.handle_refs)])
 
-        # Run semantic parse operations related to toctree and append to metadata document
+        # Run postprocessing operations related to toctree and append to metadata document
         document.update(
             {
                 "toctree": self.build_toctree(),
