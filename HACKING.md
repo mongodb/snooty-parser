@@ -4,7 +4,7 @@
 
 The snooty parser has the following key parts:
 
-* Frontends
+* Drivers
   * `main.py`
   * `language_server.py`
 * Parser
@@ -16,13 +16,13 @@ The snooty parser has the following key parts:
   * `types.py`
   * `util.py`
 
-### Frontends
+### Drivers
 
-Snooty *frontends* instantiate a parser and use it to interact with
+Snooty *drivers* instantiate a parser and use it to interact with
 reStructuredText and YAML files, and to create output artifacts and
 report diagnostics.
 
-These frontends instantiate a `parser.Project` object.
+These drivers instantiate a `parser.Project` object.
 
 #### `main.py`
 
@@ -36,7 +36,7 @@ for use with IDEs such as Visual Studio Code.
 
 ### Parser
 
-The `parser.Project` class is the main frontend-agnostic interface to
+The `parser.Project` class is the main driver-agnostic interface to
 Snooty. It reads a `snooty.toml` file to configure the project, and
 parses each file with `rstparser.Parser`.
 
@@ -45,7 +45,7 @@ parses each file with `rstparser.Parser`.
 (unnecessarily parameterized; it's always `parser.JSONVisitor`); creates
 a docutils parser; passes the markup into it; and uses the visitor to
 create the AST. The parent `parser.Project` then calls the configured
-callbacks to notify the frontend of the parsed page.
+callbacks to notify the backend of the parsed page.
 
 The parser transforms Giza-style YAML files using the `gizaparser`
 package. This uses the `flutter` library to deserialize the YAML files
