@@ -456,7 +456,7 @@ argument_type = "string"
 content_type = "block"
 
 [directive.twitter]
-help = ""
+help = "Link to a user's Twitter profile."
 example = """.. twitter::
    :site: @mongodb
    :creator: @Lauren_Schaefer
