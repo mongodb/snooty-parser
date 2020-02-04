@@ -9,7 +9,6 @@ alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
-difficulty = ["beginner", "intermediate", "advanced"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -405,7 +404,7 @@ argument_type = "devhub_type"
 [directive."devhub:level"]
 help = "Specify the experience level of the audience: beginner, intermediate, or advanced"
 inherit = "_devhub-inline"
-argument_type = "difficulty"
+argument_type = "user_level"
 
 [directive."devhub:tags"]
 help = "User-specified tags."
