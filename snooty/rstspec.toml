@@ -8,6 +8,8 @@ guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
+devhub_type = ["article", "quickstart", "how-to", "video", "live"]
+difficulty = ["beginner", "intermediate", "advanced"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -360,6 +362,123 @@ inherit = "_guides-base"
 [directive.seealso]
 help = """Related pages. Typically a list."""
 inherit = "_guides-base"
+
+###### DevHub
+[directive._devhub-base]
+required_context = "devhub"
+
+[directive._devhub-inline]
+inherit = "_devhub-base"
+argument_type = "string"
+
+[directive._devhub-block]
+inherit = "_devhub-base"
+content_type = "block"
+
+[directive."devhub:meta-description"]
+help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125 - 155 Characters."
+inherit = "_devhub-block"
+
+[directive."devhub:series"]
+help = "Specify the series that this article is part of (if applicable)."
+inherit = "_devhub-inline"
+
+[directive."devhub:author"]
+help = "Author name for the byline."
+inherit = "_devhub-inline"
+
+[directive."devhub:author-image"]
+help = "Path to a profile photo of the author."
+inherit = "_devhub-inline"
+argument_type = ["path", "uri"]
+
+[directive."devhub:atf-image"]
+help = "Path to the image to use for the above-the-fold header image"
+inherit = "_devhub-inline"
+argument_type = ["path", "uri"]
+
+[directive."devhub:type"]
+help = "Specify the type of document: article, quickstart, how-to, video, or live"
+inherit = "_devhub-inline"
+argument_type = "devhub_type"
+
+[directive."devhub:level"]
+help = "Specify the experience level of the audience: beginner, intermediate, or advanced"
+inherit = "_devhub-inline"
+argument_type = "difficulty"
+
+[directive."devhub:tags"]
+help = "User-specified tags."
+example = """.. tags::
+
+   * foo
+   * bar
+   * baz
+"""
+inherit = "_devhub-block"
+content_type = "list"
+
+[directive."devhub:products"]
+help = "MongoDB products discussed in the article"
+example = """.. product::
+
+   * Realm
+   * MongoDB Atlas
+"""
+inherit = "_devhub-block"
+content_type = "list"
+
+[directive."devhub:introduction"]
+help = "Capture the reader's attention, offer the reason for the article's existence, and explain how the content will address the problem. Use the target keyword in the first 100 words."
+inherit = "_devhub-block"
+
+[directive."devhub:prerequisites"]
+help = "If your content has prerequisites, describe them here."
+inherit = "_devhub-block"
+
+[directive."devhub:content"]
+help = "Body of the article. Use headers, links, lists, etc."
+inherit = "_devhub-block"
+
+[directive."devhub:summary"]
+help = "Summarize or conclude the article. Include a relevant call to action."
+inherit = "_devhub-block"
+
+[directive."devhub:related"]
+help = "List of related articles."
+inherit = "_devhub-block"
+content_type = "list"
+
+###### Misc.
+[directive.pubdate]
+help = "Date the article was published"
+argument_type = "string"
+content_type = "block"
+
+[directive.twitter]
+help = ""
+example = """.. twitter::
+   :site: @mongodb
+   :creator: @Lauren_Schaefer
+   :description: (max 200 characters)
+   :title: Wordswordswords
+   :image: </path/to/image>
+"""
+options.site = "string"
+options.creator = "string"
+options.description = "string"
+options.title = "string"
+options.image = ["path", "uri"]
+
+[directive.youtube]
+help = "Embed a video from YouTube in your article"
+argument_type = "string"
+content_type = "block"
+
+[directive.twitch]
+help = "Embed a Twitch stream in your article"
+argument_type = "string"
+content_type = "block"
 
 [directive.meta]
 help = """Add metadata to the site for SEO."""
