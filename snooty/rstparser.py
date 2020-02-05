@@ -777,6 +777,8 @@ class Registry:
         default_factory=lambda: defaultdict(Domain)
     )
 
+    # XXX: Re-implement so that domain_resolution_sequence is calculated
+    # initially when the Registry is created
     def get_domain_resolution_sequence(self) -> List[str]:
         # If default domain has been specified, prepend it to the list of domains
         if self.default_domain:

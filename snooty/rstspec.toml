@@ -461,21 +461,24 @@ content_type = "block"
 help = """Options
 - site: Corporate twitter @username to which the card should be attributed (e.g. @mongodb)
 - creator: Human twitter @username of the person who wrote the article (e.g. @eliothorowitz)
-- description (max 200 characters): Concise summary of the content. Do not re-use the title of the document. Truncated to three lines on web; not displayed on mobile.
 - title: Concise title of the article. Truncated to one line on web and two on mobile.
 - image: Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF.
 - image-alt: Text description of the image conveying the essential nature of the image to users who are visually impaired.
+
+Body
+Concise summary of the content. Do not re-use the title of the document. Truncated to three lines on web; not displayed on mobile.
 """
 example = """.. twitter::
    :site: @mongodb
    :creator: @Lauren_Schaefer
-   :description: (max 200 characters)
    :title: Wordswordswords
    :image: </path/to/image>
+
+   This is the description of the tweet in up to 200 characters.
 """
+content_type = "block"
 options.site = "string"
 options.creator = "string"
-options.description = "string"
 options.title = "string"
 options.image = ["path", "uri"]
 
