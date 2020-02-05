@@ -383,6 +383,7 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
+    default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)

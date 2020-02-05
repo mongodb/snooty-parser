@@ -59,7 +59,7 @@ if PACKAGE_ROOT.is_file():
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
 #: not be hard-coded.
-DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
+DOMAIN_RESOLUTION_SEQUENCE = ["mongodb", "std", ""]
 
 #: Handler function type for docutils roles
 RoleHandler = Callable[..., Any]
@@ -772,9 +772,18 @@ class Domain:
 
 @dataclass
 class Registry:
+    default_domain: Optional[str] = None
     domains: DefaultDict[str, Domain] = field(
         default_factory=lambda: defaultdict(Domain)
     )
+
+    # XXX: Re-implement so that domain_resolution_sequence is calculated
+    # initially when the Registry is created
+    def get_domain_resolution_sequence(self) -> List[str]:
+        # If default domain has been specified, prepend it to the list of domains
+        if self.default_domain:
+            return [self.default_domain] + DOMAIN_RESOLUTION_SEQUENCE
+        return DOMAIN_RESOLUTION_SEQUENCE
 
     def add_directive(self, name: str, directive: Type[Any]) -> None:
         domain, name = util.split_domain(name)
@@ -795,7 +804,7 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].directives.get(directive_name, None), []
 
-        for domain_name in DOMAIN_RESOLUTION_SEQUENCE:
+        for domain_name in self.get_domain_resolution_sequence():
             domain = self.domains[domain_name]
             if directive_name in domain.directives:
                 return domain.directives.get(directive_name, None), []
@@ -809,7 +818,7 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].roles.get(role_name, None), []
 
-        for domain_name in DOMAIN_RESOLUTION_SEQUENCE:
+        for domain_name in self.get_domain_resolution_sequence():
             domain = self.domains[domain_name]
             if role_name in domain.roles:
                 return domain.roles.get(role_name, None), []
@@ -847,7 +856,9 @@ def make_docutils_directive_handler(
     return DocutilsDirective
 
 
-def register_spec_with_docutils(spec: specparser.Spec) -> None:
+def register_spec_with_docutils(
+    spec: specparser.Spec, default_domain: Optional[str]
+) -> None:
     """Register all of the definitions in the spec with docutils, overwriting the previous
        call to this function. This function should only be called once in the
        process lifecycle."""
@@ -859,7 +870,7 @@ def register_spec_with_docutils(spec: specparser.Spec) -> None:
 
     # Unfortunately, the docutils API uses global state for dispatching directives
     # and roles. Bind the docutils dispatchers to this rstspec registry.
-    registry = Registry()
+    registry = Registry(default_domain)
     docutils.parsers.rst.directives.directive = registry.lookup_directive
     docutils.parsers.rst.roles.role = registry.lookup_role
 
@@ -937,7 +948,7 @@ class Parser(Generic[_V]):
         if not self.spec:
             with PACKAGE_ROOT.joinpath("rstspec.toml").open(encoding="utf-8") as f:
                 spec = Parser.spec = specparser.Spec.loads(f.read())
-            register_spec_with_docutils(spec)
+            register_spec_with_docutils(spec, project_config.default_domain)
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         diagnostics: List[Diagnostic] = []

@@ -8,6 +8,7 @@ guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
+devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -360,6 +361,136 @@ inherit = "_guides-base"
 [directive.seealso]
 help = """Related pages. Typically a list."""
 inherit = "_guides-base"
+
+###### DevHub
+[directive._devhub-base]
+required_context = "devhub"
+
+[directive._devhub-inline]
+inherit = "_devhub-base"
+argument_type = "string"
+
+[directive._devhub-block]
+inherit = "_devhub-base"
+content_type = "block"
+
+[directive."devhub:meta-description"]
+help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
+inherit = "_devhub-block"
+
+[directive."devhub:series"]
+help = "Specify the series that this article is part of (if applicable)."
+inherit = "_devhub-inline"
+
+[directive."devhub:author"]
+help = "Author profile for the byline."
+example = """.. author::
+   :name: Firstname Lastname
+   :image: /path/to/image.jpg
+
+   Author bio goes here.
+"""
+inherit = "_devhub-block"
+options.name = "string"
+options.image = ["path", "uri"]
+
+[directive."devhub:atf-image"]
+help = "Path to the image to use for the above-the-fold header image"
+inherit = "_devhub-inline"
+argument_type = ["path", "uri"]
+
+[directive."devhub:type"]
+help = "Specify the type of document: article, quickstart, how-to, video, or live"
+inherit = "_devhub-inline"
+argument_type = "devhub_type"
+
+[directive."devhub:level"]
+help = "Specify the experience level of the audience: beginner, intermediate, or advanced"
+inherit = "_devhub-inline"
+argument_type = "user_level"
+
+[directive."devhub:tags"]
+help = "User-specified tags."
+example = """.. tags::
+
+   * foo
+   * bar
+   * baz
+"""
+inherit = "_devhub-block"
+content_type = "list"
+
+[directive."devhub:products"]
+help = "MongoDB products discussed in the article"
+example = """.. product::
+
+   * Realm
+   * MongoDB Atlas
+"""
+inherit = "_devhub-block"
+content_type = "list"
+
+[directive."devhub:introduction"]
+help = "Capture the reader's attention, offer the reason for the article's existence, and explain how the content will address the problem. Use the target keyword in the first 100 words."
+inherit = "_devhub-block"
+
+[directive."devhub:prerequisites"]
+help = "If your content has prerequisites, describe them here."
+inherit = "_devhub-block"
+
+[directive."devhub:content"]
+help = "Body of the article. Use headers, links, lists, etc."
+inherit = "_devhub-block"
+
+[directive."devhub:summary"]
+help = "Summarize or conclude the article. Include a relevant call to action."
+inherit = "_devhub-block"
+
+[directive."devhub:related"]
+help = "List of related articles."
+inherit = "_devhub-block"
+content_type = "list"
+
+###### Misc.
+[directive.pubdate]
+help = "Date the article was published"
+argument_type = "string"
+content_type = "block"
+
+[directive.twitter]
+help = """Options
+- site: Corporate twitter @username to which the card should be attributed (e.g. @mongodb)
+- creator: Human twitter @username of the person who wrote the article (e.g. @eliothorowitz)
+- title: Concise title of the article. Truncated to one line on web and two on mobile.
+- image: Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF.
+- image-alt: Text description of the image conveying the essential nature of the image to users who are visually impaired.
+
+Body
+Concise summary of the content. Do not re-use the title of the document. Truncated to three lines on web; not displayed on mobile.
+"""
+example = """.. twitter::
+   :site: @mongodb
+   :creator: @Lauren_Schaefer
+   :title: Wordswordswords
+   :image: </path/to/image>
+
+   This is the description of the tweet in up to 200 characters.
+"""
+content_type = "block"
+options.site = "string"
+options.creator = "string"
+options.title = "string"
+options.image = ["path", "uri"]
+
+[directive.youtube]
+help = "Embed a video from YouTube in your article"
+argument_type = "string"
+content_type = "block"
+
+[directive.twitch]
+help = "Embed a Twitch stream in your article"
+argument_type = "string"
+content_type = "block"
 
 [directive.meta]
 help = """Add metadata to the site for SEO."""

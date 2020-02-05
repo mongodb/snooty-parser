@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for defining a project's title (DOCSP-7988)
+- Support for defining a project's default domain (DOCSP-8723)
+- Support for DevHub template directives (DOCSP-8723)
 
 ## [v0.2.0] - 2020-01-23
 
