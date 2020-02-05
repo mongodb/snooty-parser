@@ -31,7 +31,7 @@ def ast_to_testing_string(ast: Any) -> str:
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
     attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
     contents = (
-        value
+        escape(value)
         if value
         else (
             "".join(ast_to_testing_string(child) for child in children)

@@ -1,6 +1,17 @@
 import re
 from collections import defaultdict
-from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple, Iterable
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Iterable,
+    Sequence,
+)
 from .types import (
     Diagnostic,
     FileId,
@@ -9,6 +20,8 @@ from .types import (
     SerializableType,
     TargetDatabase,
 )
+from .util import get_child_of_type
+
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
@@ -19,10 +32,39 @@ PAIR_EVENT = "pair"
 ELEMENT_EVENT = "element"
 
 
-class SemanticParser:
-    """SemanticParser handles all operations on parsed AST files.
+def get_deepest(
+    node: Dict[str, SerializableType]
+) -> Optional[Dict[str, SerializableType]]:
+    """Dive into a tree of nodes, and return the deepest node if and only if the tree is linear."""
+    while True:
+        children = node.get("children")
+        if children is not None:
+            assert isinstance(children, list)
+            if len(children) > 1:
+                return None
+            elif len(children) == 1:
+                node = children[0]
+            else:
+                return node
+        else:
+            return None
 
-    The only method that should be called on an instance of SemanticParser is run(). This method
+
+def deep_copy_position(source: SerializableType, dest: SerializableType) -> None:
+    """Copy the source position data from one node to another, for the case
+       where the dest node's positional data is irrelevant or comes from another file."""
+    assert isinstance(source, dict)
+    assert isinstance(dest, dict)
+    source_position = source["position"]
+    dest["position"] = source_position
+    for child in dest.get("children", ()):
+        deep_copy_position(source, child)
+
+
+class Postprocessor:
+    """Handles all postprocessing operations on parsed AST files.
+
+    The only method that should be called on an instance of Postprocessor is run(). This method
     handles calling all other methods and ensures that parse operations are run in the correct order."""
 
     def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
@@ -38,7 +80,7 @@ class SemanticParser:
     def run(
         self, pages: Dict[FileId, Page]
     ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
-        """Run all semantic parse operations and return a dictionary containing the metadata document to be saved."""
+        """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return {}, {}
 
@@ -54,6 +96,7 @@ class SemanticParser:
             [
                 (OBJECT_START_EVENT, self.populate_include_nodes),
                 (OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (OBJECT_START_EVENT, self.handle_target),
             ]
         )
@@ -61,9 +104,9 @@ class SemanticParser:
         # Update metadata document with key-value pairs defined in event parser
         document.update({"slugToTitle": self.slug_title_mapping})
 
-        self.run_event_parser([(OBJECT_START_EVENT, self.validate_ref_targets)])
+        self.run_event_parser([(OBJECT_START_EVENT, self.handle_refs)])
 
-        # Run semantic parse operations related to toctree and append to metadata document
+        # Run postprocessing operations related to toctree and append to metadata document
         document.update(
             {
                 "toctree": self.build_toctree(),
@@ -81,9 +124,11 @@ class SemanticParser:
         for event, listener in listeners:
             event_parser.add_event_listener(event, listener)
 
-        event_parser.consume(self.pages.items())
+        event_parser.consume(
+            (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
+        )
 
-    def validate_ref_targets(
+    def handle_refs(
         self,
         filename: FileId,
         *args: SerializableType,
@@ -103,9 +148,17 @@ class SemanticParser:
             key = f"{domain}:{name}:{target}"
 
             try:
-                # Append URL to AST
-                field_name, target = self.targets.get_url(key)
-                obj[field_name] = target
+                # Add title and link target to AST
+                field_name, target, title_nodes = self.targets[key]
+                injection_candidate = get_deepest(obj)
+                if not obj.get("children") or injection_candidate is not None:
+                    for node in title_nodes:
+                        deep_copy_position(obj, node)
+                    obj[field_name] = target
+
+                    if injection_candidate is not None:
+                        obj = injection_candidate
+                    obj["children"] = title_nodes
             except KeyError:
                 position = cast(Any, obj.get("position"))
                 start = position["start"]
@@ -114,15 +167,48 @@ class SemanticParser:
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
 
+    def add_titles_to_label_targets(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        obj = kwargs["obj"]
+        assert obj is not None
+
+        children: Sequence[Dict[str, SerializableType]] = cast(
+            Sequence[Dict[str, SerializableType]], obj.get("children", ())
+        )
+        pending_targets: List[SerializableType] = []
+        for child in children:
+            node_type = child.get("type")
+            if (
+                node_type == "target"
+                and child.get("domain") == "std"
+                and child.get("name") == "label"
+            ):
+                pending_targets.append(child)
+            elif node_type == "section":
+                for target in pending_targets:
+                    heading = get_child_of_type(child, "heading")
+                    if heading is not None:
+                        target["children"].append(  # type: ignore
+                            {
+                                "type": "target_ref_title",
+                                "position": heading["position"],  # type: ignore
+                                "children": heading["children"],  # type: ignore
+                            }
+                        )
+                pending_targets = []
+            else:
+                pending_targets = []
+
     def handle_target(
         self,
         filename: FileId,
         *args: SerializableType,
         **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
-        if filename.suffix != ".txt":
-            return
-
         obj = kwargs["obj"]
         assert obj is not None
 
@@ -135,7 +221,13 @@ class SemanticParser:
         assert isinstance(name, str)
         target = obj["target"]
         assert isinstance(target, str)
-        self.targets.define_local_target(domain, name, target, filename)
+        title_node = get_child_of_type(obj, "target_ref_title")
+        if title_node is None:
+            title: List[SerializableType] = []
+        else:
+            title = title_node["children"]  # type: ignore
+
+        self.targets.define_local_target(domain, name, target, filename, title)
 
     def populate_include_nodes(
         self,
@@ -157,10 +249,6 @@ class SemanticParser:
 
         obj = kwargs.get("obj")
         assert obj is not None
-
-        # Only parse pages for include nodes
-        if filename.suffix != ".txt":
-            return
 
         if obj.get("name") == "include":
             argument = get_include_argument(obj)
@@ -192,10 +280,6 @@ class SemanticParser:
         slug = filename.without_known_suffix
 
         assert obj is not None
-
-        # Only parse pages for their headings
-        if filename.suffix != ".txt":
-            return
 
         # Save the first heading we encounter to the slug title mapping
         if slug not in self.slug_title_mapping and obj.get("type") == "heading":

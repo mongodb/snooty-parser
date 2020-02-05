@@ -15,7 +15,7 @@ def backend() -> Backend:
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
-        Path("test_data/test_semantic_parser"), backend, build_identifiers
+        Path("test_data/test_postprocessor"), backend, build_identifiers
     ) as project:
         project.build()
 
@@ -51,7 +51,19 @@ def test_expand_includes(backend: Backend) -> None:
             "domain": "std",
             "name": "label",
             "target": "connection-limits",
-            "children": [],
+            "children": [
+                {
+                    "type": "target_ref_title",
+                    "position": {"start": {"line": 5}},
+                    "children": [
+                        {
+                            "type": "text",
+                            "position": {"start": {"line": 5}},
+                            "value": "Skip includes",
+                        }
+                    ],
+                }
+            ],
         },
         {
             "type": "section",
@@ -111,7 +123,9 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="setting"
         target="net.port"
-        url="https://docs.mongodb.com/manual/reference/configuration-options/#net.port"></ref_role>""",
+        url="https://docs.mongodb.com/manual/reference/configuration-options/#net.port">
+        <literal><text>net.port</text></literal>
+        </ref_role>""",
     )
 
     # Assert that local targets are correctly resolved
@@ -124,7 +138,22 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="method"
         target="amethod"
-        fileid="index"></ref_role>""",
+        fileid="index">
+        <literal><text>amethod()</text></literal>
+        </ref_role>""",
+    )
+
+    # Assert that labels are correctly resolved
+    paragraph = cast(Dict[str, Any], ast["children"][1])
+    ref_role = paragraph["children"][-2]
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="global-writes-zones"
+        fileid="index"><emphasis><text>Global</text></emphasis><text> Writes Zones</text></ref_role>""",
     )
 
     # Assert that local targets with a prefix correctly resolved
@@ -137,7 +166,9 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="binary"
         target="bin.mongod"
-        url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod"></ref_role>""",
+        url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod">
+        <literal><text>bin.mongod</text></literal>
+        </ref_role>""",
     )
 
     # Check that undeclared targets raise an error

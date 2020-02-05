@@ -16,7 +16,7 @@ import watchdog.events
 import networkx
 
 from .flutter import check_type, LoadError
-from . import gizaparser, rstparser, semanticparser, util
+from . import gizaparser, rstparser, postprocess, util
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches
 from .types import (
@@ -675,7 +675,7 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
-        self.semantic_parser = semanticparser.SemanticParser(self.config, self.targets)
+        self.postprocessor = postprocess.Postprocessor(self.config, self.targets)
         self.build_identifiers = build_identifiers
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
@@ -897,14 +897,14 @@ class _Project:
                     )
 
         with util.PerformanceLogger.singleton().start("postprocessing"):
-            semantic_parse, semantic_diagnostics = self.semantic_parser.run(self.pages)
+            post_metadata, post_diagnostics = self.postprocessor.run(self.pages)
 
-        for fileid, page in self.semantic_parser.pages.items():
+        for fileid, page in self.postprocessor.pages.items():
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        for fileid, diagnostics in semantic_diagnostics.items():
+        for fileid, diagnostics in post_diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
         self.backend.on_update_metadata(
-            self.prefix, self.build_identifiers, semantic_parse
+            self.prefix, self.build_identifiers, post_metadata
         )
 
     def _populate_include_nodes(

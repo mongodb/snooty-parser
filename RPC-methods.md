@@ -20,7 +20,7 @@ Given a .txt file, return the abstract syntax tree (AST) of the page that is cre
 
 ## textDocument/get_page_fileid
 
-Given a path to a file, return its `FileId`. This method is used to let the extension and the frontend know what the page is called.
+Given a path to a file, return its `FileId`. This method is used to let the extension and the driver know what the page is called.
 
 ### Parameters
 

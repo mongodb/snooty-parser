@@ -184,8 +184,11 @@ class StaticAsset:
 class TargetDatabase:
     """A database of targets known to this project."""
 
-    intersphinx_inventories: Dict[str, intersphinx.Inventory]
-    local_definitions: Dict[str, FileId]
+    intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
+        default_factory=dict
+    )
+    local_definitions: Dict[str, FileId] = field(default_factory=dict)
+    titles: Dict[str, List[SerializableType]] = field(default_factory=dict)
 
     def __contains__(self, key: str) -> bool:
         key = normalize_target(key)
@@ -198,11 +201,15 @@ class TargetDatabase:
 
         return False
 
-    def get_url(self, key: str) -> Tuple[str, str]:
+    def __getitem__(self, key: str) -> Tuple[str, str, List[SerializableType]]:
         key = normalize_target(key)
         # Check to see if the target is defined locally
         try:
-            return ("fileid", self.local_definitions[key].without_known_suffix)
+            return (
+                "fileid",
+                self.local_definitions[key].without_known_suffix,
+                self.titles[key],
+            )
         except KeyError:
             pass
 
@@ -210,16 +217,27 @@ class TargetDatabase:
         for inventory in self.intersphinx_inventories.values():
             if key in inventory:
                 base_url = inventory.base_url
-                path = inventory[key].uri
-                return ("url", urllib.parse.urljoin(base_url, path))
+                entry = inventory[key]
+                url = urllib.parse.urljoin(base_url, entry.uri)
+                title: List[SerializableType] = [
+                    {"type": "text", "value": entry.display_name}
+                ]
+                return ("url", url, title)
 
         raise KeyError(key)
 
     def define_local_target(
-        self, domain: str, name: str, target: str, pageid: FileId
+        self,
+        domain: str,
+        name: str,
+        target: str,
+        pageid: FileId,
+        title: List[SerializableType],
     ) -> None:
         target = normalize_target(target)
-        self.local_definitions[f"{domain}:{name}:{target}"] = pageid
+        key = f"{domain}:{name}:{target}"
+        self.local_definitions[key] = pageid
+        self.titles[key] = title
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
@@ -235,7 +253,7 @@ class TargetDatabase:
     def load(cls, config: "ProjectConfig") -> "TargetDatabase":
         """Create a TargetDatabase with the intersphinx inventories specified by the given
            ProjectConfig."""
-        db = cls({}, {})
+        db = cls()
         db.reset(config)
         return db
 
@@ -291,7 +309,7 @@ class EmptyProjectInterface:
 
     def __init__(self) -> None:
         self.expensive_operation_cache = Cache()
-        self.targets = TargetDatabase({}, {})
+        self.targets = TargetDatabase()
 
 
 class PendingTask:
@@ -456,7 +474,3 @@ class ProjectConfig:
             return "\u200b"
 
         return PAT_VARIABLE.sub(handle_match, source), diagnostics
-
-    def load_inventories(self) -> None:
-        for inventory in self.intersphinx:
-            intersphinx.fetch_inventory(inventory)
