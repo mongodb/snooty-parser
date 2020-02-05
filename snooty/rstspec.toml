@@ -375,7 +375,7 @@ inherit = "_devhub-base"
 content_type = "block"
 
 [directive."devhub:meta-description"]
-help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125 - 155 Characters."
+help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
 inherit = "_devhub-block"
 
 [directive."devhub:series"]
@@ -383,13 +383,16 @@ help = "Specify the series that this article is part of (if applicable)."
 inherit = "_devhub-inline"
 
 [directive."devhub:author"]
-help = "Author name for the byline."
-inherit = "_devhub-inline"
+help = "Author profile for the byline."
+example = """.. author::
+   :name: Firstname Lastname
+   :image: /path/to/image.jpg
 
-[directive."devhub:author-image"]
-help = "Path to a profile photo of the author."
-inherit = "_devhub-inline"
-argument_type = ["path", "uri"]
+   Author bio goes here.
+"""
+inherit = "_devhub-block"
+options.name = "string"
+options.image = ["path", "uri"]
 
 [directive."devhub:atf-image"]
 help = "Path to the image to use for the above-the-fold header image"
@@ -455,7 +458,14 @@ argument_type = "string"
 content_type = "block"
 
 [directive.twitter]
-help = "Link to a user's Twitter profile."
+help = """Options
+- site: Corporate twitter @username to which the card should be attributed (e.g. @mongodb)
+- creator: Human twitter @username of the person who wrote the article (e.g. @eliothorowitz)
+- description (max 200 characters): Concise summary of the content. Do not re-use the title of the document. Truncated to three lines on web; not displayed on mobile.
+- title: Concise title of the article. Truncated to one line on web and two on mobile.
+- image: Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF.
+- image-alt: Text description of the image conveying the essential nature of the image to users who are visually impaired.
+"""
 example = """.. twitter::
    :site: @mongodb
    :creator: @Lauren_Schaefer
