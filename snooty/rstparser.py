@@ -469,6 +469,11 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             argument.source, argument.line = source, line
             node.append(argument)
 
+    def add_name(self, node: docutils.nodes.Node) -> None:
+        """Docutils by default will, if a "name" option is given to a directive,
+           change the shape of the node. We don't want that and it muddles up higher layers."""
+        pass
+
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
     lines = docutils.statemachine.string2lines(
