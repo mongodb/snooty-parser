@@ -16,6 +16,25 @@ from .util import get_child_of_type
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
+# XXX: The following two functions should probably be combined at some point
+def get_title_injection_candidate(
+    node: Dict[str, SerializableType]
+) -> Optional[Dict[str, SerializableType]]:
+    """Dive into a tree of nodes, and return the deepest non-inline node if and only if the tree is linear."""
+    while True:
+        children = node.get("children")
+        if children is not None:
+            assert isinstance(children, list)
+            if len(children) > 1:
+                return None
+            elif len(children) == 1:
+                node = children[0]
+            else:
+                return node
+        else:
+            return None
+
+
 def get_deepest(
     node: Dict[str, SerializableType]
 ) -> Optional[Dict[str, SerializableType]]:
@@ -134,7 +153,7 @@ class Postprocessor:
             try:
                 # Add title and link target to AST
                 field_name, target, title_nodes = self.targets[key]
-                injection_candidate = get_deepest(obj)
+                injection_candidate = get_title_injection_candidate(obj)
                 if not obj.get("children") or injection_candidate is not None:
                     for node in title_nodes:
                         deep_copy_position(obj, node)
