@@ -502,12 +502,12 @@ class DevhubPostprocessor(Postprocessor):
             return
 
         # These directives are represented as
-        list_fields = ["products", "tags", "authors", "languages"]
+        list_fields = ["products", "tags", "languages"]
         name = obj.get("name")
         assert isinstance(name, str)
         if name == "author":
             options = cast(Dict[str, str], obj["options"])
-            self.query_fields["author_name"] = options["name"]
+            self.query_fields["author"] = options["name"]
         elif name in list_fields:
             self.query_fields[name] = []
             children = cast(Any, obj["children"])

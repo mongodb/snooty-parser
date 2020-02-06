@@ -1,0 +1,134 @@
+:template: devhub-article
+
+.. ---------------------------------------------------------------
+.. META FIELDS FOR SEO / SOCIAL
+.. ---------------------------------------------------------------
+
+.. meta-description:: 
+
+   meta description (160 characters or fewer)
+
+.. twitter::
+   :site: @mongodb
+   :creator: @Lauren_Schaefer
+   :title: Wordswordswords
+   :image: </path/to/image>
+
+   Description of max 200 characters
+
+.. ---------------------------------------------------------------
+.. ARTICLE METADATA FIELDS (TO POPULATE FILTERS AND ARTICLE PAGE)
+.. ---------------------------------------------------------------
+
+.. include:: /includes/authors/lastname-firstname.rst
+
+.. pubdate:: January 31, 2019
+
+.. type:: article, quickstart, how-to, video, live
+
+.. level:: beginner, intermediate, advanced
+
+.. series:: seriesName
+
+.. tags:: 
+
+   * foo
+   * bar
+   * baz
+
+.. languages::
+
+   * nodejs
+   * java
+
+.. products::
+
+   * Realm
+   * MongoDB
+
+.. atf-image:: /img/heros/how-to-write-an-article.png
+
+.. related::
+
+   * ``list of related articles``
+   * ``:doc:`/path/to/article```
+   * ``:doc:`/path/to/other/article```
+
+.. ---------------------------------------------------------------
+.. ARTICLE CONTENT
+.. ---------------------------------------------------------------
+
+================
+h1 Article Title
+================
+
+.. introduction::
+
+   Capture the reader’s attention. An interesting fact or data point,
+   empathy, engaging.
+   
+   Offer the reason for the post’s existence. What’s the purpose of the
+   post?  What problem is the post going to address?
+
+   Explain how this content will address the problem 
+
+   Include target keyword in the first 100 words of content piece for SEO
+
+.. prerequisites::
+
+   H2 Prerequisites
+   ----------------
+
+   If your content has prerequisites, specify them in this section.
+   Indicating what type of content the content is can let us do more on
+   the front end with clever rendering bits.
+
+.. content::
+
+   H2 This is an H2 Header
+   -----------------------
+
+   Content under the first H2
+
+   h3 This is an H3 header
+   ~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. youtube:: H3P0lW94L2Q
+
+   another h3
+   ~~~~~~~~~~
+
+   .. twitch:: <some sort of identifier>
+
+   Second H2
+   ---------
+
+   Content for second h2.
+
+   .. code-block:: javascript
+
+      // this is where you would put some lovely code!
+
+   h3 Step 1: Do stuff
+   ~~~~~~~~~~~~~~~~~~~
+
+   Talk about how to do that stuff.
+
+   h3 Step 2: Do other stuff
+   ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Talk about why you're doing the other stuff
+
+   h4 Maybe We Need An h4
+   ``````````````````````
+
+   With content
+
+   h4 Another h4
+   `````````````
+
+   Second H4's content
+
+.. summary::
+
+   Conclude or summarize your article.
