@@ -16,9 +16,10 @@ import watchdog.events
 import networkx
 
 from .flutter import check_type, LoadError
-from . import gizaparser, rstparser, postprocess, util
+from . import gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches
+from .postprocess import DevhubPostprocessor, Postprocessor
 from .types import (
     Diagnostic,
     SerializableType,
@@ -675,8 +676,13 @@ class _Project:
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
-        self.postprocessor = postprocess.Postprocessor(self.config, self.targets)
         self.build_identifiers = build_identifiers
+
+        self.postprocessor = (
+            DevhubPostprocessor(self.config, self.targets)
+            if self.config.default_domain
+            else Postprocessor(self.config, self.targets)
+        )
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),

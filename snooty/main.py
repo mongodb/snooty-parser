@@ -154,22 +154,25 @@ class MongoBackend(Backend):
             **construct_build_identifiers_filter(build_identifiers),
         }
 
-        self.client[self.db][COLL_DOCUMENTS].replace_one(
-            document_filter,
-            {
-                "page_id": fully_qualified_pageid,
-                **{
-                    key: value
-                    for (key, value) in build_identifiers.items()
-                    if value is not None
-                },
-                "prefix": prefix,
-                "filename": page_id.as_posix(),
-                "ast": page.ast,
-                "source": page.source,
-                "static_assets": checksums,
+        document = {
+            "page_id": fully_qualified_pageid,
+            **{
+                key: value
+                for (key, value) in build_identifiers.items()
+                if value is not None
             },
-            upsert=True,
+            "prefix": prefix,
+            "filename": page_id.as_posix(),
+            "ast": page.ast,
+            "source": page.source,
+            "static_assets": checksums,
+        }
+
+        if page.query_fields:
+            document.update({"query_fields": page.query_fields})
+
+        self.client[self.db][COLL_DOCUMENTS].replace_one(
+            document_filter, document, upsert=True
         )
 
         remote_assets = set(

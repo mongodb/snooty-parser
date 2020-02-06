@@ -342,6 +342,7 @@ class Page:
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
+    query_fields: Dict[str, SerializableType] = field(default_factory=dict)
 
     @classmethod
     def create(
