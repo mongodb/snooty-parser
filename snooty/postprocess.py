@@ -451,6 +451,12 @@ def children_exist(ast: Dict[str, Any]) -> bool:
 class DevhubPostprocessor(Postprocessor):
     """Postprocess operation to be run if a project's default_domain is equal to 'devhub'"""
 
+    # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
+    # These directives are represented as list nodes; they will return a list of strings
+    LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
+    # These directives have their content represented as children; they will return a list of nodes
+    BLOCK_FIELDS = {"devhub:introduction"}
+
     def run(
         self, pages: Dict[FileId, Page]
     ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
@@ -545,20 +551,18 @@ class DevhubPostprocessor(Postprocessor):
         if obj.get("type") != "directive":
             return
 
-        # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
-        # These directives are represented as list nodes; they will return a list of strings
-        list_fields = ["products", "tags", "languages"]
-        # These directives have their content represented as children; they will return a list of nodes
-        block_fields = ["introduction"]
-
+        domain = obj.get("domain")
+        assert isinstance(domain, str)
         name = obj.get("name")
         assert isinstance(name, str)
-        if name == "author":
+        key = f"{domain}:{name}"
+
+        if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
             self.query_fields["author"] = options["name"]
-        elif name in block_fields:
+        elif key in self.BLOCK_FIELDS:
             self.query_fields[name] = obj["children"]
-        elif name in list_fields:
+        elif key in self.LIST_FIELDS:
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
             list_items = children[0]["children"]
