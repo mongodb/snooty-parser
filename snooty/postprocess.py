@@ -520,6 +520,7 @@ class DevhubPostprocessor(Postprocessor):
         if obj.get("type") != "directive":
             return
 
+        # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
         # These directives are represented as list nodes; they will return a list of strings
         list_fields = ["products", "tags", "languages"]
         # These directives have their content represented as children; they will return a list of nodes
