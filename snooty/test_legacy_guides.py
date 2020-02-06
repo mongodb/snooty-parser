@@ -1,6 +1,6 @@
 from pathlib import Path
 from . import rstparser
-from .util_test import ast_to_testing_string
+from .util_test import check_ast_testing_string
 from .types import ProjectConfig
 from .parser import parse_rst, JSONVisitor
 
@@ -66,5 +66,5 @@ def test_legacy_guides() -> None:
     )
 
     # Ensure that legacy syntax and new syntax create the same output
-    assert ast_to_testing_string(legacy_page.ast) == correct
-    assert ast_to_testing_string(new_page.ast) == correct
+    check_ast_testing_string(legacy_page.ast, correct)
+    check_ast_testing_string(new_page.ast, correct)

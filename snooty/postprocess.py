@@ -1,17 +1,7 @@
 import re
 from collections import defaultdict
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Iterable,
-    Sequence,
-)
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable, Sequence
+from .eventparser import EventParser
 from .types import (
     Diagnostic,
     FileId,
@@ -25,11 +15,24 @@ from .util import get_child_of_type
 
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
-PAGE_START_EVENT = "page_start"
-OBJECT_START_EVENT = "object_start"
-ARRAY_START_EVENT = "array_start"
-PAIR_EVENT = "pair"
-ELEMENT_EVENT = "element"
+
+# XXX: The following two functions should probably be combined at some point
+def get_title_injection_candidate(
+    node: Dict[str, SerializableType]
+) -> Optional[Dict[str, SerializableType]]:
+    """Dive into a tree of nodes, and return the deepest non-inline node if and only if the tree is linear."""
+    while True:
+        children = node.get("children")
+        if children is not None:
+            assert isinstance(children, list)
+            if len(children) > 1:
+                return None
+            elif len(children) == 1:
+                node = children[0]
+            else:
+                return node
+        else:
+            return None
 
 
 def get_deepest(
@@ -47,7 +50,7 @@ def get_deepest(
             else:
                 return node
         else:
-            return None
+            return node
 
 
 def deep_copy_position(source: SerializableType, dest: SerializableType) -> None:
@@ -94,17 +97,17 @@ class Postprocessor:
 
         self.run_event_parser(
             [
-                (OBJECT_START_EVENT, self.populate_include_nodes),
-                (OBJECT_START_EVENT, self.build_slug_title_mapping),
-                (OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (OBJECT_START_EVENT, self.handle_target),
+                (EventParser.OBJECT_START_EVENT, self.populate_include_nodes),
+                (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
+                (EventParser.OBJECT_START_EVENT, self.handle_target),
             ]
         )
 
         # Update metadata document with key-value pairs defined in event parser
         document.update({"slugToTitle": self.slug_title_mapping})
 
-        self.run_event_parser([(OBJECT_START_EVENT, self.handle_refs)])
+        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
 
         # Run postprocessing operations related to toctree and append to metadata document
         document.update(
@@ -150,7 +153,7 @@ class Postprocessor:
             try:
                 # Add title and link target to AST
                 field_name, target, title_nodes = self.targets[key]
-                injection_candidate = get_deepest(obj)
+                injection_candidate = get_title_injection_candidate(obj)
                 if not obj.get("children") or injection_candidate is not None:
                     for node in title_nodes:
                         deep_copy_position(obj, node)
@@ -444,112 +447,98 @@ def children_exist(ast: Dict[str, Any]) -> bool:
     return False
 
 
-class EventListeners:
-    """Manage the listener functions associated with an event-based parse operation"""
+class DevhubPostprocessor(Postprocessor):
+    """Postprocess operation to be run if a project's default_domain is equal to 'devhub'"""
 
-    def __init__(self) -> None:
-        self._universal_listeners: Set[Callable[..., Any]] = set()
-        self._event_listeners: Dict[str, Set[Callable[..., Any]]] = {}
+    def run(
+        self, pages: Dict[FileId, Page]
+    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+        if not pages:
+            return {}, {}
 
-    def add_universal_listener(self, listener: Callable[..., Any]) -> None:
-        """Add a listener to be called on any event"""
-        self._universal_listeners.add(listener)
+        self.pages = pages
+        self.build_slug_fileid_mapping()
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
 
-    def add_event_listener(self, event: str, listener: Callable[..., Any]) -> None:
-        """Add a listener to be called when a particular type of event occurs"""
-        event = event.upper()
-        listeners: Set[Callable[..., Any]] = self._event_listeners.get(event, set())
-        listeners.add(listener)
-        self._event_listeners[event] = listeners
+        document: Dict[str, SerializableType] = {"title": self.project_config.title}
 
-    def get_event_listeners(self, event: str) -> Set[Callable[..., Any]]:
-        """Return all listeners of a particular type"""
-        event = event.upper()
-        return self._event_listeners.get(event, set())
+        self.run_event_parser(
+            [
+                (EventParser.OBJECT_START_EVENT, self.populate_include_nodes),
+                (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
+                (EventParser.OBJECT_START_EVENT, self.handle_target),
+            ]
+        )
 
-    def fire(
+        # Update metadata document with key-value pairs defined in event parser
+        document.update({"slugToTitle": self.slug_title_mapping})
+
+        self.run_event_parser(
+            [
+                (EventParser.OBJECT_START_EVENT, self.handle_refs),
+                (EventParser.OBJECT_START_EVENT, self.flatten_devhub_article),
+                (EventParser.PAGE_START_EVENT, self.reset_query_fields),
+                (EventParser.PAGE_END_EVENT, self.append_query_fields),
+            ]
+        )
+
+        return document, self.diagnostics
+
+    def reset_query_fields(
         self,
-        event: str,
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
-        """Iterate through all universal listeners and all listeners of the specified type and call them"""
-        for listener in self.get_event_listeners(event):
-            listener(filename, *args, **kwargs)
+        """To be called at the start of each page: reset the query field dictionary"""
+        self.query_fields: Dict[str, Any] = {}
 
-        for listener in self._universal_listeners:
-            listener(filename, *args, **kwargs)
-
-
-class EventParser(EventListeners):
-    """Initialize an event-based parse on a python dictionary"""
-
-    def __init__(self) -> None:
-        super(EventParser, self).__init__()
-
-    def consume(self, d: Iterable[Tuple[FileId, Page]]) -> None:
-        """Initializes a parse on the provided key-value map of pages"""
-        for filename, page in d:
-            self._on_page_enter_event(filename)
-            self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
-
-    def _iterate(self, d: SerializableType, filename: FileId) -> None:
-        if isinstance(d, dict):
-            self._on_object_enter_event(d, filename)
-            for k, v in d.items():
-                self._on_pair_event(k, v, filename)
-                self._iterate(v, filename)
-        elif isinstance(d, list):
-            self._on_array_enter_event(d, filename)
-            for child in d:
-                self._iterate(child, filename)
-        else:
-            self._on_element_event(d, filename)
-
-    def _on_page_enter_event(
-        self, filename: FileId, *args: SerializableType, **kwargs: SerializableType
-    ) -> None:
-        """Called when an array is first encountered in tree"""
-        self.fire(PAGE_START_EVENT, filename, *args, **kwargs)
-
-    def _on_object_enter_event(
+    def append_query_fields(
         self,
-        obj: Dict[str, SerializableType],
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
-        """Called when an object is first encountered in tree"""
-        self.fire(OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
+        """To be called at the end of each page: append the query field dictionary to the 
+        top level of the page's class instance.
+        """
+        page = kwargs.get("page")
+        assert isinstance(page, Page)
+        page.query_fields = self.query_fields
 
-    def _on_array_enter_event(
+    def flatten_devhub_article(
         self,
-        arr: List[SerializableType],
         filename: FileId,
         *args: SerializableType,
-        **kwargs: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
-        """Called when an array is first encountered in tree"""
-        self.fire(ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
+        """Extract fields from a page's AST and expose them as a queryable nested document in the page document."""
+        obj = kwargs.get("obj")
+        assert obj is not None
 
-    def _on_pair_event(
-        self,
-        key: SerializableType,
-        value: SerializableType,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
-        """Called when a key-value pair is encountered in tree"""
-        self.fire(PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
+        if obj.get("type") != "directive":
+            return
 
-    def _on_element_event(
-        self,
-        element: SerializableType,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
-        """Called when an array element is encountered in tree"""
-        self.fire(ELEMENT_EVENT, filename, element=element, *args, **kwargs)
+        # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
+        # These directives are represented as list nodes; they will return a list of strings
+        list_fields = ["products", "tags", "languages"]
+        # These directives have their content represented as children; they will return a list of nodes
+        block_fields = ["introduction"]
+
+        name = obj.get("name")
+        assert isinstance(name, str)
+        if name == "author":
+            options = cast(Dict[str, str], obj["options"])
+            self.query_fields["author"] = options["name"]
+        elif name in block_fields:
+            self.query_fields[name] = obj["children"]
+        elif name in list_fields:
+            self.query_fields[name] = []
+            children = cast(Any, obj["children"])
+            list_items = children[0]["children"]
+            assert isinstance(list_items, List)
+            for item in list_items:
+                text_candidate = get_deepest(item)
+                assert text_candidate is not None
+                self.query_fields[name].append(text_candidate["value"])
