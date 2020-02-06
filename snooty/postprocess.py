@@ -96,8 +96,11 @@ class Postprocessor:
         document.update({"title": self.project_config.title})
 
         self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
+        )
+
+        self.run_event_parser(
             [
-                (EventParser.OBJECT_START_EVENT, self.populate_include_nodes),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, self.handle_target),
@@ -469,8 +472,11 @@ class DevhubPostprocessor(Postprocessor):
         document: Dict[str, SerializableType] = {"title": self.project_config.title}
 
         self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
+        )
+
+        self.run_event_parser(
             [
-                (EventParser.OBJECT_START_EVENT, self.populate_include_nodes),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, self.handle_target),
