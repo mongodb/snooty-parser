@@ -44,7 +44,7 @@ class EventParser(EventListeners):
     """Initialize an event-based parse on a python dictionary"""
 
     PAGE_START_EVENT = "page_start"
-    PAGE_LEAVE_EVENT = "page_leave"
+    PAGE_END_EVENT = "page_end"
     OBJECT_START_EVENT = "object_start"
     ARRAY_START_EVENT = "array_start"
     PAIR_EVENT = "pair"
@@ -58,7 +58,7 @@ class EventParser(EventListeners):
         for filename, page in d:
             self._on_page_enter_event(page, filename)
             self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
-            self._on_page_leave_event(page, filename)
+            self._on_page_exit_event(page, filename)
 
     def _iterate(self, d: SerializableType, filename: FileId) -> None:
         if isinstance(d, dict):
@@ -83,7 +83,7 @@ class EventParser(EventListeners):
         """Called when an array is first encountered in tree"""
         self.fire(self.PAGE_START_EVENT, filename, page=page, *args, **kwargs)
 
-    def _on_page_leave_event(
+    def _on_page_exit_event(
         self,
         page: Page,
         filename: FileId,
@@ -91,7 +91,7 @@ class EventParser(EventListeners):
         **kwargs: SerializableType,
     ) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_LEAVE_EVENT, filename, page=page, *args, **kwargs)
+        self.fire(self.PAGE_END_EVENT, filename, page=page, *args, **kwargs)
 
     def _on_object_enter_event(
         self,

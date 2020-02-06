@@ -460,7 +460,7 @@ class DevhubPostprocessor(Postprocessor):
                 (EventParser.OBJECT_START_EVENT, self.handle_refs),
                 (EventParser.OBJECT_START_EVENT, self.flatten_devhub_article),
                 (EventParser.PAGE_START_EVENT, self.reset_query_fields),
-                (EventParser.PAGE_LEAVE_EVENT, self.append_query_fields),
+                (EventParser.PAGE_END_EVENT, self.append_query_fields),
             ]
         )
 
