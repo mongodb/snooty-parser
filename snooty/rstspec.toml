@@ -797,6 +797,15 @@ type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
+[role."js-sdk"]
+type = {link = "https://docs.mongodb.com/stitch-sdks/js/4/%s"}
+
+[role."android-sdk"]
+type = {link = "https://docs.mongodb.com/stitch-sdks/java/4/%s"}
+
+[role."ios-sdk"]
+type = {link = "https://docs.mongodb.com/stitch-sdks/swift/6/%s"}
+
 [role."fb-dev-docs"]
 type = {link = "https://developers.facebook.com/docs/%s"}
 
