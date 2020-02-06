@@ -501,13 +501,18 @@ class DevhubPostprocessor(Postprocessor):
         if obj.get("type") != "directive":
             return
 
-        # These directives are represented as
+        # These directives are represented as list nodes; they will return a list of strings
         list_fields = ["products", "tags", "languages"]
+        # These directives have their content represented as children; they will return a list of nodes
+        block_fields = ["introduction"]
+
         name = obj.get("name")
         assert isinstance(name, str)
         if name == "author":
             options = cast(Dict[str, str], obj["options"])
             self.query_fields["author"] = options["name"]
+        elif name in block_fields:
+            self.query_fields[name] = obj["children"]
         elif name in list_fields:
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
