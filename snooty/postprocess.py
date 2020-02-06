@@ -1,4 +1,5 @@
 import re
+import logging
 from collections import defaultdict
 from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable, Sequence
 from .eventparser import EventParser
@@ -12,7 +13,7 @@ from .types import (
 )
 from .util import get_child_of_type
 
-
+logger = logging.getLogger(__name__)
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
 
@@ -474,6 +475,30 @@ class DevhubPostprocessor(Postprocessor):
         # Update metadata document with key-value pairs defined in event parser
         document.update({"slugToTitle": self.slug_title_mapping})
 
+        def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
+            """Clean a slug and validate that it is a known page. If it is not, return None."""
+            cleaned = clean_slug(slug)
+            if cleaned not in self.slug_title_mapping:
+                # XXX: Because reporting errors in config.toml properly is dodgy right now, just
+                # log to stderr.
+                logger.error(f"Cannot find slug '{cleaned}'")
+                return None
+
+            return cleaned
+
+        # Normalize all page group slugs
+        page_groups = {
+            title: [
+                slug
+                for slug in (clean_and_validate_page_group_slug(slug) for slug in slugs)
+                if slug
+            ]
+            for title, slugs in self.project_config.page_groups.items()
+        }
+
+        if page_groups:
+            document.update({"pageGroups": page_groups})
+
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.handle_refs),
@@ -500,7 +525,7 @@ class DevhubPostprocessor(Postprocessor):
         *args: SerializableType,
         **kwargs: Optional[Dict[str, SerializableType]],
     ) -> None:
-        """To be called at the end of each page: append the query field dictionary to the 
+        """To be called at the end of each page: append the query field dictionary to the
         top level of the page's class instance.
         """
         page = kwargs.get("page")

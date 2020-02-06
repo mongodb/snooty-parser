@@ -1,2 +1,5 @@
 name = "devhub-project"
 default_domain = "devhub"
+
+[page_groups]
+"Group 1" = ["/index", "index", "foo"]

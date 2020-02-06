@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import cast, Any, Dict, List
 from .types import BuildIdentifierSet, FileId, SerializableType
 from .parser import Project
 from .test_project import Backend
@@ -25,3 +25,9 @@ def test_queryable_fields(backend: Backend) -> None:
     assert query_fields["tags"] == ["foo", "bar", "baz"]
     assert query_fields["languages"] == ["nodejs", "java"]
     assert query_fields["products"] == ["Realm", "MongoDB"]
+
+
+def test_page_groups(backend: Backend) -> None:
+    """Test that page groups are correctly filtered and cleaned."""
+    page_groups: Dict[str, List[str]] = cast(Any, backend.metadata["pageGroups"])
+    assert page_groups == {"Group 1": ["index", "index"]}

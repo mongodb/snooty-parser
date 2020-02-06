@@ -393,6 +393,7 @@ class ProjectConfig:
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
     substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
+    page_groups: Dict[str, List[str]] = field(default_factory=dict)
 
     @property
     def source_path(self) -> Path:
