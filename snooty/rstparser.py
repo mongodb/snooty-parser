@@ -59,7 +59,7 @@ if PACKAGE_ROOT.is_file():
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
 #: not be hard-coded.
-DOMAIN_RESOLUTION_SEQUENCE = ["mongodb", "std", ""]
+DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
 
 #: Handler function type for docutils roles
 RoleHandler = Callable[..., Any]
@@ -770,28 +770,41 @@ class Domain:
     roles: Dict[str, RoleHandler] = field(default_factory=dict)
 
 
-@dataclass
 class Registry:
-    default_domain: Optional[str] = None
-    domains: DefaultDict[str, Domain] = field(
-        default_factory=lambda: defaultdict(Domain)
-    )
+    @dataclass
+    class Builder:
+        domains: DefaultDict[str, Domain] = field(
+            default_factory=lambda: defaultdict(Domain)
+        )
 
-    # XXX: Re-implement so that domain_resolution_sequence is calculated
-    # initially when the Registry is created
-    def get_domain_resolution_sequence(self) -> List[str]:
-        # If default domain has been specified, prepend it to the list of domains
-        if self.default_domain:
-            return [self.default_domain] + DOMAIN_RESOLUTION_SEQUENCE
-        return DOMAIN_RESOLUTION_SEQUENCE
+        def add_directive(self, name: str, directive: Type[Any]) -> None:
+            domain, name = util.split_domain(name)
+            self.domains[domain].directives[name] = directive
 
-    def add_directive(self, name: str, directive: Type[Any]) -> None:
-        domain, name = util.split_domain(name)
-        self.domains[domain].directives[name] = directive
+        def add_role(self, name: str, role: RoleHandler) -> None:
+            domain, name = util.split_domain(name)
+            self.domains[domain].roles[name] = role
 
-    def add_role(self, name: str, role: RoleHandler) -> None:
-        domain, name = util.split_domain(name)
-        self.domains[domain].roles[name] = role
+        def build(self, default_domain: Optional[str]) -> "Registry":
+            return Registry(default_domain, self.domains)
+
+    # This is effectively an LRU cache of size 1
+    CURRENT_REGISTRY: Optional[Tuple[Path, Optional[str], "Registry"]] = None
+
+    def __init__(
+        self, default_domain: Optional[str], domains: Dict[str, Domain]
+    ) -> None:
+        self.default_domain = default_domain
+        self.domains = domains
+
+        name_sequence: Tuple[str, ...] = DOMAIN_RESOLUTION_SEQUENCE
+        if default_domain is not None:
+            name_sequence = (default_domain, *name_sequence)
+        self.domain_sequence = [
+            self.domains[domain_name]
+            for domain_name in name_sequence
+            if domain_name in self.domains
+        ]
 
     def lookup_directive(
         self,
@@ -804,8 +817,7 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].directives.get(directive_name, None), []
 
-        for domain_name in self.get_domain_resolution_sequence():
-            domain = self.domains[domain_name]
+        for domain in self.domain_sequence:
             if directive_name in domain.directives:
                 return domain.directives.get(directive_name, None), []
 
@@ -818,12 +830,32 @@ class Registry:
         if domain_name:
             return self.domains[domain_name].roles.get(role_name, None), []
 
-        for domain_name in self.get_domain_resolution_sequence():
-            domain = self.domains[domain_name]
+        for domain in self.domain_sequence:
             if role_name in domain.roles:
                 return domain.roles.get(role_name, None), []
 
         return None, []
+
+    def activate(self) -> None:
+        """Unfortunately, the docutils API uses global state for dispatching directives
+           and roles. Bind the docutils dispatchers to this registry."""
+        docutils.parsers.rst.directives.directive = self.lookup_directive
+        docutils.parsers.rst.roles.role = self.lookup_role
+
+    @classmethod
+    def get(cls, path: Path, default_domain: Optional[str]) -> "Registry":
+        if (
+            cls.CURRENT_REGISTRY is not None
+            and cls.CURRENT_REGISTRY[0] == path
+            and cls.CURRENT_REGISTRY[1] == default_domain
+        ):
+            return cls.CURRENT_REGISTRY[2]
+
+        with path.open(encoding="utf-8") as f:
+            spec = specparser.Spec.loads(f.read())
+        registry = register_spec_with_docutils(spec, default_domain)
+        cls.CURRENT_REGISTRY = (path, default_domain, registry)
+        return registry
 
 
 SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
@@ -858,7 +890,7 @@ def make_docutils_directive_handler(
 
 def register_spec_with_docutils(
     spec: specparser.Spec, default_domain: Optional[str]
-) -> None:
+) -> Registry:
     """Register all of the definitions in the spec with docutils, overwriting the previous
        call to this function. This function should only be called once in the
        process lifecycle."""
@@ -868,12 +900,7 @@ def register_spec_with_docutils(
     SPECIAL_DIRECTIVE_HANDLERS["guide"] = LegacyGuideDirective
     SPECIAL_DIRECTIVE_HANDLERS["guide-index"] = LegacyGuideIndexDirective
 
-    # Unfortunately, the docutils API uses global state for dispatching directives
-    # and roles. Bind the docutils dispatchers to this rstspec registry.
-    registry = Registry(default_domain)
-    docutils.parsers.rst.directives.directive = registry.lookup_directive
-    docutils.parsers.rst.roles.role = registry.lookup_role
-
+    builder = Registry.Builder()
     directives = list(spec.directive.items())
     roles = list(spec.role.items())
 
@@ -905,14 +932,14 @@ def register_spec_with_docutils(
         DocutilsDirective = make_docutils_directive_handler(
             directive, base_class, name, options
         )
-        registry.add_directive(name, DocutilsDirective)
+        builder.add_directive(name, DocutilsDirective)
 
     # Docutils builtins
-    registry.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
-    registry.add_directive("replace", docutils.parsers.rst.directives.misc.Replace)
+    builder.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
+    builder.add_directive("replace", docutils.parsers.rst.directives.misc.Replace)
 
     # Define roles
-    registry.add_role("", handle_role_null)
+    builder.add_role("", handle_role_null)
     for name, role_spec in roles:
         handler: Optional[RoleHandlerType] = None
         domain = role_spec.domain or ""
@@ -934,21 +961,21 @@ def register_spec_with_docutils(
         if not handler:
             raise ValueError('Unknown role type "{}"'.format(role_spec.type))
 
-        registry.add_role(name, handler)
+        builder.add_role(name, handler)
+
+    return builder.build(default_domain)
+
+
+GLOBAL_SPEC_PATH = PACKAGE_ROOT.joinpath("rstspec.toml")
 
 
 class Parser(Generic[_V]):
     __slots__ = ("project_config", "visitor_class")
-    spec: Optional[specparser.Spec] = None
 
     def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
-
-        if not self.spec:
-            with PACKAGE_ROOT.joinpath("rstspec.toml").open(encoding="utf-8") as f:
-                spec = Parser.spec = specparser.Spec.loads(f.read())
-            register_spec_with_docutils(spec, project_config.default_domain)
+        Registry.get(GLOBAL_SPEC_PATH, project_config.default_domain).activate()
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         diagnostics: List[Diagnostic] = []
