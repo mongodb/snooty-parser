@@ -285,11 +285,20 @@ class JSONVisitor:
             doc["domain"] = "std"
             doc["name"] = "label"
 
-            # It's unclear why this is a list; I can't find any examples of it being
-            # a list in our corpus.
-            assert len(node["ids"]) == 1
-            doc["target"] = node["ids"][0]
+            assert (
+                len(node["ids"]) <= 1
+            ), f"Too many ids in this node: {self.docpath} {node}"
+            if not node["ids"]:
+                self.diagnostics.append(
+                    Diagnostic.error(
+                        "Links must provide a valid URL", util.get_line(node)
+                    )
+                )
+                # Remove the malformed node so it doesn't cause problems down the road
+                self.state.pop()
+                return
 
+            doc["target"] = node["ids"][0]
             if "refuri" in node:
                 doc["refuri"] = node["refuri"]
         elif node_name == "definition_list":
