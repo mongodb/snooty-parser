@@ -1090,3 +1090,22 @@ def test_callable_target() -> None:
     </list>
 </root>""",
     )
+
+
+def test_no_weird_targets() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+`universal link <ios-universal-links_>`_
+
+.. _ios-universal-links: https://developer.apple.com/library/content/documentation/General/Conceptual/AppSearch/UniversalLinks.html
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert "Links" in diagnostics[0].message
