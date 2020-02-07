@@ -10,8 +10,10 @@ import pytest
 ROOT_PATH = Path("test_data")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def backend() -> Backend:
+    with open("foo", "a") as f:
+        f.write("FOO\n")
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
@@ -116,7 +118,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Assert that targets found in intersphinx inventories are correctly resolved
     paragraph = cast(Dict[str, Any], ast["children"][0])
     ref_role = paragraph["children"][0]
-    print(ast_to_testing_string(ref_role))
+    # print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
         """<ref_role
@@ -131,7 +133,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Assert that local targets are correctly resolved
     paragraph = cast(Dict[str, Any], ast["children"][3])
     ref_role = paragraph["children"][1]
-    print(ast_to_testing_string(ref_role))
+    # print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
         """<ref_role
@@ -242,3 +244,21 @@ def test_toctree_order(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for toctree order
     order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
     assert order == ["/", "page1", "page2", "page3"]
+
+
+def test_target_titles(backend: Backend) -> None:
+    page_id = FileId("index.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    # Assert that titles are correctly located
+    section = cast(Dict[str, Any], ast)["children"][1]["children"][4]
+    target1 = section["children"][-2]
+    target2 = section["children"][-1]
+    check_ast_testing_string(
+        target1,
+        """<target domain="std" name="label" target="a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
+    )
+    check_ast_testing_string(
+        target2,
+        """<target domain="std" name="label" target="another-target-for-a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
+    )
