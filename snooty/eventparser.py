@@ -47,7 +47,6 @@ class EventParser(EventListeners):
     PAGE_END_EVENT = "page_end"
     OBJECT_START_EVENT = "object_start"
     ARRAY_START_EVENT = "array_start"
-    PAIR_EVENT = "pair"
     ELEMENT_EVENT = "element"
 
     def __init__(self) -> None:
@@ -63,9 +62,8 @@ class EventParser(EventListeners):
     def _iterate(self, d: SerializableType, filename: FileId) -> None:
         if isinstance(d, dict):
             self._on_object_enter_event(d, filename)
-            for k, v in d.items():
-                self._on_pair_event(k, v, filename)
-                self._iterate(v, filename)
+            for child in d.get("children", ()):
+                self._iterate(child, filename)
         elif isinstance(d, list):
             self._on_array_enter_event(d, filename)
             for child in d:
@@ -112,17 +110,6 @@ class EventParser(EventListeners):
     ) -> None:
         """Called when an array is first encountered in tree"""
         self.fire(self.ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
-
-    def _on_pair_event(
-        self,
-        key: SerializableType,
-        value: SerializableType,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
-        """Called when a key-value pair is encountered in tree"""
-        self.fire(self.PAIR_EVENT, filename, key=key, value=value, *args, **kwargs)
 
     def _on_element_event(
         self,

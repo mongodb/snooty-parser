@@ -242,8 +242,9 @@ class TargetDatabase:
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
            the given ProjectConfig instance."""
-        self.intersphinx_inventories = {}
-        self.local_definitions = {}
+        self.intersphinx_inventories.clear()
+        self.local_definitions.clear()
+        self.titles.clear()
 
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
         for url in config.intersphinx:

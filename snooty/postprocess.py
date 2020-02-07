@@ -1,7 +1,7 @@
 import re
 import logging
 from collections import defaultdict
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable, Sequence
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable
 from .eventparser import EventParser
 from .types import (
     Diagnostic,
@@ -76,6 +76,7 @@ class Postprocessor:
         self.slug_title_mapping: Dict[str, List[SerializableType]] = {}
         self.toctree: Dict[str, SerializableType] = {}
         self.pages: Dict[FileId, Page] = {}
+        self.pending_targets: List[SerializableType] = []
         self.targets = targets
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
@@ -104,9 +105,10 @@ class Postprocessor:
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (EventParser.OBJECT_START_EVENT, self.handle_target),
             ]
         )
+
+        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
 
         # Update metadata document with key-value pairs defined in event parser
         document.update({"slugToTitle": self.slug_title_mapping})
@@ -182,33 +184,29 @@ class Postprocessor:
     ) -> None:
         obj = kwargs["obj"]
         assert obj is not None
+        node_type = obj.get("type")
 
-        children: Sequence[Dict[str, SerializableType]] = cast(
-            Sequence[Dict[str, SerializableType]], obj.get("children", ())
-        )
-        pending_targets: List[SerializableType] = []
-        for child in children:
-            node_type = child.get("type")
-            if (
-                node_type == "target"
-                and child.get("domain") == "std"
-                and child.get("name") == "label"
-            ):
-                pending_targets.append(child)
-            elif node_type == "section":
-                for target in pending_targets:
-                    heading = get_child_of_type(child, "heading")
-                    if heading is not None:
-                        target["children"].append(  # type: ignore
-                            {
-                                "type": "target_ref_title",
-                                "position": heading["position"],  # type: ignore
-                                "children": heading["children"],  # type: ignore
-                            }
-                        )
-                pending_targets = []
-            else:
-                pending_targets = []
+        if node_type not in {"target", "section"}:
+            self.pending_targets = []
+
+        if (
+            node_type == "target"
+            and obj.get("domain") == "std"
+            and obj.get("name") == "label"
+        ):
+            self.pending_targets.append(obj)
+        elif node_type == "section":
+            for target in self.pending_targets:
+                heading = get_child_of_type(obj, "heading")
+                if heading is not None:
+                    target["children"].append(  # type: ignore
+                        {
+                            "type": "target_ref_title",
+                            "position": heading["position"],  # type: ignore
+                            "children": heading["children"],  # type: ignore
+                        }
+                    )
+            self.pending_targets = []
 
     def handle_target(
         self,
@@ -480,9 +478,10 @@ class DevhubPostprocessor(Postprocessor):
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (EventParser.OBJECT_START_EVENT, self.handle_target),
             ]
         )
+
+        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
 
         # Update metadata document with key-value pairs defined in event parser
         document.update({"slugToTitle": self.slug_title_mapping})
