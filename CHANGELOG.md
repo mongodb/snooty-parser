@@ -9,9 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for defining a project's title (DOCSP-7988)
-- Support for defining a project's default domain (DOCSP-8723)
-- Support for DevHub template directives (DOCSP-8723)
+- Support for defining a project's title (DOCSP-7988).
+- Support for defining a project's default domain (DOCSP-8723).
+- Support for DevHub template directives (DOCSP-8723).
+- Support for Python 3.8 (DOCSP-7399).
+- Support for injecting formatting into ref_role nodes (DOCSP-7569).
+
+### Changed
+
+- Incomplete targets are now an error: for example,
+  ```
+  `universal link <ios-universal-links_>`_
+  ```
+
+### Fixed
+
+- Directives may now have a "name" option, suppressing the docutils
+  special-case behavior.
+- Fix crashing around snooty.toml (DOCSP-8389).
 
 ## [v0.2.0] - 2020-01-23
 
