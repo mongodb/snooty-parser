@@ -806,9 +806,6 @@ type = {link = "https://docs.mongodb.com/stitch-sdks/java/4/%s"}
 [role."ios-sdk"]
 type = {link = "https://docs.mongodb.com/stitch-sdks/swift/6/%s"}
 
-[role."jwt-io"]
-type = {link = "https://jwt.io/%s"}
-
 [role."fb-dev-docs"]
 type = {link = "https://developers.facebook.com/docs/%s"}
 
