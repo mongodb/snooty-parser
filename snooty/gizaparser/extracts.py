@@ -4,7 +4,8 @@ from typing import Callable, List, Tuple, Sequence, Optional
 from ..flutter import checked
 from .nodes import Inheritable, GizaCategory, HeadingMixin
 from .parse import parse
-from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
+from ..types import Diagnostic, EmbeddedRstParser, Page
+from .. import n
 
 
 @checked
@@ -13,28 +14,25 @@ class Extract(Inheritable, HeadingMixin):
     content: Optional[str]
     only: Optional[str]
 
-    def render(self, page: Page, parse_rst: EmbeddedRstParser) -> SerializableType:
+    def render(self, page: Page, rst_parser: EmbeddedRstParser) -> List[n.Node]:
         if self.only is not None:
             raise NotImplementedError('extracts: "only" not implemented')
 
-        children: List[SerializableType] = []
-        children.extend(self.render_heading(parse_rst))
+        children: List[n.Node] = []
+        children.extend(self.render_heading(rst_parser))
         if self.content:
-            children.extend(parse_rst(self.content, self.line, False))
+            children.extend(rst_parser.parse_block(self.content, self.line))
 
         return children
 
 
 def extract_to_page(
     page: Page, extract: Extract, rst_parser: EmbeddedRstParser
-) -> SerializableType:
+) -> n.Directive:
     rendered = extract.render(page, rst_parser)
-    return {
-        "type": "directive",
-        "name": "extract",
-        "position": {"start": {"line": extract.line}},
-        "children": rendered,
-    }
+    directive = n.Directive((extract.line,), [], "", "extract", [], {})
+    directive.children = rendered
+    return directive
 
 
 class GizaExtractsCategory(GizaCategory[Extract]):

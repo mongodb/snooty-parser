@@ -26,6 +26,7 @@ from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS
 from .types import Page, Diagnostic, FileId, SerializableType, BuildIdentifierSet
 
+PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
@@ -97,7 +98,8 @@ class Backend:
         page_id: FileId,
         page: Page,
     ) -> None:
-        pass
+        if PARANOID_MODE:
+            page.ast.verify()
 
     def on_update_metadata(
         self,
@@ -143,6 +145,7 @@ class MongoBackend(Backend):
         page_id: FileId,
         page: Page,
     ) -> None:
+        super().on_update(prefix, build_identifiers, page_id, page)
         checksums = list(
             asset.get_checksum() for asset in page.static_assets if asset.can_upload()
         )
@@ -164,7 +167,7 @@ class MongoBackend(Backend):
             },
             "prefix": prefix,
             "filename": page_id.as_posix(),
-            "ast": page.ast,
+            "ast": page.ast.serialize(),
             "source": page.source,
             "static_assets": checksums,
         }
@@ -237,6 +240,9 @@ def main() -> None:
     args = docopt(__doc__)
 
     logging.basicConfig(level=logging.INFO)
+
+    if PARANOID_MODE:
+        logger.info("Paranoid mode on")
 
     if args["language-server"]:
         language_server.start()

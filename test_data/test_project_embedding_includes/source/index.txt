@@ -5,7 +5,7 @@ Guides
 ======
 
 .. figure:: /images/compass-create-database.png
-:alt: Sample images
+   :alt: Sample images
 
 .. include:: /includes/test_rst.rst
 

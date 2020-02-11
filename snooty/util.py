@@ -12,7 +12,6 @@ from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import (
     cast,
-    Any,
     Callable,
     Container,
     Counter,
@@ -24,7 +23,8 @@ from typing import (
     Iterator,
     Hashable,
 )
-from .types import FileId, SerializableType
+from .types import FileId
+from . import n
 
 logger = logging.getLogger(__name__)
 _K = TypeVar("_K", bound=Hashable)
@@ -77,9 +77,12 @@ def get_line(node: docutils.nodes.Node) -> int:
     return cast(int, line_of_node(node)) - 1
 
 
-def ast_dive(ast: Any) -> Iterator[Dict[str, SerializableType]]:
+def ast_dive(ast: n.Node) -> Iterator[n.Node]:
     """Yield each node in an AST in no particular order."""
-    children = ast.get("children", []) + ast.get("argument", [])
+    children: List[n.Node] = []
+    if isinstance(ast, n.Parent):
+        children.extend(ast.children)
+    children.extend(getattr(ast, "argument", []))
     yield ast
     for child in children:
         yield from ast_dive(child)
@@ -189,19 +192,6 @@ class FileWatcher:
         return sum(len(w) for w in self.directories.values())
 
 
-def ast_get_text(ast: Any) -> str:
-    """Return pure textual content from a given AST node."""
-    if ast.get("type") == "text":
-        return cast(str, ast["value"])
-
-    label = ast.get("label", None)
-    if label:
-        return ast_get_text(label)
-
-    children = ast.get("children", ())
-    return "".join(ast_get_text(child) for child in children)
-
-
 def option_bool(argument: Optional[str]) -> bool:
     """
     Check for a valid boolean option return it. If not argument is given,
@@ -239,15 +229,6 @@ def split_domain(name: str) -> Tuple[str, str]:
         return "", parts[0]
 
     return parts[0], parts[1]
-
-
-def get_child_of_type(
-    node: SerializableType, ty: str
-) -> Iterator[Dict[str, SerializableType]]:
-    """Return the first immediate child node with a given type, or None."""
-    for child in node["children"]:  # type: ignore
-        if child["type"] == ty:  # type: ignore
-            yield child  # type: ignore
 
 
 class PerformanceLogger:

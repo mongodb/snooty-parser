@@ -3,6 +3,7 @@ import textwrap
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 from typing import Any
+from . import n
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
 
@@ -20,6 +21,9 @@ class FinalAssertionError(AssertionError):
 
 def ast_to_testing_string(ast: Any) -> str:
     """Create an XML string representation of an AST node."""
+    if isinstance(ast, n.Node):
+        ast = ast.serialize()
+
     value = ast.get("value", "")
     children = ast.get("children", [])
     attr_pairs = [

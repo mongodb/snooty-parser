@@ -1,5 +1,6 @@
-from typing import Any, Callable, cast, Dict, List, Set, Tuple, Iterable, Union
-from .types import FileId, Page, SerializableType
+from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union
+from .types import FileId, Page
+from . import n
 
 
 class EventListeners:
@@ -29,8 +30,8 @@ class EventListeners:
         self,
         event: str,
         filename: FileId,
-        *args: Union[SerializableType, Page],
-        **kwargs: Union[SerializableType, Page],
+        *args: Union[n.Node, Page],
+        **kwargs: Union[n.Node, Page],
     ) -> None:
         """Iterate through all universal listeners and all listeners of the specified type and call them"""
         for listener in self.get_event_listeners(event):
@@ -47,8 +48,6 @@ class EventParser(EventListeners):
     PAGE_END_EVENT = "page_end"
     OBJECT_START_EVENT = "object_start"
     OBJECT_END_EVENT = "object_end"
-    ARRAY_START_EVENT = "array_start"
-    ELEMENT_EVENT = "element"
 
     def __init__(self) -> None:
         super(EventParser, self).__init__()
@@ -57,78 +56,28 @@ class EventParser(EventListeners):
         """Initializes a parse on the provided key-value map of pages"""
         for filename, page in d:
             self._on_page_enter_event(page, filename)
-            self._iterate(cast(Dict[str, SerializableType], page.ast), filename)
+            self._iterate(page.ast, filename)
             self._on_page_exit_event(page, filename)
 
-    def _iterate(self, d: SerializableType, filename: FileId) -> None:
-        if isinstance(d, dict):
-            self._on_object_enter_event(d, filename)
-            for child in d.get("children", ()):
+    def _iterate(self, d: n.Node, filename: FileId) -> None:
+        self._on_object_enter_event(d, filename)
+        if isinstance(d, n.Parent):
+            for child in d.children:
                 self._iterate(child, filename)
-            self._on_object_exit_event(d, filename)
-        elif isinstance(d, list):
-            self._on_array_enter_event(d, filename)
-            for child in d:
-                self._iterate(child, filename)
-        else:
-            self._on_element_event(d, filename)
+        self._on_object_exit_event(d, filename)
 
-    def _on_page_enter_event(
-        self,
-        page: Page,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
+    def _on_page_enter_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_START_EVENT, filename, page=page, *args, **kwargs)
+        self.fire(self.PAGE_START_EVENT, filename, page=page)
 
-    def _on_page_exit_event(
-        self,
-        page: Page,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
+    def _on_page_exit_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_END_EVENT, filename, page=page, *args, **kwargs)
+        self.fire(self.PAGE_END_EVENT, filename, page=page)
 
-    def _on_object_enter_event(
-        self,
-        obj: Dict[str, SerializableType],
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
+    def _on_object_enter_event(self, node: n.Node, filename: FileId) -> None:
         """Called when an object is first encountered in tree"""
-        self.fire(self.OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
+        self.fire(self.OBJECT_START_EVENT, filename, node=node)
 
-    def _on_object_exit_event(
-        self,
-        obj: Dict[str, SerializableType],
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
+    def _on_object_exit_event(self, node: n.Node, filename: FileId) -> None:
         """Called when an object is first encountered in tree"""
-        self.fire(self.OBJECT_END_EVENT, filename, obj=obj, *args, **kwargs)
-
-    def _on_array_enter_event(
-        self,
-        arr: List[SerializableType],
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
-        """Called when an array is first encountered in tree"""
-        self.fire(self.ARRAY_START_EVENT, filename, arr=arr, *args, **kwargs)
-
-    def _on_element_event(
-        self,
-        element: SerializableType,
-        filename: FileId,
-        *args: SerializableType,
-        **kwargs: SerializableType,
-    ) -> None:
-        """Called when an array element is encountered in tree"""
-        self.fire(self.ELEMENT_EVENT, filename, element=element, *args, **kwargs)
+        self.fire(self.OBJECT_END_EVENT, filename, node=node)

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Type, TypeVar
 from yaml.composer import Composer
 from ..flutter import check_type, LoadError, mapping_dict
-from ..types import Diagnostic, SerializableType, ProjectConfig
+from ..types import Diagnostic, ProjectConfig, SerializableType
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)

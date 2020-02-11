@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, List, Tuple, Sequence
 from ..flutter import checked
-from ..types import Diagnostic, EmbeddedRstParser, SerializableType, Page
+from ..types import Diagnostic, EmbeddedRstParser, Page
+from .. import n
 from .parse import parse
 from .nodes import Inheritable, GizaCategory
 
@@ -15,35 +16,32 @@ class ReleaseSpecification(Inheritable):
     language: Optional[str]
     code: Optional[str]
 
-    def render(self, page: Page, parse_rst: EmbeddedRstParser) -> SerializableType:
-        children: List[SerializableType] = []
+    def render(self, page: Page, rst_parser: EmbeddedRstParser) -> List[n.Node]:
+        children: List[n.Node] = []
         if self.pre:
-            result = parse_rst(self.pre, self.line, False)
+            result = rst_parser.parse_block(self.pre, self.line)
             children.extend(result)
 
         if self.code:
             children.append(
-                {
-                    "type": "code",
-                    "lang": self.language,
-                    "copyable": True if self.copyable is None else self.copyable,
-                    "position": {"start": {"line": self.line}},
-                    "value": self.code,
-                }
+                n.Code(
+                    (self.line,),
+                    self.language,
+                    True if self.copyable is None else self.copyable,
+                    None,
+                    self.code,
+                )
             )
         return children
 
 
 def release_specification_to_page(
     page: Page, node: ReleaseSpecification, rst_parser: EmbeddedRstParser
-) -> SerializableType:
+) -> n.Directive:
     rendered = node.render(page, rst_parser)
-    return {
-        "type": "directive",
-        "name": "release_specification",
-        "position": {"start": {"line": node.line}},
-        "children": rendered,
-    }
+    directive = n.Directive((node.line,), [], "", "release_specification", [], {})
+    directive.children = rendered
+    return directive
 
 
 class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):

@@ -1,8 +1,8 @@
 from pathlib import Path, PurePath
 from typing import Dict, Tuple, List, Optional
 from .extracts import GizaExtractsCategory
-from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
-from ..parser import make_embedded_rst_parser
+from ..types import Diagnostic, Page, ProjectConfig
+from ..parser import EmbeddedRstParser
 from ..util_test import ast_to_testing_string
 
 
@@ -36,11 +36,8 @@ def test_extract() -> None:
     file_id, giza_node = next(category.reify_all_files(all_diagnostics))
 
     def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
-        page = Page.create(path, filename, "", {})
-        return (
-            page,
-            make_embedded_rst_parser(project_config, page, all_diagnostics[path]),
-        )
+        page = Page.create(path, filename, "")
+        return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
 
     pages = category.to_pages(path, create_page, giza_node.data)
     assert [str(page.fake_full_path()) for page in pages] == [

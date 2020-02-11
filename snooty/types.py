@@ -6,16 +6,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
 from typing import (
-    cast,
-    Any,
-    Callable,
     Dict,
     DefaultDict,
     NamedTuple,
     Set,
-    Sequence,
     List,
     Iterator,
+    Sequence,
+    MutableSequence,
     Tuple,
     Optional,
     Union,
@@ -25,19 +23,27 @@ from typing_extensions import Protocol
 import urllib.parse
 import toml
 from .flutter import checked, check_type, LoadError
-from . import intersphinx
+from . import n, intersphinx
+from .n import SerializableType as ST
 
+SerializableType = ST
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
 PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
-SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
-EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
 
 #: Indicates the target protocol of a target: either a file local to the
 #: current project, or a URL (from an intersphinx inventory).
 TargetType = enum.Enum("TargetType", ("fileid", "url"))
+
+
+class EmbeddedRstParser(Protocol):
+    def parse_block(self, text: str, lineno: int) -> MutableSequence[n.Node]:
+        ...
+
+    def parse_inline(self, text: str, lineno: int) -> MutableSequence[n.InlineNode]:
+        ...
 
 
 def normalize_target(target: str) -> str:
@@ -189,13 +195,13 @@ class TargetDatabase:
     class Result(NamedTuple):
         type: TargetType
         result: str
-        title: List[SerializableType]
+        title: Sequence[n.InlineNode]
 
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
     )
     local_definitions: DefaultDict[
-        str, List[Tuple[FileId, List[SerializableType]]]
+        str, List[Tuple[FileId, Sequence[n.InlineNode]]]
     ] = field(default_factory=lambda: defaultdict(list))
 
     def __contains__(self, key: str) -> bool:
@@ -230,9 +236,7 @@ class TargetDatabase:
                 base_url = inventory.base_url
                 entry = inventory[key]
                 url = urllib.parse.urljoin(base_url, entry.uri)
-                title: List[SerializableType] = [
-                    {"type": "text", "value": entry.display_name}
-                ]
+                title: List[n.InlineNode] = [n.Text((-1,), entry.display_name)]
                 results.append(TargetDatabase.Result(TargetType.url, url, title))
 
         return results
@@ -243,7 +247,7 @@ class TargetDatabase:
         name: str,
         targets: Sequence[str],
         pageid: FileId,
-        title: List[SerializableType],
+        title: Sequence[n.InlineNode],
     ) -> None:
         for target in targets:
             target = normalize_target(target)
@@ -328,7 +332,7 @@ class PendingTask:
        constructed. This should primarily be used to execute tasks which may need
        to mutate state from the main process (e.g. caches or dependency graphs)."""
 
-    def __init__(self, node: Dict[str, SerializableType]) -> None:
+    def __init__(self, node: n.Node) -> None:
         self.node = node
 
     def __call__(
@@ -339,9 +343,7 @@ class PendingTask:
 
     def error(self, message: str) -> Diagnostic:
         """Create an error diagnostic associated with this task's node."""
-        return Diagnostic.error(
-            message, cast(int, cast(Any, self.node["position"])["start"]["line"])
-        )
+        return Diagnostic.error(message, self.node.start[0])
 
 
 @dataclass
@@ -349,7 +351,7 @@ class Page:
     source_path: Path
     output_filename: str
     source: str
-    ast: SerializableType
+    ast: n.Parent[n.Node]
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
@@ -361,10 +363,13 @@ class Page:
         source_path: Path,
         output_filename: Optional[str],
         source: str,
-        ast: SerializableType,
+        ast: Optional[n.Parent[n.Node]] = None,
     ) -> "Page":
         if output_filename is None:
             output_filename = source_path.name
+
+        if ast is None:
+            ast = n.Root((0,), [], {})
 
         return Page(source_path, output_filename, source, ast)
 
@@ -402,7 +407,7 @@ class ProjectConfig:
     intersphinx: List[str] = field(default_factory=list)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
-    substitution_nodes: Dict[str, SerializableType] = field(default_factory=dict)
+    substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
 

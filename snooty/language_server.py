@@ -24,7 +24,7 @@ from typing import (
 )
 from .flutter import checked, check_type
 from .types import BuildIdentifierSet, FileId, SerializableType
-from . import types, util
+from . import types, util, n
 from .parser import Project
 
 _F = TypeVar("_F", bound=Callable[..., Any])
@@ -356,34 +356,29 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         filePath = Path(fileName)
         page_ast = self.project.get_page_ast(filePath)
-        page_ast = cast(Dict[str, Any], page_ast)
 
         # If rst file, insert its ast into a pseudo ast object
         if filePath.suffix == ".rst":
             # Copy ast of previewed file into a modified version
-            rst_ast = {
-                "type": "directive",
-                "position": page_ast["position"],
-                "name": "include",
-                "argument": [
-                    {
-                        "type": "text",
-                        "position": {"start": {"line": 0}},
-                        "value": self.project.get_fileid(filePath).as_posix(),
-                    }
-                ],
-                "children": page_ast["children"],
-            }
+            if isinstance(page_ast, n.Parent):
+                children = page_ast.children
+            else:
+                children = []
+            rst_ast = n.Directive(
+                page_ast.start,
+                children,
+                "",
+                "include",
+                [n.Text((0,), self.project.get_fileid(filePath).as_posix())],
+                {},
+            )
 
             # Insert modified ast as a child of a pseudo empty page ast
-            pseudo_ast = {
-                "type": "root",
-                "children": [rst_ast],
-                "position": {"start": {"line": 0}},
-            }
-            return pseudo_ast
+            pseudo_ast = n.Root((0,), [], {})
+            pseudo_ast.children.append(rst_ast)
+            return pseudo_ast.serialize()
 
-        return page_ast
+        return page_ast.serialize()
 
     def m_text_document__get_project_name(self) -> SerializableType:
         """Get the project's name from its ProjectConfig"""

@@ -36,6 +36,7 @@ from .types import Diagnostic, ProjectConfig
 from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
+from . import n
 
 RoleHandlerType = Callable[
     [
@@ -441,15 +442,14 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 node.append(
                     self.state.document.reporter.error(f"{err}: {str(date)}", line=line)
                 )
-                node["date"] = None
             else:
                 node["date"] = date
         else:
             self.parse_argument(node, source, line)
 
         # Parse the content
-        if self.name in {"include", "raw"}:
-            raw = docutils.nodes.FixedTextElement()
+        if self.name == "raw":
+            raw = docutils.nodes.literal_block()
             raw.document = self.state.document
             raw.source, raw.line = source, line
             node.append(raw)
@@ -740,7 +740,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         node.source, node.line = source, line
         node["options"] = self.options
 
-        entries: List[Dict[str, str]] = []
+        entries: List[n.TocTreeDirective.Entry] = []
         errors: List[docutils.nodes.Node] = []
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
@@ -753,29 +753,28 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
     def make_toc_entry(
         self, source: str, child: str
-    ) -> Tuple[Dict[str, str], List[docutils.nodes.Node]]:
+    ) -> Tuple[Optional[n.TocTreeDirective.Entry], List[docutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
-        entry: Dict[str, str] = {}
-
         match = PAT_EXPLICIT_TITLE.match(child)
-        label: Optional[str] = None
+        title: Optional[str] = None
+        url: Optional[str] = None
+        slug: Optional[str] = None
         if match:
-            label, target = match["label"], match["target"]
-            entry["title"] = label
+            title, target = match["label"], match["target"]
         elif child.startswith("<") and child.endswith(">"):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
             err = "toctree nodes with URLs must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)
-            return entry, [error_node]
+            return None, [error_node]
         else:
             target = child
 
         parsed = urllib.parse.urlparse(target)
         if parsed.scheme:
-            entry["url"] = target
+            url = target
         else:
-            entry["slug"] = target
-        return entry, []
+            slug = target
+        return n.TocTreeDirective.Entry(title, url, slug), []
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):
@@ -802,7 +801,7 @@ class Visitor(Protocol):
         ...
 
 
-_V = TypeVar("_V", bound=Visitor)
+_V = TypeVar("_V", bound=Visitor, covariant=True)
 
 
 @dataclass
