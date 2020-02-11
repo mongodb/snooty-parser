@@ -430,6 +430,10 @@ example = """.. product::
 inherit = "_devhub-block"
 content_type = "list"
 
+[directive."devhub:callout"]
+help = "Call out a specific University course, blog post, event, etc."
+inherit = "_devhub-block"
+
 [directive."devhub:introduction"]
 help = "Capture the reader's attention, offer the reason for the article's existence, and explain how the content will address the problem. Use the target keyword in the first 100 words."
 inherit = "_devhub-block"
@@ -455,7 +459,10 @@ content_type = "list"
 [directive.pubdate]
 help = "Date the article was published"
 argument_type = "string"
-content_type = "block"
+
+[directive.updated-date]
+help = "Date the post was most recently updated"
+argument_type = "string"
 
 [directive.twitter]
 help = """Options
