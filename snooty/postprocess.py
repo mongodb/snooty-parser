@@ -457,7 +457,7 @@ class DevhubPostprocessor(Postprocessor):
 
     # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
     # These directives are represented as list nodes; they will return a list of strings
-    LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
+    LIST_FIELDS = {"devhub:products", "devhub:tags", "devhub:related", ":languages"}
     # These directives have their content represented as children; they will return a list of nodes
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
