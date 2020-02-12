@@ -217,6 +217,18 @@ inherit = "tabs"
 [directive.tabs-stitch-interfaces]
 inherit = "tabs"
 
+[directive.tabs-realm-languages]
+inherit = "tabs"
+
+[directive.tabs-realm-sdks]
+inherit = "tabs"
+
+[directive.tabs-realm-admin-interfaces]
+inherit = "tabs"
+
+[directive.tabs-realm-auth-providers]
+inherit = "tabs"
+
 [directive.tab]
 argument_type = "string"
 content_type = "block"
