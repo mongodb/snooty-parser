@@ -44,6 +44,9 @@ options.class = "string"
 options.header-rows = "nonnegative_integer"
 options.stub-columns = "nonnegative_integer"
 
+[directive.ecosystem:landing-page-tiles]
+inherit = "list-table"
+
 [directive.admonition]
 content_type = "block"
 argument_type = "string"
