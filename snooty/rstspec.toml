@@ -44,7 +44,13 @@ options.class = "string"
 options.header-rows = "nonnegative_integer"
 options.stub-columns = "nonnegative_integer"
 
-[directive.ecosystem:landing-page-tiles]
+[directive."ecosystem:landing-page-tiles"]
+example = """.. landing-page-tiles::
+  :tile:
+    :title: JavaScript
+    :link: https://mongodb.com
+    :image: /path/to/image.jpg
+"""
 inherit = "list-table"
 
 [directive.admonition]
