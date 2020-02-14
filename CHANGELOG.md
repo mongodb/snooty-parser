@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Directives for DevHub (DOCSP-8848).
+- Tab sets for Realm (DOCSP-8787).
+
 ## [v0.3.0] - 2020-02-09
 
 ### Added
