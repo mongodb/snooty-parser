@@ -462,8 +462,8 @@ class DevhubPostprocessor(Postprocessor):
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
     ARG_FIELDS = {
-        "pubdate",
-        "updated-date",
+        ":pubdate",
+        ":updated-date",
         "devhub:level",
         "devhub:type",
         "devhub:atf-image",
