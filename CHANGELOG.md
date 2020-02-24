@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.3.2] - 2020-02-24
 
+### Fixed
+
+- Devhub directive resolution and behavior.
+
 ## [v0.3.1] - 2020-02-14
 
 ### Added
