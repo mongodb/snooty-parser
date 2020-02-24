@@ -457,7 +457,7 @@ class DevhubPostprocessor(Postprocessor):
 
     # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
     # These directives are represented as list nodes; they will return a list of strings
-    LIST_FIELDS = {"devhub:products", "devhub:tags", "devhub:related", ":languages"}
+    LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
     # These directives have their content represented as children; they will return a list of nodes
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
@@ -577,6 +577,15 @@ class DevhubPostprocessor(Postprocessor):
         if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
             self.query_fields["author"] = options["name"]
+        elif key == "devhub:related":
+            # Save list of nodes (likely :doc: roles)
+            self.query_fields[name] = []
+            children = cast(Any, obj["children"])
+            list_items = children[0]["children"]
+            assert isinstance(list_items, List)
+            for item in list_items:
+                paragraph = item["children"][0]
+                self.query_fields[name].append(paragraph["children"][0])
         elif key in self.ARG_FIELDS:
             argument = cast(Any, obj["argument"])
             self.query_fields[name] = argument[0]["value"]
