@@ -5,3 +5,8 @@ intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
 [constants]
 name = "MongoDB name"
 title = "MongoDB title"
+
+[substitutions]
+global-write = "Global Writes"
+global-write-clusters = "Global *Clusters*"
+service = "Atlas"

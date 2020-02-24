@@ -326,21 +326,7 @@ class JSONVisitor:
             name = node["names"][0]
             doc["name"] = name
         elif node_name == "substitution_reference":
-            # If this substitution was defined in snooty.toml, append its defined replacement as children nodes
-            if node.astext() in self.project_config.substitution_nodes:
-                # Strip the node of its root and paragraph nodes
-                substitution_definition = cast(
-                    Dict[str, SerializableType],
-                    self.project_config.substitution_nodes[node.astext()],
-                )["children"]
-                substitution_definition = cast(List[Any], substitution_definition)[0][
-                    "children"
-                ]
-                self.state[-1].setdefault("children", [])
-                self.state[-1]["children"].extend(substitution_definition)
-            else:
-                doc["name"] = node["refname"]
-            return
+            doc["name"] = node["refname"]
         elif node_name == "footnote":
             # Autonumbered footnotes do not have a name
             try:
@@ -701,7 +687,10 @@ class _Project:
         substitution_nodes: Dict[str, SerializableType] = {}
         for k, v in self.config.substitutions.items():
             node, substitution_diagnostics = parse_rst(self.parser, root, v)
-            substitution_nodes[k] = node.ast
+            ast = cast(Any, node.ast)
+            # Extract text nodes from <root> and <paragraph> parent nodes
+            paragraph = ast["children"][0]
+            substitution_nodes[k] = paragraph["children"]
 
             if substitution_diagnostics:
                 backend.on_diagnostics(

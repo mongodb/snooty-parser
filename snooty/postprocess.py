@@ -77,6 +77,7 @@ class Postprocessor:
         self.pages: Dict[FileId, Page] = {}
         self.pending_targets: List[SerializableType] = []
         self.targets = targets
+        self.substitution_definitions: Dict[str, SerializableType] = {}
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
@@ -99,6 +100,8 @@ class Postprocessor:
         self.run_event_parser(
             [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
         )
+
+        self.handle_substitutions()
 
         self.run_event_parser(
             [
@@ -174,6 +177,53 @@ class Postprocessor:
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
+
+    def handle_substitutions(self) -> None:
+        """Find and replace substitutions throughout project"""
+        # Save substitutions defined in snooty.toml to our map of substitutions
+        self.substitution_definitions = self.project_config.substitution_nodes
+
+        self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, self.find_substitution_definitions)]
+        )
+
+        self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, self.populate_substitution_references)]
+        )
+
+    def find_substitution_definitions(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        """Find substitutions defined in source content and add to map"""
+        obj = kwargs["obj"]
+        assert obj is not None
+        node_type = obj.get("type")
+
+        if node_type == "substitution_definition":
+            name = obj["name"]
+            assert isinstance(name, str)
+            self.substitution_definitions[name] = obj["children"]
+
+    def populate_substitution_references(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        """When a substitution_reference node is encountered, append its definition as children"""
+        obj = kwargs["obj"]
+        assert obj is not None
+        node_type = obj.get("type")
+
+        if node_type == "substitution_reference":
+            name = obj["name"]
+            assert isinstance(name, str)
+            substitution = self.substitution_definitions.get(name)
+            if substitution is not None:
+                obj["children"] = substitution
 
     def add_titles_to_label_targets(
         self,
@@ -485,6 +535,8 @@ class DevhubPostprocessor(Postprocessor):
         self.run_event_parser(
             [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
         )
+
+        self.handle_substitutions()
 
         self.run_event_parser(
             [

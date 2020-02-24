@@ -262,3 +262,47 @@ def test_target_titles(backend: Backend) -> None:
         target2,
         """<target domain="std" name="label" target="another-target-for-a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
     )
+
+
+def test_substitutions(backend: Backend) -> None:
+    # Test substitutions as defined in snooty.toml
+    page_id = FileId("page3.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    paragraph = cast(Dict[str, Any], ast["children"][2])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="service"><text>Atlas</text></substitution_reference>""",
+    )
+
+    substitution_reference = paragraph["children"][2]
+    print(ast_to_testing_string(substitution_reference))
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="global-write-clusters"><text>Global </text><emphasis><text>Clusters</text></emphasis></substitution_reference>""",
+    )
+
+    # Test substitutions defined in-page
+    page_id = FileId("page4.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    substution_definition = cast(Dict[str, Any], ast["children"][2])
+    check_ast_testing_string(
+        substution_definition,
+        """<substitution_definition name="sub"><text>Substitution</text></substitution_definition>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][1])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
+    )
