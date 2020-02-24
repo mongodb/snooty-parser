@@ -688,9 +688,13 @@ class _Project:
         for k, v in self.config.substitutions.items():
             node, substitution_diagnostics = parse_rst(self.parser, root, v)
             ast = cast(Any, node.ast)
-            # Extract text nodes from <root> and <paragraph> parent nodes
-            paragraph = ast["children"][0]
-            substitution_nodes[k] = paragraph["children"]
+            ast_nodes = ast["children"]
+            if len(ast_nodes) > 0:
+                # Extract text nodes from <root> and <paragraph> parent nodes
+                paragraph = ast_nodes[0]
+                substitution_nodes[k] = paragraph["children"]
+            else:
+                substitution_nodes[k] = []
 
             if substitution_diagnostics:
                 backend.on_diagnostics(

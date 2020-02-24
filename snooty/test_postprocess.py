@@ -281,6 +281,14 @@ def test_substitutions(backend: Backend) -> None:
         """<substitution_reference name="global-write-clusters"><text>Global </text><emphasis><text>Clusters</text></emphasis></substitution_reference>""",
     )
 
+    # Test substitution of empty string
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="blank"></substitution_reference>""",
+    )
+
     # Test substitutions defined in-page
     page_id = FileId("page4.txt")
     ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)

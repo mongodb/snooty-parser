@@ -10,6 +10,8 @@ write and read operations from geographically local shards. You can also
 configure zones to support global low-latency secondary reads. For more 
 information on |global-write| zones, see :ref:`global-writes-zones`.
 
+Test |blank| substitution.
+
 |service| does not auto-configure or auto-shard collections. 
 Sharded collections must meet specific compatibility requirements to 
 utilize |global-write|. For more information on guidance and 
