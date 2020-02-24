@@ -24,6 +24,8 @@
 
 .. pubdate:: January 31, 2019
 
+.. updated-date:: February 2, 2019
+
 .. type:: article, quickstart, how-to, video, live
 
 .. level:: beginner, intermediate, advanced
@@ -51,7 +53,7 @@
 .. related::
 
    * ``list of related articles``
-   * ``:doc:`/path/to/article```
+   * :doc:`/path/to/article`
    * ``:doc:`/path/to/other/article```
 
 .. ---------------------------------------------------------------
