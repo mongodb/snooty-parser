@@ -31,7 +31,6 @@ def test_queryable_fields(backend: Backend) -> None:
     assert query_fields["atf-image"] == "/img/heros/how-to-write-an-article.png"
     assert query_fields["type"] == "article, quickstart, how-to, video, live"
     assert query_fields["level"] == "beginner, intermediate, advanced"
-    assert query_fields["series"] == "seriesName"
 
     related = cast(Any, query_fields["related"])
     check_ast_testing_string(

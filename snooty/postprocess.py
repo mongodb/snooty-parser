@@ -467,7 +467,6 @@ class DevhubPostprocessor(Postprocessor):
         "devhub:level",
         "devhub:type",
         "devhub:atf-image",
-        "devhub:series",
     }
 
     def run(
