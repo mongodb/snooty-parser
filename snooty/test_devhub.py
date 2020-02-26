@@ -50,6 +50,10 @@ def test_queryable_fields(backend: Backend) -> None:
         "<paragraph><text>meta description (160 characters or fewer)</text></paragraph>",
     )
 
+    title = cast(Any, query_fields["title"])
+    assert len(title) == 1
+    check_ast_testing_string(title[0], "<text>h1 Article Title</text>")
+
 
 def test_page_groups(backend: Backend) -> None:
     """Test that page groups are correctly filtered and cleaned."""
