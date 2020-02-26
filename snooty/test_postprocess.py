@@ -290,6 +290,13 @@ def test_substitutions(backend: Backend) -> None:
     )
 
     # Test substitutions defined in-page
+    paragraph = cast(Dict[str, Any], ast["children"][6])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Diff</text></substitution_reference>""",
+    )
+
     page_id = FileId("page4.txt")
     ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
 
