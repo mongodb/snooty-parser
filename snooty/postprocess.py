@@ -583,7 +583,7 @@ class DevhubPostprocessor(Postprocessor):
 
         if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
-            self.query_fields["author"] = options["name"]
+            self.query_fields["author"] = options
         elif key == "devhub:related":
             # Save list of nodes (likely :doc: roles)
             self.query_fields[name] = []
