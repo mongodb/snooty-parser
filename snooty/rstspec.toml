@@ -472,11 +472,11 @@ content_type = "list"
 ###### Misc.
 [directive.pubdate]
 help = "Date the article was published"
-argument_type = "string"
+argument_type = "iso_8601"
 
 [directive.updated-date]
 help = "Date the post was most recently updated"
-argument_type = "string"
+argument_type = "iso_8601"
 
 [directive.twitter]
 help = """Options

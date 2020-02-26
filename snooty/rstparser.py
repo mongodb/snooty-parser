@@ -12,6 +12,7 @@ import docutils.utils
 import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -52,6 +53,7 @@ PAT_EXPLICIT_TITLE = re.compile(
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
+PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
@@ -422,6 +424,13 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
             node.append(directive_argument(self.arguments[0], "", title_node))
             node.append(target_ref_title(title_text, "", ref_title_node))
+        elif self.name == "pubdate":
+            date = self.parse_date(self.arguments[0])
+            if date:
+                node["date"] = date
+            else:
+                # TODO: Report error (wait for andrew)
+                return []
         else:
             self.parse_argument(node, source, line)
 
@@ -473,6 +482,15 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         """Docutils by default will, if a "name" option is given to a directive,
            change the shape of the node. We don't want that and it muddles up higher layers."""
         pass
+
+    @staticmethod
+    def parse_date(date_str: str) -> Optional[datetime]:
+        match = PAT_ISO_8601.match(date_str)
+        if match:
+            return datetime.fromisoformat(date_str)
+        else:
+            # TODO: Add diagnostic/omit node
+            return None
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:

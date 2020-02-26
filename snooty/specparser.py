@@ -29,6 +29,9 @@ from typing_extensions import Protocol
 #: Types of formatting that can be applied to a role.
 FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
 
+#: Types of formatting to which date directives must conform.
+DateFormattingType = Enum("DateType", ("iso_8601"))
+
 
 class _Inheritable(Protocol):
     inherit: Optional[str]
@@ -37,6 +40,13 @@ class _Inheritable(Protocol):
 class _HasNameAndDomain(Protocol):
     domain: Optional[str]
     name: str
+
+
+@checked
+@dataclass
+class DateType:
+    """Configuration for a directive that specifies a date"""
+    date: DateFormattingType = field(default=DateFormattingType.iso_8601)
 
 
 @checked

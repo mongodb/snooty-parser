@@ -462,8 +462,6 @@ class DevhubPostprocessor(Postprocessor):
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
     ARG_FIELDS = {
-        ":pubdate",
-        ":updated-date",
         "devhub:level",
         "devhub:type",
         "devhub:atf-image",
@@ -586,6 +584,10 @@ class DevhubPostprocessor(Postprocessor):
             for item in list_items:
                 paragraph = item["children"][0]
                 self.query_fields[name].append(paragraph["children"][0])
+        elif key in {":pubdate", ":updated-date"}:
+            date = obj.get("date")
+            if date:
+                self.query_fields[name] = date
         elif key in self.ARG_FIELDS:
             argument = cast(Any, obj["argument"])
             self.query_fields[name] = argument[0]["value"]
