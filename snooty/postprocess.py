@@ -553,6 +553,13 @@ class DevhubPostprocessor(Postprocessor):
         """
         page = kwargs.get("page")
         assert isinstance(page, Page)
+
+        # Save page title to query_fields, if it exists
+        slug = clean_slug(filename.as_posix())
+        title = self.slug_title_mapping.get(slug)
+        if title is not None:
+            self.query_fields["title"] = title
+
         page.query_fields = self.query_fields
 
     def flatten_devhub_article(
