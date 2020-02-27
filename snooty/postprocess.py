@@ -555,6 +555,7 @@ class DevhubPostprocessor(Postprocessor):
 
         # Save page title to query_fields, if it exists
         slug = clean_slug(filename.as_posix())
+        self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
         title = self.slug_title_mapping.get(slug)
         if title is not None:
             self.query_fields["title"] = title
@@ -582,7 +583,7 @@ class DevhubPostprocessor(Postprocessor):
 
         if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
-            self.query_fields["author"] = options["name"]
+            self.query_fields["author"] = options
         elif key == "devhub:related":
             # Save list of nodes (likely :doc: roles)
             self.query_fields[name] = []

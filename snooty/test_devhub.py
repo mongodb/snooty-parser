@@ -22,7 +22,10 @@ def test_queryable_fields(backend: Backend) -> None:
     page = backend.pages[page_id]
     query_fields: Dict[str, SerializableType] = page.query_fields
     assert query_fields is not None
-    assert query_fields["author"] == "Eliot Horowitz"
+    assert query_fields["author"] == {
+        "name": "Eliot Horowitz",
+        "image": "/path/to/eliots/bio/photo.jpg",
+    }
     assert query_fields["tags"] == ["foo", "bar", "baz"]
     assert query_fields["languages"] == ["nodejs", "java"]
     assert query_fields["products"] == ["Realm", "MongoDB"]
@@ -31,6 +34,7 @@ def test_queryable_fields(backend: Backend) -> None:
     assert query_fields["atf-image"] == "/img/heros/how-to-write-an-article.png"
     assert query_fields["type"] == "article, quickstart, how-to, video, live"
     assert query_fields["level"] == "beginner, intermediate, advanced"
+    assert query_fields["slug"] == "/"
 
     related = cast(Any, query_fields["related"])
     check_ast_testing_string(
