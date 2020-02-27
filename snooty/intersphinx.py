@@ -119,7 +119,9 @@ def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
 
     if mtime is not None:
         if (datetime.datetime.now() - mtime) < datetime.timedelta(hours=1):
-            request_headers["If-Modified-Since"] = formatdate(mktime(mtime.timetuple()))
+            request_headers["If-Modified-Since"] = formatdate(
+                mktime(mtime.timetuple()), usegmt=True
+            )
 
     res = requests.get(url, headers=request_headers)
     res.raise_for_status()
