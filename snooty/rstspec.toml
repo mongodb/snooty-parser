@@ -392,10 +392,6 @@ content_type = "block"
 help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
 inherit = "_devhub-block"
 
-[directive."devhub:series"]
-help = "Specify the series that this article is part of (if applicable)."
-inherit = "_devhub-inline"
-
 [directive."devhub:author"]
 help = "Author profile for the byline."
 example = """.. author::

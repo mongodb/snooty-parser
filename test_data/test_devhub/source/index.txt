@@ -30,8 +30,6 @@
 
 .. level:: beginner, intermediate, advanced
 
-.. series:: seriesName
-
 .. tags:: 
 
    * foo
