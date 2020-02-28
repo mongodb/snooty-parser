@@ -12,8 +12,6 @@ ROOT_PATH = Path("test_data")
 
 @pytest.fixture(scope="module")
 def backend() -> Backend:
-    with open("foo", "a") as f:
-        f.write("FOO\n")
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
@@ -261,4 +259,123 @@ def test_target_titles(backend: Backend) -> None:
     check_ast_testing_string(
         target2,
         """<target domain="std" name="label" target="another-target-for-a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
+    )
+
+
+def test_substitutions(backend: Backend) -> None:
+    # Test substitutions as defined in snooty.toml
+    page_id = FileId("page3.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    paragraph = cast(Dict[str, Any], ast["children"][2])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="service"><text>Atlas</text></substitution_reference>""",
+    )
+
+    substitution_reference = paragraph["children"][2]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="global-write-clusters"><text>Global </text><emphasis><text>Clusters</text></emphasis></substitution_reference>""",
+    )
+
+    # Test substitution of empty string
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="blank"></substitution_reference>""",
+    )
+
+    # Test substitutions defined in-page
+    paragraph = cast(Dict[str, Any], ast["children"][6])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Diff</text></substitution_reference>""",
+    )
+
+    page_id = FileId("page4.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    substution_definition = cast(Dict[str, Any], ast["children"][2])
+    check_ast_testing_string(
+        substution_definition,
+        """<substitution_definition name="sub"><text>Substitution</text></substitution_definition>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][1])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
+    )
+
+    # Test substitution used in an include
+    page_id = FileId("page5.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    paragraph = cast(Dict[str, Any], ast["children"][1])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="included-sub"><text>ack</text></substitution_reference>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="included-sub"><text>included substitution</text></substitution_reference>""",
+    )
+
+    include = cast(Dict[str, Any], ast["children"][2])
+    paragraph = include["children"][1]
+    substitution_reference = paragraph["children"][1]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="use-in-include"><text>Yes</text></substitution_reference>""",
+    )
+
+    # Test circular substitutionos
+    page_id = FileId("circular.txt")
+
+    diagnostics = backend.diagnostics[page_id]
+    assert len(diagnostics) == 4
+
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    paragraph = cast(Dict[str, Any], ast["children"][2])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="operation"><substitution_reference name="add"></substitution_reference></substitution_reference>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][7])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="baz"><substitution_reference name="foo"></substitution_reference></substitution_reference>""",
+    )
+
+    paragraph = cast(Dict[str, Any], ast["children"][3])
+    check_ast_testing_string(
+        paragraph, "<paragraph><text>Testing content here.</text></paragraph>"
+    )
+
+    # Test nested substitutions
+    page_id = FileId("nested.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    paragraph = cast(Dict[str, Any], ast["children"][2])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="weather"><substitution_reference name="sun"><text>sun</text></substitution_reference></substitution_reference>""",
     )

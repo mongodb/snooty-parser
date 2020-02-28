@@ -1,1 +1,7 @@
 .. include:: /includes/test.rst
+
+Using |sub| before definition.
+
+.. |sub| replace:: Substitution
+
+Using |sub| after definition.

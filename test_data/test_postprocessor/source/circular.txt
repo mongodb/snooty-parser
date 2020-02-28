@@ -1,0 +1,13 @@
+.. |add| replace:: |operation|
+.. |operation| replace:: |add|
+
+|operation|
+
+Testing content here.
+
+.. |foo| replace:: |bar|
+.. |bar| replace:: |baz|
+.. |baz| replace:: |foo|
+
+|baz|
+
