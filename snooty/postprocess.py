@@ -561,17 +561,16 @@ class DevhubPostprocessor(Postprocessor):
 
     # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
     # These directives are represented as list nodes; they will return a list of strings
-    LIST_FIELDS = {"devhub:products", "devhub:tags", "devhub:related", ":languages"}
+    LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
     # These directives have their content represented as children; they will return a list of nodes
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
     ARG_FIELDS = {
-        "pubdate",
-        "updated-date",
+        ":pubdate",
+        ":updated-date",
         "devhub:level",
         "devhub:type",
         "devhub:atf-image",
-        "devhub:series",
     }
 
     def run(
@@ -659,6 +658,14 @@ class DevhubPostprocessor(Postprocessor):
         """
         page = kwargs.get("page")
         assert isinstance(page, Page)
+
+        # Save page title to query_fields, if it exists
+        slug = clean_slug(filename.as_posix())
+        self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
+        title = self.slug_title_mapping.get(slug)
+        if title is not None:
+            self.query_fields["title"] = title
+
         page.query_fields = self.query_fields
 
     def flatten_devhub_article(
@@ -682,7 +689,16 @@ class DevhubPostprocessor(Postprocessor):
 
         if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
-            self.query_fields["author"] = options["name"]
+            self.query_fields["author"] = options
+        elif key == "devhub:related":
+            # Save list of nodes (likely :doc: roles)
+            self.query_fields[name] = []
+            children = cast(Any, obj["children"])
+            list_items = children[0]["children"]
+            assert isinstance(list_items, List)
+            for item in list_items:
+                paragraph = item["children"][0]
+                self.query_fields[name].append(paragraph["children"][0])
         elif key in self.ARG_FIELDS:
             argument = cast(Any, obj["argument"])
             self.query_fields[name] = argument[0]["value"]

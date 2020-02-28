@@ -24,6 +24,7 @@ def test_fetch() -> None:
         fetch_inventory(INVENTORY_URL, TESTING_CACHE_DIR)
         assert INVENTORY_PATH.is_file()
         stat2 = INVENTORY_PATH.stat()
+
         assert stat.st_mtime_ns == stat2.st_mtime_ns
     finally:
         shutil.rmtree(TESTING_CACHE_DIR, ignore_errors=True)

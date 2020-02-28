@@ -44,6 +44,8 @@ options.class = "string"
 options.header-rows = "nonnegative_integer"
 options.stub-columns = "nonnegative_integer"
 
+[directive."ecosystem:landing-page-tiles"]
+
 [directive.admonition]
 content_type = "block"
 argument_type = "string"
@@ -389,10 +391,6 @@ content_type = "block"
 [directive."devhub:meta-description"]
 help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
 inherit = "_devhub-block"
-
-[directive."devhub:series"]
-help = "Specify the series that this article is part of (if applicable)."
-inherit = "_devhub-inline"
 
 [directive."devhub:author"]
 help = "Author profile for the byline."
