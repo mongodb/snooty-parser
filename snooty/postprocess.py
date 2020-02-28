@@ -259,12 +259,14 @@ class Postprocessor:
             else:
                 self.diagnostics[filename].append(
                     Diagnostic.error(
-                        f'Substituion reference could not be replaced: "|{name}|"', line
+                        f'Substitution reference could not be replaced: "|{name}|"',
+                        line,
                     )
                 )
 
         self.substitution_definitions = {}
         self.unreplaced_nodes = []
+        self.seen_definitions = set()
 
     def reset_seen_definitions(
         self,
