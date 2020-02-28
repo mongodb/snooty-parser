@@ -323,8 +323,11 @@ class JSONVisitor:
                 if attr_name in node:
                     doc[attr_name] = node[attr_name]
         elif node_name == "substitution_definition":
-            name = node["names"][0]
-            doc["name"] = name
+            try:
+                name = node["names"][0]
+                doc["name"] = name
+            except IndexError:
+                pass
         elif node_name == "substitution_reference":
             doc["name"] = node["refname"]
         elif node_name == "footnote":

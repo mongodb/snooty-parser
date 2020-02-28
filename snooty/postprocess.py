@@ -1,7 +1,7 @@
 import os.path
 import logging
 from collections import defaultdict
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable
+from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple, Iterable
 from .eventparser import EventParser
 from .types import (
     Diagnostic,
@@ -78,7 +78,8 @@ class Postprocessor:
         self.pending_targets: List[SerializableType] = []
         self.targets = targets
         self.substitution_definitions: Dict[str, SerializableType] = {}
-        self.unreplaced_nodes: List[Dict[str, SerializableType]] = []
+        self.unreplaced_nodes: List[Tuple[Dict[str, SerializableType], int]] = []
+        self.seen_definitions: Set[str] = set()
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
@@ -160,7 +161,6 @@ class Postprocessor:
             key = f"{domain}:{name}:{target}"
 
             try:
-                # Add title and link target to AST
                 field_name, target, title_nodes = self.targets[key]
                 injection_candidate = get_title_injection_candidate(obj)
                 if not obj.get("children") or injection_candidate is not None:
@@ -185,6 +185,7 @@ class Postprocessor:
             [
                 (EventParser.OBJECT_START_EVENT, self.replace_substitutions),
                 (EventParser.PAGE_END_EVENT, self.finalize_substitutions),
+                (EventParser.OBJECT_END_EVENT, self.reset_seen_definitions),
             ]
         )
 
@@ -203,21 +204,41 @@ class Postprocessor:
         assert obj is not None
         node_type = obj.get("type")
 
-        if node_type == "substitution_definition":
+        try:
             name = obj["name"]
             assert isinstance(name, str)
-            self.substitution_definitions[name] = obj["children"]
-        elif node_type == "substitution_reference":
-            name = obj["name"]
-            assert isinstance(name, str)
-            substitution = self.substitution_definitions.get(
-                name
-            ) or self.project_config.substitution_nodes.get(name)
-            if substitution is not None:
-                obj["children"] = substitution
-            else:
-                # Save node in order to populate it at the end of the page
-                self.unreplaced_nodes.append(obj)
+
+            position = cast(Any, obj.get("position"))
+            start = position["start"]
+            line = start["line"]
+            if node_type == "substitution_definition":
+                self.substitution_definitions[name] = obj["children"]
+            elif node_type == "substitution_reference":
+                # Get substitution from page. If not found, attempt to source from snooty.toml. Otherwise, save substitution to be populated at the end of page
+                substitution = self.substitution_definitions.get(
+                    name
+                ) or self.project_config.substitution_nodes.get(name)
+
+                if name in self.seen_definitions:
+                    # Catch circular substitution
+                    del self.substitution_definitions[name]
+                    obj["children"] = []
+                    self.diagnostics[filename].append(
+                        Diagnostic.error(
+                            f'Circular substitution definition referenced: "{name}"',
+                            line,
+                        )
+                    )
+                elif substitution is not None:
+                    obj["children"] = substitution
+                else:
+                    # Save node in order to populate it at the end of the page
+                    self.unreplaced_nodes.append((obj, line))
+                self.seen_definitions.add(name)
+        except KeyError:
+            # If node does not contain "name" field, it is a duplicate substitution definition.
+            # An error has already been thrown for this on parse, so pass.
+            pass
 
     def finalize_substitutions(
         self,
@@ -229,15 +250,34 @@ class Postprocessor:
 
         Clear definitions and unreplaced nodes for the next page.
         """
-        for node in self.unreplaced_nodes:
+        for node, line in self.unreplaced_nodes:
             name = node["name"]
             assert isinstance(name, str)
             substitution = self.substitution_definitions.get(name)
             if substitution is not None:
                 node["children"] = substitution
+            else:
+                self.diagnostics[filename].append(
+                    Diagnostic.error(
+                        f'Substituion reference could not be replaced: "|{name}|"', line
+                    )
+                )
 
         self.substitution_definitions = {}
         self.unreplaced_nodes = []
+
+    def reset_seen_definitions(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        obj = kwargs["obj"]
+        assert obj is not None
+        node_type = obj.get("type")
+
+        if node_type == "substitution_definition":
+            self.seen_definitions = set()
 
     def add_titles_to_label_targets(
         self,
