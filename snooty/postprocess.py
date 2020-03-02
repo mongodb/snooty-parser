@@ -79,7 +79,7 @@ class Postprocessor:
         self.targets = targets
         self.substitution_definitions: Dict[str, SerializableType] = {}
         self.unreplaced_nodes: List[Tuple[Dict[str, SerializableType], int]] = []
-        self.seen_definitions: Set[str] = set()
+        self.seen_definitions: Optional[Set[str]] = None
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
@@ -213,13 +213,14 @@ class Postprocessor:
             line = start["line"]
             if node_type == "substitution_definition":
                 self.substitution_definitions[name] = obj["children"]
+                self.seen_definitions = set()
             elif node_type == "substitution_reference":
                 # Get substitution from page. If not found, attempt to source from snooty.toml. Otherwise, save substitution to be populated at the end of page
                 substitution = self.substitution_definitions.get(
                     name
                 ) or self.project_config.substitution_nodes.get(name)
 
-                if name in self.seen_definitions:
+                if self.seen_definitions is not None and name in self.seen_definitions:
                     # Catch circular substitution
                     del self.substitution_definitions[name]
                     obj["children"] = []
@@ -234,7 +235,9 @@ class Postprocessor:
                 else:
                     # Save node in order to populate it at the end of the page
                     self.unreplaced_nodes.append((obj, line))
-                self.seen_definitions.add(name)
+
+                if self.seen_definitions is not None:
+                    self.seen_definitions.add(name)
         except KeyError:
             # If node does not contain "name" field, it is a duplicate substitution definition.
             # An error has already been thrown for this on parse, so pass.
@@ -266,7 +269,6 @@ class Postprocessor:
 
         self.substitution_definitions = {}
         self.unreplaced_nodes = []
-        self.seen_definitions = set()
 
     def reset_seen_definitions(
         self,
@@ -279,7 +281,7 @@ class Postprocessor:
         node_type = obj.get("type")
 
         if node_type == "substitution_definition":
-            self.seen_definitions = set()
+            self.seen_definitions = None
 
     def add_titles_to_label_targets(
         self,

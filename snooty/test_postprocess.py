@@ -280,6 +280,14 @@ def test_substitutions(backend: Backend) -> None:
         """<substitution_reference name="global-write-clusters"><text>Global </text><emphasis><text>Clusters</text></emphasis></substitution_reference>""",
     )
 
+    # Verify that same substitution can be used multiple times on the same page
+    paragraph = cast(Dict[str, Any], ast["children"][4])
+    substitution_reference = paragraph["children"][0]
+    check_ast_testing_string(
+        substitution_reference,
+        """<substitution_reference name="service"><text>Atlas</text></substitution_reference>""",
+    )
+
     # Test substitution of empty string
     paragraph = cast(Dict[str, Any], ast["children"][3])
     substitution_reference = paragraph["children"][1]
