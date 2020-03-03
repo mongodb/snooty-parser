@@ -1,6 +1,7 @@
 import os.path
 import logging
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple, Iterable
 from .eventparser import EventParser
 from .types import (
@@ -162,15 +163,15 @@ class Postprocessor:
 
             try:
                 field_name, target, title_nodes = self.targets[key]
+                obj[field_name] = target
+
                 injection_candidate = get_title_injection_candidate(obj)
-                if not obj.get("children") or injection_candidate is not None:
+                # If there is no explicit title given, use the target's title
+                if injection_candidate is not None:
+                    title_nodes = deepcopy(title_nodes)
                     for node in title_nodes:
                         deep_copy_position(obj, node)
-                    obj[field_name] = target
-
-                    if injection_candidate is not None:
-                        obj = injection_candidate
-                    obj["children"] = title_nodes
+                    injection_candidate["children"] = title_nodes
             except KeyError:
                 position = cast(Any, obj.get("position"))
                 start = position["start"]
