@@ -1,6 +1,6 @@
 .. author:: 
    :name: Eliot Horowitz
-   :image: /path/to/eliots/bio/photo.jpg
+   :image: /images/bio-ken.jpg
    
    Eliot Horowitz is the CTO and Co-Founder of MongoDB. He wrote the core
    code base for MongoDB starting in 2007, and subsequently built the

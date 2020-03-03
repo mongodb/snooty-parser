@@ -698,22 +698,25 @@ class DevhubPostprocessor(Postprocessor):
             # Save list of nodes (likely :doc: roles)
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
-            list_items = children[0]["children"]
-            assert isinstance(list_items, List)
-            for item in list_items:
-                paragraph = item["children"][0]
-                self.query_fields[name].append(paragraph["children"][0])
+            if len(children) > 0:
+                list_items = children[0]["children"]
+                assert isinstance(list_items, List)
+                for item in list_items:
+                    paragraph = item["children"][0]
+                    self.query_fields[name].append(paragraph["children"][0])
         elif key in self.ARG_FIELDS:
             argument = cast(Any, obj["argument"])
-            self.query_fields[name] = argument[0]["value"]
+            if len(argument) > 0:
+                self.query_fields[name] = argument[0]["value"]
         elif key in self.BLOCK_FIELDS:
             self.query_fields[name] = obj["children"]
         elif key in self.LIST_FIELDS:
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
-            list_items = children[0]["children"]
-            assert isinstance(list_items, List)
-            for item in list_items:
-                text_candidate = get_deepest(item)
-                assert text_candidate is not None
-                self.query_fields[name].append(text_candidate["value"])
+            if len(children) > 0:
+                list_items = children[0]["children"]
+                assert isinstance(list_items, List)
+                for item in list_items:
+                    text_candidate = get_deepest(item)
+                    assert text_candidate is not None
+                    self.query_fields[name].append(text_candidate["value"])

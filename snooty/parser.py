@@ -388,7 +388,8 @@ class JSONVisitor:
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
     ) -> bool:
         name = node["name"]
-        doc["domain"] = node["domain"]
+        domain = node["domain"]
+        doc["domain"] = domain
         doc["name"] = name
         options = node["options"] or {}
         if (
@@ -419,7 +420,7 @@ class JSONVisitor:
             )
             return False
 
-        if name in {"figure", "image"}:
+        if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
                 self.diagnostics.append(
                     Diagnostic.error(
@@ -517,6 +518,26 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
             doc["entries"] = node["entries"]
+        elif domain == "devhub" and name == "author":
+            image_argument = options.get("image")
+
+            if not image_argument:
+                # Warn writers that an image is suggested, but do not require
+                self.diagnostics.append(
+                    Diagnostic.warning(
+                        f'"{name}" expected an image argument', util.get_line(node)
+                    )
+                )
+            else:
+                try:
+                    static_asset = self.add_static_asset(
+                        Path(image_argument), upload=True
+                    )
+                    self.pending.append(PendingFigure(doc, static_asset))
+                except OSError as err:
+                    msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
+                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
         if options:
             doc["options"] = options
 
