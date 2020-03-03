@@ -17,7 +17,7 @@ Connection Limits and Cluster Tier
 
 .. method:: amethod(param1, param2)
 
-   Testing
+   Testing :ref:`explicit title <global-writes-zones>`.
 
 .. _a-sibling-node:
 

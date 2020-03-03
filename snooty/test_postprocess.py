@@ -180,6 +180,28 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
 
 
+def test_role_explicit_title(backend: Backend) -> None:
+    page_id = FileId("index.txt")
+    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+
+    # Assert that ref_roles with an explicit title work
+    paragraph = cast(Any, ast)["children"][1]["children"][4]["children"][1]["children"][
+        2
+    ]
+    ref_role = paragraph["children"][1]
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="global-writes-zones"
+        fileid="index">
+        <text>explicit title</text>
+        </ref_role>""",
+    )
+
+
 def test_toctree(backend: Backend) -> None:
     assert backend.metadata["toctree"] == {
         "children": [
