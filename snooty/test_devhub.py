@@ -18,20 +18,27 @@ def backend() -> Backend:
 
 
 def test_queryable_fields(backend: Backend) -> None:
-    page_id = FileId("index.txt")
+    page_id = FileId("includes/authors/lastname-firstname.rst")
     page = backend.pages[page_id]
     query_fields: Dict[str, SerializableType] = page.query_fields
+    assert len(page.static_assets) == 1
+
+    page_id = FileId("index.txt")
+    page = backend.pages[page_id]
+    query_fields = page.query_fields
+    assert len(page.static_assets) == 1
     assert query_fields is not None
     assert query_fields["author"] == {
         "name": "Eliot Horowitz",
-        "image": "/path/to/eliots/bio/photo.jpg",
+        "image": "/images/bio-ken.jpg",
+        "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
     }
     assert query_fields["tags"] == ["foo", "bar", "baz"]
     assert query_fields["languages"] == ["nodejs", "java"]
     assert query_fields["products"] == ["Realm", "MongoDB"]
     assert query_fields["pubdate"] == "January 31, 2019"
     assert query_fields["updated-date"] == "February 2, 2019"
-    assert query_fields["atf-image"] == "/img/heros/how-to-write-an-article.png"
+    assert query_fields["atf-image"] == "/images/atf-images/generic/pattern-green.png"
     assert query_fields["type"] == "article, quickstart, how-to, video, live"
     assert query_fields["level"] == "beginner, intermediate, advanced"
     assert query_fields["slug"] == "/"
