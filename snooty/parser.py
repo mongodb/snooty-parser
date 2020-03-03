@@ -519,9 +519,9 @@ class JSONVisitor:
         elif name == "toctree":
             doc["entries"] = node["entries"]
         elif domain == "devhub" and name == "author":
-            image_argument = options.get("image", None)
+            image_argument = options.get("image")
 
-            if image_argument is None:
+            if not image_argument:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(
                     Diagnostic.warning(
