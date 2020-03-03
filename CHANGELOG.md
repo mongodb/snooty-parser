@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.6] - 2020-03-03
+
 ### Fixed
 
 - Fix `ref_role` nodes with an explicit title.
