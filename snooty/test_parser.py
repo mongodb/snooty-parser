@@ -1076,3 +1076,30 @@ def test_no_weird_targets() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert "Links" in diagnostics[0].message
+
+
+def test_dates() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. pubdate:: 2020-03-04
+
+.. updated-date:: March 5, 2020
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <directive name="pubdate" date="2020-03-04 00:00:00"></directive>
+    <directive name="updated-date"></directive>
+</root>
+""",
+    )
