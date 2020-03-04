@@ -436,11 +436,15 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 node.append(identifier_node)
         elif self.name in {"pubdate", "updated-date"}:
             date = self.parse_date(self.arguments[0])
-            if date:
-                node["date"] = date
+            if isinstance(date, ValueError):
+                # Throw error and set date field to None
+                err = "Expected ISO 8061 date format (YYYY-MM-DD)"
+                node.append(
+                    self.state.document.reporter.error(f"{err}: {str(date)}", line=line)
+                )
+                node["date"] = None
             else:
-                # XXX: Add error diagnostic
-                return []
+                node["date"] = date
         else:
             self.parse_argument(node, source, line)
 
@@ -505,13 +509,12 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             yield match.group(1)
 
     @staticmethod
-    def parse_date(date_str: str) -> Optional[datetime]:
+    def parse_date(date_str: str) -> Union[datetime, ValueError]:
         match = PAT_ISO_8601.match(date_str)
         if match:
             return datetime.fromisoformat(date_str)
         else:
-            # XXX: Add error diagnostic
-            return None
+            return ValueError(date_str)
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
