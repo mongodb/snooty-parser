@@ -21,12 +21,14 @@ from typing import (
     Dict,
     DefaultDict,
     Generic,
+    Sequence,
     Optional,
     List,
     Tuple,
     Type,
     TypeVar,
     Iterable,
+    Union,
 )
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
@@ -53,6 +55,7 @@ PAT_EXPLICIT_TITLE = re.compile(
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
+PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
 PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
@@ -125,6 +128,13 @@ class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
     pass
 
 
+class target_identifier(docutils.nodes.Inline, docutils.nodes.TextElement):
+    """Docutils node representing the title which should be used for refs to this node's
+       parent target, if no explicit title is given."""
+
+    pass
+
+
 class directive(docutils.nodes.General, docutils.nodes.Element):
     def __init__(self, domain: str, name: str) -> None:
         super(directive, self).__init__()
@@ -134,13 +144,6 @@ class directive(docutils.nodes.General, docutils.nodes.Element):
 
 class target_directive(directive):
     """Docutils node representing a named target which can be referenced by the ref_role node."""
-
-    pass
-
-
-class target_ref_title(docutils.nodes.Inline, docutils.nodes.TextElement):
-    """Docutils node representing the title which should be used for refs to this node's
-       parent target, if no explicit title is given."""
 
     pass
 
@@ -259,20 +262,13 @@ def layer_formatting(
     return node
 
 
+@dataclass
 class RefRoleHandler:
-    def __init__(
-        self,
-        domain: str,
-        name: str,
-        prefix: Optional[str],
-        callable: bool,
-        format: AbstractSet[specparser.FormattingType],
-    ) -> None:
-        self.domain = domain
-        self.name = name
-        self.prefix = prefix
-        self.callable = callable
-        self.format = format
+    domain: str
+    name: str
+    prefix: Optional[str]
+    target_type: specparser.TargetType
+    format: AbstractSet[specparser.FormattingType]
 
     def __call__(
         self,
@@ -301,8 +297,10 @@ class RefRoleHandler:
         if self.prefix and not target.startswith(self.prefix):
             target = f"{self.prefix}.{target}"
 
-        if self.callable:
+        if self.target_type == specparser.TargetType.callable:
             target = strip_parameters(target)
+        elif self.target_type == specparser.TargetType.cmdline_option:
+            target = ".".join(target.split())
 
         node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
 
@@ -404,26 +402,38 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
         # If this is an rstobject, we need to generate a target property
         if rstobject_spec is not None:
-            if rstobject_spec.prefix:
-                node["target"] = f"{rstobject_spec.prefix}.{self.arguments[0]}"
-            else:
-                node["target"] = self.arguments[0]
+            prefix = rstobject_spec.prefix + "." if rstobject_spec.prefix else ""
 
-            title_text = self.arguments[0]
-
-            if rstobject_spec.callable:
-                node["target"] = strip_parameters(node["target"])
-                title_text = strip_parameters(title_text) + "()"
+            if rstobject_spec.type == specparser.TargetType.plain:
+                targets: Sequence[Tuple[str, str]] = (
+                    ((prefix + self.arguments[0], self.arguments[0]),)
+                    if rstobject_spec.prefix
+                    else ((self.arguments[0], self.arguments[0]),)
+                )
+            elif rstobject_spec.type == specparser.TargetType.callable:
+                stripped = strip_parameters(self.arguments[0])
+                targets = ((prefix + stripped, stripped + "()"),)
+            elif rstobject_spec.type == specparser.TargetType.cmdline_option:
+                targets = []
+                for arg_id in self.parse_options(self.arguments[0]):
+                    if isinstance(arg_id, ValueError):
+                        node.append(
+                            self.state.document.reporter.error(str(arg_id), line=line)
+                        )
+                        continue
+                    targets.append((prefix + arg_id, arg_id))
 
             # title is the node that should be presented at this point in the doctree
             title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
-            # ref_title is the node that should be inserted for links TO this target.
-            ref_title_node: docutils.nodes.Node = docutils.nodes.Text(title_text)
             if rstobject_spec.format is not None:
                 title_node = format_node(title_node, rstobject_spec.format)
-
             node.append(directive_argument(self.arguments[0], "", title_node))
-            node.append(target_ref_title(title_text, "", ref_title_node))
+
+            for target_id, target_title in targets:
+                identifier_node = target_identifier()
+                identifier_node["ids"] = [target_id]
+                identifier_node.append(docutils.nodes.Text(target_title))
+                node.append(identifier_node)
         elif self.name in {"pubdate", "updated-date"}:
             date = self.parse_date(self.arguments[0])
             if date:
@@ -482,6 +492,17 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         """Docutils by default will, if a "name" option is given to a directive,
            change the shape of the node. We don't want that and it muddles up higher layers."""
         pass
+
+    @staticmethod
+    def parse_options(option: str) -> Iterable[Union[str, ValueError]]:
+        all_parts = (part.strip() for part in option.split(", "))
+        for part in all_parts:
+            match = PAT_OPTION.match(part)
+            if match is None:
+                yield ValueError(part)
+                continue
+
+            yield match.group(1)
 
     @staticmethod
     def parse_date(date_str: str) -> Optional[datetime]:
@@ -970,7 +991,9 @@ def register_spec_with_docutils(
                 role_spec.type.domain or domain,
                 role_spec.type.name,
                 role_spec.type.tag,
-                role_spec.rstobject.callable if role_spec.rstobject else False,
+                role_spec.rstobject.type
+                if role_spec.rstobject
+                else specparser.TargetType.plain,
                 role_spec.type.format,
             )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:

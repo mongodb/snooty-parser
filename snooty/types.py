@@ -11,7 +11,9 @@ from typing import (
     Callable,
     Dict,
     DefaultDict,
+    NamedTuple,
     Set,
+    Sequence,
     List,
     Iterator,
     Tuple,
@@ -32,6 +34,10 @@ SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 EmbeddedRstParser = Callable[[str, int, bool], List[SerializableType]]
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
+
+#: Indicates the target protocol of a target: either a file local to the
+#: current project, or a URL (from an intersphinx inventory).
+TargetType = enum.Enum("TargetType", ("fileid", "url"))
 
 
 def normalize_target(target: str) -> str:
@@ -180,11 +186,17 @@ class StaticAsset:
 class TargetDatabase:
     """A database of targets known to this project."""
 
+    class Result(NamedTuple):
+        type: TargetType
+        result: str
+        title: List[SerializableType]
+
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
     )
-    local_definitions: Dict[str, FileId] = field(default_factory=dict)
-    titles: Dict[str, List[SerializableType]] = field(default_factory=dict)
+    local_definitions: DefaultDict[
+        str, List[Tuple[FileId, List[SerializableType]]]
+    ] = field(default_factory=lambda: defaultdict(list))
 
     def __contains__(self, key: str) -> bool:
         key = normalize_target(key)
@@ -197,14 +209,17 @@ class TargetDatabase:
 
         return False
 
-    def __getitem__(self, key: str) -> Tuple[str, str, List[SerializableType]]:
+    def __getitem__(self, key: str) -> Sequence["TargetDatabase.Result"]:
         key = normalize_target(key)
+        results: List[TargetDatabase.Result] = []
+
         # Check to see if the target is defined locally
         try:
-            return (
-                "fileid",
-                self.local_definitions[key].without_known_suffix,
-                self.titles[key],
+            results.extend(
+                TargetDatabase.Result(
+                    TargetType.fileid, fileid.without_known_suffix, title
+                )
+                for fileid, title in self.local_definitions[key]
             )
         except KeyError:
             pass
@@ -218,29 +233,28 @@ class TargetDatabase:
                 title: List[SerializableType] = [
                     {"type": "text", "value": entry.display_name}
                 ]
-                return ("url", url, title)
+                results.append(TargetDatabase.Result(TargetType.url, url, title))
 
-        raise KeyError(key)
+        return results
 
     def define_local_target(
         self,
         domain: str,
         name: str,
-        target: str,
+        targets: Sequence[str],
         pageid: FileId,
         title: List[SerializableType],
     ) -> None:
-        target = normalize_target(target)
-        key = f"{domain}:{name}:{target}"
-        self.local_definitions[key] = pageid
-        self.titles[key] = title
+        for target in targets:
+            target = normalize_target(target)
+            key = f"{domain}:{name}:{target}"
+            self.local_definitions[key].append((pageid, title))
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
            the given ProjectConfig instance."""
         self.intersphinx_inventories.clear()
         self.local_definitions.clear()
-        self.titles.clear()
 
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
         for url in config.intersphinx:

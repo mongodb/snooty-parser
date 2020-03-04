@@ -222,9 +222,10 @@ class JSONVisitor:
             )
             return
 
+        line = util.get_line(node)
         doc: Dict[str, SerializableType] = {
             "type": node_name,
-            "position": {"start": {"line": util.get_line(node)}},
+            "position": {"start": {"line": line}},
         }
 
         if node_name == "field":
@@ -297,9 +298,21 @@ class JSONVisitor:
                 self.state.pop()
                 return
 
-            doc["target"] = node["ids"][0]
+            node_id = node["ids"][0]
+            children = [
+                {
+                    "type": "target_identifier",
+                    "ids": [node_id],
+                    "children": [],
+                    "position": {"start": {"line": line}},
+                }
+            ]
+            doc["children"] = children
             if "refuri" in node:
                 doc["refuri"] = node["refuri"]
+            return
+        elif node_name == "target_identifier":
+            doc["ids"] = node["ids"]
         elif node_name == "definition_list":
             doc["type"] = "definitionList"
         elif node_name == "definition_list_item":
@@ -380,7 +393,6 @@ class JSONVisitor:
         doc["type"] = "target"
         doc["domain"] = node["domain"]
         doc["name"] = node["name"]
-        doc["target"] = node["target"]
         doc["options"] = options
         doc["children"] = []
 

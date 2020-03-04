@@ -68,6 +68,10 @@ class Inventory:
 
             name, domain_and_role, raw_priority, uri, dispname = match.groups()
 
+            # This is hard-coded in Sphinx as well. Support this name for compatibility.
+            if domain_and_role == "std:cmdoption":
+                domain_and_role = "std:option"
+
             if uri.endswith("$"):
                 uri = uri[:-1] + name
 

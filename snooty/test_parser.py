@@ -366,9 +366,9 @@ def test_roles() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target domain="mongodb" name="binary" target="bin.mongod">
+            <target domain="mongodb" name="binary">
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
-                <target_ref_title><text>mongod</text></target_ref_title>
+                <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
             </target>
             <list>
             <listItem>
@@ -522,10 +522,34 @@ def test_rstobject() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target name="option" target="--slowms &lt;integer&gt;">
+            <target domain="std" name="option">
             <directive_argument><literal><text>--slowms &lt;integer&gt;</text></literal></directive_argument>
-            <target_ref_title><text>--slowms &lt;integer&gt;</text></target_ref_title>
+            <target_identifier ids="['--slowms']"><text>--slowms</text></target_identifier>
             <paragraph><text>test</text></paragraph>
+            </target>
+            </root>""",
+    )
+
+
+def test_bad_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. option:: =
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+            <target domain="std" name="option">
+            <directive_argument><literal><text>=</text></literal></directive_argument>
             </target>
             </root>""",
     )
@@ -1016,9 +1040,9 @@ def test_callable_target() -> None:
         page.ast,
         """
 <root>
-    <target domain="mongodb" name="method" target="db.collection.ensureIndex">
+    <target domain="mongodb" name="method">
     <directive_argument><literal><text>db.collection.ensureIndex(keys, options)</text></literal></directive_argument>
-    <target_ref_title><text>db.collection.ensureIndex()</text></target_ref_title>
+    <target_identifier ids="['db.collection.ensureIndex']"><text>db.collection.ensureIndex()</text></target_identifier>
     <paragraph>
     <text>Creates an index on the specified field if the index does not already exist.</text>
     </paragraph>
