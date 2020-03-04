@@ -29,7 +29,7 @@ def test_slug_title_mapping(backend: Backend) -> None:
     )
 
     # page3 is not included in slug-title mapping because it lacks a heading.
-    assert len(slugToTitle) == 4
+    assert len(slugToTitle) == 5
     assert slugToTitle["index"][0]["value"] == "Connection Limits and Cluster Tier"
     assert slugToTitle["page1"][0]["value"] == "Print this heading"
     assert (
@@ -50,11 +50,11 @@ def test_expand_includes(backend: Backend) -> None:
             "position": {"start": {"line": 1}},
             "domain": "std",
             "name": "label",
-            "target": "connection-limits",
             "children": [
                 {
-                    "type": "target_ref_title",
-                    "position": {"start": {"line": 5}},
+                    "type": "target_identifier",
+                    "ids": ["connection-limits"],
+                    "position": {"start": {"line": 1}},
                     "children": [
                         {
                             "type": "text",
@@ -276,11 +276,127 @@ def test_target_titles(backend: Backend) -> None:
     target2 = section["children"][-1]
     check_ast_testing_string(
         target1,
-        """<target domain="std" name="label" target="a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
+        """<target domain="std" name="label"><target_identifier ids="['a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
     )
     check_ast_testing_string(
         target2,
-        """<target domain="std" name="label" target="another-target-for-a-sibling-node"><target_ref_title><text>Testing Sibling Nodes</text></target_ref_title></target>""",
+        """<target domain="std" name="label"><target_identifier ids="['another-target-for-a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
+    )
+
+
+def test_program_option(backend: Backend) -> None:
+    page_id = FileId("a-program.txt")
+    ast = cast(Dict[str, List[Dict[str, Any]]], backend.pages[page_id].ast)
+    section = ast["children"][0]
+    include = section["children"][3]
+    program1 = section["children"][2]
+    option1_1 = include["children"][0]
+    option1_2 = section["children"][4]
+    program2 = section["children"][5]
+    option2_1 = section["children"][6]
+
+    # Test directives
+    check_ast_testing_string(
+        program1,
+        """
+        <target domain="std" name="program">
+        <directive_argument><literal><text>a-program</text></literal></directive_argument>
+        <target_identifier ids="['a-program']"><text>a-program</text></target_identifier>
+        </target>
+    """,
+    )
+
+    check_ast_testing_string(
+        option1_1,
+        """
+        <target domain="std" name="option">
+        <directive_argument><literal><text>--version, -v</text></literal></directive_argument>
+        <target_identifier ids="['--version', 'a-program.--version']"><text>a-program --version</text></target_identifier>
+        <target_identifier ids="['-v', 'a-program.-v']"><text>a-program -v</text></target_identifier>
+        <paragraph><text>Displays the program version.</text></paragraph>
+        </target>
+    """,
+    )
+
+    check_ast_testing_string(
+        option1_2,
+        """
+        <target domain="std" name="option">
+        <directive_argument><literal><text>--config &lt;filename&gt;, -f &lt;filename&gt;</text></literal></directive_argument>
+        <target_identifier ids="['--config', 'a-program.--config']"><text>a-program --config</text></target_identifier>
+        <target_identifier ids="['-f', 'a-program.-f']"><text>a-program -f</text></target_identifier>
+        <paragraph><text>Chooses a configuration file to load.</text></paragraph>
+        </target>
+    """,
+    )
+
+    check_ast_testing_string(
+        program2,
+        """
+        <target domain="std" name="program">
+        <directive_argument><literal><text>a-second-program</text></literal></directive_argument>
+        <target_identifier ids="['a-second-program']"><text>a-second-program</text></target_identifier>
+        </target>
+    """,
+    )
+
+    check_ast_testing_string(
+        option2_1,
+        """
+        <target domain="std" name="option">
+        <directive_argument><literal><text>--version, -v</text></literal></directive_argument>
+        <target_identifier ids="['--version', 'a-second-program.--version']"><text>a-second-program --version</text></target_identifier>
+        <target_identifier ids="['-v', 'a-second-program.-v']"><text>a-second-program -v</text></target_identifier>
+        <paragraph><text>Display another program's version.</text></paragraph>
+        </target>
+    """,
+    )
+
+    # Test roles
+    diagnostics = backend.diagnostics[page_id]
+    assert len(diagnostics) == 1, diagnostics
+    assert "Ambiguous" in diagnostics[0].message
+
+    roles = section["children"][7]["children"]
+    check_ast_testing_string(
+        roles[0]["children"][0]["children"][0],
+        """
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="a-program">
+        <literal><text>a-program -f</text></literal>
+        </ref_role>
+    """,
+    )
+    check_ast_testing_string(
+        roles[1]["children"][0]["children"][0],
+        """
+        <ref_role domain="std" name="option" target="-f" fileid="a-program">
+        <literal><text>a-program -f</text></literal>
+        </ref_role>
+    """,
+    )
+    check_ast_testing_string(
+        roles[2]["children"][0]["children"][0],
+        """
+        <ref_role domain="std" name="option" target="--config" fileid="a-program">
+        <literal><text>a-program --config</text></literal>
+        </ref_role>
+    """,
+    )
+    check_ast_testing_string(
+        roles[3]["children"][0]["children"][0],
+        """
+        <ref_role domain="std" name="option" target="-v" fileid="a-program">
+        <literal><text>a-second-program -v</text></literal>
+        </ref_role>
+    """,
+    )
+    check_ast_testing_string(
+        roles[4]["children"][0]["children"][0],
+        """
+        <ref_role domain="std" name="option" target="a-program.-v" fileid="a-program">
+        <literal><text>a-program -v</text></literal>
+        </ref_role>
+    """,
     )
 
 

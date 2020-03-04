@@ -17,6 +17,10 @@ from .util import get_child_of_type, SOURCE_FILE_EXTENSIONS
 logger = logging.getLogger(__name__)
 
 
+def get_node_line(node: Dict[str, SerializableType]) -> int:
+    return int(cast(Any, node["position"])["start"]["line"])
+
+
 # XXX: The following two functions should probably be combined at some point
 def get_title_injection_candidate(
     node: Dict[str, SerializableType]
@@ -65,6 +69,54 @@ def deep_copy_position(source: SerializableType, dest: SerializableType) -> None
         deep_copy_position(source, child)
 
 
+class ProgramOptionHandler:
+    """Handle the program & option rstobjects, using the last program target
+       to populate option targets."""
+
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.pending_program: Optional[SerializableType] = None
+        self.diagnostics = diagnostics
+
+    def __call__(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        obj = kwargs.get("obj")
+        assert obj is not None
+
+        if obj["type"] not in {"target", "ref_role"}:
+            return
+
+        identifier = f"{obj['type']}:{obj['domain']}:{obj['name']}"
+        if identifier == "target:std:program":
+            self.pending_program = obj
+        elif identifier == "target:std:option":
+            if not self.pending_program:
+                line = get_node_line(obj)
+                self.diagnostics[filename].append(
+                    Diagnostic.error("'.. option::' must follow '.. program::'", line)
+                )
+                return
+            program_target = next(
+                get_child_of_type(self.pending_program, "target_identifier")
+            )
+            program_name = cast(Any, program_target["children"])[0]["value"]
+            new_identifiers: List[SerializableType] = []
+            for child in get_child_of_type(obj, "target_identifier"):
+                child_ids = cast(List[str], child["ids"])
+                child_ids.extend(
+                    [f"{program_name}.{child_id}" for child_id in child_ids]
+                )
+
+                text_node = cast(Any, child["children"])[0]
+                value = text_node["value"]
+                text_node["value"] = f"{program_name} {value}"
+
+            obj["children"].extend(new_identifiers)  # type: ignore
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -84,6 +136,7 @@ class Postprocessor:
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
+        self.pending_program: Optional[SerializableType] = None
 
     def run(
         self, pages: Dict[FileId, Page]
@@ -108,8 +161,13 @@ class Postprocessor:
 
         self.run_event_parser(
             [
+                (EventParser.PAGE_START_EVENT, self.reset_program),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
+                (
+                    EventParser.OBJECT_START_EVENT,
+                    ProgramOptionHandler(self.diagnostics),
+                ),
             ]
         )
 
@@ -142,6 +200,9 @@ class Postprocessor:
             (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
         )
 
+    def reset_program(self, *args: object, **kwargs: object) -> None:
+        self.pending_program = None
+
     def handle_refs(
         self,
         filename: FileId,
@@ -161,24 +222,31 @@ class Postprocessor:
             target = obj.get("target")
             key = f"{domain}:{name}:{target}"
 
-            try:
-                field_name, target, title_nodes = self.targets[key]
-                obj[field_name] = target
-
-                injection_candidate = get_title_injection_candidate(obj)
-                # If there is no explicit title given, use the target's title
-                if injection_candidate is not None:
-                    title_nodes = deepcopy(title_nodes)
-                    for node in title_nodes:
-                        deep_copy_position(obj, node)
-                    injection_candidate["children"] = title_nodes
-            except KeyError:
-                position = cast(Any, obj.get("position"))
-                start = position["start"]
-                line = start["line"]
+            # Add title and link target to AST
+            target_candidates = self.targets[key]
+            if not target_candidates:
+                line = get_node_line(obj)
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
+                return
+
+            if len(target_candidates) > 1:
+                line = get_node_line(obj)
+                self.diagnostics[filename].append(
+                    Diagnostic.error(f'Ambiguous target: "{name}:{target}"', line)
+                )
+
+            # Choose the most recently-defined target candidate if it is ambiguous
+            target_type, target, title_nodes = target_candidates[-1]
+            obj[target_type.name] = target
+            injection_candidate = get_title_injection_candidate(obj)
+            # If there is no explicit title given, use the target's title
+            if injection_candidate is not None:
+                title_nodes = deepcopy(title_nodes)
+                for node in title_nodes:
+                    deep_copy_position(obj, node)
+                injection_candidate["children"] = title_nodes
 
     def handle_substitutions(self) -> None:
         """Find and replace substitutions throughout project"""
@@ -209,9 +277,7 @@ class Postprocessor:
             name = obj["name"]
             assert isinstance(name, str)
 
-            position = cast(Any, obj.get("position"))
-            start = position["start"]
-            line = start["line"]
+            line = get_node_line(obj)
             if node_type == "substitution_definition":
                 self.substitution_definitions[name] = obj["children"]
                 self.seen_definitions = set()
@@ -294,7 +360,7 @@ class Postprocessor:
         assert obj is not None
         node_type = obj.get("type")
 
-        if node_type not in {"target", "section"}:
+        if node_type not in {"target", "section", "target_identifier"}:
             self.pending_targets = []
 
         if (
@@ -302,18 +368,12 @@ class Postprocessor:
             and obj.get("domain") == "std"
             and obj.get("name") == "label"
         ):
-            self.pending_targets.append(obj)
+            self.pending_targets.extend(obj["children"])  # type: ignore
         elif node_type == "section":
             for target in self.pending_targets:
-                heading = get_child_of_type(obj, "heading")
+                heading = next(get_child_of_type(obj, "heading"), None)
                 if heading is not None:
-                    target["children"].append(  # type: ignore
-                        {
-                            "type": "target_ref_title",
-                            "position": heading["position"],  # type: ignore
-                            "children": heading["children"],  # type: ignore
-                        }
-                    )
+                    target["children"] = heading["children"]  # type: ignore
             self.pending_targets = []
 
     def handle_target(
@@ -332,15 +392,14 @@ class Postprocessor:
         assert isinstance(domain, str)
         name = obj["name"]
         assert isinstance(name, str)
-        target = obj["target"]
-        assert isinstance(target, str)
-        title_node = get_child_of_type(obj, "target_ref_title")
-        if title_node is None:
-            title: List[SerializableType] = []
-        else:
-            title = title_node["children"]  # type: ignore
+        for target_node in get_child_of_type(obj, "target_identifier"):
+            if not target_node["children"]:
+                title: List[SerializableType] = []
+            else:
+                title = target_node["children"]  # type: ignore
 
-        self.targets.define_local_target(domain, name, target, filename, title)
+            target_ids = cast(List[str], target_node["ids"])
+            self.targets.define_local_target(domain, name, target_ids, filename, title)
 
     def populate_include_nodes(
         self,
@@ -598,8 +657,13 @@ class DevhubPostprocessor(Postprocessor):
 
         self.run_event_parser(
             [
+                (EventParser.PAGE_START_EVENT, self.reset_program),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
+                (
+                    EventParser.OBJECT_START_EVENT,
+                    ProgramOptionHandler(self.diagnostics),
+                ),
             ]
         )
 

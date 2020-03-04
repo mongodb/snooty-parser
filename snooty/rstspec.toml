@@ -870,14 +870,19 @@ type = {link = "https://jwt.io/%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
+
 [rstobject."py:meth"]
+type = "callable"
+
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
 [rstobject."mongodb:mailgunaction"]
 [rstobject.mongodb]
-[rstobject.option]
+[rstobject."std:option"]
+type = "cmdline_option"
+
 [rstobject."mongomirror:option"]
-[rstobject.program]
+[rstobject."std:program"]
 [rstobject."mongodb:s3action"]
 [rstobject."mongodb:sesaction"]
 [rstobject."mongodb:slackaction"]
@@ -920,7 +925,7 @@ prefix = "pipe"
 prefix = "proj"
 
 [rstobject."mongodb:method"]
-callable = true
+type = "callable"
 
 [rstobject."mongodb:authrole"]
 [rstobject."mongodb:authaction"]

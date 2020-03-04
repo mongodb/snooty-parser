@@ -29,6 +29,9 @@ from typing_extensions import Protocol
 #: Types of formatting that can be applied to a role.
 FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
 
+#: How the target should be preprocessed.
+TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
+
 
 class _Inheritable(Protocol):
     inherit: Optional[str]
@@ -164,7 +167,7 @@ class RstObject:
     help: Optional[str]
     domain: Optional[str]
     prefix: str = field(default="")
-    callable: bool = field(default=False)
+    type: TargetType = field(default=TargetType.plain)
     deprecated: bool = field(default=False)
     name: str = field(default="")
     format: Set[FormattingType] = field(

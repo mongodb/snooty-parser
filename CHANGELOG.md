@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Populate substitution nodes in postprocess layer (DOCSPLAT-114).
+- Support for option and program rstobjects (DOCSP-8449).
 
 ### Fixed
 
