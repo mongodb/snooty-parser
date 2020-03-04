@@ -46,6 +46,7 @@ class _HasNameAndDomain(Protocol):
 @dataclass
 class DateType:
     """Configuration for a directive that specifies a date"""
+
     date: DateFormattingType = field(default=DateFormattingType.iso_8601)
 
 

@@ -424,12 +424,12 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
             node.append(directive_argument(self.arguments[0], "", title_node))
             node.append(target_ref_title(title_text, "", ref_title_node))
-        elif self.name == "pubdate":
+        elif self.name in {"pubdate", "updated-date"}:
             date = self.parse_date(self.arguments[0])
             if date:
                 node["date"] = date
             else:
-                # TODO: Report error (wait for andrew)
+                # XXX: Add error diagnostic
                 return []
         else:
             self.parse_argument(node, source, line)
@@ -489,7 +489,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         if match:
             return datetime.fromisoformat(date_str)
         else:
-            # TODO: Add diagnostic/omit node
+            # XXX: Add error diagnostic
             return None
 
 

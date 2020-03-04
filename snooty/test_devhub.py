@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import cast, Any, Dict, List
 from .types import BuildIdentifierSet, FileId, SerializableType
@@ -36,8 +37,12 @@ def test_queryable_fields(backend: Backend) -> None:
     assert query_fields["tags"] == ["foo", "bar", "baz"]
     assert query_fields["languages"] == ["nodejs", "java"]
     assert query_fields["products"] == ["Realm", "MongoDB"]
-    assert query_fields["pubdate"] == "January 31, 2019"
-    assert query_fields["updated-date"] == "February 2, 2019"
+    # Incorrectly formatted date is omitted
+    assert query_fields.get("pubdate") is None
+    updated_date = datetime.strftime(
+        cast(Any, query_fields["updated-date"]), "%Y-%m-%d"
+    )
+    assert updated_date == "2019-02-02"
     assert query_fields["atf-image"] == "/images/atf-images/generic/pattern-green.png"
     assert query_fields["type"] == "article, quickstart, how-to, video, live"
     assert query_fields["level"] == "beginner, intermediate, advanced"

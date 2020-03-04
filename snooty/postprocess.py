@@ -570,11 +570,7 @@ class DevhubPostprocessor(Postprocessor):
     # These directives have their content represented as children; they will return a list of nodes
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
-    ARG_FIELDS = {
-        "devhub:level",
-        "devhub:type",
-        "devhub:atf-image",
-    }
+    ARG_FIELDS = {"devhub:level", "devhub:type", "devhub:atf-image"}
 
     def run(
         self, pages: Dict[FileId, Page]
