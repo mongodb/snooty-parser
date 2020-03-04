@@ -17,6 +17,10 @@ from .util import get_child_of_type, SOURCE_FILE_EXTENSIONS
 logger = logging.getLogger(__name__)
 
 
+def get_node_line(node: Dict[str, SerializableType]) -> int:
+    return int(cast(Any, node["position"])["start"]["line"])
+
+
 # XXX: The following two functions should probably be combined at some point
 def get_title_injection_candidate(
     node: Dict[str, SerializableType]
@@ -90,8 +94,7 @@ class ProgramOptionHandler:
             self.pending_program = obj
         elif identifier == "target:std:option":
             if not self.pending_program:
-                position: Any = obj["position"]
-                line = position["start"]["line"]
+                line = get_node_line(obj)
                 self.diagnostics[filename].append(
                     Diagnostic.error("'.. option::' must follow '.. program::'", line)
                 )
@@ -158,7 +161,7 @@ class Postprocessor:
 
         self.run_event_parser(
             [
-                (EventParser.PAGE_START_EVENT, self.reset),
+                (EventParser.PAGE_START_EVENT, self.reset_program),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (
@@ -197,7 +200,7 @@ class Postprocessor:
             (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
         )
 
-    def reset(self, *args: object, **kwargs: object) -> None:
+    def reset_program(self, *args: object, **kwargs: object) -> None:
         self.pending_program = None
 
     def handle_refs(
@@ -222,18 +225,14 @@ class Postprocessor:
             # Add title and link target to AST
             target_candidates = self.targets[key]
             if not target_candidates:
-                position = cast(Any, obj.get("position"))
-                start = position["start"]
-                line = start["line"]
+                line = get_node_line(obj)
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
                 return
 
             if len(target_candidates) > 1:
-                position = cast(Any, obj.get("position"))
-                start = position["start"]
-                line = start["line"]
+                line = get_node_line(obj)
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Ambiguous target: "{name}:{target}"', line)
                 )
@@ -278,9 +277,7 @@ class Postprocessor:
             name = obj["name"]
             assert isinstance(name, str)
 
-            position = cast(Any, obj.get("position"))
-            start = position["start"]
-            line = start["line"]
+            line = get_node_line(obj)
             if node_type == "substitution_definition":
                 self.substitution_definitions[name] = obj["children"]
                 self.seen_definitions = set()
@@ -660,7 +657,7 @@ class DevhubPostprocessor(Postprocessor):
 
         self.run_event_parser(
             [
-                (EventParser.PAGE_START_EVENT, self.reset),
+                (EventParser.PAGE_START_EVENT, self.reset_program),
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (

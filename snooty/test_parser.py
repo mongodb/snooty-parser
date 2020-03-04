@@ -531,6 +531,30 @@ def test_rstobject() -> None:
     )
 
 
+def test_bad_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. option:: =
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+            <target domain="std" name="option">
+            <directive_argument><literal><text>=</text></literal></directive_argument>
+            </target>
+            </root>""",
+    )
+
+
 def test_accidental_indentation() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

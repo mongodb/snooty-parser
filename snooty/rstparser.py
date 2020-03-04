@@ -27,6 +27,7 @@ from typing import (
     Type,
     TypeVar,
     Iterable,
+    Union,
 )
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
@@ -411,10 +412,14 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 stripped = strip_parameters(self.arguments[0])
                 targets = ((prefix + stripped, stripped + "()"),)
             elif rstobject_spec.type == specparser.TargetType.cmdline_option:
-                targets = [
-                    (prefix + arg_id, arg_id)
-                    for arg_id in self.parse_options(self.arguments[0])
-                ]
+                targets = []
+                for arg_id in self.parse_options(self.arguments[0]):
+                    if isinstance(arg_id, ValueError):
+                        node.append(
+                            self.state.document.reporter.error(str(arg_id), line=line)
+                        )
+                        continue
+                    targets.append((prefix + arg_id, arg_id))
 
             # title is the node that should be presented at this point in the doctree
             title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
@@ -480,12 +485,12 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         pass
 
     @staticmethod
-    def parse_options(option: str) -> Iterable[str]:
+    def parse_options(option: str) -> Iterable[Union[str, ValueError]]:
         all_parts = (part.strip() for part in option.split(", "))
         for part in all_parts:
             match = PAT_OPTION.match(part)
             if match is None:
-                # XXX: Report error
+                yield ValueError(part)
                 continue
 
             yield match.group(1)

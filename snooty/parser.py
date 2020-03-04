@@ -298,16 +298,16 @@ class JSONVisitor:
                 self.state.pop()
                 return
 
-            for node_id in node["ids"]:
-                children = [
-                    {
-                        "type": "target_identifier",
-                        "ids": [node_id],
-                        "children": [],
-                        "position": {"start": {"line": line}},
-                    }
-                ]
-                doc["children"] = children
+            node_id = node["ids"][0]
+            children = [
+                {
+                    "type": "target_identifier",
+                    "ids": [node_id],
+                    "children": [],
+                    "position": {"start": {"line": line}},
+                }
+            ]
+            doc["children"] = children
             if "refuri" in node:
                 doc["refuri"] = node["refuri"]
             return
