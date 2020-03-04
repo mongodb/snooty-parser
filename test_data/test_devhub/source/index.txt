@@ -30,8 +30,6 @@
 
 .. level:: beginner, intermediate, advanced
 
-.. series:: seriesName
-
 .. tags:: 
 
    * foo
@@ -48,7 +46,7 @@
    * Realm
    * MongoDB
 
-.. atf-image:: /img/heros/how-to-write-an-article.png
+.. atf-image:: /images/atf-images/generic/pattern-green.png
 
 .. related::
 

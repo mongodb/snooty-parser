@@ -46,6 +46,7 @@ class EventParser(EventListeners):
     PAGE_START_EVENT = "page_start"
     PAGE_END_EVENT = "page_end"
     OBJECT_START_EVENT = "object_start"
+    OBJECT_END_EVENT = "object_end"
     ARRAY_START_EVENT = "array_start"
     ELEMENT_EVENT = "element"
 
@@ -64,6 +65,7 @@ class EventParser(EventListeners):
             self._on_object_enter_event(d, filename)
             for child in d.get("children", ()):
                 self._iterate(child, filename)
+            self._on_object_exit_event(d, filename)
         elif isinstance(d, list):
             self._on_array_enter_event(d, filename)
             for child in d:
@@ -100,6 +102,16 @@ class EventParser(EventListeners):
     ) -> None:
         """Called when an object is first encountered in tree"""
         self.fire(self.OBJECT_START_EVENT, filename, obj=obj, *args, **kwargs)
+
+    def _on_object_exit_event(
+        self,
+        obj: Dict[str, SerializableType],
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: SerializableType,
+    ) -> None:
+        """Called when an object is first encountered in tree"""
+        self.fire(self.OBJECT_END_EVENT, filename, obj=obj, *args, **kwargs)
 
     def _on_array_enter_event(
         self,

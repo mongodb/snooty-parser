@@ -323,24 +323,13 @@ class JSONVisitor:
                 if attr_name in node:
                     doc[attr_name] = node[attr_name]
         elif node_name == "substitution_definition":
-            name = node["names"][0]
-            doc["name"] = name
+            try:
+                name = node["names"][0]
+                doc["name"] = name
+            except IndexError:
+                pass
         elif node_name == "substitution_reference":
-            # If this substitution was defined in snooty.toml, append its defined replacement as children nodes
-            if node.astext() in self.project_config.substitution_nodes:
-                # Strip the node of its root and paragraph nodes
-                substitution_definition = cast(
-                    Dict[str, SerializableType],
-                    self.project_config.substitution_nodes[node.astext()],
-                )["children"]
-                substitution_definition = cast(List[Any], substitution_definition)[0][
-                    "children"
-                ]
-                self.state[-1].setdefault("children", [])
-                self.state[-1]["children"].extend(substitution_definition)
-            else:
-                doc["name"] = node["refname"]
-            return
+            doc["name"] = node["refname"]
         elif node_name == "footnote":
             # Autonumbered footnotes do not have a name
             try:
@@ -399,7 +388,8 @@ class JSONVisitor:
         self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
     ) -> bool:
         name = node["name"]
-        doc["domain"] = node["domain"]
+        domain = node["domain"]
+        doc["domain"] = domain
         doc["name"] = name
         options = node["options"] or {}
         if (
@@ -430,7 +420,7 @@ class JSONVisitor:
             )
             return False
 
-        if name in {"figure", "image"}:
+        if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
                 self.diagnostics.append(
                     Diagnostic.error(
@@ -530,6 +520,26 @@ class JSONVisitor:
             doc["entries"] = node["entries"]
         elif name in {"pubdate", "updated-date"}:
             doc["date"] = node["date"]
+        elif domain == "devhub" and name == "author":
+            image_argument = options.get("image")
+
+            if not image_argument:
+                # Warn writers that an image is suggested, but do not require
+                self.diagnostics.append(
+                    Diagnostic.warning(
+                        f'"{name}" expected an image argument', util.get_line(node)
+                    )
+                )
+            else:
+                try:
+                    static_asset = self.add_static_asset(
+                        Path(image_argument), upload=True
+                    )
+                    self.pending.append(PendingFigure(doc, static_asset))
+                except OSError as err:
+                    msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
+                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+
         if options:
             doc["options"] = options
 
@@ -703,7 +713,14 @@ class _Project:
         substitution_nodes: Dict[str, SerializableType] = {}
         for k, v in self.config.substitutions.items():
             node, substitution_diagnostics = parse_rst(self.parser, root, v)
-            substitution_nodes[k] = node.ast
+            ast = cast(Any, node.ast)
+            ast_nodes = ast["children"]
+            if len(ast_nodes) > 0:
+                # Extract text nodes from <root> and <paragraph> parent nodes
+                paragraph = ast_nodes[0]
+                substitution_nodes[k] = paragraph["children"]
+            else:
+                substitution_nodes[k] = []
 
             if substitution_diagnostics:
                 backend.on_diagnostics(

@@ -392,10 +392,6 @@ content_type = "block"
 help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
 inherit = "_devhub-block"
 
-[directive."devhub:series"]
-help = "Specify the series that this article is part of (if applicable)."
-inherit = "_devhub-inline"
-
 [directive."devhub:author"]
 help = "Author profile for the byline."
 example = """.. author::
@@ -853,6 +849,9 @@ type = {link = "https://www.twilio.com/%s"}
 
 [role."mdn"]
 type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
+
+[role."apollo-docs"]
+type = {link = "https://www.apollographql.com/docs%s"}
 
 [role."aws-go"]
 type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}

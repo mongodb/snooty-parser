@@ -1,7 +1,8 @@
 import os.path
 import logging
 from collections import defaultdict
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Iterable
+from copy import deepcopy
+from typing import Any, Callable, cast, Dict, List, Optional, Set, Tuple, Iterable
 from .eventparser import EventParser
 from .types import (
     Diagnostic,
@@ -77,6 +78,9 @@ class Postprocessor:
         self.pages: Dict[FileId, Page] = {}
         self.pending_targets: List[SerializableType] = []
         self.targets = targets
+        self.substitution_definitions: Dict[str, SerializableType] = {}
+        self.unreplaced_nodes: List[Tuple[Dict[str, SerializableType], int]] = []
+        self.seen_definitions: Optional[Set[str]] = None
         self.toc_landing_pages = [
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
@@ -99,6 +103,8 @@ class Postprocessor:
         self.run_event_parser(
             [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
         )
+
+        self.handle_substitutions()
 
         self.run_event_parser(
             [
@@ -156,17 +162,16 @@ class Postprocessor:
             key = f"{domain}:{name}:{target}"
 
             try:
-                # Add title and link target to AST
                 field_name, target, title_nodes = self.targets[key]
+                obj[field_name] = target
+
                 injection_candidate = get_title_injection_candidate(obj)
-                if not obj.get("children") or injection_candidate is not None:
+                # If there is no explicit title given, use the target's title
+                if injection_candidate is not None:
+                    title_nodes = deepcopy(title_nodes)
                     for node in title_nodes:
                         deep_copy_position(obj, node)
-                    obj[field_name] = target
-
-                    if injection_candidate is not None:
-                        obj = injection_candidate
-                    obj["children"] = title_nodes
+                    injection_candidate["children"] = title_nodes
             except KeyError:
                 position = cast(Any, obj.get("position"))
                 start = position["start"]
@@ -174,6 +179,110 @@ class Postprocessor:
                 self.diagnostics[filename].append(
                     Diagnostic.error(f'Target not found: "{name}:{target}"', line)
                 )
+
+    def handle_substitutions(self) -> None:
+        """Find and replace substitutions throughout project"""
+        self.run_event_parser(
+            [
+                (EventParser.OBJECT_START_EVENT, self.replace_substitutions),
+                (EventParser.PAGE_END_EVENT, self.finalize_substitutions),
+                (EventParser.OBJECT_END_EVENT, self.reset_seen_definitions),
+            ]
+        )
+
+    def replace_substitutions(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        """When a substitution is defined, add it to the page's index.
+
+        When a substitution is referenced, populate its children if possible.
+        If not, save this node to be populated at the end of the page.
+        """
+        obj = kwargs["obj"]
+        assert obj is not None
+        node_type = obj.get("type")
+
+        try:
+            name = obj["name"]
+            assert isinstance(name, str)
+
+            position = cast(Any, obj.get("position"))
+            start = position["start"]
+            line = start["line"]
+            if node_type == "substitution_definition":
+                self.substitution_definitions[name] = obj["children"]
+                self.seen_definitions = set()
+            elif node_type == "substitution_reference":
+                # Get substitution from page. If not found, attempt to source from snooty.toml. Otherwise, save substitution to be populated at the end of page
+                substitution = self.substitution_definitions.get(
+                    name
+                ) or self.project_config.substitution_nodes.get(name)
+
+                if self.seen_definitions is not None and name in self.seen_definitions:
+                    # Catch circular substitution
+                    del self.substitution_definitions[name]
+                    obj["children"] = []
+                    self.diagnostics[filename].append(
+                        Diagnostic.error(
+                            f'Circular substitution definition referenced: "{name}"',
+                            line,
+                        )
+                    )
+                elif substitution is not None:
+                    obj["children"] = substitution
+                else:
+                    # Save node in order to populate it at the end of the page
+                    self.unreplaced_nodes.append((obj, line))
+
+                if self.seen_definitions is not None:
+                    self.seen_definitions.add(name)
+        except KeyError:
+            # If node does not contain "name" field, it is a duplicate substitution definition.
+            # An error has already been thrown for this on parse, so pass.
+            pass
+
+    def finalize_substitutions(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
+
+        Clear definitions and unreplaced nodes for the next page.
+        """
+        for node, line in self.unreplaced_nodes:
+            name = node["name"]
+            assert isinstance(name, str)
+            substitution = self.substitution_definitions.get(name)
+            if substitution is not None:
+                node["children"] = substitution
+            else:
+                self.diagnostics[filename].append(
+                    Diagnostic.error(
+                        f'Substitution reference could not be replaced: "|{name}|"',
+                        line,
+                    )
+                )
+
+        self.substitution_definitions = {}
+        self.unreplaced_nodes = []
+
+    def reset_seen_definitions(
+        self,
+        filename: FileId,
+        *args: SerializableType,
+        **kwargs: Optional[Dict[str, SerializableType]],
+    ) -> None:
+        obj = kwargs["obj"]
+        assert obj is not None
+        node_type = obj.get("type")
+
+        if node_type == "substitution_definition":
+            self.seen_definitions = None
 
     def add_titles_to_label_targets(
         self,
@@ -465,7 +574,6 @@ class DevhubPostprocessor(Postprocessor):
         "devhub:level",
         "devhub:type",
         "devhub:atf-image",
-        "devhub:series",
     }
 
     def run(
@@ -483,6 +591,8 @@ class DevhubPostprocessor(Postprocessor):
         self.run_event_parser(
             [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
         )
+
+        self.handle_substitutions()
 
         self.run_event_parser(
             [
@@ -551,6 +661,14 @@ class DevhubPostprocessor(Postprocessor):
         """
         page = kwargs.get("page")
         assert isinstance(page, Page)
+
+        # Save page title to query_fields, if it exists
+        slug = clean_slug(filename.as_posix())
+        self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
+        title = self.slug_title_mapping.get(slug)
+        if title is not None:
+            self.query_fields["title"] = title
+
         page.query_fields = self.query_fields
 
     def flatten_devhub_article(
@@ -574,31 +692,34 @@ class DevhubPostprocessor(Postprocessor):
 
         if key == "devhub:author":
             options = cast(Dict[str, str], obj["options"])
-            self.query_fields["author"] = options["name"]
+            self.query_fields["author"] = options
         elif key == "devhub:related":
             # Save list of nodes (likely :doc: roles)
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
-            list_items = children[0]["children"]
-            assert isinstance(list_items, List)
-            for item in list_items:
-                paragraph = item["children"][0]
-                self.query_fields[name].append(paragraph["children"][0])
+            if len(children) > 0:
+                list_items = children[0]["children"]
+                assert isinstance(list_items, List)
+                for item in list_items:
+                    paragraph = item["children"][0]
+                    self.query_fields[name].append(paragraph["children"][0])
         elif key in {":pubdate", ":updated-date"}:
             date = obj.get("date")
             if date:
                 self.query_fields[name] = date
         elif key in self.ARG_FIELDS:
             argument = cast(Any, obj["argument"])
-            self.query_fields[name] = argument[0]["value"]
+            if len(argument) > 0:
+                self.query_fields[name] = argument[0]["value"]
         elif key in self.BLOCK_FIELDS:
             self.query_fields[name] = obj["children"]
         elif key in self.LIST_FIELDS:
             self.query_fields[name] = []
             children = cast(Any, obj["children"])
-            list_items = children[0]["children"]
-            assert isinstance(list_items, List)
-            for item in list_items:
-                text_candidate = get_deepest(item)
-                assert text_candidate is not None
-                self.query_fields[name].append(text_candidate["value"])
+            if len(children) > 0:
+                list_items = children[0]["children"]
+                assert isinstance(list_items, List)
+                for item in list_items:
+                    text_candidate = get_deepest(item)
+                    assert text_candidate is not None
+                    self.query_fields[name].append(text_candidate["value"])

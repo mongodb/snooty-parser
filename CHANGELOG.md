@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.6] - 2020-03-03
+
+### Fixed
+
+- Fix `ref_role` nodes with an explicit title.
+
+## [v0.3.5] - 2020-03-03
+
+### Added
+
+- Populate substitution nodes in postprocess layer (DOCSPLAT-114).
+
+### Fixed
+
+- Fix devhub image handling (DOCSPLAT-861).
+
+## [v0.3.4] - 2020-02-27
+
+### Removed
+
+- DevHub series directive.
+
 ## [v0.3.2] - 2020-02-24
 
 ### Fixed
