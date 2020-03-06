@@ -12,7 +12,6 @@ import docutils.utils
 import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -509,12 +508,12 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             yield match.group(1)
 
     @staticmethod
-    def parse_date(date_str: str) -> Union[datetime, ValueError]:
-        match = PAT_ISO_8601.match(date_str)
+    def parse_date(date: str) -> Union[str, ValueError]:
+        match = PAT_ISO_8601.match(date)
         if match:
-            return datetime.fromisoformat(date_str)
+            return date
         else:
-            return ValueError(date_str)
+            return ValueError(date)
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
