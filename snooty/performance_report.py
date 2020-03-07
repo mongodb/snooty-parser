@@ -46,6 +46,10 @@ def main() -> None:
     for i in range(n_runs):
         print(f"run {i+1}/{n_runs}")
         project.build(1)
+        with project._lock:
+            with PerformanceLogger.singleton().start("serialization"):
+                for page in project._project.pages.values():
+                    page.ast.serialize()
 
     for name, time in PerformanceLogger.singleton().times().items():
         print(f"{name}:{time:10.4}")
