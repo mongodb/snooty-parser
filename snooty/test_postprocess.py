@@ -28,7 +28,6 @@ def test_slug_title_mapping(backend: Backend) -> None:
     slugToTitle = cast(
         Dict[str, List[n.SerializedNode]], backend.metadata["slugToTitle"]
     )
-    print(slugToTitle)
 
     # page3 is not included in slug-title mapping because it lacks a heading.
     assert len(slugToTitle) == 5

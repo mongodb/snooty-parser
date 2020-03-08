@@ -1,5 +1,7 @@
+import dataclasses
 from typing import (
     Any,
+    ClassVar,
     Dict,
     Tuple,
     List,
@@ -13,7 +15,7 @@ from typing import (
     Union,
     Generic,
 )
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 
 __all__ = (
@@ -41,14 +43,35 @@ _T = TypeVar("_T")
 @dataclass
 class Node:
     __slots__ = ("span",)
-    type = "node"
-
+    type: ClassVar[str] = "node"
     span: Tuple[int]
 
     def serialize(self) -> SerializedNode:
-        result = {k: v for k, v in asdict(self).items() if v is not None}
+        result: SerializedNode = {
+            "type": self.type,
+            "position": {"start": {"line": self.span[0]}},
+        }
+
+        for field in dataclasses.fields(self):
+            value = getattr(self, field.name)
+            if isinstance(value, Node):
+                result[field.name] = value.serialize()
+            elif isinstance(value, (str, int, float, bool)):
+                result[field.name] = value
+            elif isinstance(value, dict):
+                if value:
+                    result[field.name] = value
+            elif isinstance(value, (list, tuple)):
+                result[field.name] = [
+                    child.serialize() if hasattr(child, "serialize") else child
+                    for child in value
+                ]
+            elif value is None:
+                continue
+            else:
+                raise NotImplementedError(field, value)
+
         del result["span"]
-        result.update(type=self.type, position={"start": {"line": self.span[0]}})
         return result
 
     def get_text(self) -> str:
@@ -87,11 +110,6 @@ class Parent(Node, Generic[_N]):
     __slots__ = ("children",)
     type = "parent"
     children: MutableSequence[_N]
-
-    def serialize(self) -> SerializedNode:
-        node = super().serialize()
-        node.update(children=[n.serialize() for n in self.children])
-        return node
 
     def get_child_of_type(self, ty: Type[_T]) -> Iterator[_T]:
         """Return the first immediate child node with a given type, or None."""
@@ -221,13 +239,6 @@ class Directive(Parent[Node]):
     argument: List["Text"]
     options: Dict[str, str]
 
-    def serialize(self) -> SerializedNode:
-        node = super().serialize()
-        node.update(argument=[n.serialize() for n in self.argument])
-        if not self.options:
-            del node["options"]
-        return node
-
     def verify(self) -> None:
         super().verify()
         for arg in self.argument:
@@ -253,11 +264,6 @@ class TocTreeDirective(Directive):
 
     __slots__ = ("entries",)
     entries: Sequence[Entry]
-
-    def serialize(self) -> SerializedNode:
-        node = super().serialize()
-        node.update(entries=[entry.serialize() for entry in self.entries])
-        return node
 
 
 @dataclass
