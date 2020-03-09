@@ -55,6 +55,7 @@ PAT_EXPLICIT_TITLE = re.compile(
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
+PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
@@ -432,6 +433,17 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 identifier_node["ids"] = [target_id]
                 identifier_node.append(docutils.nodes.Text(target_title))
                 node.append(identifier_node)
+        elif self.name in {"pubdate", "updated-date"}:
+            date = self.parse_date(self.arguments[0])
+            if isinstance(date, ValueError):
+                # Throw error and set date field to None
+                err = "Expected ISO 8061 date format (YYYY-MM-DD)"
+                node.append(
+                    self.state.document.reporter.error(f"{err}: {str(date)}", line=line)
+                )
+                node["date"] = None
+            else:
+                node["date"] = date
         else:
             self.parse_argument(node, source, line)
 
@@ -494,6 +506,14 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 continue
 
             yield match.group(1)
+
+    @staticmethod
+    def parse_date(date: str) -> Union[str, ValueError]:
+        match = PAT_ISO_8601.match(date)
+        if match:
+            return date
+        else:
+            return ValueError(date)
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:

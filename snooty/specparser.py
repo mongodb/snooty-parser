@@ -32,6 +32,9 @@ FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
 #: How the target should be preprocessed.
 TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
 
+#: Types of formatting to which date directives must conform.
+DateFormattingType = Enum("DateType", ("iso_8601"))
+
 
 class _Inheritable(Protocol):
     inherit: Optional[str]
@@ -40,6 +43,14 @@ class _Inheritable(Protocol):
 class _HasNameAndDomain(Protocol):
     domain: Optional[str]
     name: str
+
+
+@checked
+@dataclass
+class DateType:
+    """Configuration for a directive that specifies a date"""
+
+    date: DateFormattingType = field(default=DateFormattingType.iso_8601)
 
 
 @checked

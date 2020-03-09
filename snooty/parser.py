@@ -530,6 +530,8 @@ class JSONVisitor:
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
         elif name == "toctree":
             doc["entries"] = node["entries"]
+        elif name in {"pubdate", "updated-date"}:
+            doc["date"] = node["date"]
         elif domain == "devhub" and name == "author":
             image_argument = options.get("image")
 
