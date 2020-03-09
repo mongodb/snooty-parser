@@ -47,6 +47,7 @@ class Node:
     span: Tuple[int]
 
     def serialize(self) -> SerializedNode:
+        """Serialize this AST node into a form that can be passed to json.dumps()."""
         result: SerializedNode = {
             "type": self.type,
             "position": {"start": {"line": self.span[0]}},
@@ -55,18 +56,24 @@ class Node:
         for field in dataclasses.fields(self):
             value = getattr(self, field.name)
             if isinstance(value, Node):
+                # Serialize nodes
                 result[field.name] = value.serialize()
             elif isinstance(value, (str, int, float, bool)):
+                # Primitive value: include verbatim
                 result[field.name] = value
             elif isinstance(value, dict):
+                # We exclude empty dicts, since they're mainly used for directive options and other such things.
                 if value:
                     result[field.name] = value
             elif isinstance(value, (list, tuple)):
+                # This is a bit unsafe, but it's the most expedient option right now. If the child
+                # has a serialize() method, call that; otherwise, include it as-is.
                 result[field.name] = [
                     child.serialize() if hasattr(child, "serialize") else child
                     for child in value
                 ]
             elif value is None:
+                # Fields with None values are excluded
                 continue
             else:
                 raise NotImplementedError(field, value)
@@ -75,7 +82,7 @@ class Node:
         return result
 
     def get_text(self) -> str:
-        """Return pure textual content from a given AST node."""
+        """Return pure textual content from a given AST node. Most nodes will return an empty string."""
         return ""
 
     @property
