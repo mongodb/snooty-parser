@@ -853,6 +853,9 @@ type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
 [role."apollo-docs"]
 type = {link = "https://www.apollographql.com/docs%s"}
 
+[role."aws-docs"]
+type = {link = "https://docs.aws.amazon.com/%s"}
+
 [role."aws-go"]
 type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
 
