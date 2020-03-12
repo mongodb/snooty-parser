@@ -671,6 +671,10 @@ type = {domain = "std", name = "term"}
 help = """Link to a JIRA ticket."""
 type = {link = "https://jira.mongodb.org/browse/%s"}
 
+[role.community-forum]
+help = "Link to the MongoDB Community Forums page."
+type = {link = "https://community.mongodb.com/%s"}
+
 [role.perl-api]
 help = "Link to a page in the Perl driver's CPAN API reference."
 type = {link = "https://metacpan.org/pod/MongoDB::%s"}
