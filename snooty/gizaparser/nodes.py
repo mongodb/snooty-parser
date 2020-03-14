@@ -18,11 +18,12 @@ from typing import (
     List,
     Union,
     Match,
+    MutableSequence,
     Set,
 )
 from ..flutter import checked
-from ..types import Diagnostic, Page, EmbeddedRstParser, SerializableType, ProjectConfig
-from .. import util
+from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
+from .. import n
 
 _T = TypeVar("_T", str, object)
 PAT_SUBSTITUTION = re.compile(r"\{\{([\w-]+)\}\}")
@@ -315,9 +316,7 @@ class HeadingMixin(Node):
     level: Optional[int]
     optional: Optional[bool]
 
-    def render_heading(
-        self, parse_rst: EmbeddedRstParser
-    ) -> Sequence[SerializableType]:
+    def render_heading(self, rst_parser: EmbeddedRstParser) -> Sequence[n.Node]:
         """Return a list of heading node representing this heading node's properties."""
         title = self.title if self.title is not None else self.heading
         if title is None:
@@ -328,21 +327,16 @@ class HeadingMixin(Node):
         if self.optional:
             heading_text = "Optional: " + heading_text
 
-        result = parse_rst(heading_text, self.line, True)
+        result: MutableSequence[n.InlineNode] = rst_parser.parse_inline(
+            heading_text, self.line
+        )
 
         # Generate an anchor ID for this heading. It would be useful for this
         # to be unique, but it's not possible to do so in a repeatable fashion
         # without seeing the whole page, so doing that has to fall to the
         # renderer.
-        heading_id = docutils.nodes.make_id(
-            "".join(util.ast_get_text(node) for node in result)
-        )
+        heading_id = docutils.nodes.make_id("".join(node.get_text() for node in result))
 
-        return (
-            {
-                "type": "heading",
-                "position": {"start": {"line": self.line}},
-                "children": result,
-                "id": heading_id,
-            },
-        )
+        heading = n.Heading((self.line,), [], heading_id)
+        heading.children = result
+        return (heading,)

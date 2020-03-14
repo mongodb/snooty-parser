@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast, Any, Dict, DefaultDict, List
+from typing import Dict, DefaultDict, List
 from .types import (
     FileId,
     Page,
@@ -16,6 +16,7 @@ from .types import (
 from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
+from . import n
 
 build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
 
@@ -69,15 +70,15 @@ def test() -> None:
         index_id = FileId("index.txt")
         assert list(backend.pages.keys()) == [index_id]
         code_length = 0
-        checksums = []
+        checksums: List[str] = []
         index = backend.pages[index_id]
         assert len(index.static_assets) == 2
         assert not index.pending_tasks
         for node in ast_dive(index.ast):
-            if node["type"] == "code":
-                code_length += len(cast(str, node["value"]))
-            elif node["type"] == "directive" and node["name"] == "figure":
-                checksums.append(cast(Any, node["options"])["checksum"])
+            if isinstance(node, n.Code):
+                code_length += len(node.value)
+            elif isinstance(node, n.Directive) and node.name == "figure":
+                checksums.append(node.options["checksum"])
         assert code_length == 345
         assert checksums == [
             "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"

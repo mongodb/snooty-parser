@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import docutils.nodes
 import logging
 import multiprocessing
@@ -7,16 +8,18 @@ import pwd
 import subprocess
 import threading
 import yaml
+from copy import deepcopy
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path, PurePath
-from typing import cast, Any, Dict, Tuple, Optional, Set, List, Iterable
+from typing import Any, Dict, MutableSequence, Tuple, Optional, Set, List, Iterable
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
 import networkx
 
 from .flutter import check_type, LoadError
-from . import gizaparser, rstparser, util
+from . import n, gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches
 from .postprocess import DevhubPostprocessor, Postprocessor
@@ -24,7 +27,6 @@ from .util import RST_EXTENSIONS
 from .types import (
     Diagnostic,
     SerializableType,
-    EmbeddedRstParser,
     Page,
     StaticAsset,
     ProjectConfig,
@@ -40,7 +42,7 @@ from .types import (
 # our implicit data flow issues.
 multiprocessing.set_start_method("fork")
 
-NO_CHILDREN = {"substitution_reference"}
+NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
 
@@ -48,12 +50,10 @@ class PendingLiteralInclude(PendingTask):
     """Transform a literal-include directive AST node into a code node."""
 
     def __init__(
-        self,
-        node: Dict[str, SerializableType],
-        asset: StaticAsset,
-        options: Dict[str, SerializableType],
+        self, node: n.Code, asset: StaticAsset, options: Dict[str, SerializableType]
     ) -> None:
         super().__init__(node)
+        self.node: n.Code = node
         self.asset = asset
         self.options = options
 
@@ -66,8 +66,8 @@ class PendingLiteralInclude(PendingTask):
         options_key = hash(tuple(((k, v) for k, v in self.options.items())))
         entry = cache[(self.asset.fileid, options_key)]
         if entry is not None:
-            assert isinstance(entry, dict)
-            self.node.update(entry)
+            assert isinstance(entry, n.Code)
+            dataclasses.replace(self.node, **dataclasses.asdict(entry))
             return
 
         try:
@@ -129,33 +129,21 @@ class PendingLiteralInclude(PendingTask):
                 dedent = 0
             lines = [line[dedent:] for line in lines]
 
-        self.node.clear()
-        lang = (
-            self.options["language"]
-            if "language" in self.options
-            else self.asset.path.suffix.lstrip(".")
-        )
-        self.node.update(
-            {
-                "type": "code",
-                "lang": lang,
-                "copyable": "copyable" in self.options,
-                "value": "\n".join(lines),
-            }
-        )
-
         if "emphasize_lines" in self.options:
-            self.node["emphasize_lines"] = self.options["emphasize_lines"]
+            self.node.emphasize_lines = self.options["emphasize_lines"]  # type: ignore
+
+        self.node.value = "\n".join(lines)
 
         # Update the cache with this node
-        cache[(self.asset.fileid, options_key)] = self.node.copy()
+        cache[(self.asset.fileid, options_key)] = self.node
 
 
 class PendingFigure(PendingTask):
     """Add an image's checksum."""
 
-    def __init__(self, node: Dict[str, SerializableType], asset: StaticAsset) -> None:
+    def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
         super().__init__(node)
+        self.node: n.Directive = node
         self.asset = asset
 
     def __call__(
@@ -167,8 +155,9 @@ class PendingFigure(PendingTask):
         # Use the cached checksum if possible. Note that this does not currently
         # update the underlying asset: if the asset is used by the current backend,
         # the image will still have to be read.
-        options = self.node.setdefault("options", {})
-        assert isinstance(options, dict)
+        if self.node.options is None:
+            self.node.options = {}
+        options = self.node.options
         entry = cache[(self.asset.fileid, 0)]
         if entry is not None:
             assert isinstance(entry, str)
@@ -197,14 +186,15 @@ class JSONVisitor:
         self.project_config = project_config
         self.docpath = docpath
         self.document = document
-        self.state: List[Dict[str, Any]] = []
+        self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
-        node_name = node.__class__.__name__
-        if node_name == "system_message":
+        line = util.get_line(node)
+
+        if isinstance(node, docutils.nodes.system_message):
             level = int(node["level"])
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
@@ -213,78 +203,85 @@ class JSONVisitor:
                     Diagnostic.create(level, msg, util.get_line(node))
                 )
             raise docutils.nodes.SkipNode()
-        elif node_name in ("definition", "field_list"):
+        elif isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
-
-        if node_name == "document":
-            self.state.append(
-                {"type": "root", "children": [], "position": {"start": {"line": 0}}}
-            )
+        elif isinstance(node, docutils.nodes.document):
+            self.state.append(n.Root((0,), [], {}))
             return
-
-        line = util.get_line(node)
-        doc: Dict[str, SerializableType] = {
-            "type": node_name,
-            "position": {"start": {"line": line}},
-        }
-
-        if node_name == "field":
+        elif isinstance(node, docutils.nodes.field):
             key = node.children[0].astext()
             value = node.children[1].astext()
-            self.state[-1].setdefault("options", {})[key] = value
+            top = self.state[-1]
+            if isinstance(top, n.Root):
+                top.options[key] = value
+            else:
+                self.diagnostics.append(
+                    Diagnostic.error(
+                        "Options not supported here", util.get_line(node.children[0])
+                    )
+                )
             raise docutils.nodes.SkipNode()
-        elif node_name == "code":
-            doc["type"] = "code"
-            if "lang" in node:
-                doc["lang"] = node["lang"]
-            doc["copyable"] = node["copyable"]
-            if node["emphasize_lines"]:
-                doc["emphasize_lines"] = node["emphasize_lines"]
-            doc["value"] = node.astext()
-            self.state[-1]["children"].append(doc)
+        elif isinstance(node, rstparser.code):
+            doc = n.Code(
+                (line,),
+                node["lang"] if "lang" in node else None,
+                node["copyable"],
+                node["emphasize_lines"] if "emphasize_lines" in node else None,
+                node.astext(),
+            )
+            top_of_state = self.state[-1]
+            assert isinstance(top_of_state, n.Parent)
+            top_of_state.children.append(doc)
             raise docutils.nodes.SkipNode()
-
-        # We are uninterested in docutils blockquotes: they're too easy to accidentally
-        # invoke. Treat them as an error.
-        if node_name == "block_quote":
+        elif isinstance(node, docutils.nodes.block_quote):
+            # We are uninterested in docutils blockquotes: they're too easy to accidentally
+            # invoke. Treat them as an error.
             self.diagnostics.append(
                 Diagnostic.error(
                     "Unexpected indentation", util.get_line(node.children[0])
                 )
             )
             return
-
-        if isinstance(node, rstparser.target_directive):
-            self.handle_target_directive(node, doc)
+        elif isinstance(node, rstparser.target_directive):
+            self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
         elif isinstance(node, rstparser.directive):
-            if self.handle_directive(node, doc):
-                self.state.append(doc)
+            directive = self.handle_directive(node, line)
+            if directive:
+                self.state.append(directive)
+        elif isinstance(node, docutils.nodes.Text):
+            self.state.append(n.Text((line,), str(node)))
             return
-
-        self.state.append(doc)
-
-        if node_name == "Text":
-            doc["type"] = "text"
-            doc["value"] = str(node)
+        elif isinstance(node, docutils.nodes.literal_block):
+            self.state.append(n.LiteralBlock((line,), []))
             return
-
-        if isinstance(node, rstparser.role):
+        elif isinstance(node, docutils.nodes.literal):
+            self.state.append(n.Literal((line,), []))
+            return
+        elif isinstance(node, docutils.nodes.emphasis):
+            self.state.append(n.Emphasis((line,), []))
+            return
+        elif isinstance(node, docutils.nodes.strong):
+            self.state.append(n.Strong((line,), []))
+            return
+        elif isinstance(node, rstparser.ref_role):
             role_name = node["name"]
-            doc["domain"] = node["domain"]
-            doc["name"] = role_name
-            if "label" in node:
-                doc["label"] = node["label"]
-            if "target" in node:
-                doc["target"] = node["target"]
-            if "flag" in node:
-                doc["flag"] = node["flag"]
+            flag = node["flag"] if "flag" in node else ""
+            role: n.Role = n.RefRole(
+                (line,), [], node["domain"], role_name, node["target"], flag, None, None
+            )
+            self.state.append(role)
+            return
+        elif isinstance(node, rstparser.role):
+            role_name = node["name"]
+            target = node["target"] if "target" in node else ""
+            flag = node["flag"] if "flag" in node else ""
+            role = n.Role((line,), [], node["domain"], role_name, target, flag)
+            self.state.append(role)
+
             if role_name == "doc":
                 self.validate_doc_role(node)
-        elif node_name == "target":
-            doc["type"] = "target"
-            doc["domain"] = "std"
-            doc["name"] = "label"
-
+            return
+        elif isinstance(node, docutils.nodes.target):
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
@@ -299,128 +296,131 @@ class JSONVisitor:
                 return
 
             node_id = node["ids"][0]
-            children = [
-                {
-                    "type": "target_identifier",
-                    "ids": [node_id],
-                    "children": [],
-                    "position": {"start": {"line": line}},
-                }
-            ]
-            doc["children"] = children
-            if "refuri" in node:
-                doc["refuri"] = node["refuri"]
-            return
-        elif node_name == "target_identifier":
-            doc["ids"] = node["ids"]
-        elif node_name == "definition_list":
-            doc["type"] = "definitionList"
-        elif node_name == "definition_list_item":
-            doc["type"] = "definitionListItem"
-            doc["term"] = []
-        elif node_name == "bullet_list":
-            doc["type"] = "list"
-            doc["ordered"] = False
-        elif node_name == "enumerated_list":
-            doc["type"] = "list"
-            doc["ordered"] = True
-        elif node_name == "list_item":
-            doc["type"] = "listItem"
-        elif node_name == "title":
-            doc["type"] = "heading"
+            children: Any = [n.TargetIdentifier((line,), [], [node_id])]
+
+            refuri = node["refuri"] if "refuri" in node else None
+            self.state.append(n.Target((line,), children, "std", "label", refuri))
+        elif isinstance(node, rstparser.target_identifier):
+            self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
+        elif isinstance(node, docutils.nodes.definition_list):
+            self.state.append(n.DefinitionList((line,), []))
+        elif isinstance(node, docutils.nodes.definition_list_item):
+            self.state.append(n.DefinitionListItem((line,), [], []))
+        elif isinstance(node, docutils.nodes.bullet_list):
+            self.state.append(n.ListNode((line,), [], False))
+        elif isinstance(node, docutils.nodes.enumerated_list):
+            self.state.append(n.ListNode((line,), [], True))
+        elif isinstance(node, docutils.nodes.list_item):
+            self.state.append(n.ListNodeItem((line,), []))
+        elif isinstance(node, docutils.nodes.title):
             # Attach an anchor ID to this section
             assert node.parent
-            doc["id"] = node.parent["ids"][0]
-        elif node_name == "reference":
-            for attr_name in ("refuri", "refname"):
-                if attr_name in node:
-                    doc[attr_name] = node[attr_name]
-        elif node_name == "substitution_definition":
+            self.state.append(n.Heading((line,), [], node.parent["ids"][0]))
+        elif isinstance(node, docutils.nodes.reference):
+            self.state.append(
+                n.Reference(
+                    (line,),
+                    [],
+                    node["refuri"] if "refuri" in node else None,
+                    node["refname"] if "refname" in node else None,
+                )
+            )
+        elif isinstance(node, docutils.nodes.substitution_definition):
             try:
                 name = node["names"][0]
-                doc["name"] = name
+                self.state.append(n.SubstitutionDefinition((line,), [], name))
             except IndexError:
                 pass
-        elif node_name == "substitution_reference":
-            doc["name"] = node["refname"]
-        elif node_name == "footnote":
-            # Autonumbered footnotes do not have a name
-            try:
-                name = node["names"][0]
-                doc["name"] = name
-            except IndexError:
-                pass
-            doc["id"] = node["ids"][0]
-        elif node_name == "footnote_reference":
+        elif isinstance(node, docutils.nodes.substitution_reference):
+            self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
+        elif isinstance(node, docutils.nodes.footnote):
             # Autonumbered footnotes do not have a refname
-            try:
-                doc["refname"] = node["refname"]
-            except KeyError:
-                pass
-            doc["id"] = node["ids"][0]
-
-        doc["children"] = []
+            name = node["names"] if "names" in node else None
+            if isinstance(name, list):
+                name = name[0] if name else None
+            self.state.append(n.Footnote((line,), [], node["ids"][0], name))
+        elif isinstance(node, docutils.nodes.footnote_reference):
+            # Autonumbered footnotes do not have a refname
+            refname = node["refname"] if "refname" in node else None
+            self.state.append(n.FootnoteReference((line,), node["ids"][0], refname))
+        elif isinstance(node, docutils.nodes.section):
+            self.state.append(n.Section((line,), []))
+        elif isinstance(node, docutils.nodes.paragraph):
+            self.state.append(n.Paragraph((line,), []))
+        elif isinstance(node, rstparser.directive_argument):
+            self.state.append(n.DirectiveArgument((line,), []))
+        elif isinstance(node, docutils.nodes.term):
+            self.state.append(n.RefRole((line,), [], "std", "term", "", "", None, None))
+        elif isinstance(node, docutils.nodes.line_block):
+            self.state.append(n.LineBlock((line,), []))
+        elif isinstance(node, docutils.nodes.line):
+            self.state.append(n.Line((line,), []))
+        elif isinstance(node, docutils.nodes.transition):
+            self.state.append(n.Transition((line,)))
+        elif isinstance(node, docutils.nodes.table):
+            raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.comment):
+            pass
+        else:
+            raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
-        node_name = node.__class__.__name__
-        if len(self.state) == 1 or node_name == "definition":
+        if len(self.state) == 1 or isinstance(node, docutils.nodes.definition):
             return
 
-        if node_name == "block_quote":
+        if isinstance(node, (docutils.nodes.block_quote, docutils.nodes.comment)):
             return
 
         popped = self.state.pop()
 
-        if popped["type"] == "term":
-            self.state[-1]["term"] = popped["children"]
-        elif self.state[-1]["type"] not in NO_CHILDREN:
-            if "children" not in self.state[-1]:
+        top_of_state = self.state[-1]
+        if not isinstance(top_of_state, NO_CHILDREN):
+            if isinstance(top_of_state, n.Parent):
+                top_of_state.children.append(popped)
+            else:
                 # This should not happen; unfortunately, it does: see DOCSP-7122.
                 # Log some details so we can hopefully fix it when it happens next.
                 logger.error(
                     "Malformed node in file %s: %s, %s",
                     self.docpath.as_posix(),
-                    repr(self.state[-1]),
+                    repr(top_of_state),
                     repr(popped),
                 )
-            self.state[-1]["children"].append(popped)
-
-    def handle_target_directive(
-        self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
-    ) -> None:
-        """Handle populating a target_directive AST node."""
-        options = node["options"] or {}
-        doc["type"] = "target"
-        doc["domain"] = node["domain"]
-        doc["name"] = node["name"]
-        doc["options"] = options
-        doc["children"] = []
 
     def handle_directive(
-        self, node: docutils.nodes.Node, doc: Dict[str, SerializableType]
-    ) -> bool:
+        self, node: docutils.nodes.Node, line: int
+    ) -> Optional[n.Node]:
         name = node["name"]
         domain = node["domain"]
-        doc["domain"] = domain
-        doc["name"] = name
         options = node["options"] or {}
+
+        if name == "toctree":
+            doc: n.Directive = n.TocTreeDirective(
+                (line,), [], domain, name, [], options, node["entries"]
+            )
+            return doc
+
+        doc = n.Directive((line,), [], domain, name, [], options)
+
         if (
             node.children
             and node.children[0].__class__.__name__ == "directive_argument"
         ):
             visitor = self.__make_child_visitor()
             node.children[0].walkabout(visitor)
-            argument = visitor.state[-1]["children"]
-            doc["argument"] = argument
+            top_of_visitor_state = visitor.state[-1]
+            assert isinstance(top_of_visitor_state, n.Parent)
+            argument = top_of_visitor_state.children
+            doc.argument = argument  # type: ignore
             node.children = node.children[1:]
         else:
             argument = []
-            doc["argument"] = argument
+            doc.argument = argument
 
         argument_text = None
         try:
-            argument_text = argument[0]["value"]
-        except (IndexError, KeyError):
+            argument_text = argument[0].value
+        except (IndexError, AttributeError):
             pass
 
         if name == "todo":
@@ -430,7 +430,7 @@ class JSONVisitor:
             self.diagnostics.append(
                 Diagnostic.info("".join(todo_text), util.get_line(node))
             )
-            return False
+            return None
 
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
@@ -439,7 +439,7 @@ class JSONVisitor:
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
-                return True
+                return doc
 
             try:
                 static_asset = self.add_static_asset(Path(argument_text), upload=True)
@@ -462,17 +462,22 @@ class JSONVisitor:
 
         elif name == "literalinclude":
             if argument_text is None:
-                lineno = util.get_line(node)
                 self.diagnostics.append(
-                    Diagnostic.error(
-                        '"literalinclude" expected a path argument', lineno
-                    )
+                    Diagnostic.error('"literalinclude" expected a path argument', line)
                 )
-                return True
+                return doc
+
+            asset_path = Path(argument_text)
+            lang = (
+                options["language"]
+                if "language" in options
+                else asset_path.suffix.lstrip(".")
+            )
+            code = n.Code((line,), lang, "copyable" in options, [], "")
 
             try:
-                static_asset = self.add_static_asset(Path(argument_text), False)
-                self.pending.append(PendingLiteralInclude(doc, static_asset, options))
+                static_asset = self.add_static_asset(asset_path, False)
+                self.pending.append(PendingLiteralInclude(code, static_asset, options))
             except OSError as err:
                 msg = '"literalinclude" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno)
@@ -481,7 +486,7 @@ class JSONVisitor:
             except ValueError as err:
                 msg = f'Invalid "literalinclude": {err}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
-            return True
+            return code
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(
@@ -489,7 +494,7 @@ class JSONVisitor:
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
-                return True
+                return doc
 
             fileid, path = util.reroot_path(
                 Path(argument_text), self.docpath, self.project_config.source_path
@@ -520,7 +525,7 @@ class JSONVisitor:
                         f'"{name}" expected an image argument', util.get_line(node)
                     )
                 )
-                return True
+                return doc
 
             try:
                 static_asset = self.add_static_asset(Path(image_argument), upload=True)
@@ -528,10 +533,9 @@ class JSONVisitor:
             except OSError as err:
                 msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
                 self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
-        elif name == "toctree":
-            doc["entries"] = node["entries"]
         elif name in {"pubdate", "updated-date"}:
-            doc["date"] = node["date"]
+            if "date" in node:
+                doc.options["date"] = node["date"]
         elif domain == "devhub" and name == "author":
             image_argument = options.get("image")
 
@@ -552,11 +556,7 @@ class JSONVisitor:
                     msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
                     self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
 
-        if options:
-            doc["options"] = options
-
-        doc["children"] = []
-        return True
+        return doc
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
@@ -624,32 +624,49 @@ def parse_rst(
 ) -> Tuple[Page, List[Diagnostic]]:
     visitor, text = parser.parse(path, text)
 
-    page = Page.create(path, None, text, visitor.state[-1])
+    top_of_state = visitor.state[-1]
+    assert isinstance(top_of_state, n.Parent)
+    page = Page.create(path, None, text, top_of_state)
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending
     return (page, visitor.diagnostics)
 
 
-def make_embedded_rst_parser(
-    project_config: ProjectConfig, page: Page, diagnostics: List[Diagnostic]
-) -> EmbeddedRstParser:
-    def parse_embedded_rst(
-        rst: str, lineno: int, inline: bool
-    ) -> List[SerializableType]:
+@dataclass
+class EmbeddedRstParser:
+    __slots__ = ("project_config", "page", "diagnostics")
+
+    project_config: ProjectConfig
+    page: Page
+    diagnostics: List[Diagnostic]
+
+    def parse_block(self, rst: str, lineno: int) -> MutableSequence[n.Node]:
         # Crudely make docutils line numbers match
         text = "\n" * lineno + rst.strip()
-        visitor_class = InlineJSONVisitor if inline else JSONVisitor
-        parser = rstparser.Parser(project_config, visitor_class)
-        visitor, _ = parser.parse(page.source_path, text)
-        children: List[SerializableType] = visitor.state[-1]["children"]
+        parser = rstparser.Parser(self.project_config, JSONVisitor)
+        visitor, _ = parser.parse(self.page.source_path, text)
+        top_of_state = visitor.state[-1]
+        children: MutableSequence[n.Node] = top_of_state.children  # type: ignore
 
-        diagnostics.extend(visitor.diagnostics)
-        page.static_assets.update(visitor.static_assets)
-        page.pending_tasks.extend(visitor.pending)
+        self.diagnostics.extend(visitor.diagnostics)
+        self.page.static_assets.update(visitor.static_assets)
+        self.page.pending_tasks.extend(visitor.pending)
 
         return children
 
-    return parse_embedded_rst
+    def parse_inline(self, rst: str, lineno: int) -> MutableSequence[n.InlineNode]:
+        # Crudely make docutils line numbers match
+        text = "\n" * lineno + rst.strip()
+        parser = rstparser.Parser(self.project_config, InlineJSONVisitor)
+        visitor, _ = parser.parse(self.page.source_path, text)
+        top_of_state = visitor.state[-1]
+        children: MutableSequence[n.InlineNode] = top_of_state.children  # type: ignore
+
+        self.diagnostics.extend(visitor.diagnostics)
+        self.page.static_assets.update(visitor.static_assets)
+        self.page.pending_tasks.extend(visitor.pending)
+
+        return children
 
 
 def get_giza_category(path: PurePath) -> str:
@@ -722,17 +739,13 @@ class _Project:
         }
 
         # For each repo-wide substitution, parse the string and save to our project config
-        substitution_nodes: Dict[str, SerializableType] = {}
+        inline_parser = rstparser.Parser(self.config, InlineJSONVisitor)
+        substitution_nodes: Dict[str, List[n.InlineNode]] = {}
         for k, v in self.config.substitutions.items():
-            node, substitution_diagnostics = parse_rst(self.parser, root, v)
-            ast = cast(Any, node.ast)
-            ast_nodes = ast["children"]
-            if len(ast_nodes) > 0:
-                # Extract text nodes from <root> and <paragraph> parent nodes
-                paragraph = ast_nodes[0]
-                substitution_nodes[k] = paragraph["children"]
-            else:
-                substitution_nodes[k] = []
+            page, substitution_diagnostics = parse_rst(inline_parser, root, v)
+            substitution_nodes[k] = list(
+                deepcopy(child) for child in page.ast.children  # type: ignore
+            )
 
             if substitution_diagnostics:
                 backend.on_diagnostics(
@@ -802,17 +815,15 @@ class _Project:
     def get_full_path(self, fileid: FileId) -> Path:
         return self.config.source_path.joinpath(fileid)
 
-    def get_page_ast(self, path: Path) -> SerializableType:
+    def get_page_ast(self, path: Path) -> n.Node:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.get_fileid(path)
         page = self.pages[fileid]
-        # Make SerializableType modifiable using dict methods
-        page_ast = cast(Dict[str, Any], page.ast)
 
         # Fill in missing include nodes
-        page_ast["children"] = self._populate_include_nodes(page_ast["children"])
-        return cast(SerializableType, page_ast)
+        assert isinstance(page.ast, n.Parent)
+        return self._populate_include_nodes(page.ast)
 
     def get_project_name(self) -> str:
         return self.config.name
@@ -853,10 +864,12 @@ class _Project:
                 file_diagnostics.extend(parse_diagnostics)
 
                 def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page.create(giza_node.path, filename, text, {})
+                    page = Page.create(
+                        giza_node.path, filename, text, n.Root((-1,), [], {})
+                    )
                     return (
                         page,
-                        make_embedded_rst_parser(self.config, page, file_diagnostics),
+                        EmbeddedRstParser(self.config, page, file_diagnostics),
                     )
 
                 giza_category.add(path, text, steps)
@@ -923,10 +936,12 @@ class _Project:
             ):
 
                 def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page.create(giza_node.path, filename, giza_node.text, {})
+                    page = Page.create(
+                        giza_node.path, filename, giza_node.text, n.Root((-1,), [], {})
+                    )
                     return (
                         page,
-                        make_embedded_rst_parser(
+                        EmbeddedRstParser(
                             self.config,
                             page,
                             all_yaml_diagnostics.setdefault(giza_node.path, []),
@@ -951,9 +966,7 @@ class _Project:
             self.prefix, self.build_identifiers, post_metadata
         )
 
-    def _populate_include_nodes(
-        self, nodes: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _populate_include_nodes(self, root: n.Parent[n.Node]) -> n.Node:
         """
         Add include nodes to page AST's children.
 
@@ -963,49 +976,51 @@ class _Project:
         outside of Snooty Preview, since this function is currently only called by the language server.
         """
 
-        def replace_nodes(node: Dict[str, Any]) -> Dict[str, Any]:
-            if node.get("name") == "include":
-                # Get the name of the file
-                argument = node["argument"][0]
-                include_filename = argument["value"]
-                include_filename = include_filename[1:]
+        def replace_nodes(node: n.Node) -> n.Node:
+            if isinstance(node, n.Directive):
+                if node.name == "include":
+                    # Get the name of the file
+                    argument = node.argument[0]
+                    include_filename = argument.value
+                    include_filename = include_filename[1:]
 
-                # Get children of include file
-                include_file_page_ast = cast(
-                    Dict[str, Any], self.pages[FileId(include_filename)].ast
-                )
-                include_node_children = include_file_page_ast["children"]
+                    # Get children of include file
+                    include_file_page_ast = self.pages[FileId(include_filename)].ast
+                    assert isinstance(include_file_page_ast, n.Parent)
+                    include_node_children = include_file_page_ast.children
 
-                # Resolve includes within include node
-                replaced_include = list(map(replace_nodes, include_node_children))
-                node["children"] = replaced_include
-            # Replace instances of an image's name with its full path. This allows Snooty Preview to render an image by
-            # using the location of the image on the user's local machine
-            elif node.get("name") == "figure":
-                # Obtain subset of the image's path (name)
-                argument = node["argument"][0]
-                image_value = argument["value"]
+                    # Resolve includes within include node
+                    replaced_include = list(map(replace_nodes, include_node_children))
+                    node.children = replaced_include
+                # Replace instances of an image's name with its full path. This allows Snooty Preview to render an image by
+                # using the location of the image on the user's local machine
+                elif node.name == "figure":
+                    # Obtain subset of the image's path (name)
+                    argument = node.argument[0]
+                    image_value = argument.value
 
-                # Prevents the image from having a redundant path if Snooty Preview already replaced
-                # its original value.
-                source_path_str = self.config.source_path.as_posix()
-                index_match = image_value.find(source_path_str)
-                if index_match != -1:
-                    repeated_offset = index_match + len(source_path_str)
-                    image_value = image_value[repeated_offset:]
+                    # Prevents the image from having a redundant path if Snooty Preview already replaced
+                    # its original value.
+                    source_path_str = self.config.source_path.as_posix()
+                    index_match = image_value.find(source_path_str)
+                    if index_match != -1:
+                        repeated_offset = index_match + len(source_path_str)
+                        image_value = image_value[repeated_offset:]
 
-                # Replace subset of path with full path of image
-                if image_value[0] == "/":
-                    image_value = image_value[1:]
-                full_path = self.get_full_path(FileId(image_value))
-                argument["value"] = full_path.as_posix()
-            # Check for include nodes among current node's children
-            elif node.get("children"):
-                for child in node["children"]:
+                    # Replace subset of path with full path of image
+                    if image_value[0] == "/":
+                        image_value = image_value[1:]
+                    full_path = self.get_full_path(FileId(image_value))
+                    argument.value = full_path.as_posix()
+                # Check for include nodes among current node's children
+            elif isinstance(node, n.Parent):
+                for child in node.children:
                     replace_nodes(child)
             return node
 
-        return list(map(replace_nodes, nodes))
+        return dataclasses.replace(
+            root, children=list(map(replace_nodes, root.children))
+        )
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1097,7 +1112,7 @@ class Project:
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
 
-    def get_page_ast(self, path: Path) -> SerializableType:
+    def get_page_ast(self, path: Path) -> n.Node:
         """Return complete AST of page with updated text"""
         with self._lock:
             return self._project.get_page_ast(path)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 from . import language_server
-from .util_test import check_ast_testing_string
+from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import Diagnostic, FileId, SerializableType
 from .flutter import checked, check_type
 
@@ -137,12 +137,12 @@ def test_text_doc_get_page_ast() -> None:
             <target domain="std" name="label">
             <target_identifier ids="['guides']"><text>Guides</text></target_identifier>
             </target>
-            <section alt="Sample images">
+            <section>
             <heading id="id1"><text>Guides</text></heading>
-            <directive name="figure" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
+            <directive name="figure" alt="Sample images" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
             <text>"""
             + full_image_path.as_posix()
-            + """</text></directive></section>
+            + """</text></directive>
             <directive name="include"><text>/includes/test_rst.rst</text>
             <directive name="include"><text>/includes/include_child.rst</text>
             <paragraph><text>This is an include in an include</text></paragraph></directive></directive>
@@ -153,7 +153,7 @@ def test_text_doc_get_page_ast() -> None:
             <text> now.</text></paragraph></section></directive>
             <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>
-            </section></directive></directive></root>"""
+            </section></directive></directive></section></root>"""
         )
 
         # ast string for included rst file
@@ -170,6 +170,9 @@ def test_text_doc_get_page_ast() -> None:
             language_server_ast: SerializableType = server.m_text_document__get_page_ast(
                 test_file_path.as_posix()
             )
+            print()
+            print()
+            print(ast_to_testing_string(language_server_ast))
             check_ast_testing_string(language_server_ast, expected_ast_strings[i])
 
 

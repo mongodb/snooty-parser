@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
-from .types import BuildIdentifierSet, FileId, SerializableType
+from .types import BuildIdentifierSet, FileId
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string
+from . import n
 import pytest
 
 
@@ -24,8 +25,8 @@ def backend() -> Backend:
 
 def test_slug_title_mapping(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist
-    slugToTitle: Dict[str, List[Dict[str, SerializableType]]] = cast(
-        Dict[str, List[Dict[str, SerializableType]]], backend.metadata["slugToTitle"]
+    slugToTitle = cast(
+        Dict[str, List[n.SerializedNode]], backend.metadata["slugToTitle"]
     )
 
     # page3 is not included in slug-title mapping because it lacks a heading.
@@ -40,11 +41,12 @@ def test_slug_title_mapping(backend: Backend) -> None:
 
 def test_expand_includes(backend: Backend) -> None:
     page4_id = FileId("page4.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page4_id].ast)
-    children = cast(Dict[str, Any], ast["children"][0])
-    assert children["name"] == "include"
-    assert len(children["children"]) > 1
-    assert children["children"] == [
+    ast = backend.pages[page4_id].ast
+    child = ast.children[0]
+    assert isinstance(child, n.Directive)
+    assert child.name == "include"
+    assert len(child.children) > 1
+    assert child.serialize()["children"] == [
         {
             "type": "target",
             "position": {"start": {"line": 1}},
@@ -111,11 +113,12 @@ def test_expand_includes(backend: Backend) -> None:
 
 def test_validate_ref_targets(backend: Backend) -> None:
     page_id = FileId("refrole.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    ast = backend.pages[page_id].ast
 
     # Assert that targets found in intersphinx inventories are correctly resolved
-    paragraph = cast(Dict[str, Any], ast["children"][0])
-    ref_role = paragraph["children"][0]
+    paragraph = ast.children[0]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[0]
     # print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
@@ -129,8 +132,9 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
 
     # Assert that local targets are correctly resolved
-    paragraph = cast(Dict[str, Any], ast["children"][3])
-    ref_role = paragraph["children"][1]
+    paragraph = ast.children[3]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[1]
     # print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
@@ -144,8 +148,9 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
 
     # Assert that labels are correctly resolved
-    paragraph = cast(Dict[str, Any], ast["children"][1])
-    ref_role = paragraph["children"][-2]
+    paragraph = ast.children[1]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[-2]
     print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
@@ -157,8 +162,9 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
 
     # Assert that local targets with a prefix correctly resolved
-    paragraph = cast(Dict[str, Any], ast["children"][4])
-    ref_role = paragraph["children"][1]
+    paragraph = ast.children[4]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[1]
     print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
@@ -182,13 +188,13 @@ def test_validate_ref_targets(backend: Backend) -> None:
 
 def test_role_explicit_title(backend: Backend) -> None:
     page_id = FileId("index.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
 
     # Assert that ref_roles with an explicit title work
-    paragraph = cast(Any, ast)["children"][1]["children"][4]["children"][1]["children"][
-        2
-    ]
-    ref_role = paragraph["children"][1]
+    paragraph = cast(Any, ast).children[1].children[4].children[1].children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    ref_role = paragraph.children[1]
     print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
@@ -268,12 +274,15 @@ def test_toctree_order(backend: Backend) -> None:
 
 def test_target_titles(backend: Backend) -> None:
     page_id = FileId("index.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    ast = backend.pages[page_id].ast
 
     # Assert that titles are correctly located
-    section = cast(Dict[str, Any], ast)["children"][1]["children"][4]
-    target1 = section["children"][-2]
-    target2 = section["children"][-1]
+    section = ast.children[1]
+    assert isinstance(section, n.Parent)
+    section = section.children[4]
+    assert isinstance(section, n.Parent)
+    target1 = section.children[-2]
+    target2 = section.children[-1]
     check_ast_testing_string(
         target1,
         """<target domain="std" name="label"><target_identifier ids="['a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
@@ -286,14 +295,16 @@ def test_target_titles(backend: Backend) -> None:
 
 def test_program_option(backend: Backend) -> None:
     page_id = FileId("a-program.txt")
-    ast = cast(Dict[str, List[Dict[str, Any]]], backend.pages[page_id].ast)
-    section = ast["children"][0]
-    include = section["children"][3]
-    program1 = section["children"][2]
-    option1_1 = include["children"][0]
-    option1_2 = section["children"][4]
-    program2 = section["children"][5]
-    option2_1 = section["children"][6]
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
+
+    section: Any = ast.children[0]
+    include = section.children[3]
+    program1 = section.children[2]
+    option1_1 = include.children[0]
+    option1_2 = section.children[4]
+    program2 = section.children[5]
+    option2_1 = section.children[6]
 
     # Test directives
     check_ast_testing_string(
@@ -357,9 +368,9 @@ def test_program_option(backend: Backend) -> None:
     assert len(diagnostics) == 1, diagnostics
     assert "Ambiguous" in diagnostics[0].message
 
-    roles = section["children"][7]["children"]
+    roles = section.children[7].children
     check_ast_testing_string(
-        roles[0]["children"][0]["children"][0],
+        roles[0].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="a-program.-f" fileid="a-program">
         <literal><text>a-program -f</text></literal>
@@ -367,7 +378,7 @@ def test_program_option(backend: Backend) -> None:
     """,
     )
     check_ast_testing_string(
-        roles[1]["children"][0]["children"][0],
+        roles[1].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="-f" fileid="a-program">
         <literal><text>a-program -f</text></literal>
@@ -375,7 +386,7 @@ def test_program_option(backend: Backend) -> None:
     """,
     )
     check_ast_testing_string(
-        roles[2]["children"][0]["children"][0],
+        roles[2].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="--config" fileid="a-program">
         <literal><text>a-program --config</text></literal>
@@ -383,7 +394,7 @@ def test_program_option(backend: Backend) -> None:
     """,
     )
     check_ast_testing_string(
-        roles[3]["children"][0]["children"][0],
+        roles[3].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="-v" fileid="a-program">
         <literal><text>a-second-program -v</text></literal>
@@ -391,7 +402,7 @@ def test_program_option(backend: Backend) -> None:
     """,
     )
     check_ast_testing_string(
-        roles[4]["children"][0]["children"][0],
+        roles[4].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="a-program.-v" fileid="a-program">
         <literal><text>a-program -v</text></literal>
@@ -403,63 +414,71 @@ def test_program_option(backend: Backend) -> None:
 def test_substitutions(backend: Backend) -> None:
     # Test substitutions as defined in snooty.toml
     page_id = FileId("page3.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    ast = backend.pages[page_id].ast
 
-    paragraph = cast(Dict[str, Any], ast["children"][2])
-    substitution_reference = paragraph["children"][0]
+    paragraph = ast.children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="service"><text>Atlas</text></substitution_reference>""",
     )
 
-    substitution_reference = paragraph["children"][2]
+    substitution_reference = paragraph.children[2]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="global-write-clusters"><text>Global </text><emphasis><text>Clusters</text></emphasis></substitution_reference>""",
     )
 
     # Verify that same substitution can be used multiple times on the same page
-    paragraph = cast(Dict[str, Any], ast["children"][4])
-    substitution_reference = paragraph["children"][0]
+    paragraph = ast.children[4]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="service"><text>Atlas</text></substitution_reference>""",
     )
 
     # Test substitution of empty string
-    paragraph = cast(Dict[str, Any], ast["children"][3])
-    substitution_reference = paragraph["children"][1]
+    paragraph = ast.children[3]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="blank"></substitution_reference>""",
     )
 
     # Test substitutions defined in-page
-    paragraph = cast(Dict[str, Any], ast["children"][6])
-    substitution_reference = paragraph["children"][0]
+    paragraph = ast.children[6]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="sub"><text>Diff</text></substitution_reference>""",
     )
 
     page_id = FileId("page4.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
 
-    substution_definition = cast(Dict[str, Any], ast["children"][2])
+    substution_definition = ast.children[2]
+    assert isinstance(substution_definition, n.SubstitutionDefinition)
     check_ast_testing_string(
         substution_definition,
         """<substitution_definition name="sub"><text>Substitution</text></substitution_definition>""",
     )
 
-    paragraph = cast(Dict[str, Any], ast["children"][1])
-    substitution_reference = paragraph["children"][1]
+    paragraph = ast.children[1]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
     )
 
-    paragraph = cast(Dict[str, Any], ast["children"][3])
-    substitution_reference = paragraph["children"][1]
+    paragraph = ast.children[3]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="sub"><text>Substitution</text></substitution_reference>""",
@@ -467,24 +486,29 @@ def test_substitutions(backend: Backend) -> None:
 
     # Test substitution used in an include
     page_id = FileId("page5.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
-    paragraph = cast(Dict[str, Any], ast["children"][1])
-    substitution_reference = paragraph["children"][1]
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
+    paragraph = ast.children[1]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="included-sub"><text>ack</text></substitution_reference>""",
     )
 
-    paragraph = cast(Dict[str, Any], ast["children"][3])
-    substitution_reference = paragraph["children"][1]
+    paragraph = ast.children[3]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="included-sub"><text>included substitution</text></substitution_reference>""",
     )
 
-    include = cast(Dict[str, Any], ast["children"][2])
-    paragraph = include["children"][1]
-    substitution_reference = paragraph["children"][1]
+    include = ast.children[2]
+    assert isinstance(include, n.Directive)
+    paragraph = include.children[1]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[1]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="use-in-include"><text>Yes</text></substitution_reference>""",
@@ -496,31 +520,37 @@ def test_substitutions(backend: Backend) -> None:
     diagnostics = backend.diagnostics[page_id]
     assert len(diagnostics) == 4
 
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
-    paragraph = cast(Dict[str, Any], ast["children"][2])
-    substitution_reference = paragraph["children"][0]
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
+    paragraph = ast.children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="operation"><substitution_reference name="add"></substitution_reference></substitution_reference>""",
     )
 
-    paragraph = cast(Dict[str, Any], ast["children"][7])
-    substitution_reference = paragraph["children"][0]
+    paragraph = ast.children[7]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="baz"><substitution_reference name="foo"></substitution_reference></substitution_reference>""",
     )
 
-    paragraph = cast(Dict[str, Any], ast["children"][3])
+    paragraph = ast.children[3]
+    assert isinstance(paragraph, n.Paragraph)
     check_ast_testing_string(
         paragraph, "<paragraph><text>Testing content here.</text></paragraph>"
     )
 
     # Test nested substitutions
     page_id = FileId("nested.txt")
-    ast = cast(Dict[str, List[SerializableType]], backend.pages[page_id].ast)
-    paragraph = cast(Dict[str, Any], ast["children"][2])
-    substitution_reference = paragraph["children"][0]
+    ast = backend.pages[page_id].ast
+    assert isinstance(ast, n.Root)
+    paragraph = ast.children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    substitution_reference = paragraph.children[0]
     check_ast_testing_string(
         substitution_reference,
         """<substitution_reference name="weather"><substitution_reference name="sun"><text>sun</text></substitution_reference></substitution_reference>""",
