@@ -1103,3 +1103,23 @@ def test_dates() -> None:
 </root>
 """,
     )
+
+
+def test_problematic() -> None:
+    """Test that "<problematic>" nodes by the docutils parser --- typically when a
+       role isn't known --- are excluded from the output AST. We might change this
+       behavior, but for now we should define it."""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:spec:`Server write commands </server_write_commands.rst>`
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")

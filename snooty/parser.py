@@ -241,7 +241,7 @@ class JSONVisitor:
                     "Unexpected indentation", util.get_line(node.children[0])
                 )
             )
-            return
+            raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
             self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
         elif isinstance(node, rstparser.directive):
@@ -359,16 +359,13 @@ class JSONVisitor:
             self.state.append(n.Transition((line,)))
         elif isinstance(node, docutils.nodes.table):
             raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.comment):
-            pass
+        elif isinstance(node, (docutils.nodes.comment, docutils.nodes.problematic)):
+            raise docutils.nodes.SkipNode()
         else:
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         if len(self.state) == 1 or isinstance(node, docutils.nodes.definition):
-            return
-
-        if isinstance(node, (docutils.nodes.block_quote, docutils.nodes.comment)):
             return
 
         popped = self.state.pop()
