@@ -9,6 +9,7 @@ alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
+charts_theme = ["light", "dark"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -395,14 +396,29 @@ inherit = "_devhub-block"
 [directive."devhub:author"]
 help = "Author profile for the byline."
 example = """.. author::
-   :name: Firstname Lastname
+   :name: Eliot Horowitz
    :image: /path/to/image.jpg
+   :location: New York, NY
+   :company: MongoDB Inc.
+   :title: CTO
+   :website: http://www.example.com
+   :twitter: https://twitter.com/eliothorowitz
+   :github: https://github.com/erh
+   :linkedin: https://www.linkedin.com/in/eliothorowitz/
 
    Author bio goes here.
 """
 inherit = "_devhub-block"
 options.name = "string"
 options.image = ["path", "uri"]
+options.location = "string"
+options.company = "string"
+options.title = "string"
+options.website = "uri"
+options.twitter = "uri"
+options.github = "uri"
+options.linkedin = "uri"
+
 
 [directive."devhub:atf-image"]
 help = "Path to the image to use for the above-the-fold header image"
@@ -499,6 +515,30 @@ options.creator = "string"
 options.title = "string"
 options.image = ["path", "uri"]
 
+[directive.og]
+help="""Options
+- url: the canonical URL of the page without any session variables, parameters, etc.
+- title: Title of the article without any branding.
+- image: URL of the image that appears when someone shares the content. 
+- type: Type of the media content. Default is website. You probably want article.
+"""
+example= """.. og::
+   :url: http://developer.mongodb.com/article/active-active-application-architectures
+   :type: article
+   :title: Active-Active Application Architectures
+   :image: http://developer.mongodb.com/images/atf-images/generic/purple.png
+
+   A brief description of the content, usually between 2 and 4 
+   sentences. This will displayed below the title of the post on 
+   Facebook.
+"""
+content_type = "block"
+options.url = "uri"
+options.title = "string"
+options.image = ["path", "uri"]
+options.type = "string"
+
+
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
 argument_type = "string"
@@ -508,6 +548,32 @@ content_type = "block"
 help = "Embed a Twitch stream in your article"
 argument_type = "string"
 content_type = "block"
+
+[directive.charts]
+help = """Embed a chart from MongoDB Charts in your article. Options:
+- url: url of your charts dashboard
+- id: id of the chart
+- autorefresh: set a time (in seconds) for this chart to automatically refresh. Default: no refresh.
+- theme: specify dark or light mode, depending on your background
+- width: width of the embedded frame
+- height: height of the embedded frame
+"""
+example= """.. charts:: 
+   :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
+   :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
+   :autorefresh: 3600
+   :theme: dark
+   :width: 760
+   :height: 570
+"""
+argument_type = "string"
+content_type = "block"
+options.url = "uri"
+options.id = "string"
+options.autorefresh = "nonnegative_integer"
+options.theme = "charts_theme"
+options.width = "length"
+options.height = "length"
 
 [directive.meta]
 help = """Add metadata to the site for SEO."""
