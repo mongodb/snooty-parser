@@ -641,7 +641,7 @@ class DevhubPostprocessor(Postprocessor):
         self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
         title = self.slug_title_mapping.get(slug)
         if title is not None:
-            self.query_fields["title"] = title
+            self.query_fields["title"] = [node.serialize() for node in title]
 
         page.query_fields = self.query_fields
 
@@ -662,7 +662,9 @@ class DevhubPostprocessor(Postprocessor):
                 assert isinstance(first_child, n.Parent)
                 for item in first_child.children:
                     paragraph = item.children[0]
-                    self.query_fields[node.name].append(paragraph.children[0])
+                    self.query_fields[node.name].append(
+                        paragraph.children[0].serialize()
+                    )
         elif key in {":pubdate", ":updated-date"}:
             date = node.options.get("date")
             if date:
@@ -671,7 +673,9 @@ class DevhubPostprocessor(Postprocessor):
             if len(node.argument) > 0:
                 self.query_fields[node.name] = node.argument[0].value
         elif key in self.BLOCK_FIELDS:
-            self.query_fields[node.name] = node.children
+            self.query_fields[node.name] = [
+                child.serialize() for child in node.children
+            ]
         elif key in self.LIST_FIELDS:
             self.query_fields[node.name] = []
             if len(node.children) > 0:
