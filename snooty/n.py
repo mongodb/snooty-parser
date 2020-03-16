@@ -252,25 +252,26 @@ class Directive(Parent[Node]):
             arg.verify()
 
 
+class TocTreeDirectiveEntry(NamedTuple):
+    title: Optional[str]
+    url: Optional[str]
+    slug: Optional[str]
+
+    def serialize(self) -> SerializedNode:
+        result: SerializedNode = {}
+        if self.title:
+            result["title"] = self.title
+        if self.url:
+            result["url"] = self.url
+        if self.slug:
+            result["slug"] = self.slug
+        return result
+
+
 @dataclass
 class TocTreeDirective(Directive):
-    class Entry(NamedTuple):
-        title: Optional[str]
-        url: Optional[str]
-        slug: Optional[str]
-
-        def serialize(self) -> SerializedNode:
-            result: SerializedNode = {}
-            if self.title:
-                result["title"] = self.title
-            if self.url:
-                result["url"] = self.url
-            if self.slug:
-                result["slug"] = self.slug
-            return result
-
     __slots__ = ("entries",)
-    entries: Sequence[Entry]
+    entries: Sequence[TocTreeDirectiveEntry]
 
 
 @dataclass
