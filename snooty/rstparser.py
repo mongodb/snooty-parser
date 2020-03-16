@@ -740,7 +740,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         node.source, node.line = source, line
         node["options"] = self.options
 
-        entries: List[n.TocTreeDirective.Entry] = []
+        entries: List[n.TocTreeDirectiveEntry] = []
         errors: List[docutils.nodes.Node] = []
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
@@ -753,7 +753,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
     def make_toc_entry(
         self, source: str, child: str
-    ) -> Tuple[Optional[n.TocTreeDirective.Entry], List[docutils.nodes.Node]]:
+    ) -> Tuple[Optional[n.TocTreeDirectiveEntry], List[docutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
         match = PAT_EXPLICIT_TITLE.match(child)
         title: Optional[str] = None
@@ -774,7 +774,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
             url = target
         else:
             slug = target
-        return n.TocTreeDirective.Entry(title, url, slug), []
+        return n.TocTreeDirectiveEntry(title, url, slug), []
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):
