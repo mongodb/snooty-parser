@@ -21,6 +21,7 @@
 .. ---------------------------------------------------------------
 
 .. include:: /includes/authors/lastname-firstname.rst
+.. include:: /includes/authors/horowitz-eliot.rst
 
 .. pubdate:: January 31, 2019
 

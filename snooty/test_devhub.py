@@ -28,11 +28,25 @@ def test_queryable_fields(backend: Backend) -> None:
     query_fields = page.query_fields
     assert len(page.static_assets) == 1
     assert query_fields is not None
-    assert query_fields["author"] == {
-        "name": "Eliot Horowitz",
-        "image": "/images/bio-ken.jpg",
-        "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
-    }
+    assert query_fields["author"] == [
+        {
+            "name": "Firstname Lastname",
+            "image": "/images/bio-name.jpg",
+            "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
+        },
+        {
+            "name": "Eliot Horowitz",
+            "image": "/images/bio-eliot.jpg",
+            "location": "New York, NY",
+            "company": "MongoDB Inc.",
+            "title": "CTO",
+            "website": "http://www.example.com",
+            "twitter": "https://twitter.com/eliothorowitz",
+            "github": "https://github.com/erh",
+            "linkedin": "https://www.linkedin.com/in/eliothorowitz/",
+            "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
+        },
+    ]
     assert query_fields["tags"] == ["foo", "bar", "baz"]
     assert query_fields["languages"] == ["nodejs", "java"]
     assert query_fields["products"] == ["Realm", "MongoDB"]
