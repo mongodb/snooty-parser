@@ -653,7 +653,7 @@ class DevhubPostprocessor(Postprocessor):
         key = f"{node.domain}:{node.name}"
 
         if key == "devhub:author":
-            self.query_fields["author"] = node.options
+            self.query_fields.setdefault("author", []).append(node.options)
         elif key == "devhub:related":
             # Save list of nodes (likely :doc: roles)
             self.query_fields[node.name] = []
