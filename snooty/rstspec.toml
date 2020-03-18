@@ -941,6 +941,12 @@ type = {link = "https://reactjs.org/%s"}
 [role."jwt-io"]
 type = {link = "https://jwt.io/%s"}
 
+[role."android-dev"]
+type = {link = "https://developer.android.com/%s"}
+
+[role."apple-dev"]
+type = {link = "https://developer.apple.com/documentation/%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
