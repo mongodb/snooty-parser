@@ -904,6 +904,23 @@ def test_footnote() -> None:
         </root>""",
     )
 
+    # Test that docutils <label> nodes do not crash the parser.
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:manual:`eval </reference/command/eval>` [1]_
+
+.. [1] MongoDB 4.2 doesn't support these commands.
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+
 
 def test_footnote_reference() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
