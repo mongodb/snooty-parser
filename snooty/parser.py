@@ -420,6 +420,7 @@ class JSONVisitor:
         except (IndexError, AttributeError):
             pass
 
+        key: str = f"{domain}:{name}"
         if name == "todo":
             todo_text = ["TODO"]
             if argument_text:
@@ -533,7 +534,8 @@ class JSONVisitor:
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
-        elif domain == "devhub" and name == "author":
+        elif key in {"devhub:author", ":og", ":twitter"}:
+            # Grab image from options array and save as static asset
             image_argument = options.get("image")
 
             if not image_argument:

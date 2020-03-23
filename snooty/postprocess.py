@@ -559,6 +559,9 @@ class DevhubPostprocessor(Postprocessor):
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
     ARG_FIELDS = {"devhub:level", "devhub:type", "devhub:atf-image"}
+    # These directives have their content represented as children, along with a series of options;
+    # they will return a dictionary with all options represented, and with the content represented as a list of nodes whose key is `children`.
+    OPTION_BLOCK_FIELDS = {":og", ":twitter"}
 
     def run(
         self, pages: Dict[FileId, Page]
@@ -653,7 +656,12 @@ class DevhubPostprocessor(Postprocessor):
         key = f"{node.domain}:{node.name}"
 
         if key == "devhub:author":
-            self.query_fields.setdefault("author", []).append(node.options)
+            # Create a dict unifying the node's options and children
+            author_obj: Dict[str, SerializableType] = {}
+            author_obj.update(node.options)
+            author_obj["children"] = [child.serialize() for child in node.children]
+
+            self.query_fields.setdefault("author", []).append(author_obj)
         elif key == "devhub:related":
             # Save list of nodes (likely :doc: roles)
             self.query_fields[node.name] = []
@@ -669,6 +677,13 @@ class DevhubPostprocessor(Postprocessor):
             date = node.options.get("date")
             if date:
                 self.query_fields[node.name] = date
+        elif key in self.OPTION_BLOCK_FIELDS:
+            # Create a dict unifying the node's options and children
+            node_obj: Dict[str, SerializableType] = {}
+            node_obj.update(node.options)
+            node_obj["children"] = [child.serialize() for child in node.children]
+
+            self.query_fields[node.name] = node_obj
         elif key in self.ARG_FIELDS:
             if len(node.argument) > 0:
                 self.query_fields[node.name] = node.argument[0].value
