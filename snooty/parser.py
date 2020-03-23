@@ -342,7 +342,7 @@ class JSONVisitor:
         elif isinstance(node, docutils.nodes.footnote_reference):
             # Autonumbered footnotes do not have a refname
             refname = node["refname"] if "refname" in node else None
-            self.state.append(n.FootnoteReference((line,), node["ids"][0], refname))
+            self.state.append(n.FootnoteReference((line,), [], node["ids"][0], refname))
         elif isinstance(node, docutils.nodes.section):
             self.state.append(n.Section((line,), []))
         elif isinstance(node, docutils.nodes.paragraph):
@@ -359,7 +359,10 @@ class JSONVisitor:
             self.state.append(n.Transition((line,)))
         elif isinstance(node, docutils.nodes.table):
             raise docutils.nodes.SkipNode()
-        elif isinstance(node, (docutils.nodes.comment, docutils.nodes.problematic)):
+        elif isinstance(
+            node,
+            (docutils.nodes.comment, docutils.nodes.problematic, docutils.nodes.label),
+        ):
             raise docutils.nodes.SkipNode()
         else:
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")

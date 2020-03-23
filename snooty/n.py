@@ -164,7 +164,7 @@ class Footnote(Parent[Node]):
 
 
 @dataclass
-class FootnoteReference(Node):
+class FootnoteReference(InlineParent):
     __slots__ = ("id", "refname")
     type = "footnote_reference"
     id: str
