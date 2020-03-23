@@ -420,6 +420,12 @@ class JSONVisitor:
         except (IndexError, AttributeError):
             pass
 
+        # Identify directives that have an option :image: so that these images can be uploaded as static assets
+        has_image_option: bool = (domain == "devhub" and name == "author") or name in {
+            "og",
+            "twitter",
+        }
+
         if name == "todo":
             todo_text = ["TODO"]
             if argument_text:
@@ -533,7 +539,7 @@ class JSONVisitor:
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
-        elif domain == "devhub" and name == "author":
+        elif has_image_option:
             image_argument = options.get("image")
 
             if not image_argument:

@@ -26,7 +26,7 @@ def test_queryable_fields(backend: Backend) -> None:
     page_id = FileId("index.txt")
     page = backend.pages[page_id]
     query_fields = page.query_fields
-    assert len(page.static_assets) == 1
+    assert len(page.static_assets) == 3
     assert query_fields is not None
     assert query_fields["author"] == [
         {

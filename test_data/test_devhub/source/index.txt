@@ -12,7 +12,7 @@
    :site: @mongodb
    :creator: @Lauren_Schaefer
    :title: Wordswordswords
-   :image: </path/to/image>
+   :image: /images/atf-images/generic/pink.png
 
    Description of max 200 characters
 
@@ -54,6 +54,17 @@
    * ``list of related articles``
    * :doc:`/path/to/article`
    * ``:doc:`/path/to/other/article```
+
+.. og::
+   :url: http://developer.mongodb.com/article/active-active-application-architectures
+   :type: article
+   :title: Active-Active Application Architectures
+   :image: /images/atf-images/generic/purple.png
+
+   A brief description of the content, usually between 2 and 4 
+   sentences. This will displayed below the title of the post on 
+   Facebook.
+
 
 .. ---------------------------------------------------------------
 .. ARTICLE CONTENT
@@ -129,6 +140,15 @@ h1 Article Title
    `````````````
 
    Second H4's content
+
+   .. charts::
+      :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
+      :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
+      :autorefresh: 3600
+      :theme: dark
+      :width: 760
+      :height: 570
+      :align: right
 
 .. summary::
 
