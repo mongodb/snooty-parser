@@ -566,8 +566,6 @@ example= """.. charts::
    :width: 760
    :height: 570
 """
-argument_type = "string"
-content_type = "block"
 options.url = "uri"
 options.id = "string"
 options.autorefresh = "nonnegative_integer"
