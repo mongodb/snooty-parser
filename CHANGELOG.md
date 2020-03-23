@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Program & Option handling (DOCSP-8449).
+- Enforce ISO 8061 dates (DOCSPLAT-825).
+- Support multiple authors.
+- Various roles & directives.
+
+### Changed
+
+- The AST is now constructed with a formally specified object-oriented structure.
+
 ## [v0.3.6] - 2020-03-03
 
 ### Fixed
