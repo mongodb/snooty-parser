@@ -565,6 +565,7 @@ example= """.. charts::
    :theme: dark
    :width: 760
    :height: 570
+   :align: right
 """
 options.url = "uri"
 options.id = "string"
@@ -572,6 +573,7 @@ options.autorefresh = "nonnegative_integer"
 options.theme = "charts_theme"
 options.width = "length"
 options.height = "length"
+options.align = "alignment"
 
 [directive.meta]
 help = """Add metadata to the site for SEO."""
