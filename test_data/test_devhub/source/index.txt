@@ -65,6 +65,8 @@
    sentences. This will displayed below the title of the post on 
    Facebook.
 
+   Supports multiple paragraphs.
+
 
 .. ---------------------------------------------------------------
 .. ARTICLE CONTENT

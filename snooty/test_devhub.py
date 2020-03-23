@@ -3,7 +3,7 @@ from typing import cast, Any, Dict, List
 from .types import BuildIdentifierSet, FileId, SerializableType
 from .parser import Project
 from .test_project import Backend
-from .util_test import check_ast_testing_string
+from .util_test import ast_to_testing_string, check_ast_testing_string
 import pytest
 
 
@@ -17,6 +17,14 @@ def backend() -> Backend:
     return backend
 
 
+def simplify_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Iterate over a dictionary and simplify child nodes into strings"""
+    return {
+        k: [ast_to_testing_string(n) for n in v] if k == "children" else v
+        for k, v in d.items()
+    }
+
+
 def test_queryable_fields(backend: Backend) -> None:
     page_id = FileId("includes/authors/lastname-firstname.rst")
     page = backend.pages[page_id]
@@ -28,11 +36,16 @@ def test_queryable_fields(backend: Backend) -> None:
     query_fields = page.query_fields
     assert len(page.static_assets) == 3
     assert query_fields is not None
-    assert query_fields["author"] == [
+
+    simple_authors: List[Dict[str, Any]] = [
+        (simplify_dict(d)) for d in cast(Any, query_fields["author"])
+    ]
+    assert simple_authors == [
         {
             "name": "Firstname Lastname",
             "image": "/images/bio-name.jpg",
             "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
+            "children": ["<paragraph><text>Bio goes here.</text></paragraph>"],
         },
         {
             "name": "Eliot Horowitz",
@@ -45,6 +58,9 @@ def test_queryable_fields(backend: Backend) -> None:
             "github": "https://github.com/erh",
             "linkedin": "https://www.linkedin.com/in/eliothorowitz/",
             "checksum": "324b32910cb1080451f033fea7f916c6d33ac851b868b4bca829a4b900a809d6",
+            "children": [
+                "<paragraph><text>Eliot Horowitz is the CTO and Co-Founder of MongoDB. He wrote the core\ncode base for MongoDB starting in 2007, and subsequently built the\nengineering and product teams. Today, Eliot oversees those\nteams, and continues to drive technology innovations at MongoDB.</text></paragraph>"
+            ],
         },
     ]
     assert query_fields["tags"] == ["foo", "bar", "baz"]
@@ -78,6 +94,29 @@ def test_queryable_fields(backend: Backend) -> None:
     title = cast(Any, query_fields["title"])
     assert len(title) == 1
     check_ast_testing_string(title[0], "<text>h1 Article Title</text>")
+
+    assert simplify_dict(cast(Any, query_fields["twitter"])) == {
+        "site": "@mongodb",
+        "creator": "@Lauren_Schaefer",
+        "title": "Wordswordswords",
+        "image": "/images/atf-images/generic/pink.png",
+        "checksum": "71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b",
+        "children": [
+            "<paragraph><text>Description of max 200 characters</text></paragraph>"
+        ],
+    }
+
+    assert simplify_dict(cast(Any, query_fields["og"])) == {
+        "url": "http://developer.mongodb.com/article/active-active-application-architectures",
+        "type": "article",
+        "title": "Active-Active Application Architectures",
+        "image": "/images/atf-images/generic/purple.png",
+        "checksum": "637c0eefb8026322bb5a563325a4ee70c53e2e7b9aecee576e2c576f2e3e1df6",
+        "children": [
+            "<paragraph><text>A brief description of the content, usually between 2 and 4\nsentences. This will displayed below the title of the post on\nFacebook.</text></paragraph>",
+            "<paragraph><text>Supports multiple paragraphs.</text></paragraph>",
+        ],
+    }
 
 
 def test_page_groups(backend: Backend) -> None:
