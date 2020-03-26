@@ -56,10 +56,7 @@ def test_step() -> None:
                 "following command to import the\n</text><reference ",
                 'refuri="https://www.mongodb.org/static/pgp/server-3.4.asc">',
                 "<text>MongoDB public GPG Key</text>",
-                """</reference><target domain="std" name="label" """,
-                'refuri="https://www.mongodb.org/static/pgp/server-3.4.asc">',
-                """<target_identifier ids="['mongodb-public-gpg-key']"></target_identifier>"""
-                "</target></paragraph></section></directive>",
+                "</reference></paragraph></section></directive>",
                 '<directive name="step">',
                 "<section>",
                 '<heading id="create-a-etc-apt-sources-list-d-mongodb-org-3-4-list-file-for-mongodb">',

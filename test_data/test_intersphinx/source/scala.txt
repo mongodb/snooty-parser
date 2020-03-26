@@ -1,0 +1,81 @@
+.. _scala:
+
+.. include:: /includes/unicode-checkmark.rst
+
+====================
+MongoDB Scala Driver
+====================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+This is the officially supported Scala driver for MongoDB.
+
+It's a modern idiomatic Scala driver with asynchronous and non-blocking IO.
+
+- :scala-docs:`Getting Started </getting-started/>`
+
+- :scala-docs:`Usage Guide </reference/>`
+
+- :scala-docs:`API Reference </scaladoc/>`
+
+- :scala-docs:`Changelog </changelog/>`
+
+- `Source Code <http://github.com/mongodb/mongo-scala-driver>`__
+
+
+Installation
+------------
+
+The recommended way to get started using the driver in your project is with a dependency management system like ``sbt`` or ``maven``. See `Installation Guide <http://mongodb.github.io/mongo-scala-driver/2.6/getting-started/installation-guide/>`__ for more information.
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: scala
+
+   import org.mongodb.scala._
+
+   // ...
+
+   val uri: String = "mongodb+srv://<username>:<password>@<cluster-address>/test?retryWrites=true&w=majority"
+   System.setProperty("org.mongodb.async.type", "netty")
+   val client: MongoClient = MongoClient(uri)
+   val db: MongoDatabase = client.getDatabase("test")
+
+
+See `Connecting <http://mongodb.github.io/mongo-scala-driver/2.6/reference/connecting/>`__
+for more ways to connect.
+
+
+Compatibility
+-------------
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/scala-driver-compatibility-matrix-mongodb.rst
+
+.. include:: /includes/mongodb-compatibility-table-scala.rst
+
+.. include:: /includes/older-server-versions-unsupported.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/scala-driver-compatibility-matrix-language.rst
+
+.. include:: /includes/language-compatibility-table-scala.rst
+
+.. include:: /includes/help-links-scala.rst

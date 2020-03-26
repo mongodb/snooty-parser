@@ -1,0 +1,44 @@
+.. include:: /includes/unicode-checkmark.rst
+
+.. _python-language-center:
+
+======================
+MongoDB Python Drivers
+======================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+:doc:`PyMongo </pymongo>` is the recommended way to work with MongoDB from Python.
+
+:doc:`Motor </motor>` is the recommended MongoDB Python async driver.
+
+Take the free online course taught by MongoDB
+---------------------------------------------
+
+.. list-table::
+
+   * - .. cssclass:: bordered-figure
+       .. figure:: /figures/M220P_hero.jpg
+
+     - `M220P: MongoDB for Python Developers <https://university.mongodb.com/courses/M220P/about>`__
+ 
+       Learn the essentials of Python application development with MongoDB.
+
+
+.. class:: hidden
+
+   .. toctree::
+      :titlesonly:
+
+      /pymongo.txt
+      /motor.txt
+

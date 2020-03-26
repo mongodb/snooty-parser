@@ -1,0 +1,100 @@
+.. include:: /includes/unicode-checkmark.rst
+
+=======
+PyMongo
+=======
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 2
+   :class: twocols
+
+Introduction
+------------
+
+**PyMongo** is the recommended way to work with MongoDB from Python.
+
+- :api:`Tutorial <python/current/tutorial.html>`
+
+- :api:`API Reference <python/current/api/index.html>`
+
+- :api:`Changelog <python/current/changelog.html>`
+
+- `Source Code <https://github.com/mongodb/mongo-python-driver>`__
+
+
+Take the free online course taught by MongoDB
+---------------------------------------------
+
+.. list-table::
+
+   * - .. cssclass:: bordered-figure
+       .. figure:: /figures/M220P_hero.jpg
+
+     - `M220P: MongoDB for Python Developers <https://university.mongodb.com/courses/M220P/about>`__
+
+       Learn the essentials of Python application development with MongoDB.
+
+
+Installation
+------------
+
+We recommend using `pip <http://pypi.python.org/pypi/pip>`__ to install
+pymongo on all platforms:
+
+.. code-block:: sh
+
+   $ python -m pip install pymongo
+
+To get a specific version of pymongo:
+
+.. code-block:: sh
+
+   $ python -m pip install pymongo==3.5.1
+
+To upgrade using pip:
+
+.. code-block:: sh
+
+   $ python -m pip install --upgrade pymongo
+
+
+See :api:`Installation <python/current/installation.html>` for more
+ways to install.
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: python
+
+   import pymongo
+
+   client = pymongo.MongoClient(
+      "mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority")
+   db = client.test
+
+
+Compatibility
+-------------
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/mongodb-compatibility-table-python.rst
+
+.. include:: /includes/older-server-versions-unsupported.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/python-driver-compatibility-matrix-language.rst
+
+.. include:: /includes/language-compatibility-table-python.rst
+
+.. include:: /includes/help-links-pymongo.rst

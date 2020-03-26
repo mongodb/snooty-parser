@@ -421,6 +421,9 @@ class Postprocessor:
                 "std", "doc", (slug,), filename, node.children
             )
             self.slug_title_mapping[slug] = node.children
+            self.targets.define_local_target(
+                "std", "doc", (filename.without_known_suffix,), filename, node.children
+            )
 
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name

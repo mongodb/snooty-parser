@@ -311,6 +311,9 @@ class JSONVisitor:
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
+            if "refuri" in node:
+                raise docutils.nodes.SkipNode()
+
             if not node["ids"]:
                 self.diagnostics.append(InvalidURL(util.get_line(node)))
                 # Remove the malformed node so it doesn't cause problems down the road
@@ -319,7 +322,6 @@ class JSONVisitor:
 
             node_id = node["ids"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
-
             refuri = node["refuri"] if "refuri" in node else None
             self.state.append(n.Target((line,), children, "std", "label", refuri))
         elif isinstance(node, rstparser.target_identifier):
@@ -974,10 +976,18 @@ class _Project:
         with util.PerformanceLogger.singleton().start("postprocessing"):
             post_metadata, post_diagnostics = self.postprocessor.run(self.pages)
 
+        static_files = {
+            "objects.inv": self.targets.generate_inventory("").dumps(
+                self.config.name, ""
+            )
+        }
+        post_metadata["static_files"] = static_files
+
         for fileid, page in self.postprocessor.pages.items():
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
         for fileid, diagnostics in post_diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
+
         self.backend.on_update_metadata(
             self.prefix, self.build_identifiers, post_metadata
         )
