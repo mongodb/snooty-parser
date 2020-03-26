@@ -1087,12 +1087,14 @@ def test_no_weird_targets() -> None:
         """
 `universal link <ios-universal-links_>`_
 
+`universal link <ios-universal-links_>`_
+
 .. _ios-universal-links: https://developer.apple.com/library/content/documentation/General/Conceptual/AppSearch/UniversalLinks.html
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
-    assert "Links" in diagnostics[0].message
+    assert len(diagnostics) == 2
+    assert all("Links" in diag.message for diag in diagnostics)
 
 
 def test_dates() -> None:

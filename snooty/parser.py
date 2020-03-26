@@ -293,7 +293,7 @@ class JSONVisitor:
                 )
                 # Remove the malformed node so it doesn't cause problems down the road
                 self.state.pop()
-                return
+                raise docutils.nodes.SkipNode()
 
             node_id = node["ids"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
