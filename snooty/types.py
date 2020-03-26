@@ -57,6 +57,11 @@ def normalize_target(target: str) -> str:
     return re.sub(r"\s+", " ", target).lower()
 
 
+def get_html_id(target: str) -> str:
+    """Return an HTML ID from a target name."""
+    return target.replace(" ", "_")
+
+
 class SnootyError(Exception):
     pass
 
@@ -126,12 +131,17 @@ class TargetDatabase:
         canonical_target_name: str
         title: Sequence[n.InlineNode]
 
+    class LocalDefinition(NamedTuple):
+        canonical_name: str
+        fileid: FileId
+        title: Sequence[n.InlineNode]
+
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
     )
-    local_definitions: DefaultDict[
-        str, List[Tuple[str, FileId, Sequence[n.InlineNode]]]
-    ] = field(default_factory=lambda: defaultdict(list))
+    local_definitions: DefaultDict[str, List[LocalDefinition]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
     def __contains__(self, key: str) -> bool:
         key = normalize_target(key)
@@ -192,7 +202,9 @@ class TargetDatabase:
         for target in targets:
             target = normalize_target(target)
             key = f"{domain}:{name}:{target}"
-            self.local_definitions[key].append((canonical_target_name, pageid, title))
+            self.local_definitions[key].append(
+                TargetDatabase.LocalDefinition(canonical_target_name, pageid, title)
+            )
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
@@ -203,6 +215,35 @@ class TargetDatabase:
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
         for url in config.intersphinx:
             self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+
+    def generate_inventory(self, base_url: str) -> intersphinx.Inventory:
+        targets: Dict[str, intersphinx.TargetDefinition] = {}
+        for key, definitions in self.local_definitions.items():
+            if not definitions:
+                continue
+
+            definition = definitions[0]
+            uri = definition.fileid.without_known_suffix + "/"
+            dispname = "".join(node.get_text() for node in definition.title)
+            domain, role_name, name = key.split(":", 3)
+
+            if not dispname:
+                dispname = name
+
+            base_uri = uri
+            if (domain, role_name) != ("std", "doc"):
+                base_uri += "#$"
+                uri = uri + "#" + get_html_id(name)
+
+            targets[key] = intersphinx.TargetDefinition(
+                definition.canonical_name,
+                (domain, role_name),
+                -1,
+                base_uri,
+                uri,
+                dispname,
+            )
+        return intersphinx.Inventory(base_url, targets)
 
     @classmethod
     def load(cls, config: "ProjectConfig") -> "TargetDatabase":

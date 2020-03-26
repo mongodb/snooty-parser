@@ -1,0 +1,71 @@
+.. _swift-language-center:
+
+.. include:: /includes/unicode-checkmark.rst
+
+====================
+MongoDB Swift Driver
+====================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+This is the official MongoDB Swift Driver.
+
+.. admonition:: Alpha Release
+   :class: important
+
+   The MongoDB Swift Driver is currently in alpha.
+
+- `Usage Guide <https://mongodb.github.io/mongo-swift-driver/index.html#example-usage>`__
+
+- `API Reference <https://mongodb.github.io/mongo-swift-driver>`__
+
+- `Changelog <https://github.com/mongodb/mongo-swift-driver/releases>`__
+
+- `Source Code <https://github.com/mongodb/mongo-swift-driver/>`__
+
+
+Installation
+------------
+
+See `Installation <https://mongodb.github.io/mongo-swift-driver/index.html#installation>`__
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: swift
+
+   import MongoSwift
+
+   let client = try MongoClient("mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority")
+   let db = client.db("test")
+
+   // your application logic
+   // free all resources
+   cleanupMongoSwift()
+
+Compatibility
+-------------
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/mongodb-compatibility-table-swift.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/language-compatibility-table-swift.rst
+
+.. include:: /includes/help-links-swift.rst
