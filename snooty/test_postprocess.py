@@ -380,7 +380,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[1].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="-f" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="a-program">
         <literal><text>a-program -f</text></literal>
         </ref_role>
     """,
@@ -388,7 +388,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[2].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="--config" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.--config" fileid="a-program">
         <literal><text>a-program --config</text></literal>
         </ref_role>
     """,
@@ -396,7 +396,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[3].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="-v" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-second-program.-v" fileid="a-program">
         <literal><text>a-second-program -v</text></literal>
         </ref_role>
     """,

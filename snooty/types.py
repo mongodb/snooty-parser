@@ -195,13 +195,14 @@ class TargetDatabase:
     class Result(NamedTuple):
         type: TargetType
         result: str
+        canonical_target_name: str
         title: Sequence[n.InlineNode]
 
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
     )
     local_definitions: DefaultDict[
-        str, List[Tuple[FileId, Sequence[n.InlineNode]]]
+        str, List[Tuple[str, FileId, Sequence[n.InlineNode]]]
     ] = field(default_factory=lambda: defaultdict(list))
 
     def __contains__(self, key: str) -> bool:
@@ -223,9 +224,12 @@ class TargetDatabase:
         try:
             results.extend(
                 TargetDatabase.Result(
-                    TargetType.fileid, fileid.without_known_suffix, title
+                    TargetType.fileid,
+                    fileid.without_known_suffix,
+                    canonical_target_name,
+                    title,
                 )
-                for fileid, title in self.local_definitions[key]
+                for canonical_target_name, fileid, title in self.local_definitions[key]
             )
         except KeyError:
             pass
@@ -237,7 +241,9 @@ class TargetDatabase:
                 entry = inventory[key]
                 url = urllib.parse.urljoin(base_url, entry.uri)
                 title: List[n.InlineNode] = [n.Text((-1,), entry.display_name)]
-                results.append(TargetDatabase.Result(TargetType.url, url, title))
+                results.append(
+                    TargetDatabase.Result(TargetType.url, url, entry.name, title)
+                )
 
         return results
 
@@ -249,10 +255,16 @@ class TargetDatabase:
         pageid: FileId,
         title: Sequence[n.InlineNode],
     ) -> None:
+        # If multiple target names are given, prefer placing the one with the most periods
+        # into referring RefRole nodes. This is an odd heuristic, but should work for now.
+        # e.g. if a RefRole links to "-v", we want it to get normalized to "mongod.-v" if that's
+        # what gets resolved.
+        canonical_target_name = max(targets, key=lambda x: x.count("."))
+
         for target in targets:
             target = normalize_target(target)
             key = f"{domain}:{name}:{target}"
-            self.local_definitions[key].append((pageid, title))
+            self.local_definitions[key].append((canonical_target_name, pageid, title))
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
