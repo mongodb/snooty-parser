@@ -230,7 +230,8 @@ class Postprocessor:
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
-        target_type, target, title_nodes = target_candidates[-1]
+        target_type, target, canonical_target_name, title_nodes = target_candidates[-1]
+        node.target = canonical_target_name
         setattr(node, target_type.name, target)
         injection_candidate = get_title_injection_candidate(node)
         # If there is no explicit title given, use the target's title
