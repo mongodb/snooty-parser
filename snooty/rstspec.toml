@@ -775,11 +775,11 @@ type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/%s"}
 
 [role.java-async-api]
 help = """Link to the async Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/apidocs/mongodb-driver-reactivestreams/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/apidocs/mongodb-driver-sync/%s"}
 
 [role.go-api]
 help = """Link to the Go driver's API reference."""
