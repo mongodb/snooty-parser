@@ -237,19 +237,6 @@ class OSDiagnostic(LoadDiagnostic):
 class CannotOpenFile(OSDiagnostic):
     severity = Diagnostic.Level.error
 
-
-class FileDoesNotExist(OSDiagnostic):
-    severity = Diagnostic.Level.error
-
-
-class CannotOpenLiteralInclude(OSDiagnostic):
-    severity = Diagnostic.Level.error
-
-
-class CannotOpenImg(OSDiagnostic):
-    severity = Diagnostic.Level.error
-
-
 @dataclass
 class StaticAsset:
     fileid: FileId
