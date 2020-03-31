@@ -106,16 +106,18 @@ class Diagnostic:
             return cls(level)
 
     @property
-    def severity(self) -> Level:
+    #why is the below incorrect?
+    # def severity(self) -> Level:
+    def severity(self) -> enum.IntEnum:
         raise TypeError("Cannot access the severity of an abstract base Diagnostic")
+
+    @property
+    def severity_string(self) -> str:
+        return self.severity.name.title()
 
 
 class ParserDiagnostic(Diagnostic):
-
     pass
-    # class property
-    # severity: Diagnostic.Level = Diagnostic.Level.info
-
 
 class UnexpectedIndentation(ParserDiagnostic):
     severity = Diagnostic.Level.error
@@ -156,15 +158,12 @@ class ErrorParsingYAMLFile(ParserDiagnostic):
 
 class SemanticDiagnostic(Diagnostic):
     pass
-    # class property
-    # severity: Diagnostic.Level = Diagnostic.Level.warning
 
 
 class InvalidLiteralInclude(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
 
-# substituion reference could not be replaced
 class SubstitutionRefError(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
@@ -178,14 +177,15 @@ class InvalidTableStructure(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
 
-# .. option::' must follow '.. program::
 class MissingOption(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
 
-class RefDiagnositc(SemanticDiagnostic):
-    pass
+class GizaDiagnostic(SemanticDiagnostic):
+  pass
 
+class RefDiagnositc(GizaDiagnostic):
+    pass
 
 class MissingRef(RefDiagnositc):
     severity = Diagnostic.Level.error
@@ -233,9 +233,6 @@ class ErrorLoadingFile(LoadDiagnostic):
 
 class OSDiagnostic(LoadDiagnostic):
     pass
-    # class property
-    # severity: Diagnostic.Level = Diagnostic.Level.error
-
 
 class CannotOpenFile(OSDiagnostic):
     severity = Diagnostic.Level.error
@@ -540,7 +537,7 @@ class ProjectConfig:
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:
         path = root
-        diagnostics = []
+        diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
                 with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
@@ -553,7 +550,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(LoadError(str(err), 0))
+                diagnostics.append(ErrorLoadingFile(str(err), 0))
 
             path = path.parent
 
@@ -584,7 +581,9 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(GitMergeConflictArtifactFound("git merge conflict found", lineno))
+                diagnostics.append(
+                    GitMergeConflictArtifactFound("git merge conflict found", lineno)
+                )
 
         return (text, diagnostics)
 
