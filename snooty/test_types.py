@@ -1,5 +1,15 @@
 from pathlib import Path, PurePath
-from .types import Diagnostic, ProjectConfig, StaticAsset, Page, FileId
+from .types import (
+    Diagnostic,
+    ParserDiagnostic,
+    LoadDiagnostic,
+    UnexpectedIndentation,
+    ErrorParsingYAMLFile,
+    ProjectConfig,
+    StaticAsset,
+    Page,
+    FileId,
+)
 
 
 def test_project() -> None:
@@ -26,14 +36,24 @@ def test_project() -> None:
     assert len(project_diagnostics) == 0
 
 
+# this is basically what i need to rewrite
 def test_diagnostics() -> None:
-    diag = Diagnostic.warning("foo", (0, 0), 10)
-    assert diag.severity_string == "Warning"
-    assert diag.start == (0, 0)
-    assert diag.end[0] == 10 and diag.end[1] > 100
+    diagnostic = UnexpectedIndentation("foo", (0, 0), 10)
+    assert isinstance(diagnostic, UnexpectedIndentation)
+    assert isinstance(diagnostic, ErrorParsingYAMLFile)
+    assert isinstance(diagnostic, ParserDiagnostic)
+    assert isinstance(diagnostic, LoadDiagnostic)
+    print(diagnostic.severity)
+    assert diagnostic.severity == Diagnostic.Level.error
+    assert diagnostic.severity == Diagnostic.Level.warning
+    assert False
+    # diag = Diagnostic.warning("foo", (0, 0), 10)
+    # assert diag.severity_string == "Warning"
+    # assert diag.start == (0, 0)
+    # assert diag.end[0] == 10 and diag.end[1] > 100
 
-    diag = Diagnostic.warning("foo", (0, 0), (10, 0))
-    assert diag.end == (10, 0)
+    # diag = Diagnostic.warning("foo", (0, 0), (10, 0))
+    # assert diag.end == (10, 0)
 
 
 def test_static_asset() -> None:

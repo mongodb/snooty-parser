@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, List, Tuple, Sequence
 from ..flutter import checked
-from ..types import Diagnostic, EmbeddedRstParser, Page
+from ..types import Diagnostic, MissingRef, EmbeddedRstParser, Page
 from .. import n
 from .parse import parse
 from .nodes import Inheritable, GizaCategory
@@ -54,7 +54,7 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
 
         def report_missing_ref(node: ReleaseSpecification) -> bool:
             diagnostics.append(
-                Diagnostic.error(
+                MissingRef(
                     "Missing ref; all release specifications must define a ref",
                     node.line,
                 )

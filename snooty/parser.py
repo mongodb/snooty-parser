@@ -26,6 +26,19 @@ from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .types import (
     Diagnostic,
+    OptionsNotSupported,
+    UnexpectedIndentation,
+    ExpectedPathArg,
+    ExpectedImgArg,
+    ImgExpectedButNotRequired,
+    TodoInfo,
+    DocUtilsParseError,
+    CannotOpenFile,
+    InvalidURL,
+    InvalidLiteralInclude,
+    InvalidTableStructure,
+    ErrorLoadingFile,
+    ErrorParsingYAMLFile,
     SerializableType,
     Page,
     StaticAsset,
@@ -199,9 +212,7 @@ class JSONVisitor:
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
                 msg = node[0].astext()
-                self.diagnostics.append(
-                    Diagnostic.create(level, msg, util.get_line(node))
-                )
+                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
             raise docutils.nodes.SkipNode()
         elif isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
@@ -216,7 +227,7 @@ class JSONVisitor:
                 top.options[key] = value
             else:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    OptionsNotSupported(
                         "Options not supported here", util.get_line(node.children[0])
                     )
                 )
@@ -237,7 +248,7 @@ class JSONVisitor:
             # We are uninterested in docutils blockquotes: they're too easy to accidentally
             # invoke. Treat them as an error.
             self.diagnostics.append(
-                Diagnostic.error(
+                UnexpectedIndentation(
                     "Unexpected indentation", util.get_line(node.children[0])
                 )
             )
@@ -293,9 +304,7 @@ class JSONVisitor:
             ), f"Too many ids in this node: {self.docpath} {node}"
             if not node["ids"]:
                 self.diagnostics.append(
-                    Diagnostic.error(
-                        "Links must provide a valid URL", util.get_line(node)
-                    )
+                    InvalidURL("Links must provide a valid URL", util.get_line(node))
                 )
                 # Remove the malformed node so it doesn't cause problems down the road
                 self.state.pop()
@@ -434,15 +443,13 @@ class JSONVisitor:
             todo_text = ["TODO"]
             if argument_text:
                 todo_text.extend([": ", argument_text])
-            self.diagnostics.append(
-                Diagnostic.info("".join(todo_text), util.get_line(node))
-            )
+            TodoInfo("".join(todo_text), util.get_line(node))
             return None
 
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    ExpectedPathArg(
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
@@ -453,7 +460,7 @@ class JSONVisitor:
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -470,7 +477,7 @@ class JSONVisitor:
         elif name == "literalinclude":
             if argument_text is None:
                 self.diagnostics.append(
-                    Diagnostic.error('"literalinclude" expected a path argument', line)
+                    ExpectedPathArg('"literalinclude" expected a path argument', line)
                 )
                 return doc
 
@@ -489,15 +496,15 @@ class JSONVisitor:
                 msg = '"literalinclude" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno)
                 )
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
             except ValueError as err:
                 msg = f'Invalid "literalinclude": {err}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node)))
             return code
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    ExpectedPathArg(
                         f'"{name}" expected a path argument', util.get_line(node)
                     )
                 )
@@ -522,13 +529,13 @@ class JSONVisitor:
                     pass
                 else:
                     msg = f'"{name}" could not open "{argument_text}": No such file exists'
-                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                    self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
         elif name == "cardgroup-card":
             image_argument = options.get("image", None)
 
             if image_argument is None:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    ExpectedImgArg(
                         f'"{name}" expected an image argument', util.get_line(node)
                     )
                 )
@@ -539,7 +546,7 @@ class JSONVisitor:
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -550,7 +557,7 @@ class JSONVisitor:
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(
-                    Diagnostic.warning(
+                    ImgExpectedButNotRequired(
                         f'"{name}" expected an image argument', util.get_line(node)
                     )
                 )
@@ -562,7 +569,7 @@ class JSONVisitor:
                     self.pending.append(PendingFigure(doc, static_asset))
                 except OSError as err:
                     msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                    self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
 
         return doc
 
@@ -574,7 +581,7 @@ class JSONVisitor:
 
         if not resolved_target_path.is_file():
             msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
-            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
 
     def validate_list_table(
         self, node: docutils.nodes.Node, expected_num_columns: int
@@ -588,7 +595,7 @@ class JSONVisitor:
                 f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             self.diagnostics.append(
-                Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
+                InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
             )
             return
 
@@ -798,7 +805,7 @@ class _Project:
                     return result, []
                 except LoadError as err:
                     line: int = getattr(err.bad_data, "_start_line", 0) + 1
-                    error_node: Diagnostic = Diagnostic.error(
+                    error_node: Diagnostic = ErrorLoadingFile(
                         f"Error loading file: {err}", line
                     )
                     return None, [error_node]
@@ -806,12 +813,12 @@ class _Project:
             pass
         except LoadError as err:
             load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
-            load_error_node: Diagnostic = Diagnostic.error(
+            load_error_node: Diagnostic = ErrorLoadingFile(
                 f"Error loading file: {err}", load_error_line
             )
             return None, [load_error_node]
         except yaml.error.MarkedYAMLError as err:
-            yaml_error_node: Diagnostic = Diagnostic.error(
+            yaml_error_node: Diagnostic = ErrorParsingYAMLFile(
                 f"Error parsing YAML: {err}", err.problem_mark.line
             )
             return None, [yaml_error_node]

@@ -17,6 +17,10 @@ from typing import (
 from .eventparser import EventParser
 from .types import (
     Diagnostic,
+    MissingOption,
+    TargetNotFound,
+    AmbiguousTarget,
+    SubstitutionRefError,
     FileId,
     Page,
     ProjectConfig,
@@ -87,7 +91,7 @@ class ProgramOptionHandler:
             if not self.pending_program:
                 line = node.start[0]
                 self.diagnostics[filename].append(
-                    Diagnostic.error("'.. option::' must follow '.. program::'", line)
+                    MissingOption("'.. option::' must follow '.. program::'", line)
                 )
                 return
             program_target = next(
@@ -250,14 +254,14 @@ class Postprocessor:
         if not target_candidates:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f'Target not found: "{node.name}:{node.target}"', line)
+                TargetNotFound(f'Target not found: "{node.name}:{node.target}"', line)
             )
             return
 
         if len(target_candidates) > 1:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f'Ambiguous target: "{node.name}:{node.target}"', line)
+                AmbiguousTarget(f'Ambiguous target: "{node.name}:{node.target}"', line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
@@ -309,7 +313,8 @@ class Postprocessor:
                     del self.substitution_definitions[node.name]
                     node.children = []
                     self.diagnostics[filename].append(
-                        Diagnostic.error(
+                        # dont actually know if this is ok - but I think so?
+                        SubstitutionRefError(
                             f'Circular substitution definition referenced: "{node.name}"',
                             line,
                         )
@@ -338,7 +343,7 @@ class Postprocessor:
                 node.children = substitution
             else:
                 self.diagnostics[filename].append(
-                    Diagnostic.error(
+                    SubstitutionRefError(
                         f'Substitution reference could not be replaced: "|{node.name}|"',
                         line,
                     )

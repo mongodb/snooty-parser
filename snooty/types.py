@@ -66,10 +66,33 @@ class FileId(PurePosixPath):
         return fileid.as_posix()
 
 
-@dataclass
 class Diagnostic:
-    __slots__ = ("message", "severity", "start", "end")
+    # instance properties
+    __slots__ = ("message", "start", "end")
 
+    def __init__(
+        self,
+        message: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        self.message = message
+
+        if isinstance(start, int):
+            start_line, start_column = start, 0
+        else:
+            start_line, start_column = start
+        self.start = (start_line, start_column)
+
+        if end is None:
+            end_line, end_column = start_line, 1000
+        elif isinstance(end, int):
+            end_line, end_column = end, 1000
+        else:
+            end_line, end_column = end
+        self.end = (end_line, end_column)
+
+    # class attribute
     class Level(enum.IntEnum):
         info = 0
         error = 1
@@ -82,65 +105,151 @@ class Diagnostic:
             level = max(level, cls.info)
             return cls(level)
 
-    severity: Level
-    message: str
-    start: Tuple[int, int]
-    end: Tuple[int, int]
-
     @property
-    def severity_string(self) -> str:
-        return self.severity.name.title()
+    def severity(self) -> Level:
+        raise TypeError("Cannot access the severity of an abstract base Diagnostic")
 
-    @classmethod
-    def create(
-        cls,
-        severity: Level,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        if isinstance(start, int):
-            start_line, start_column = start, 0
-        else:
-            start_line, start_column = start
+class ParserDiagnostic(Diagnostic):
 
-        if end is None:
-            end_line, end_column = start_line, 1000
-        elif isinstance(end, int):
-            end_line, end_column = end, 1000
-        else:
-            end_line, end_column = end
+    pass
+    # class property
+    # severity: Diagnostic.Level = Diagnostic.Level.info
 
-        return cls(
-            severity, message, (start_line, start_column), (end_line, end_column)
-        )
 
-    @classmethod
-    def info(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.info, message, start, end)
+class UnexpectedIndentation(ParserDiagnostic):
+    severity = Diagnostic.Level.error
 
-    @classmethod
-    def warning(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.warning, message, start, end)
 
-    @classmethod
-    def error(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.error, message, start, end)
+class InvalidURL(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+# this could captuer 'literal include expected path arg..as well?
+class ExpectedPathArg(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class ExpectedImgArg(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class ImgExpectedButNotRequired(ParserDiagnostic):
+    severity = Diagnostic.Level.warning
+
+
+class OptionsNotSupported(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class MergeConflictArtifcat(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class DocUtilsParseError(ParserDiagnostic):
+    severity = Diagnostic.Level.warning
+
+
+class ErrorParsingYAMLFile(ParserDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class SemanticDiagnostic(Diagnostic):
+    pass
+    # class property
+    # severity: Diagnostic.Level = Diagnostic.Level.warning
+
+
+class InvalidLiteralInclude(SemanticDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+# substituion reference could not be replaced
+class SubstitutionRefError(SemanticDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+# variable not declared as source constant
+class VariableNotDeclaredConstant(SemanticDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class InvalidTableStructure(SemanticDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+# .. option::' must follow '.. program::
+class MissingOption(SemanticDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class RefDiagnositc(SemanticDiagnostic):
+    pass
+
+
+class MissingRef(RefDiagnositc):
+    severity = Diagnostic.Level.error
+
+
+class FailedToInheritRef(RefDiagnositc):
+    severity = Diagnostic.Level.error
+
+
+class RefAlreadyExists(RefDiagnositc):
+    severity = Diagnostic.Level.error
+
+
+class UnknownSubstitution(RefDiagnositc):
+    severity = Diagnostic.Level.warning
+
+
+class TargetDiagnostic(SemanticDiagnostic):
+    pass
+
+
+class TargetNotFound(TargetDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class AmbiguousTarget(TargetDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class DirectiveDiagnostic(SemanticDiagnostic):
+    pass
+
+
+class TodoInfo(DirectiveDiagnostic):
+    severity = Diagnostic.Level.info
+
+
+class LoadDiagnostic(Diagnostic):
+    pass
+
+
+class ErrorLoadingFile(LoadDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class OSDiagnostic(LoadDiagnostic):
+    pass
+    # class property
+    # severity: Diagnostic.Level = Diagnostic.Level.error
+
+
+class CannotOpenFile(OSDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class FileDoesNotExist(OSDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class CannotOpenLiteralInclude(OSDiagnostic):
+    severity = Diagnostic.Level.error
+
+
+class CannotOpenImg(OSDiagnostic):
+    severity = Diagnostic.Level.error
 
 
 @dataclass
@@ -355,7 +464,7 @@ class PendingTask:
 
     def error(self, message: str) -> Diagnostic:
         """Create an error diagnostic associated with this task's node."""
-        return Diagnostic.error(message, self.node.start[0])
+        return Diagnostic_Error(message, self.node.start[0])
 
 
 @dataclass
@@ -447,7 +556,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(Diagnostic.error(str(err), 0))
+                diagnostics.append(Diagnostic_Error(str(err), 0))
 
             path = path.parent
 
@@ -478,7 +587,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
+                diagnostics.append(Diagnostic_Error("git merge conflict found", lineno))
 
         return (text, diagnostics)
 
@@ -495,7 +604,7 @@ class ProjectConfig:
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
                 diagnostics.append(
-                    Diagnostic.error(
+                    Diagnostic_Error(
                         f"{variable_name} not defined as a source constant", lineno
                     )
                 )
