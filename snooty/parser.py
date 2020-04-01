@@ -87,7 +87,10 @@ class PendingLiteralInclude(PendingTask):
             text = self.asset.path.read_text(encoding="utf-8")
         except OSError as err:
             diagnostics.append(
-                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+                CannotOpenFile(
+                    f"Error opening {self.asset.fileid}: {err.strerror}",
+                    self.node.start[0],
+                )
             )
             return
 
@@ -103,7 +106,10 @@ class PendingLiteralInclude(PendingTask):
             )
             if start_after < 0:
                 diagnostics.append(
-                    self.error(f'"{start_after_text}" not found in {self.asset.path}')
+                    InvalidLiteralInclude(
+                        f'"{start_after_text}" not found in {self.asset.path}',
+                        self.node.start[0],
+                    )
                 )
                 return
 
@@ -121,7 +127,10 @@ class PendingLiteralInclude(PendingTask):
             )
             if end_before < 0:
                 diagnostics.append(
-                    self.error(f'"{end_before_text}" not found in {self.asset.path}')
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" not found in {self.asset.path}',
+                        self.node.start[0],
+                    )
                 )
                 return
             end_before -= start_after
@@ -183,7 +192,10 @@ class PendingFigure(PendingTask):
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
-                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+                CannotOpenFile(
+                    f"Error opening {self.asset.fileid}: {err.strerror}",
+                    self.node.start[0],
+                )
             )
 
 
