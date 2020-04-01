@@ -2,14 +2,13 @@ from pathlib import Path, PurePath
 from .types import (
     Diagnostic,
     ParserDiagnostic,
-    LoadDiagnostic,
     UnexpectedIndentation,
-    ErrorParsingYAMLFile,
     ProjectConfig,
     StaticAsset,
     Page,
     FileId,
 )
+import pytest
 
 
 def test_project() -> None:
@@ -40,20 +39,15 @@ def test_project() -> None:
 def test_diagnostics() -> None:
     diagnostic = UnexpectedIndentation("foo", (0, 0), 10)
     assert isinstance(diagnostic, UnexpectedIndentation)
-    assert isinstance(diagnostic, ErrorParsingYAMLFile)
     assert isinstance(diagnostic, ParserDiagnostic)
-    assert isinstance(diagnostic, LoadDiagnostic)
-    print(diagnostic.severity)
     assert diagnostic.severity == Diagnostic.Level.error
-    assert diagnostic.severity == Diagnostic.Level.warning
-    assert False
-    # diag = Diagnostic.warning("foo", (0, 0), 10)
-    # assert diag.severity_string == "Warning"
-    # assert diag.start == (0, 0)
-    # assert diag.end[0] == 10 and diag.end[1] > 100
+    assert diagnostic.start == (0, 0)
+    assert diagnostic.end[0] == 10 and diagnostic.end[1] > 100
 
-    # diag = Diagnostic.warning("foo", (0, 0), (10, 0))
-    # assert diag.end == (10, 0)
+    # Make sure attempts to access abstract Diagnostic base class
+    # results in TypeError
+    with pytest.raises(TypeError):
+        Diagnostic("foo", (0, 0), 10).severity
 
 
 def test_static_asset() -> None:
