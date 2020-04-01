@@ -1,6 +1,6 @@
 import builtins
 from typing import Any, List
-from .types import Diagnostic, FileId
+from .types import InvalidLiteralInclude, InvalidURL, UnknownSubstitution, FileId
 from . import main
 
 
@@ -17,12 +17,12 @@ def test_backend() -> None:
         backend.on_diagnostics(
             FileId("foo/bar.rst"),
             [
-                Diagnostic.error("an error", 10, 12),
-                Diagnostic.error("another error", (10, 0), (12, 30)),
+                InvalidLiteralInclude("an error", 10, 12),
+                InvalidURL("another error", (10, 0), (12, 30)),
             ],
         )
         backend.on_diagnostics(
-            FileId("foo/foo.rst"), [Diagnostic.warning("a warning", 10)]
+            FileId("foo/foo.rst"), [UnknownSubstitution("a warning", 10)]
         )
         assert backend.total_warnings == 3
     finally:
