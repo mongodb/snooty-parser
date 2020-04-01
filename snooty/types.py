@@ -106,7 +106,7 @@ class Diagnostic:
             return cls(level)
 
     @property
-    #why is the below incorrect?
+    # why is the below incorrect?
     # def severity(self) -> Level:
     def severity(self) -> enum.IntEnum:
         raise TypeError("Cannot access the severity of an abstract base Diagnostic")
@@ -118,6 +118,7 @@ class Diagnostic:
 
 class ParserDiagnostic(Diagnostic):
     pass
+
 
 class UnexpectedIndentation(ParserDiagnostic):
     severity = Diagnostic.Level.error
@@ -182,10 +183,12 @@ class MissingOption(SemanticDiagnostic):
 
 
 class GizaDiagnostic(SemanticDiagnostic):
-  pass
+    pass
+
 
 class RefDiagnositc(GizaDiagnostic):
     pass
+
 
 class MissingRef(RefDiagnositc):
     severity = Diagnostic.Level.error
@@ -234,8 +237,10 @@ class ErrorLoadingFile(LoadDiagnostic):
 class OSDiagnostic(LoadDiagnostic):
     pass
 
+
 class CannotOpenFile(OSDiagnostic):
     severity = Diagnostic.Level.error
+
 
 @dataclass
 class StaticAsset:
