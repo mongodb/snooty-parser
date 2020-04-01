@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from . import language_server
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import Diagnostic, FileId, SerializableType
+from .types import InvalidTableStructure, DocUtilsParseError, FileId, SerializableType
 from .flutter import checked, check_type
 
 CWD_URL = "file://" + Path().resolve().as_posix()
@@ -31,6 +31,7 @@ class LSPDiagnostic:
     message: str
     severity: int
     range: LSPRange
+    code: str
 
 
 def test_debounce() -> None:
@@ -58,16 +59,25 @@ def test_pid_exists() -> None:
 
 def test_workspace_entry() -> None:
     entry = language_server.WorkspaceEntry(
-        FileId(""), "", [Diagnostic.error("foo", 10), Diagnostic.warning("fo", 10, 12)]
+        FileId(""),
+        "",
+        [InvalidTableStructure("foo", 10), DocUtilsParseError("fo", 10, 12)],
     )
     parsed = [
         check_type(LSPDiagnostic, diag) for diag in entry.create_lsp_diagnostics()
     ]
+
     assert parsed[0] == LSPDiagnostic(
-        "foo", 1, LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000))
+        "foo",
+        1,
+        LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000)),
+        "InvalidTableStructure",
     )
     assert parsed[1] == LSPDiagnostic(
-        "fo", 2, LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000))
+        "fo",
+        2,
+        LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000)),
+        "DocUtilsParseError",
     )
 
 

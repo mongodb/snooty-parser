@@ -210,6 +210,7 @@ class WorkspaceEntry:
                 },
                 "severity": diagnostic.severity,
                 "message": diagnostic.message,
+                "code": type(diagnostic).__name__,
             }
             for diagnostic in self.diagnostics
         ]
