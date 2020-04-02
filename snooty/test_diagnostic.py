@@ -1,4 +1,6 @@
 from .diagnostics import Diagnostic, UnexpectedIndentation
+from .language_server import DiagnosticSeverity
+from docutils.frontend import OptionParser
 import pytest
 
 
@@ -13,3 +15,18 @@ def test_diagnostics() -> None:
     # results in TypeError
     with pytest.raises(TypeError):
         Diagnostic("foo", (0, 0), 10).severity
+
+
+def test_conversion() -> None:
+    original_levels = [
+        OptionParser.thresholds["info"],
+        OptionParser.thresholds["warning"],
+        OptionParser.thresholds["error"],
+        OptionParser.thresholds["severe"],
+    ]
+    snooty_levels = [Diagnostic.Level.from_docutils(level) for level in original_levels]
+    lsp_levels = [DiagnosticSeverity.from_diagnostic(level) for level in snooty_levels]
+
+    assert original_levels == [1, 2, 3, 4]
+    assert snooty_levels == [1, 2, 3, 3]
+    assert lsp_levels == [3, 2, 1, 1]

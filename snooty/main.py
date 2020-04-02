@@ -46,6 +46,8 @@ COLL_DOCUMENTS = "documents"
 COLL_METADATA = "metadata"
 COLL_ASSETS = "assets"
 
+EXIT_STATUS_ERROR_DIAGNOSTICS = 2
+
 
 class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
     def __init__(self, project: Project) -> None:
@@ -81,7 +83,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 
 class Backend:
     def __init__(self) -> None:
-        self.total_warnings = 0
+        self.total_errors = 0
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -98,7 +100,9 @@ class Backend:
                 print(json.dumps(document))
             else:
                 print("{severity}({path}:{start}ish): {message}".format(**info))
-            self.total_warnings += 1
+
+            if diagnostic.severity >= Diagnostic.Level.error:
+                self.total_errors += 1
 
     def on_update(
         self,
@@ -284,5 +288,5 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
-    if args["build"] and backend.total_warnings > 0:
-        sys.exit(1)
+    if args["build"] and backend.total_errors > 0:
+        sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)

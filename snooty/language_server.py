@@ -1,3 +1,4 @@
+import enum
 import logging
 import os
 import sys
@@ -191,6 +192,26 @@ class Backend:
         pass
 
 
+class DiagnosticSeverity(enum.IntEnum):
+    """The Language Server Protocol's DiagnosticSeverity namespace enumeration.
+       See: https://microsoft.github.io/language-server-protocol/specification#diagnostic"""
+
+    error = 1
+    warning = 2
+    information = 3
+    hint = 4
+
+    @classmethod
+    def from_diagnostic(cls, level: Diagnostic.Level) -> "DiagnosticSeverity":
+        """Convert an internal Snooty Diagnostic's level to a DiagnosticSeverity value."""
+        if level is Diagnostic.Level.info:
+            return cls.information
+        elif level is Diagnostic.Level.warning:
+            return cls.warning
+        elif level is Diagnostic.Level.error:
+            return cls.error
+
+
 @dataclass
 class WorkspaceEntry:
     page_id: FileId
@@ -207,7 +228,7 @@ class WorkspaceEntry:
                     },
                     "end": {"line": diagnostic.end[0], "character": diagnostic.end[1]},
                 },
-                "severity": diagnostic.severity,
+                "severity": DiagnosticSeverity.from_diagnostic(diagnostic.severity),
                 "message": diagnostic.message,
                 "code": type(diagnostic).__name__,
             }

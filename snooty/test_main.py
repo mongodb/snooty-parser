@@ -24,7 +24,7 @@ def test_backend() -> None:
     try:
         backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
         backend.on_diagnostics(FileId("foo/foo.rst"), test_diagnostics[2:])
-        assert backend.total_warnings == 3
+        assert backend.total_errors == 2
     finally:
         builtins.print = orig_print
 
@@ -42,7 +42,7 @@ def test_backend() -> None:
     try:
         backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
         backend.on_diagnostics(FileId("foo/foo.rst"), test_diagnostics[2:])
-        assert backend.total_warnings == 3
+        assert backend.total_errors == 2
     finally:
         builtins.print = orig_print
 
