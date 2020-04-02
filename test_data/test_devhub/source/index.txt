@@ -13,6 +13,7 @@
    :creator: @Lauren_Schaefer
    :title: Wordswordswords
    :image: /images/atf-images/generic/pink.png
+   :image-alt: Description of the image
 
    Description of max 200 characters
 
