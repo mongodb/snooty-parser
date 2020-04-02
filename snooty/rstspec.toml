@@ -506,6 +506,7 @@ example = """.. twitter::
    :creator: @Lauren_Schaefer
    :title: Wordswordswords
    :image: </path/to/image>
+   :image-alt: Image description
 
    This is the description of the tweet in up to 200 characters.
 """
@@ -514,6 +515,7 @@ options.site = "string"
 options.creator = "string"
 options.title = "string"
 options.image = ["path", "uri"]
+options.image-alt = "string"
 
 [directive.og]
 help="""Options

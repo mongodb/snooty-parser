@@ -100,6 +100,7 @@ def test_queryable_fields(backend: Backend) -> None:
         "creator": "@Lauren_Schaefer",
         "title": "Wordswordswords",
         "image": "/images/atf-images/generic/pink.png",
+        "image-alt": "Description of the image",
         "checksum": "71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b",
         "children": [
             "<paragraph><text>Description of max 200 characters</text></paragraph>"
