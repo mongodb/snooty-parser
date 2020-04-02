@@ -29,15 +29,14 @@ class Diagnostic:
         self.end = (end_line, end_column)
 
     class Level(enum.IntEnum):
-        info = 0
-        error = 1
+        info = 1
         warning = 2
+        error = 3
 
         @classmethod
-        def from_docutils(cls, docutils_level: int) -> "Diagnostic.Level":
-            level = docutils_level - 1
-            level = min(level, cls.warning)
+        def from_docutils(cls, level: int) -> "Diagnostic.Level":
             level = max(level, cls.info)
+            level = min(level, cls.error)
             return cls(level)
 
     @property
