@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Various roles and directive options.
+
+### Changed
+
+- Prefer canonical target names in the AST: e.g. `mongod.-v` over `-v` (DOP-881).
+
+### Fixed
+
+- Skip incomplete target nodes, resolving a crash. (DOP-891).
+
 ## [v0.4.0] - 2020-03-23
 
 ### Added
