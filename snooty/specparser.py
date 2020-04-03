@@ -25,9 +25,14 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-
 #: Types of formatting that can be applied to a role.
 FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
+
+#: How the target should be preprocessed.
+TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
+
+#: Types of formatting to which date directives must conform.
+DateFormattingType = Enum("DateType", ("iso_8601"))
 
 
 class _Inheritable(Protocol):
@@ -37,6 +42,14 @@ class _Inheritable(Protocol):
 class _HasNameAndDomain(Protocol):
     domain: Optional[str]
     name: str
+
+
+@checked
+@dataclass
+class DateType:
+    """Configuration for a directive that specifies a date"""
+
+    date: DateFormattingType = field(default=DateFormattingType.iso_8601)
 
 
 @checked
@@ -164,12 +177,16 @@ class RstObject:
     help: Optional[str]
     domain: Optional[str]
     prefix: str = field(default="")
-    callable: bool = field(default=False)
+    type: TargetType = field(default=TargetType.plain)
     deprecated: bool = field(default=False)
     name: str = field(default="")
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
+
+    @property
+    def callable(self) -> bool:
+        return self.type == TargetType.callable
 
     def create_directive(self) -> Directive:
         return Directive(

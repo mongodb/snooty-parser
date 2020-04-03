@@ -522,7 +522,7 @@ def test_rstobject() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target name="option" target="--slowms &lt;integer&gt;">
+            <target domain="std" name="option" target="--slowms &lt;integer&gt;">
             <directive_argument><literal><text>--slowms &lt;integer&gt;</text></literal></directive_argument>
             <target_ref_title><text>--slowms &lt;integer&gt;</text></target_ref_title>
             <paragraph><text>test</text></paragraph>

@@ -9,6 +9,7 @@ alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
 output_format = ["html"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
+charts_theme = ["light", "dark"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -395,14 +396,29 @@ inherit = "_devhub-block"
 [directive."devhub:author"]
 help = "Author profile for the byline."
 example = """.. author::
-   :name: Firstname Lastname
+   :name: Eliot Horowitz
    :image: /path/to/image.jpg
+   :location: New York, NY
+   :company: MongoDB Inc.
+   :title: CTO
+   :website: http://www.example.com
+   :twitter: https://twitter.com/eliothorowitz
+   :github: https://github.com/erh
+   :linkedin: https://www.linkedin.com/in/eliothorowitz/
 
    Author bio goes here.
 """
 inherit = "_devhub-block"
 options.name = "string"
 options.image = ["path", "uri"]
+options.location = "string"
+options.company = "string"
+options.title = "string"
+options.website = "uri"
+options.twitter = "uri"
+options.github = "uri"
+options.linkedin = "uri"
+
 
 [directive."devhub:atf-image"]
 help = "Path to the image to use for the above-the-fold header image"
@@ -467,12 +483,12 @@ content_type = "list"
 
 ###### Misc.
 [directive.pubdate]
-help = "Date the article was published"
-argument_type = "string"
+help = "Date the article was published. Format: YYYY-MM-DD"
+argument_type = "iso_8601"
 
 [directive.updated-date]
-help = "Date the post was most recently updated"
-argument_type = "string"
+help = "Date the post was most recently updated. Format: YYYY-MM-DD"
+argument_type = "iso_8601"
 
 [directive.twitter]
 help = """Options
@@ -490,6 +506,7 @@ example = """.. twitter::
    :creator: @Lauren_Schaefer
    :title: Wordswordswords
    :image: </path/to/image>
+   :image-alt: Image description
 
    This is the description of the tweet in up to 200 characters.
 """
@@ -498,6 +515,31 @@ options.site = "string"
 options.creator = "string"
 options.title = "string"
 options.image = ["path", "uri"]
+options.image-alt = "string"
+
+[directive.og]
+help="""Options
+- url: the canonical URL of the page without any session variables, parameters, etc.
+- title: Title of the article without any branding.
+- image: URL of the image that appears when someone shares the content.
+- type: Type of the media content. Default is website. You probably want article.
+"""
+example= """.. og::
+   :url: http://developer.mongodb.com/article/active-active-application-architectures
+   :type: article
+   :title: Active-Active Application Architectures
+   :image: http://developer.mongodb.com/images/atf-images/generic/purple.png
+
+   A brief description of the content, usually between 2 and 4
+   sentences. This will displayed below the title of the post on
+   Facebook.
+"""
+content_type = "block"
+options.url = "uri"
+options.title = "string"
+options.image = ["path", "uri"]
+options.type = "string"
+
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
@@ -508,6 +550,32 @@ content_type = "block"
 help = "Embed a Twitch stream in your article"
 argument_type = "string"
 content_type = "block"
+
+[directive.charts]
+help = """Embed a chart from MongoDB Charts in your article. Options:
+- url: url of your charts dashboard
+- id: id of the chart
+- autorefresh: set a time (in seconds) for this chart to automatically refresh. Default: no refresh.
+- theme: specify dark or light mode, depending on your background
+- width: width of the embedded frame
+- height: height of the embedded frame
+"""
+example= """.. charts::
+   :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
+   :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
+   :autorefresh: 3600
+   :theme: dark
+   :width: 760
+   :height: 570
+   :align: right
+"""
+options.url = "uri"
+options.id = "string"
+options.autorefresh = "nonnegative_integer"
+options.theme = "charts_theme"
+options.width = "length"
+options.height = "length"
+options.align = "alignment"
 
 [directive.meta]
 help = """Add metadata to the site for SEO."""
@@ -671,6 +739,14 @@ type = {domain = "std", name = "term"}
 help = """Link to a JIRA ticket."""
 type = {link = "https://jira.mongodb.org/browse/%s"}
 
+[role.technical-support]
+help = "Link to the MongoDB support site."
+type = {link = "https://docs.mongodb.com/manual/support%s"}
+
+[role.community-forum]
+help = "Link to the MongoDB Community Forums page."
+type = {link = "https://community.mongodb.com/%s"}
+
 [role.perl-api]
 help = "Link to a page in the Perl driver's CPAN API reference."
 type = {link = "https://metacpan.org/pod/MongoDB::%s"}
@@ -687,17 +763,25 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.5/api/%s"}
 help = """Link to a page in the Ruby driver's API reference."""
 type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
 
+[role.scala-docs]
+help = "Link to a page in the Scala driver's documentation"
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9%s"}
+
 [role.scala-api]
 help = """Link to a page in the Scala driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-scala-driver/2.2/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
 
 [role.csharp-docs]
 help = """Link to a page in the C# driver's documentation."""
-type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/reference/%s"}
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/reference/%s"}
 
 [role.csharp-api]
 help = """Link to a page in the C# driver's API reference."""
-type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/apidocs/html/%s.htm"}
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/%s.htm"}
+
+[role.java-docs]
+help = """Link to the Java driver's documentation."""
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
@@ -705,11 +789,11 @@ type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/%s"}
 
 [role.java-async-api]
 help = """Link to the async Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/apidocs/mongodb-driver-reactivestreams/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/3.7/javadoc/%s"}
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/apidocs/mongodb-driver-sync/%s"}
 
 [role.go-api]
 help = """Link to the Go driver's API reference."""
@@ -853,6 +937,9 @@ type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
 [role."apollo-docs"]
 type = {link = "https://www.apollographql.com/docs%s"}
 
+[role."aws-docs"]
+type = {link = "https://docs.aws.amazon.com/%s"}
+
 [role."aws-go"]
 type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
 
@@ -868,16 +955,27 @@ type = {link = "https://reactjs.org/%s"}
 [role."jwt-io"]
 type = {link = "https://jwt.io/%s"}
 
+[role."android-dev"]
+type = {link = "https://developer.android.com/%s"}
+
+[role."apple-dev"]
+type = {link = "https://developer.apple.com/documentation/%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
+
 [rstobject."py:meth"]
+type = "callable"
+
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
 [rstobject."mongodb:mailgunaction"]
 [rstobject.mongodb]
-[rstobject.option]
+[rstobject."std:option"]
+type = "cmdline_option"
+
 [rstobject."mongomirror:option"]
-[rstobject.program]
+[rstobject."std:program"]
 [rstobject."mongodb:s3action"]
 [rstobject."mongodb:sesaction"]
 [rstobject."mongodb:slackaction"]
@@ -920,7 +1018,7 @@ prefix = "pipe"
 prefix = "proj"
 
 [rstobject."mongodb:method"]
-callable = true
+type = "callable"
 
 [rstobject."mongodb:authrole"]
 [rstobject."mongodb:authaction"]
