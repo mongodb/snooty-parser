@@ -1,13 +1,14 @@
 """Snooty.
 
 Usage:
-  snooty build <source-path> [<mongodb-url>] [--commit=<commit_hash>]
+  snooty build <source-path> [<mongodb-url>] [(--commit=<commit_hash> |(--commit=<commit_hash> --patch=<patch_id>))]
   snooty watch <source-path>
   snooty language-server
 
 Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
+  --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
 """
 import getpass
 import logging
@@ -231,6 +232,7 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     identifiers = {}
 
     identifiers["commit_hash"] = args["--commit"]
+    identifiers["patch_id"] = args["--patch"]
 
     return identifiers
 
