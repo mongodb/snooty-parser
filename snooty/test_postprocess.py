@@ -191,20 +191,43 @@ def test_role_explicit_title(backend: Backend) -> None:
     ast = backend.pages[page_id].ast
     assert isinstance(ast, n.Root)
 
+    roles_list = cast(Any, ast).children[1].children[4].children[1].children[2]
+    assert isinstance(roles_list, n.ListNode)
+
     # Assert that ref_roles with an explicit title work
-    paragraph = cast(Any, ast).children[1].children[4].children[1].children[2]
-    assert isinstance(paragraph, n.Paragraph)
-    ref_role = paragraph.children[1]
-    print(ast_to_testing_string(ref_role))
+    list_item = roles_list.children[0]
+    assert isinstance(list_item, n.ListNodeItem)
     check_ast_testing_string(
-        ref_role,
-        """<ref_role
+        list_item,
+        """<listItem><paragraph><text>Testing </text><ref_role
         domain="std"
         name="label"
         target="global-writes-zones"
         fileid="index">
         <text>explicit title</text>
-        </ref_role>""",
+        </ref_role></paragraph></listItem>""",
+    )
+
+    # Assert that :doc: roles with an explicit title work
+    list_item = roles_list.children[1]
+    assert isinstance(list_item, n.ListNodeItem)
+    check_ast_testing_string(
+        list_item,
+        """<listItem><paragraph><role
+        name="doc"
+        target="/page2">
+        <text>Explicit title</text>
+        </role></paragraph></listItem>""",
+    )
+
+    list_item = roles_list.children[2]
+    assert isinstance(list_item, n.ListNodeItem)
+    check_ast_testing_string(
+        list_item,
+        """<listItem><paragraph><role
+        name="doc"
+        target="/page2">
+        </role></paragraph></listItem>""",
     )
 
 
