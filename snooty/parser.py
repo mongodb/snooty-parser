@@ -25,6 +25,18 @@ from .gizaparser.published_branches import PublishedBranches
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .types import (
+    SerializableType,
+    Page,
+    StaticAsset,
+    ProjectConfig,
+    PendingTask,
+    FileId,
+    ProjectInterface,
+    Cache,
+    TargetDatabase,
+    BuildIdentifierSet,
+)
+from .diagnostic import (
     Diagnostic,
     OptionsNotSupported,
     UnexpectedIndentation,
@@ -39,16 +51,6 @@ from .types import (
     InvalidTableStructure,
     ErrorLoadingFile,
     ErrorParsingYAMLFile,
-    SerializableType,
-    Page,
-    StaticAsset,
-    ProjectConfig,
-    PendingTask,
-    FileId,
-    ProjectInterface,
-    Cache,
-    TargetDatabase,
-    BuildIdentifierSet,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix

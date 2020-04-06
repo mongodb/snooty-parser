@@ -6,13 +6,8 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Type, TypeVar
 from yaml.composer import Composer
 from ..flutter import check_type, LoadError, mapping_dict
-from ..types import (
-    Diagnostic,
-    ErrorParsingYAMLFile,
-    ErrorLoadingFile,
-    ProjectConfig,
-    SerializableType,
-)
+from ..types import ProjectConfig, SerializableType
+from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, ErrorLoadingFile
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)

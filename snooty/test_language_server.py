@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import List
 from . import language_server
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import InvalidTableStructure, DocUtilsParseError, FileId, SerializableType
+from .diagnostics import InvalidTableStructure, DocUtilsParseError
+from .types import FileId, SerializableType
 from .flutter import checked, check_type
 
 CWD_URL = "file://" + Path().resolve().as_posix()
@@ -73,6 +74,7 @@ def test_workspace_entry() -> None:
         LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000)),
         "InvalidTableStructure",
     )
+
     assert parsed[1] == LSPDiagnostic(
         "fo",
         2,

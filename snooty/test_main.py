@@ -1,6 +1,7 @@
 import builtins
 from typing import Any, List
-from .types import InvalidLiteralInclude, InvalidURL, UnknownSubstitution, FileId
+from .types import FileId
+from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
 from . import main
 
 

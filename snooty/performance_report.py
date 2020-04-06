@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 from .parser import Project
-from .types import Diagnostic, Page, FileId, SerializableType, BuildIdentifierSet
+from .types import Page, FileId, SerializableType, BuildIdentifierSet
+from .diagnostics import Diagnostic
 from .util import PerformanceLogger
 
 logging.basicConfig(level=logging.INFO)

@@ -1,14 +1,5 @@
 from pathlib import Path, PurePath
-from .types import (
-    Diagnostic,
-    ParserDiagnostic,
-    UnexpectedIndentation,
-    ProjectConfig,
-    StaticAsset,
-    Page,
-    FileId,
-)
-import pytest
+from .types import ProjectConfig, StaticAsset, Page, FileId
 
 
 def test_project() -> None:
@@ -33,21 +24,6 @@ def test_project() -> None:
     assert project_config.name == "unnamed"
     assert project_config.title == "untitled"
     assert len(project_diagnostics) == 0
-
-
-# this is basically what i need to rewrite
-def test_diagnostics() -> None:
-    diagnostic = UnexpectedIndentation("foo", (0, 0), 10)
-    assert isinstance(diagnostic, UnexpectedIndentation)
-    assert isinstance(diagnostic, ParserDiagnostic)
-    assert diagnostic.severity == Diagnostic.Level.error
-    assert diagnostic.start == (0, 0)
-    assert diagnostic.end[0] == 10 and diagnostic.end[1] > 100
-
-    # Make sure attempts to access abstract Diagnostic base class
-    # results in TypeError
-    with pytest.raises(TypeError):
-        Diagnostic("foo", (0, 0), 10).severity
 
 
 def test_static_asset() -> None:

@@ -23,15 +23,13 @@ from typing import (
     Set,
 )
 from ..flutter import checked
-from ..types import (
+from ..types import Page, EmbeddedRstParser, ProjectConfig
+from ..diagnostics import (
     Diagnostic,
     UnknownSubstitution,
     FailedToInheritRef,
     CannotOpenFile,
     RefAlreadyExists,
-    Page,
-    EmbeddedRstParser,
-    ProjectConfig,
 )
 from .. import n
 

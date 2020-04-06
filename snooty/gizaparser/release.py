@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, List, Tuple, Sequence
 from ..flutter import checked
-from ..types import Diagnostic, MissingRef, EmbeddedRstParser, Page
+from ..types import EmbeddedRstParser, Page
+from ..diagnostics import Diagnostic, MissingRef
 from .. import n
 from .parse import parse
 from .nodes import Inheritable, GizaCategory

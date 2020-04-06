@@ -15,17 +15,13 @@ from typing import (
     MutableSequence,
 )
 from .eventparser import EventParser
-from .types import (
+from .types import FileId, Page, ProjectConfig, SerializableType, TargetDatabase
+from .diagnostics import (
     Diagnostic,
     MissingOption,
     TargetNotFound,
     AmbiguousTarget,
     SubstitutionRefError,
-    FileId,
-    Page,
-    ProjectConfig,
-    SerializableType,
-    TargetDatabase,
 )
 from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS

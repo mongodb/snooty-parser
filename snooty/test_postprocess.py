@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
-from .types import BuildIdentifierSet, FileId, TargetNotFound, AmbiguousTarget
+from .types import BuildIdentifierSet, FileId
+from .diagnostics import TargetNotFound, AmbiguousTarget
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string

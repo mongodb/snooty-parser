@@ -26,6 +26,7 @@ from .flutter import checked, check_type
 from .types import BuildIdentifierSet, FileId, SerializableType
 from . import types, util, n
 from .parser import Project
+from .diagnostics import Diagnostic
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
@@ -115,7 +116,7 @@ class DiagnosticRelatedInformation:
 
 @checked
 @dataclass
-class Diagnostic:
+class LanguageServerDiagnostic:
     range: Range
     severity: Optional[int]
     code: Union[int, str, None]
@@ -158,16 +159,14 @@ def pid_exists(pid: int) -> bool:
 class Backend:
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
-        self.pending_diagnostics: DefaultDict[
-            FileId, List[types.Diagnostic]
-        ] = defaultdict(list)
+        self.pending_diagnostics: DefaultDict[FileId, List[Diagnostic]] = defaultdict(
+            list
+        )
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(
-        self, fileid: FileId, diagnostics: List[types.Diagnostic]
-    ) -> None:
+    def on_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.pending_diagnostics[fileid].extend(diagnostics)
         self.server.notify_diagnostics()
 
@@ -196,7 +195,7 @@ class Backend:
 class WorkspaceEntry:
     page_id: FileId
     document_uri: Uri
-    diagnostics: List[types.Diagnostic]
+    diagnostics: List[Diagnostic]
 
     def create_lsp_diagnostics(self) -> List[object]:
         return [
@@ -221,7 +220,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.backend = Backend(self)
         self.project: Optional[Project] = None
         self.workspace: Dict[str, WorkspaceEntry] = {}
-        self.diagnostics: Dict[PurePath, List[types.Diagnostic]] = {}
+        self.diagnostics: Dict[PurePath, List[Diagnostic]] = {}
 
         self._jsonrpc_stream_reader = pyls_jsonrpc.streams.JsonRpcStreamReader(rx)
         self._jsonrpc_stream_writer = pyls_jsonrpc.streams.JsonRpcStreamWriter(tx)
@@ -253,9 +252,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         self.project.update(page_path, change)
 
-    def _set_diagnostics(
-        self, fileid: FileId, diagnostics: List[types.Diagnostic]
-    ) -> None:
+    def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[fileid] = diagnostics
         uri = self.fileid_to_uri(fileid)
         workspace_item = self.workspace.get(uri, None)

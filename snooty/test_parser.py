@@ -1,7 +1,14 @@
 from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import Diagnostic, ProjectConfig, InvalidURL, DocUtilsParseError, CannotOpenFile, InvalidLiteralInclude
+from .types import ProjectConfig
+from .diagnostics import (
+    Diagnostic,
+    InvalidURL,
+    DocUtilsParseError,
+    CannotOpenFile,
+    InvalidLiteralInclude,
+)
 from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
