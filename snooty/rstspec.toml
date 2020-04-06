@@ -898,6 +898,9 @@ type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
+[role.spec]
+type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
+
 [role."js-sdk"]
 type = {link = "https://docs.mongodb.com/stitch-sdks/js/4/%s"}
 
