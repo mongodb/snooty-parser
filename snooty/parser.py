@@ -36,7 +36,7 @@ from .types import (
     TargetDatabase,
     BuildIdentifierSet,
 )
-from .diagnostic import (
+from .diagnostics import (
     Diagnostic,
     OptionsNotSupported,
     UnexpectedIndentation,

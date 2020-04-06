@@ -6,7 +6,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, DefaultDict, List
 from .types import FileId, Page, ProjectConfig, SerializableType, BuildIdentifierSet
-from .diagnostics import Diagnostic, GitMergeConflictArtifactFound, VariableNotDeclaredConstant
+from .diagnostics import (
+    Diagnostic,
+    GitMergeConflictArtifactFound,
+    VariableNotDeclaredConstant,
+)
 from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
