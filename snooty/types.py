@@ -67,9 +67,6 @@ class FileId(PurePosixPath):
 
 
 class Diagnostic:
-    # instance properties
-    __slots__ = ("message", "start", "end")
-
     def __init__(
         self,
         message: str,
@@ -92,7 +89,6 @@ class Diagnostic:
             end_line, end_column = end
         self.end = (end_line, end_column)
 
-    # class attribute
     class Level(enum.IntEnum):
         info = 0
         error = 1
@@ -106,9 +102,7 @@ class Diagnostic:
             return cls(level)
 
     @property
-    # why is the below incorrect?
-    # def severity(self) -> Level:
-    def severity(self) -> enum.IntEnum:
+    def severity(self) -> "Diagnostic.Level":
         raise TypeError("Cannot access the severity of an abstract base Diagnostic")
 
     @property
@@ -240,6 +234,17 @@ class OSDiagnostic(LoadDiagnostic):
 
 class CannotOpenFile(OSDiagnostic):
     severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        path: Path,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Error opening {str(path)}: {reason}", start, end)
+        self.path = path
+        self.reason = reason
 
 
 @dataclass

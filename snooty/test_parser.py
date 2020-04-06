@@ -1,7 +1,7 @@
 from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import Diagnostic, ProjectConfig
+from .types import Diagnostic, ProjectConfig, InvalidURL, DocUtilsParseError, CannotOpenFile, InvalidLiteralInclude
 from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
@@ -44,11 +44,7 @@ def test_tabs() -> None:
         </root>""",
     )
 
-    assert (
-        len(diagnostics) == 1
-        and diagnostics[0].message.startswith("Unexpected field")
-        and diagnostics[0].start[0] == 61
-    )
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
 
 def test_codeblock() -> None:
@@ -178,7 +174,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
 
     page, diagnostics = parse_rst(
         parser,
@@ -190,7 +186,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
 
     page, diagnostics = parse_rst(
         parser,
@@ -200,7 +196,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], CannotOpenFile)
 
 
 def test_include() -> None:
@@ -1025,6 +1021,10 @@ def test_toctree() -> None:
 """,
     )
     page.finish(diagnostics)
+    print("TEST\n")
+    print(diagnostics[0].message)
+    print("TEST\n")
+    # MESSAGE need to create a toctree diagnostic
     assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
     check_ast_testing_string(
         page.ast,
@@ -1093,8 +1093,11 @@ def test_no_weird_targets() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 2
-    assert all("Links" in diag.message for diag in diagnostics)
+    assert len(diagnostics) == 1
+    print("TEST\n")
+    print(diagnostics[0])
+    print("TEST\n")
+    assert isinstance(diagnostics[0], InvalidURL)
 
 
 def test_dates() -> None:

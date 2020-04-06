@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import errno, os
 import re
 import docutils.nodes
 import networkx
@@ -226,7 +227,8 @@ class GizaCategory(Generic[_I]):
             except KeyError:
                 diagnostics.append(
                     CannotOpenFile(
-                        f'No such file "{parent_identifier.file}"',
+                        Path(parent_identifier.file),
+                        os.strerror(errno.ENOENT),
                         parent_identifier.line,
                     )
                 )

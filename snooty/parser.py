@@ -3,7 +3,7 @@ import dataclasses
 import docutils.nodes
 import logging
 import multiprocessing
-import os
+import errno, os
 import pwd
 import subprocess
 import threading
@@ -87,10 +87,7 @@ class PendingLiteralInclude(PendingTask):
             text = self.asset.path.read_text(encoding="utf-8")
         except OSError as err:
             diagnostics.append(
-                CannotOpenFile(
-                    f"Error opening {self.asset.fileid}: {err.strerror}",
-                    self.node.start[0],
-                )
+                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
             )
             return
 
@@ -192,10 +189,7 @@ class PendingFigure(PendingTask):
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
-                CannotOpenFile(
-                    f"Error opening {self.asset.fileid}: {err.strerror}",
-                    self.node.start[0],
-                )
+                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
             )
 
 
@@ -472,7 +466,13 @@ class JSONVisitor:
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
-                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+                # parent_ID = parent_identifier.file
+                # my_File_id = self.asset.fileid
+                self.diagnostics.append(
+                    CannotOpenFile(
+                        argument_text, os.strerror(err.errno), util.get_line(node)
+                    )
+                )
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -508,7 +508,12 @@ class JSONVisitor:
                 msg = '"literalinclude" could not open "{}": {}'.format(
                     argument_text, os.strerror(err.errno)
                 )
-                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+                # is parent_identifier.file
+                self.diagnostics.append(
+                    CannotOpenFile(
+                        argument_text, os.strerror(err.errno), util.get_line(node)
+                    )
+                )
             except ValueError as err:
                 msg = f'Invalid "literalinclude": {err}'
                 self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node)))
@@ -541,7 +546,13 @@ class JSONVisitor:
                     pass
                 else:
                     msg = f'"{name}" could not open "{argument_text}": No such file exists'
-                    self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            argument_text,
+                            os.strerror(errno.ENOENT),
+                            util.get_line(node),
+                        )
+                    )
         elif name == "cardgroup-card":
             image_argument = options.get("image", None)
 
@@ -557,8 +568,13 @@ class JSONVisitor:
                 static_asset = self.add_static_asset(Path(image_argument), upload=True)
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
-                msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+                # msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
+                # again, what is parent_identifier?? would it just be {image_argument} ?
+                self.diagnostics.append(
+                    CannotOpenFile(
+                        image_argument, os.strerror(err.errno), util.get_line(node)
+                    )
+                )
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -580,8 +596,12 @@ class JSONVisitor:
                     )
                     self.pending.append(PendingFigure(doc, static_asset))
                 except OSError as err:
-                    msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                    self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+                    # msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            image_argument, os.strerror(err.errno), util.get_line(node)
+                        )
+                    )
 
         return doc
 
@@ -592,8 +612,14 @@ class JSONVisitor:
         )
 
         if not resolved_target_path.is_file():
-            msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
-            self.diagnostics.append(CannotOpenFile(msg, util.get_line(node)))
+            # msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
+            # but there is no err here, its caught by checking if the file is Not
+
+            self.diagnostics.append(
+                CannotOpenFile(
+                    resolved_target_path, os.strerror(errno.ENOENT), util.get_line(node)
+                )
+            )
 
     def validate_list_table(
         self, node: docutils.nodes.Node, expected_num_columns: int

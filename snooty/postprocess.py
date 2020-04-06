@@ -313,7 +313,6 @@ class Postprocessor:
                     del self.substitution_definitions[node.name]
                     node.children = []
                     self.diagnostics[filename].append(
-                        # dont actually know if this is ok - but I think so?
                         SubstitutionRefError(
                             f'Circular substitution definition referenced: "{node.name}"',
                             line,
