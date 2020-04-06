@@ -1,7 +1,7 @@
 """Snooty.
 
 Usage:
-  snooty build <source-path> [<mongodb-url>] [(--commit=<commit_hash> |(--commit=<commit_hash> --patch=<patch_id>))]
+  snooty build <source-path> [<mongodb-url>] [--commit=<commit_hash> | (--commit=<commit_hash> --patch=<patch_id>)]
   snooty watch <source-path>
   snooty language-server
 
