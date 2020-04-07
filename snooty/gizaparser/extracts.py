@@ -43,9 +43,7 @@ class GizaExtractsCategory(GizaCategory[Extract]):
         extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
 
         def report_missing_ref(extract: Extract) -> bool:
-            diagnostics.append(
-                MissingRef("extracts", extract.line)
-            )
+            diagnostics.append(MissingRef("extracts", extract.line))
             return False
 
         # All extracts must have an explicitly-defined ref ID
