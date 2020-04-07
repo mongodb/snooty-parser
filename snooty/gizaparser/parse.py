@@ -63,7 +63,7 @@ def parse(
         return (
             [],
             text,
-            diagnostics + [ErrorParsingYAMLFile(err.problem, (lineno, col))],
+            diagnostics + [ErrorParsingYAMLFile(path, err.problem, (lineno, col))],
         )
 
     try:
@@ -72,4 +72,4 @@ def parse(
     except LoadError as err:
         mapping = err.bad_data if isinstance(err.bad_data, dict) else {}
         lineno = mapping._start_line if isinstance(mapping, mapping_dict) else 0
-        return [], text, diagnostics + [ErrorLoadingFile(str(err), lineno)]
+        return [], text, diagnostics + [ErrorLoadingFile(path, str(err), lineno)]

@@ -371,7 +371,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(ErrorLoadingFile(str(err), 0))
+                diagnostics.append(ErrorLoadingFile(path, str(err), 0))
 
             path = path.parent
 
@@ -402,9 +402,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(
-                    GitMergeConflictArtifactFound("git merge conflict found", lineno)
-                )
+                diagnostics.append(GitMergeConflictArtifactFound("git merge conflict found", lineno))
 
         return (text, diagnostics)
 

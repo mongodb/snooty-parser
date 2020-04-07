@@ -56,7 +56,7 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
         def report_missing_ref(node: ReleaseSpecification) -> bool:
             diagnostics.append(
                 MissingRef(
-                    "Missing ref; all release specifications must define a ref",
+                    "release specifications",
                     node.line,
                 )
             )

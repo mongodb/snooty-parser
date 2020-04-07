@@ -63,6 +63,15 @@ class InvalidURL(ParserDiagnostic):
 class ExpectedPathArg(ParserDiagnostic):
     severity = Diagnostic.Level.error
 
+    def __init__(
+        self,
+        name: Path,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'"{name}" expected a path argument', start, end)
+        self.name = name
+
 
 class ExpectedImgArg(ParserDiagnostic):
     severity = Diagnostic.Level.error
@@ -79,6 +88,19 @@ class OptionsNotSupported(ParserDiagnostic):
 class GitMergeConflictArtifactFound(ParserDiagnostic):
     severity = Diagnostic.Level.error
 
+    def __init__(
+        self,
+        path: Path,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Git merge conflict artifact found in {str(path)} on line {str(start)}",
+            start,
+            end,
+        )
+        self.path = path
+
 
 class DocUtilsParseError(ParserDiagnostic):
     severity = Diagnostic.Level.warning
@@ -86,7 +108,16 @@ class DocUtilsParseError(ParserDiagnostic):
 
 class ErrorParsingYAMLFile(ParserDiagnostic):
     severity = Diagnostic.Level.error
-
+    def __init__(
+        self,
+        path: Path,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Error parsing YAML file {str(path)}: {reason}", start, end)
+        self.path = path
+        self.reason = reason
 
 class SemanticDiagnostic(Diagnostic):
     pass
@@ -100,7 +131,6 @@ class SubstitutionRefError(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
 
-# variable not declared as source constant
 class VariableNotDeclaredConstant(SemanticDiagnostic):
     severity = Diagnostic.Level.error
 
@@ -123,6 +153,15 @@ class RefDiagnositc(GizaDiagnostic):
 
 class MissingRef(RefDiagnositc):
     severity = Diagnostic.Level.error
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Missing ref; all {name} must define a ref", start, end)
+        self.name = name
+
 
 
 class FailedToInheritRef(RefDiagnositc):
@@ -163,7 +202,16 @@ class LoadDiagnostic(Diagnostic):
 
 class ErrorLoadingFile(LoadDiagnostic):
     severity = Diagnostic.Level.error
-
+    def __init__(
+        self,
+        path: Path,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Error loading {str(path)}: {reason}", start, end)
+        self.path = path
+        self.reason = reason
 
 class OSDiagnostic(LoadDiagnostic):
     pass

@@ -44,7 +44,7 @@ class GizaExtractsCategory(GizaCategory[Extract]):
 
         def report_missing_ref(extract: Extract) -> bool:
             diagnostics.append(
-                MissingRef("Missing ref; all extracts must define a ref", extract.line)
+                MissingRef("extracts", extract.line)
             )
             return False
 

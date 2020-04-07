@@ -457,8 +457,7 @@ class JSONVisitor:
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
                 self.diagnostics.append(
-                    ExpectedPathArg(
-                        f'"{name}" expected a path argument', util.get_line(node)
+                    ExpectedPathArg(name, util.get_line(node)
                     )
                 )
                 return doc
@@ -491,7 +490,7 @@ class JSONVisitor:
         elif name == "literalinclude":
             if argument_text is None:
                 self.diagnostics.append(
-                    ExpectedPathArg('"literalinclude" expected a path argument', line)
+                    ExpectedPathArg(name, line)
                 )
                 return doc
 
@@ -523,9 +522,7 @@ class JSONVisitor:
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(
-                    ExpectedPathArg(
-                        f'"{name}" expected a path argument', util.get_line(node)
-                    )
+                    ExpectedPathArg(name, util.get_line(node))
                 )
                 return doc
 
@@ -845,22 +842,18 @@ class _Project:
                     return result, []
                 except LoadError as err:
                     line: int = getattr(err.bad_data, "_start_line", 0) + 1
-                    error_node: Diagnostic = ErrorLoadingFile(
-                        f"Error loading file: {err}", line
+                    error_node: Diagnostic = ErrorLoadingFile(path, err, line
                     )
                     return None, [error_node]
         except FileNotFoundError:
             pass
         except LoadError as err:
             load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
-            load_error_node: Diagnostic = ErrorLoadingFile(
-                f"Error loading file: {err}", load_error_line
+            load_error_node: Diagnostic = ErrorLoadingFile(path, err, load_error_line
             )
             return None, [load_error_node]
         except yaml.error.MarkedYAMLError as err:
-            yaml_error_node: Diagnostic = ErrorParsingYAMLFile(
-                f"Error parsing YAML: {err}", err.problem_mark.line
-            )
+            yaml_error_node: Diagnostic = ErrorParsingYAMLFile(path, err, err.problem_mark.line)
             return None, [yaml_error_node]
         return None, []
 
