@@ -1028,9 +1028,7 @@ def test_toctree() -> None:
 """,
     )
     page.finish(diagnostics)
-    print("TEST\n")
-    print(diagnostics[0].message)
-    print("TEST\n")
+
     # MESSAGE need to create a toctree diagnostic
     assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
     check_ast_testing_string(
@@ -1101,9 +1099,6 @@ def test_no_weird_targets() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
-    print("TEST\n")
-    print(diagnostics[0])
-    print("TEST\n")
     assert isinstance(diagnostics[0], InvalidURL)
 
 
