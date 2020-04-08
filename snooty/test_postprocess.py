@@ -411,6 +411,35 @@ def test_program_option(backend: Backend) -> None:
     )
 
 
+def test_doc_titles(backend: Backend) -> None:
+    doc_id = FileId("folder/doc.txt")
+    ast = backend.pages[doc_id].ast
+
+    # Test relative path
+    paragraph = ast.children[0]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role name="doc" target="../page1" fileid="../page1"><text>Print this heading</text></ref_role><text>) should read "Print this heading".</text></paragraph>""",
+    )
+
+    # Test no heading in page
+    paragraph = ast.children[1]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role name="doc" target="/page3" fileid="/page3"></ref_role><text>) has no heading.</text></paragraph>""",
+    )
+
+    # Test doc with title specified inline
+    paragraph = ast.children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role name="doc" target="/page2" fileid="/page2"><text>A Title</text></ref_role><text>) says "A Title" inline.</text></paragraph>""",
+    )
+
+
 def test_substitutions(backend: Backend) -> None:
     # Test substitutions as defined in snooty.toml
     page_id = FileId("page3.txt")
