@@ -219,14 +219,16 @@ class Postprocessor:
         new_suffix = target_path.suffix + ".txt"
         target_path = target_path.with_suffix(new_suffix)
 
-        relative, _ = util.reroot_path(target_path, filename, self.project_config.source_path)
+        relative, _ = util.reroot_path(
+            target_path, filename, self.project_config.source_path
+        )
         slug = clean_slug(relative.as_posix())
         title = self.slug_title_mapping.get(slug)
 
         if not title:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f'Page title not found: {target_path}', line)
+                Diagnostic.error(f"Page title not found: {target_path}", line)
             )
             return
 
@@ -236,7 +238,6 @@ class Postprocessor:
         for text_node in page_title_nodes:
             deep_copy_position(node, text_node)
         node.children = page_title_nodes
-
 
     def handle_refs(self, filename: FileId, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
