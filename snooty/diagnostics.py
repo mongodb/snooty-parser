@@ -46,21 +46,14 @@ class Diagnostic:
     def severity_string(self) -> str:
         return self.severity.name.title()
 
-
-class ParserDiagnostic(Diagnostic):
-    pass
-
-
-class UnexpectedIndentation(ParserDiagnostic):
+class UnexpectedIndentation(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class InvalidURL(ParserDiagnostic):
+class InvalidURL(Diagnostic):
     severity = Diagnostic.Level.error
-
 
 # this could captuer 'literal include expected path arg..as well?
-class ExpectedPathArg(ParserDiagnostic):
+class ExpectedPathArg(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
@@ -72,28 +65,22 @@ class ExpectedPathArg(ParserDiagnostic):
         super().__init__(f'"{name}" expected a path argument', start, end)
         self.name = name
 
-
-class ExpectedImgArg(ParserDiagnostic):
+class ExpectedImgArg(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class ImgExpectedButNotRequired(ParserDiagnostic):
+class ImgExpectedButNotRequired(Diagnostic):
     severity = Diagnostic.Level.warning
 
-
-class OptionsNotSupported(ParserDiagnostic):
+class OptionsNotSupported(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class GitMergeConflictArtifactFound(ParserDiagnostic):
+class GitMergeConflictArtifactFound(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class DocUtilsParseError(ParserDiagnostic):
+class DocUtilsParseError(Diagnostic):
     severity = Diagnostic.Level.warning
 
-
-class ErrorParsingYAMLFile(ParserDiagnostic):
+class ErrorParsingYAMLFile(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
@@ -107,40 +94,22 @@ class ErrorParsingYAMLFile(ParserDiagnostic):
         self.path = path
         self.reason = reason
 
-
-class SemanticDiagnostic(Diagnostic):
-    pass
-
-
-class InvalidLiteralInclude(SemanticDiagnostic):
+class InvalidLiteralInclude(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class SubstitutionRefError(SemanticDiagnostic):
+class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class VariableNotDeclaredConstant(SemanticDiagnostic):
+class VariableNotDeclaredConstant(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class InvalidTableStructure(SemanticDiagnostic):
+class InvalidTableStructure(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class MissingOption(SemanticDiagnostic):
+class MissingOption(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class GizaDiagnostic(SemanticDiagnostic):
-    pass
-
-
-class RefDiagnositc(GizaDiagnostic):
-    pass
-
-
-class MissingRef(RefDiagnositc):
+class MissingRef(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
@@ -152,44 +121,25 @@ class MissingRef(RefDiagnositc):
         super().__init__(f"Missing ref; all {name} must define a ref", start, end)
         self.name = name
 
-
-class FailedToInheritRef(RefDiagnositc):
+class FailedToInheritRef(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class RefAlreadyExists(RefDiagnositc):
+class RefAlreadyExists(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class UnknownSubstitution(RefDiagnositc):
+class UnknownSubstitution(Diagnostic):
     severity = Diagnostic.Level.warning
 
-
-class TargetDiagnostic(SemanticDiagnostic):
-    pass
-
-
-class TargetNotFound(TargetDiagnostic):
+class TargetNotFound(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class AmbiguousTarget(TargetDiagnostic):
+class AmbiguousTarget(Diagnostic):
     severity = Diagnostic.Level.error
 
-
-class DirectiveDiagnostic(SemanticDiagnostic):
-    pass
-
-
-class TodoInfo(DirectiveDiagnostic):
+class TodoInfo(Diagnostic):
     severity = Diagnostic.Level.info
 
-
-class LoadDiagnostic(Diagnostic):
-    pass
-
-
-class ErrorLoadingFile(LoadDiagnostic):
+class ErrorLoadingFile(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
@@ -203,12 +153,7 @@ class ErrorLoadingFile(LoadDiagnostic):
         self.path = path
         self.reason = reason
 
-
-class OSDiagnostic(LoadDiagnostic):
-    pass
-
-
-class CannotOpenFile(OSDiagnostic):
+class CannotOpenFile(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
