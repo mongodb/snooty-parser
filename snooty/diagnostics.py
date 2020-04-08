@@ -46,11 +46,14 @@ class Diagnostic:
     def severity_string(self) -> str:
         return self.severity.name.title()
 
+
 class UnexpectedIndentation(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class InvalidURL(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 # this could captuer 'literal include expected path arg..as well?
 class ExpectedPathArg(Diagnostic):
@@ -65,20 +68,26 @@ class ExpectedPathArg(Diagnostic):
         super().__init__(f'"{name}" expected a path argument', start, end)
         self.name = name
 
+
 class ExpectedImgArg(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class ImgExpectedButNotRequired(Diagnostic):
     severity = Diagnostic.Level.warning
 
+
 class OptionsNotSupported(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class GitMergeConflictArtifactFound(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class DocUtilsParseError(Diagnostic):
     severity = Diagnostic.Level.warning
+
 
 class ErrorParsingYAMLFile(Diagnostic):
     severity = Diagnostic.Level.error
@@ -94,20 +103,26 @@ class ErrorParsingYAMLFile(Diagnostic):
         self.path = path
         self.reason = reason
 
+
 class InvalidLiteralInclude(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class VariableNotDeclaredConstant(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class InvalidTableStructure(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class MissingOption(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class MissingRef(Diagnostic):
     severity = Diagnostic.Level.error
@@ -121,23 +136,30 @@ class MissingRef(Diagnostic):
         super().__init__(f"Missing ref; all {name} must define a ref", start, end)
         self.name = name
 
+
 class FailedToInheritRef(Diagnostic):
     severity = Diagnostic.Level.error
+
 
 class RefAlreadyExists(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class UnknownSubstitution(Diagnostic):
     severity = Diagnostic.Level.warning
+
 
 class TargetNotFound(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class AmbiguousTarget(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class TodoInfo(Diagnostic):
     severity = Diagnostic.Level.info
+
 
 class ErrorLoadingFile(Diagnostic):
     severity = Diagnostic.Level.error
@@ -152,6 +174,7 @@ class ErrorLoadingFile(Diagnostic):
         super().__init__(f"Error loading {str(path)}: {reason}", start, end)
         self.path = path
         self.reason = reason
+
 
 class CannotOpenFile(Diagnostic):
     severity = Diagnostic.Level.error
