@@ -14,7 +14,7 @@ ROOT_PATH = Path("test_data")
 @pytest.fixture(scope="module")
 def backend() -> Backend:
     backend = Backend()
-    build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
+    build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": None}
     with Project(
         Path("test_data/test_postprocessor"), backend, build_identifiers
     ) as project:

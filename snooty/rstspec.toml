@@ -523,7 +523,7 @@ options.image-alt = "string"
 help="""Options
 - url: the canonical URL of the page without any session variables, parameters, etc.
 - title: Title of the article without any branding.
-- image: URL of the image that appears when someone shares the content. 
+- image: URL of the image that appears when someone shares the content.
 - type: Type of the media content. Default is website. You probably want article.
 """
 example= """.. og::
@@ -532,8 +532,8 @@ example= """.. og::
    :title: Active-Active Application Architectures
    :image: http://developer.mongodb.com/images/atf-images/generic/purple.png
 
-   A brief description of the content, usually between 2 and 4 
-   sentences. This will displayed below the title of the post on 
+   A brief description of the content, usually between 2 and 4
+   sentences. This will displayed below the title of the post on
    Facebook.
 """
 content_type = "block"
@@ -561,7 +561,7 @@ help = """Embed a chart from MongoDB Charts in your article. Options:
 - width: width of the embedded frame
 - height: height of the embedded frame
 """
-example= """.. charts:: 
+example= """.. charts::
    :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
    :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
    :autorefresh: 3600
@@ -740,6 +740,10 @@ type = {domain = "std", name = "term"}
 help = """Link to a JIRA ticket."""
 type = {link = "https://jira.mongodb.org/browse/%s"}
 
+[role.technical-support]
+help = "Link to the MongoDB support site."
+type = {link = "https://docs.mongodb.com/manual/support%s"}
+
 [role.community-forum]
 help = "Link to the MongoDB Community Forums page."
 type = {link = "https://community.mongodb.com/%s"}
@@ -760,17 +764,25 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.5/api/%s"}
 help = """Link to a page in the Ruby driver's API reference."""
 type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
 
+[role.scala-docs]
+help = "Link to a page in the Scala driver's documentation"
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9%s"}
+
 [role.scala-api]
 help = """Link to a page in the Scala driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-scala-driver/2.2/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
 
 [role.csharp-docs]
 help = """Link to a page in the C# driver's documentation."""
-type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/reference/%s"}
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/reference/%s"}
 
 [role.csharp-api]
 help = """Link to a page in the C# driver's API reference."""
-type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.5/apidocs/html/%s.htm"}
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/%s.htm"}
+
+[role.java-docs]
+help = """Link to the Java driver's documentation."""
+type = {link = "http://mongodb.github.io/mongo-java-driver/4.0/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
@@ -886,6 +898,9 @@ type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
 
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
+
+[role.spec]
+type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
 type = {link = "https://docs.mongodb.com/stitch-sdks/js/4/%s"}

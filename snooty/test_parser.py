@@ -1136,7 +1136,7 @@ def test_problematic() -> None:
         parser,
         path,
         """
-:spec:`Server write commands </server_write_commands.rst>`
+:bad-role-unknown:`Server write commands </server_write_commands.rst>`
 """,
     )
     page.finish(diagnostics)
