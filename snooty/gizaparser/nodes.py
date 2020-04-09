@@ -1,6 +1,7 @@
 import dataclasses
 import logging
-import errno, os
+import os
+import errno
 import re
 import docutils.nodes
 import networkx

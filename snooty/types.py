@@ -402,9 +402,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(
-                    GitMergeConflictArtifactFound("git merge conflict found", lineno)
-                )
+                diagnostics.append(GitMergeConflictArtifactFound(path, lineno))
 
         return (text, diagnostics)
 

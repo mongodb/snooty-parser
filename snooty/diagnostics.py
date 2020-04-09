@@ -84,6 +84,19 @@ class OptionsNotSupported(Diagnostic):
 class GitMergeConflictArtifactFound(Diagnostic):
     severity = Diagnostic.Level.error
 
+    def __init__(
+        self,
+        path: Path,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Git merge conflict artifact found in {str(path)} on line {str(start)}",
+            start,
+            end,
+        )
+        self.path = path
+
 
 class DocUtilsParseError(Diagnostic):
     severity = Diagnostic.Level.warning
