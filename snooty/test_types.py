@@ -23,7 +23,7 @@ def test_project() -> None:
     project_config, project_diagnostics = ProjectConfig.open(Path(".").resolve())
     assert project_config.name == "unnamed"
     assert project_config.title == "untitled"
-    assert project_config.deprecated_versions == {}
+    assert project_config.deprecated_versions == None
     assert len(project_diagnostics) == 0
 
 
