@@ -73,7 +73,7 @@ def test_add_doc_target_ext() -> None:
 
 
 @pytest.mark.skipif(
-    sys.platform != "darwin",
+    sys.platform != "darwin" or "GITHUB_RUN_ID" in os.environ,
     reason="file watching has very different behavior on different systems; it's hard to test",
 )
 def test_file_watcher() -> None:

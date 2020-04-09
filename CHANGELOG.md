@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `spec` role.
 - Support for deprecated versions (DOP-908).
+
+## [v0.4.2] - 2020-04-03
+
+### Added
+
+- Various roles.
+
+### Changed
+
+- C# driver extlinks now point to 2.10.
+- Scala driver extlinks now point to 2.9.
 
 ## [v0.4.1] - 2020-04-02
 
