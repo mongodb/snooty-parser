@@ -275,11 +275,17 @@ class JSONVisitor:
             role_name = node["name"]
             target = node["target"] if "target" in node else ""
             flag = node["flag"] if "flag" in node else ""
-            role = n.Role((line,), [], node["domain"], role_name, target, flag)
-            self.state.append(role)
 
             if role_name == "doc":
                 self.validate_doc_role(node)
+                role = n.RefRole(
+                    (line,), [], node["domain"], role_name, "", flag, target, None
+                )
+                self.state.append(role)
+                return
+
+            role = n.Role((line,), [], node["domain"], role_name, target, flag)
+            self.state.append(role)
             return
         elif isinstance(node, docutils.nodes.target):
             assert (

@@ -463,36 +463,36 @@ def test_doc_role() -> None:
         <list>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index">
+        <ref_role name="doc" fileid="/index">
         <text>Testing this</text>
-        </role>
+        </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index">
+        <ref_role name="doc" fileid="./../source/index">
         <text>Testing that</text>
-        </role>
+        </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="index"></role>
+        <ref_role name="doc" fileid="index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index"></role>
+        <ref_role name="doc" fileid="/index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index"></role>
+        <ref_role name="doc" fileid="./../source/index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index/"></role>
+        <ref_role name="doc" fileid="/index/"></ref_role>
         </paragraph>
         </listItem>
         </list>

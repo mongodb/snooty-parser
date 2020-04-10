@@ -23,7 +23,7 @@ from .types import (
     SerializableType,
     TargetDatabase,
 )
-from . import n
+from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -204,6 +204,29 @@ class Postprocessor:
     def reset_program(self, filename: FileId, page: Page) -> None:
         self.pending_program = None
 
+    def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
+        if not isinstance(node.fileid, str):
+            line = node.span[0]
+            self.diagnostics[filename].append(
+                Diagnostic.error(f'File not specified: "{node.name}"', line)
+            )
+            return
+
+        relative, _ = util.reroot_path(
+            FileId(node.fileid), filename, self.project_config.source_path
+        )
+        slug = clean_slug(relative.as_posix())
+        title = self.slug_title_mapping.get(slug)
+
+        if not title:
+            line = node.span[0]
+            self.diagnostics[filename].append(
+                Diagnostic.error(f"Page title not found: {node.fileid}", line)
+            )
+            return
+
+        node.children = [deepcopy(node) for node in title]
+
     def handle_refs(self, filename: FileId, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
 
@@ -212,7 +235,15 @@ class Postprocessor:
         if not isinstance(node, n.RefRole):
             return
 
-        key = f"{node.domain}:{node.name}:{node.target}"
+        key = f"{node.domain}:{node.name}"
+
+        if key == ":doc":
+            if not node.children:
+                # If title is not explicitly given, search slug-title mapping for the page's title
+                self._attach_doc_title(filename, node)
+            return
+
+        key += f":{node.target}"
 
         # Add title and link target to AST
         target_candidates = self.targets[key]
