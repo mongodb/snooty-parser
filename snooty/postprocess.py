@@ -2,7 +2,6 @@ import os.path
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -213,14 +212,8 @@ class Postprocessor:
             )
             return
 
-        # Add .txt to end of doc role target path
-        target_path = PurePath(node.fileid)
-        # Adding the current suffix first takes into account dotted targets
-        new_suffix = target_path.suffix + ".txt"
-        target_path = target_path.with_suffix(new_suffix)
-
         relative, _ = util.reroot_path(
-            target_path, filename, self.project_config.source_path
+            FileId(node.fileid), filename, self.project_config.source_path
         )
         slug = clean_slug(relative.as_posix())
         title = self.slug_title_mapping.get(slug)
@@ -228,16 +221,11 @@ class Postprocessor:
         if not title:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f"Page title not found: {target_path}", line)
+                Diagnostic.error(f"Page title not found: {node.fileid}", line)
             )
             return
 
-        page_title_nodes: MutableSequence[n.InlineNode] = list(
-            deepcopy(node) for node in title
-        )
-        for text_node in page_title_nodes:
-            deep_copy_position(node, text_node)
-        node.children = page_title_nodes
+        node.children = [deepcopy(node) for node in title]
 
     def handle_refs(self, filename: FileId, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
@@ -247,13 +235,15 @@ class Postprocessor:
         if not isinstance(node, n.RefRole):
             return
 
-        key = f"{node.domain}:{node.name}:{node.target}"
+        key = f"{node.domain}:{node.name}"
 
-        if node.name == "doc":
+        if key == ":doc":
             if not node.children:
                 # If title is not explicitly given, search slug-title mapping for the page's title
                 self._attach_doc_title(filename, node)
             return
+
+        key += f":{node.target}"
 
         # Add title and link target to AST
         target_candidates = self.targets[key]
