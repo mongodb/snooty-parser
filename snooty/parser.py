@@ -43,7 +43,7 @@ from .diagnostics import (
     UnexpectedIndentation,
     ExpectedPathArg,
     ExpectedImgArg,
-    ImgExpectedButNotRequired,
+    ImageSuggested,
     TodoInfo,
     DocUtilsParseError,
     CannotOpenFile,
@@ -312,9 +312,7 @@ class JSONVisitor:
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
             if not node["ids"]:
-                self.diagnostics.append(
-                    InvalidURL("Links must provide a valid URL", util.get_line(node))
-                )
+                self.diagnostics.append(InvalidURL(util.get_line(node)))
                 # Remove the malformed node so it doesn't cause problems down the road
                 self.state.pop()
                 raise docutils.nodes.SkipNode()
@@ -561,11 +559,7 @@ class JSONVisitor:
 
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
-                self.diagnostics.append(
-                    ImgExpectedButNotRequired(
-                        f'"{name}" expected an image argument', util.get_line(node)
-                    )
-                )
+                self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
             else:
                 try:
                     static_asset = self.add_static_asset(

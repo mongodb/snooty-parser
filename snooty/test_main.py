@@ -17,10 +17,7 @@ def test_backend() -> None:
     try:
         backend.on_diagnostics(
             FileId("foo/bar.rst"),
-            [
-                InvalidLiteralInclude("an error", 10, 12),
-                InvalidURL("another error", (10, 0), (12, 30)),
-            ],
+            [InvalidLiteralInclude("an error", 10, 12), InvalidURL((10, 0), (12, 30))],
         )
         backend.on_diagnostics(
             FileId("foo/foo.rst"), [UnknownSubstitution("a warning", 10)]
@@ -31,6 +28,6 @@ def test_backend() -> None:
 
     assert messages == [
         "ERROR(foo/bar.rst:10ish): an error",
-        "ERROR(foo/bar.rst:10ish): another error",
+        "ERROR(foo/bar.rst:10ish): Invalid URL",
         "WARNING(foo/foo.rst:10ish): a warning",
     ]

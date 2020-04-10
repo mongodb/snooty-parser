@@ -86,9 +86,7 @@ class ProgramOptionHandler:
         elif identifier == "std:option":
             if not self.pending_program:
                 line = node.start[0]
-                self.diagnostics[filename].append(
-                    MissingOption("'.. option::' must follow '.. program::'", line)
-                )
+                self.diagnostics[filename].append(MissingOption(line))
                 return
             program_target = next(
                 self.pending_program.get_child_of_type(n.TargetIdentifier)
@@ -250,14 +248,14 @@ class Postprocessor:
         if not target_candidates:
             line = node.span[0]
             self.diagnostics[filename].append(
-                TargetNotFound(f'Target not found: "{node.name}:{node.target}"', line)
+                TargetNotFound(node.name, node.target, line)
             )
             return
 
         if len(target_candidates) > 1:
             line = node.span[0]
             self.diagnostics[filename].append(
-                AmbiguousTarget(f'Ambiguous target: "{node.name}:{node.target}"', line)
+                AmbiguousTarget(node.name, node.target, line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous

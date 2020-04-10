@@ -22,7 +22,7 @@ from .diagnostics import (
     Diagnostic,
     ErrorLoadingFile,
     GitMergeConflictArtifactFound,
-    VariableNotDeclaredConstant,
+    ConstantNotDeclared,
 )
 from typing_extensions import Protocol
 import urllib.parse
@@ -418,11 +418,7 @@ class ProjectConfig:
                 return str(self.constants[variable_name])
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
-                diagnostics.append(
-                    VariableNotDeclaredConstant(
-                        f"{variable_name} not defined as a source constant", lineno
-                    )
-                )
+                diagnostics.append(ConstantNotDeclared(variable_name, lineno))
 
             # Return a zero-width space to avoid breaking syntax
             return "\u200b"

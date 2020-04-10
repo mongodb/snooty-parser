@@ -54,8 +54,14 @@ class UnexpectedIndentation(Diagnostic):
 class InvalidURL(Diagnostic):
     severity = Diagnostic.Level.error
 
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Invalid URL", start, end)
 
-# this could captuer 'literal include expected path arg..as well?
+
 class ExpectedPathArg(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -73,8 +79,17 @@ class ExpectedImgArg(Diagnostic):
     severity = Diagnostic.Level.error
 
 
-class ImgExpectedButNotRequired(Diagnostic):
+class ImageSuggested(Diagnostic):
     severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'"{name}" expected an image argument', start, end)
+        self.name = name
 
 
 class OptionsNotSupported(Diagnostic):
@@ -125,8 +140,17 @@ class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
 
 
-class VariableNotDeclaredConstant(Diagnostic):
+class ConstantNotDeclared(Diagnostic):
     severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"{name} not defined as a source constant", start, end)
+        self.name = name
 
 
 class InvalidTableStructure(Diagnostic):
@@ -135,6 +159,13 @@ class InvalidTableStructure(Diagnostic):
 
 class MissingOption(Diagnostic):
     severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("'.. option::' must follow '.. program::'", start, end)
 
 
 class MissingRef(Diagnostic):
@@ -165,9 +196,31 @@ class UnknownSubstitution(Diagnostic):
 class TargetNotFound(Diagnostic):
     severity = Diagnostic.Level.error
 
+    def __init__(
+        self,
+        name: str,
+        target: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'Target not found: "{name}:{target}"', start, end)
+        self.name = name
+        self.target = target
+
 
 class AmbiguousTarget(Diagnostic):
     severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        target: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'Ambiguous target: "{name}:{target}"', start, end)
+        self.name = name
+        self.target = target
 
 
 class TodoInfo(Diagnostic):
