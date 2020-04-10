@@ -75,12 +75,12 @@ class ExpectedPathArg(Diagnostic):
         self.name = name
 
 
-class ExpectedImgArg(Diagnostic):
+class ExpectedImageArg(Diagnostic):
     severity = Diagnostic.Level.error
 
 
 class ImageSuggested(Diagnostic):
-    severity = Diagnostic.Level.warning
+    severity = Diagnostic.Level.info
 
     def __init__(
         self,

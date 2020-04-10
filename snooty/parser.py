@@ -42,7 +42,7 @@ from .diagnostics import (
     OptionsNotSupported,
     UnexpectedIndentation,
     ExpectedPathArg,
-    ExpectedImgArg,
+    ExpectedImageArg,
     ImageSuggested,
     TodoInfo,
     DocUtilsParseError,
@@ -537,7 +537,7 @@ class JSONVisitor:
 
             if image_argument is None:
                 self.diagnostics.append(
-                    ExpectedImgArg(
+                    ExpectedImageArg(
                         f'"{name}" expected an image argument', util.get_line(node)
                     )
                 )
