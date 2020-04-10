@@ -1098,8 +1098,10 @@ def test_no_weird_targets() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], InvalidURL)
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], InvalidURL) and isinstance(
+        diagnostics[1], InvalidURL
+    )
 
 
 def test_dates() -> None:
