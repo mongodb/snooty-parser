@@ -40,6 +40,8 @@ example = """.. list-table::
 """
 content_type = "list_table"
 argument_type = "string"
+options.align = "alignment"
+options.width = "string"
 options.widths = "string"
 options.class = "string"
 options.header-rows = "nonnegative_integer"
