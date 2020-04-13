@@ -67,12 +67,25 @@ class ExpectedPathArg(Diagnostic):
 
     def __init__(
         self,
-        name: Path,
+        name: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(f'"{name}" expected a path argument', start, end)
         self.name = name
+
+
+class UnnamedPage(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        filename: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Page title not found: {filename}", start, end)
+        self.filename = filename
 
 
 class ExpectedImageArg(Diagnostic):

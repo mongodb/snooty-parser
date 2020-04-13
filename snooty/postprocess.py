@@ -22,6 +22,8 @@ from .diagnostics import (
     TargetNotFound,
     AmbiguousTarget,
     SubstitutionRefError,
+    ExpectedPathArg,
+    UnnamedPage,
 )
 from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS
@@ -205,9 +207,7 @@ class Postprocessor:
     def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
         if not isinstance(node.fileid, str):
             line = node.span[0]
-            self.diagnostics[filename].append(
-                Diagnostic.error(f'File not specified: "{node.name}"', line)
-            )
+            self.diagnostics[filename].append(ExpectedPathArg(node.name, line))
             return
 
         relative, _ = util.reroot_path(
@@ -218,9 +218,7 @@ class Postprocessor:
 
         if not title:
             line = node.span[0]
-            self.diagnostics[filename].append(
-                Diagnostic.error(f"Page title not found: {node.fileid}", line)
-            )
+            self.diagnostics[filename].append(UnnamedPage(node.fileid, line))
             return
 
         node.children = [deepcopy(node) for node in title]
@@ -232,7 +230,6 @@ class Postprocessor:
         """
         if not isinstance(node, n.RefRole):
             return
-
         key = f"{node.domain}:{node.name}"
 
         if key == ":doc":
@@ -288,6 +285,7 @@ class Postprocessor:
         When a substitution is referenced, populate its children if possible.
         If not, save this node to be populated at the end of the page.
         """
+
         try:
             line = node.span[0]
             if isinstance(node, n.SubstitutionDefinition):
