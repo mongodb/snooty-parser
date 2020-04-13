@@ -16,8 +16,13 @@ from typing import (
     MutableSequence,
     Tuple,
     Optional,
-    Union,
     Match,
+)
+from .diagnostics import (
+    Diagnostic,
+    UnmarshallingError,
+    GitMergeConflictArtifactFound,
+    ConstantNotDeclared,
 )
 from typing_extensions import Protocol
 import urllib.parse
@@ -64,83 +69,6 @@ class FileId(PurePosixPath):
         """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
         fileid = self.with_name(PAT_FILE_EXTENSIONS.sub("", self.name))
         return fileid.as_posix()
-
-
-@dataclass
-class Diagnostic:
-    __slots__ = ("message", "severity", "start", "end")
-
-    class Level(enum.IntEnum):
-        info = 0
-        error = 1
-        warning = 2
-
-        @classmethod
-        def from_docutils(cls, docutils_level: int) -> "Diagnostic.Level":
-            level = docutils_level - 1
-            level = min(level, cls.warning)
-            level = max(level, cls.info)
-            return cls(level)
-
-    severity: Level
-    message: str
-    start: Tuple[int, int]
-    end: Tuple[int, int]
-
-    @property
-    def severity_string(self) -> str:
-        return self.severity.name.title()
-
-    @classmethod
-    def create(
-        cls,
-        severity: Level,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        if isinstance(start, int):
-            start_line, start_column = start, 0
-        else:
-            start_line, start_column = start
-
-        if end is None:
-            end_line, end_column = start_line, 1000
-        elif isinstance(end, int):
-            end_line, end_column = end, 1000
-        else:
-            end_line, end_column = end
-
-        return cls(
-            severity, message, (start_line, start_column), (end_line, end_column)
-        )
-
-    @classmethod
-    def info(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.info, message, start, end)
-
-    @classmethod
-    def warning(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.warning, message, start, end)
-
-    @classmethod
-    def error(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.error, message, start, end)
 
 
 @dataclass
@@ -353,10 +281,6 @@ class PendingTask:
         """Perform an action in the main process once the tree has been built."""
         pass
 
-    def error(self, message: str) -> Diagnostic:
-        """Create an error diagnostic associated with this task's node."""
-        return Diagnostic.error(message, self.node.start[0])
-
 
 @dataclass
 class Page:
@@ -434,7 +358,7 @@ class ProjectConfig:
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:
         path = root
-        diagnostics = []
+        diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
                 with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
@@ -447,7 +371,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(Diagnostic.error(str(err), 0))
+                diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
 
@@ -478,7 +402,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
+                diagnostics.append(GitMergeConflictArtifactFound(path, lineno))
 
         return (text, diagnostics)
 
@@ -494,11 +418,7 @@ class ProjectConfig:
                 return str(self.constants[variable_name])
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
-                diagnostics.append(
-                    Diagnostic.error(
-                        f"{variable_name} not defined as a source constant", lineno
-                    )
-                )
+                diagnostics.append(ConstantNotDeclared(variable_name, lineno))
 
             # Return a zero-width space to avoid breaking syntax
             return "\u200b"

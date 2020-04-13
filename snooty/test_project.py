@@ -5,14 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, DefaultDict, List
-from .types import (
-    FileId,
-    Page,
-    Diagnostic,
-    ProjectConfig,
-    SerializableType,
-    BuildIdentifierSet,
-)
+from .types import FileId, Page, ProjectConfig, SerializableType, BuildIdentifierSet
+from .diagnostics import Diagnostic, GitMergeConflictArtifactFound, ConstantNotDeclared
 from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
@@ -160,11 +154,11 @@ def test_merge_conflict() -> None:
     file_path = Path("test_data/merge_conflict/source/index.txt")
     _, project_diagnostics = project_config.read(file_path)
 
-    assert project_diagnostics[-1].message.startswith(
-        "git merge conflict"
+    assert isinstance(
+        project_diagnostics[-1], GitMergeConflictArtifactFound
     ) and project_diagnostics[-1].start == (68, 0)
-    assert project_diagnostics[-2].message.startswith(
-        "git merge conflict"
+    assert isinstance(
+        project_diagnostics[-2], GitMergeConflictArtifactFound
     ) and project_diagnostics[-2].start == (35, 0)
 
 
@@ -175,7 +169,7 @@ def test_bad_project() -> None:
     assert list(backend.diagnostics.keys()) == [fileid]
     diagnostics = backend.diagnostics[fileid]
     assert len(diagnostics) == 1
-    assert "source constant" in diagnostics[0].message
+    assert isinstance(diagnostics[0], ConstantNotDeclared)
 
 
 def test_not_a_project() -> None:

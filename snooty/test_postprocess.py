@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
 from .types import BuildIdentifierSet, FileId
+from .diagnostics import TargetNotFound, AmbiguousTarget
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string
@@ -180,10 +181,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
     assert len(diagnostics) == 1
-    assert (
-        "Target" in diagnostics[0].message
-        and "global-writes-collections" in diagnostics[0].message
-    )
+    assert isinstance(diagnostics[0], TargetNotFound)
 
 
 def test_role_explicit_title(backend: Backend) -> None:
@@ -366,7 +364,7 @@ def test_program_option(backend: Backend) -> None:
     # Test roles
     diagnostics = backend.diagnostics[page_id]
     assert len(diagnostics) == 1, diagnostics
-    assert "Ambiguous" in diagnostics[0].message
+    assert isinstance(diagnostics[0], AmbiguousTarget)
 
     roles = section.children[7].children
     check_ast_testing_string(
