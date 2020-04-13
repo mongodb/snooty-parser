@@ -418,7 +418,7 @@ def test_doc_titles(backend: Backend) -> None:
     assert isinstance(paragraph, n.Paragraph)
     check_ast_testing_string(
         paragraph,
-        """<paragraph><text>This doc role (</text><ref_role name="doc" fileid="../page1"><text>Print this heading</text></ref_role><text>) should read "Print this heading".</text></paragraph>""",
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="../page1"><text>Print this heading</text></ref_role><text>) should read "Print this heading".</text></paragraph>""",
     )
 
     # Test no heading in page
@@ -426,7 +426,7 @@ def test_doc_titles(backend: Backend) -> None:
     assert isinstance(paragraph, n.Paragraph)
     check_ast_testing_string(
         paragraph,
-        """<paragraph><text>This doc role (</text><ref_role name="doc" fileid="/page3"></ref_role><text>) has no heading.</text></paragraph>""",
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="/page3"></ref_role><text>) has no heading.</text></paragraph>""",
     )
 
     # Test doc with title specified inline
@@ -434,7 +434,7 @@ def test_doc_titles(backend: Backend) -> None:
     assert isinstance(paragraph, n.Paragraph)
     check_ast_testing_string(
         paragraph,
-        """<paragraph><text>This doc role (</text><ref_role name="doc" fileid="/page2"><text>A Title</text></ref_role><text>) says "A Title" inline.</text></paragraph>""",
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="/page2"><text>A Title</text></ref_role><text>) says "A Title" inline.</text></paragraph>""",
     )
 
 
