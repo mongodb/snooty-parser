@@ -20,7 +20,7 @@ from typing import (
 )
 from .diagnostics import (
     Diagnostic,
-    ErrorLoadingFile,
+    UnmarshallingError,
     GitMergeConflictArtifactFound,
     ConstantNotDeclared,
 )
@@ -371,7 +371,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(ErrorLoadingFile(path, str(err), 0))
+                diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
 

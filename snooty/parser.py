@@ -50,7 +50,7 @@ from .diagnostics import (
     InvalidURL,
     InvalidLiteralInclude,
     InvalidTableStructure,
-    ErrorLoadingFile,
+    UnmarshallingError,
     ErrorParsingYAMLFile,
 )
 
@@ -810,15 +810,13 @@ class _Project:
                     return result, []
                 except LoadError as err:
                     line: int = getattr(err.bad_data, "_start_line", 0) + 1
-                    error_node: Diagnostic = ErrorLoadingFile(path, str(err), line)
+                    error_node: Diagnostic = UnmarshallingError(str(err), line)
                     return None, [error_node]
         except FileNotFoundError:
             pass
         except LoadError as err:
             load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
-            load_error_node: Diagnostic = ErrorLoadingFile(
-                path, str(err), load_error_line
-            )
+            load_error_node: Diagnostic = UnmarshallingError(str(err), load_error_line)
             return None, [load_error_node]
         except yaml.error.MarkedYAMLError as err:
             yaml_error_node: Diagnostic = ErrorParsingYAMLFile(

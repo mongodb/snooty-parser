@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple, Type, TypeVar
 from yaml.composer import Composer
 from ..flutter import check_type, LoadError, mapping_dict
 from ..types import ProjectConfig, SerializableType
-from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, ErrorLoadingFile
+from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, UnmarshallingError
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)
@@ -72,4 +72,4 @@ def parse(
     except LoadError as err:
         mapping = err.bad_data if isinstance(err.bad_data, dict) else {}
         lineno = mapping._start_line if isinstance(mapping, mapping_dict) else 0
-        return [], text, diagnostics + [ErrorLoadingFile(path, str(err), lineno)]
+        return [], text, diagnostics + [UnmarshallingError(str(err), lineno)]

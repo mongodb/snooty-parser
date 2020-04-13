@@ -227,18 +227,16 @@ class TodoInfo(Diagnostic):
     severity = Diagnostic.Level.info
 
 
-class ErrorLoadingFile(Diagnostic):
+class UnmarshallingError(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
-        path: Path,
         reason: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"Error loading {str(path)}: {reason}", start, end)
-        self.path = path
+        super().__init__(f"Unmarshalling Error: {reason}", start, end)
         self.reason = reason
 
 
