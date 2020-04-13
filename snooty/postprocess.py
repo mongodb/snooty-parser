@@ -232,7 +232,7 @@ class Postprocessor:
             return
         key = f"{node.domain}:{node.name}"
 
-        if key == ":doc":
+        if key == "std:doc":
             if not node.children:
                 # If title is not explicitly given, search slug-title mapping for the page's title
                 self._attach_doc_title(filename, node)
@@ -417,6 +417,9 @@ class Postprocessor:
 
         # Save the first heading we encounter to the slug title mapping
         if slug not in self.slug_title_mapping and isinstance(node, n.Heading):
+            self.targets.define_local_target(
+                "std", "doc", (slug,), filename, node.children
+            )
             self.slug_title_mapping[slug] = node.children
 
     def build_slug_fileid_mapping(self) -> None:

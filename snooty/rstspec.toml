@@ -674,7 +674,7 @@ type = {link = "https://en.wikipedia.org/wiki/%s"}
 help = """Link to a URL in the current project."""
 type = "explicit_title"
 
-[role.doc]
+[role."std:doc"]
 help = """Link to a page in the current project."""
 type = "explicit_title"
 
