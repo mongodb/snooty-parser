@@ -232,7 +232,6 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     identifiers = {}
 
     identifiers["commit_hash"] = args["--commit"]
-    identifiers["patch_id"] = args["--patch"]
 
     return identifiers
 
