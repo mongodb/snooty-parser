@@ -2,6 +2,7 @@ import enum
 import hashlib
 import logging
 import re
+from docutils.nodes import make_id
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
@@ -55,11 +56,6 @@ def normalize_target(target: str) -> str:
     """Normalize targets to allow easy matching against the target
        database: normalize whitespace and convert to lowercase."""
     return re.sub(r"\s+", " ", target).lower()
-
-
-def get_html_id(target: str) -> str:
-    """Return an HTML ID from a target name."""
-    return target.replace(" ", "_")
 
 
 class SnootyError(Exception):
@@ -233,7 +229,7 @@ class TargetDatabase:
             base_uri = uri
             if (domain, role_name) != ("std", "doc"):
                 base_uri += "#$"
-                uri = uri + "#" + get_html_id(name)
+                uri = uri + "#" + make_id(name)
 
             targets[key] = intersphinx.TargetDefinition(
                 definition.canonical_name,
