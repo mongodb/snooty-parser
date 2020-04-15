@@ -63,9 +63,6 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 		echo "Must specify a valid BUMP_TO_VERSION (e.g. 'make cut-release BUMP_TO_VERSION=0.1.15')"; \
 		exit 1; \
 	fi
-	@if [ `git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'` != 'master' ]; then \
-		echo "Can only cut-release on master"; exit 1; \
-	fi
 	@git diff-index --quiet HEAD -- || { echo "Uncommitted changes found"; exit 1; }
 	$(MAKE) clean
 	tools/bump_version.py "${BUMP_TO_VERSION}"
