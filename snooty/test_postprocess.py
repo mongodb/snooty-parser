@@ -246,7 +246,7 @@ def test_toctree(backend: Backend) -> None:
                 ],
             },
         ],
-        "title": "untitled",
+        "title": "MongoDB title",
         "slug": "/",
     }
 
