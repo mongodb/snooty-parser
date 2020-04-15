@@ -638,6 +638,36 @@ def test_accidental_indentation() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
 
+def test_glossary_node() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+   :sorted:
+
+   $cmd
+      foobar
+""",
+    )
+    page.finish(diagnostics)
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <directive name="glossary" sorted="True">
+      <definitionList>
+        <definitionListItem><ref_role domain="std" name="term"><text>$cmd</text></ref_role><paragraph><text>foobar</text></paragraph></definitionListItem>
+      </definitionList>
+    </directive>
+</root>
+""",
+    )
 
 def test_cond() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
