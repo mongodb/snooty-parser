@@ -134,6 +134,7 @@ def test() -> None:
             project._project.get_parsed_branches()
         )
         assert len(published_branch_diagnostics) == 0
+        assert project.config.title == "MongoDB title"
         assert published_branches and published_branches.serialize() == {
             "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
             "version": {

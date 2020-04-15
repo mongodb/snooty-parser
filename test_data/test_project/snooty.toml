@@ -1,7 +1,4 @@
 name = "test_data"
-
-[constants]
-name = "MongoDB name"
 title = "MongoDB title"
 
 [substitutions]
