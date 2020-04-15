@@ -48,7 +48,8 @@ def test_queryable_fields(backend: Backend) -> None:
         related[0], "<literal><text>list of related articles</text></literal>"
     )
     check_ast_testing_string(
-        related[1], """<role name="doc" target="/path/to/article"></role>"""
+        related[1],
+        """<role domain="std" name="doc" target="/path/to/article"></role>""",
     )
     check_ast_testing_string(
         related[2], """<literal><text>:doc:`/path/to/other/article`</text></literal>"""

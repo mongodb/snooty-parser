@@ -463,36 +463,36 @@ def test_doc_role() -> None:
         <list>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index">
+        <role domain="std" name="doc" target="/index">
         <text>Testing this</text>
         </role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index">
+        <role domain="std" name="doc" target="./../source/index">
         <text>Testing that</text>
         </role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="index"></role>
+        <role domain="std" name="doc" target="index"></role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index"></role>
+        <role domain="std" name="doc" target="/index"></role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index"></role>
+        <role domain="std" name="doc" target="./../source/index"></role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index/"></role>
+        <role domain="std" name="doc" target="/index/"></role>
         </paragraph>
         </listItem>
         </list>
@@ -522,7 +522,7 @@ def test_rstobject() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-            <target name="option" target="--slowms &lt;integer&gt;">
+            <target domain="std" name="option" target="--slowms &lt;integer&gt;">
             <directive_argument><literal><text>--slowms &lt;integer&gt;</text></literal></directive_argument>
             <target_ref_title><text>--slowms &lt;integer&gt;</text></target_ref_title>
             <paragraph><text>test</text></paragraph>
