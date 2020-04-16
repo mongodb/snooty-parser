@@ -49,6 +49,8 @@ class Inventory:
         return self.targets[target]
 
     def dumps(self, name: str, version: str) -> bytes:
+        """Serialize this inventory in the Intersphinx inventory format, and
+           return the resulting bytes."""
         # Newlines break the (fragile) format; let's just be safe and make sure we're not smuggling any in.
         if "\n" in name:
             raise ValueError(name)

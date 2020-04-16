@@ -10,7 +10,8 @@ INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"
 EXPECTED_INVENTORY_FILENAME = "docsmongodbcommanualobjectsinv"
 INVENTORY_PATH = TESTING_CACHE_DIR.joinpath(EXPECTED_INVENTORY_FILENAME)
 
-# Skip footnote labels during validation
+# Skip footnote labels during validation. Yes, these are all labels created
+# by footnotes.
 IGNORE_TARGETS = {
     "std:label:hashes",
     "std:label:update-correctness",
