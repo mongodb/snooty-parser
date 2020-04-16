@@ -483,7 +483,21 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, util.get_line(node))
                 )
-
+        elif name == "glossary":
+          print("YOOOO")
+          print(node)
+          # if "date" in node:
+          #     doc.options["date"] = node["date"]
+          #is this right way of doing this? of getting at multiple 
+          for child in node.children:
+            print(child.__class__.__dict__)
+            for definition_list_item in child:
+              for term in definition_list_item:
+                print(term)
+                print(term.__class__.__name__)
+              
+      
+      
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
             expected_num_columns = 0
@@ -581,7 +595,7 @@ class JSONVisitor:
         elif key in {"devhub:author", ":og", ":twitter"}:
             # Grab image from options array and save as static asset
             image_argument = options.get("image")
-
+            
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
