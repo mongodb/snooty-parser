@@ -484,11 +484,7 @@ class JSONVisitor:
                     CannotOpenFile(argument_text, err.strerror, util.get_line(node))
                 )
         elif name == "glossary":
-          print("YOOOO")
           print(node)
-          # if "date" in node:
-          #     doc.options["date"] = node["date"]
-          #is this right way of doing this? of getting at multiple 
           for child in node.children:
             print(child.__class__.__dict__)
             for definition_list_item in child:
