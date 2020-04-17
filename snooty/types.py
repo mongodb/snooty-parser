@@ -2,6 +2,7 @@ import enum
 import hashlib
 import logging
 import re
+from docutils.nodes import make_id
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath, PurePosixPath
@@ -16,8 +17,13 @@ from typing import (
     MutableSequence,
     Tuple,
     Optional,
-    Union,
     Match,
+)
+from .diagnostics import (
+    Diagnostic,
+    UnmarshallingError,
+    GitMergeConflictArtifactFound,
+    ConstantNotDeclared,
 )
 from typing_extensions import Protocol
 import urllib.parse
@@ -64,83 +70,6 @@ class FileId(PurePosixPath):
         """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
         fileid = self.with_name(PAT_FILE_EXTENSIONS.sub("", self.name))
         return fileid.as_posix()
-
-
-@dataclass
-class Diagnostic:
-    __slots__ = ("message", "severity", "start", "end")
-
-    class Level(enum.IntEnum):
-        info = 0
-        error = 1
-        warning = 2
-
-        @classmethod
-        def from_docutils(cls, docutils_level: int) -> "Diagnostic.Level":
-            level = docutils_level - 1
-            level = min(level, cls.warning)
-            level = max(level, cls.info)
-            return cls(level)
-
-    severity: Level
-    message: str
-    start: Tuple[int, int]
-    end: Tuple[int, int]
-
-    @property
-    def severity_string(self) -> str:
-        return self.severity.name.title()
-
-    @classmethod
-    def create(
-        cls,
-        severity: Level,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        if isinstance(start, int):
-            start_line, start_column = start, 0
-        else:
-            start_line, start_column = start
-
-        if end is None:
-            end_line, end_column = start_line, 1000
-        elif isinstance(end, int):
-            end_line, end_column = end, 1000
-        else:
-            end_line, end_column = end
-
-        return cls(
-            severity, message, (start_line, start_column), (end_line, end_column)
-        )
-
-    @classmethod
-    def info(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.info, message, start, end)
-
-    @classmethod
-    def warning(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.warning, message, start, end)
-
-    @classmethod
-    def error(
-        cls,
-        message: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> "Diagnostic":
-        return cls.create(cls.Level.error, message, start, end)
 
 
 @dataclass
@@ -198,12 +127,17 @@ class TargetDatabase:
         canonical_target_name: str
         title: Sequence[n.InlineNode]
 
+    class LocalDefinition(NamedTuple):
+        canonical_name: str
+        fileid: FileId
+        title: Sequence[n.InlineNode]
+
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
     )
-    local_definitions: DefaultDict[
-        str, List[Tuple[str, FileId, Sequence[n.InlineNode]]]
-    ] = field(default_factory=lambda: defaultdict(list))
+    local_definitions: DefaultDict[str, List[LocalDefinition]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
     def __contains__(self, key: str) -> bool:
         key = normalize_target(key)
@@ -264,7 +198,9 @@ class TargetDatabase:
         for target in targets:
             target = normalize_target(target)
             key = f"{domain}:{name}:{target}"
-            self.local_definitions[key].append((canonical_target_name, pageid, title))
+            self.local_definitions[key].append(
+                TargetDatabase.LocalDefinition(canonical_target_name, pageid, title)
+            )
 
     def reset(self, config: "ProjectConfig") -> None:
         """Reset this database to a "blank" state with intersphinx inventories defined by
@@ -275,6 +211,35 @@ class TargetDatabase:
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
         for url in config.intersphinx:
             self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+
+    def generate_inventory(self, base_url: str) -> intersphinx.Inventory:
+        targets: Dict[str, intersphinx.TargetDefinition] = {}
+        for key, definitions in self.local_definitions.items():
+            if not definitions:
+                continue
+
+            definition = definitions[0]
+            uri = definition.fileid.without_known_suffix + "/"
+            dispname = "".join(node.get_text() for node in definition.title)
+            domain, role_name, name = key.split(":", 3)
+
+            if not dispname:
+                dispname = name
+
+            base_uri = uri
+            if (domain, role_name) != ("std", "doc"):
+                base_uri += "#$"
+                uri = uri + "#" + make_id(name)
+
+            targets[key] = intersphinx.TargetDefinition(
+                definition.canonical_name,
+                (domain, role_name),
+                -1,
+                base_uri,
+                uri,
+                dispname,
+            )
+        return intersphinx.Inventory(base_url, targets)
 
     @classmethod
     def load(cls, config: "ProjectConfig") -> "TargetDatabase":
@@ -352,10 +317,6 @@ class PendingTask:
     ) -> None:
         """Perform an action in the main process once the tree has been built."""
         pass
-
-    def error(self, message: str) -> Diagnostic:
-        """Create an error diagnostic associated with this task's node."""
-        return Diagnostic.error(message, self.node.start[0])
 
 
 @dataclass
@@ -435,7 +396,7 @@ class ProjectConfig:
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:
         path = root
-        diagnostics = []
+        diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
                 with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
@@ -448,7 +409,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-                diagnostics.append(Diagnostic.error(str(err), 0))
+                diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
 
@@ -479,7 +440,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(Diagnostic.error("git merge conflict found", lineno))
+                diagnostics.append(GitMergeConflictArtifactFound(path, lineno))
 
         return (text, diagnostics)
 
@@ -495,11 +456,7 @@ class ProjectConfig:
                 return str(self.constants[variable_name])
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
-                diagnostics.append(
-                    Diagnostic.error(
-                        f"{variable_name} not defined as a source constant", lineno
-                    )
-                )
+                diagnostics.append(ConstantNotDeclared(variable_name, lineno))
 
             # Return a zero-width space to avoid breaking syntax
             return "\u200b"

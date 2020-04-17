@@ -1,7 +1,8 @@
 from pathlib import Path, PurePath
 from typing import Dict, Tuple, List, Optional
 from .steps import GizaStepsCategory
-from ..types import Diagnostic, Page, ProjectConfig
+from ..types import Page, ProjectConfig
+from ..diagnostics import Diagnostic
 from ..parser import EmbeddedRstParser
 from ..util_test import ast_to_testing_string, check_ast_testing_string
 
@@ -55,10 +56,7 @@ def test_step() -> None:
                 "following command to import the\n</text><reference ",
                 'refuri="https://www.mongodb.org/static/pgp/server-3.4.asc">',
                 "<text>MongoDB public GPG Key</text>",
-                """</reference><target domain="std" name="label" """,
-                'refuri="https://www.mongodb.org/static/pgp/server-3.4.asc">',
-                """<target_identifier ids="['mongodb-public-gpg-key']"></target_identifier>"""
-                "</target></paragraph></section></directive>",
+                "</reference></paragraph></section></directive>",
                 '<directive name="step">',
                 "<section>",
                 '<heading id="create-a-etc-apt-sources-list-d-mongodb-org-3-4-list-file-for-mongodb">',

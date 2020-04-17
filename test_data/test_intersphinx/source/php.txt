@@ -1,0 +1,142 @@
+.. _php-language-center:
+
+.. include:: /includes/unicode-checkmark.rst
+
+==================
+MongoDB PHP Driver
+==================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+The PHP driver consists of two components, the MongoDB `extension <https://github.com/mongodb/mongo-php-driver>`_
+and `library <https://docs.mongodb.com/php-library/current>`_.
+
+The extension provides a low-level API and mainly serves to integrate
+`libmongoc and libbson <https://docs.mongodb.com/drivers/c/>`_ with PHP.
+
+While it is possible to use the extension alone, users are strongly encouraged
+to use the extension and library together. The library provides a high-level API
+consistent with other MongoDB language drivers.
+
+- `Tutorials <https://docs.mongodb.com/php-library/current/tutorial>`__
+
+- `Extension Architecture and Internals <https://www.php.net/manual/en/mongodb.architecture.php>`__
+
+- Documentation
+
+  - `Library <https://docs.mongodb.com/php-library/current>`__
+
+  - `Extension <https://php.net/mongodb>`__
+
+- Changelog
+
+  - `Library <https://github.com/mongodb/mongo-php-library/releases>`__
+
+  - `Extension <https://github.com/mongodb/mongo-php-driver/releases>`__
+
+- Source Code
+
+  - `Library <https://github.com/mongodb/mongo-php-library>`__
+
+  - `Extension <https://github.com/mongodb/mongo-php-driver>`__
+
+
+Installation
+------------
+
+First, make sure you have a recent version of PHP installed on your
+system. See the
+`official PHP manual <https://www.php.net/manual/en/install.php>`_
+for download and installation instructions.
+
+Install the PHP MongoDB Extension before installing the PHP Library for
+MongoDB. You can install the extension using
+`PECL <https://www.php.net/manual/en/mongodb.installation.pecl.php>`_ on
+the command line:
+
+.. code-block:: sh
+
+   $ sudo pecl install mongodb
+
+Finally, add the following line to your ``php.ini`` file:
+
+.. code-block:: text
+
+   extension=mongodb.so
+
+.. note::
+
+   On some systems, there may be multiple INI files for individual SAPIs (e.g.
+   CLI, FPM). Make sure to enable the extension in all SAPIs that you need.
+
+The preferred method of installing the PHP library is with
+`Composer <https://getcomposer.org/>`_ by running the following from your project root:
+
+.. code-block:: sh
+
+   $ composer require mongodb/mongodb
+
+
+Additional installation instructions may be found in the
+`library documentation <https://docs.mongodb.com/php-library/current/tutorial/install-php-library/>`_.
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: php
+
+   <?php
+
+   $client = new MongoDB\Client(
+       'mongodb+srv://<username>:<password>@<cluster-address>/test?retryWrites=true&w=majority'
+   );
+
+   $db = $client->test;
+
+
+Compatibility
+-------------
+
+Due to potential problems representing 64-bit integers on 32-bit platforms,
+users are advised to use 64-bit environments. When using a 32-bit platform, be
+aware that any 64-bit integer read from the database will be returned as a
+`MongoDB\\BSON\\Int64 <https://www.php.net/manual/en/class.mongodb-bson-int64.php>`_
+instance instead of a PHP integer type.
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/php-driver-compatibility-matrix-mongodb.rst
+
+.. include:: /includes/php-mongodb-compatibility-table.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/language-compatibility-table-php.rst
+
+.. include:: /includes/help-links-php.rst
+
+See Also
+--------
+
+- :ref:`php-libraries-frameworks-and-tools`
+
+.. class:: hidden
+
+   .. toctree::
+      :titlesonly:
+
+      /php-libraries

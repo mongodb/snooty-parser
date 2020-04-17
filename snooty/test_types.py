@@ -1,5 +1,5 @@
 from pathlib import Path, PurePath
-from .types import Diagnostic, ProjectConfig, StaticAsset, Page, FileId
+from .types import ProjectConfig, StaticAsset, Page, FileId
 
 
 def test_project() -> None:
@@ -25,16 +25,6 @@ def test_project() -> None:
     assert project_config.title == "untitled"
     assert project_config.deprecated_versions == None
     assert len(project_diagnostics) == 0
-
-
-def test_diagnostics() -> None:
-    diag = Diagnostic.warning("foo", (0, 0), 10)
-    assert diag.severity_string == "Warning"
-    assert diag.start == (0, 0)
-    assert diag.end[0] == 10 and diag.end[1] > 100
-
-    diag = Diagnostic.warning("foo", (0, 0), (10, 0))
-    assert diag.end == (10, 0)
 
 
 def test_static_asset() -> None:

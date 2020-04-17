@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import List
 from . import language_server
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import Diagnostic, FileId, SerializableType
+from .diagnostics import InvalidTableStructure, DocUtilsParseError
+from .types import FileId, SerializableType
 from .flutter import checked, check_type
 
 CWD_URL = "file://" + Path().resolve().as_posix()
@@ -31,6 +32,7 @@ class LSPDiagnostic:
     message: str
     severity: int
     range: LSPRange
+    code: str
 
 
 def test_debounce() -> None:
@@ -58,16 +60,26 @@ def test_pid_exists() -> None:
 
 def test_workspace_entry() -> None:
     entry = language_server.WorkspaceEntry(
-        FileId(""), "", [Diagnostic.error("foo", 10), Diagnostic.warning("fo", 10, 12)]
+        FileId(""),
+        "",
+        [InvalidTableStructure("foo", 10), DocUtilsParseError("fo", 10, 12)],
     )
     parsed = [
         check_type(LSPDiagnostic, diag) for diag in entry.create_lsp_diagnostics()
     ]
+
     assert parsed[0] == LSPDiagnostic(
-        "foo", 1, LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000))
+        "foo",
+        1,
+        LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000)),
+        "InvalidTableStructure",
     )
+
     assert parsed[1] == LSPDiagnostic(
-        "fo", 2, LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000))
+        "fo",
+        2,
+        LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000)),
+        "DocUtilsParseError",
     )
 
 
@@ -149,7 +161,7 @@ def test_text_doc_get_page_ast() -> None:
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
             <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
-            <role name="doc" target="/cloud/atlas"><text>create one</text></role>
+            <ref_role domain="std" name="doc" fileid="/cloud/atlas"><text>create one</text></ref_role>
             <text> now.</text></paragraph></section></directive>
             <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>

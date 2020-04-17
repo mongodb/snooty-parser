@@ -1,0 +1,86 @@
+.. _cxx-language-center:
+
+.. include:: /includes/unicode-checkmark.rst
+
+==================
+MongoDB C++ Driver
+==================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+The MongoDB C++ Driver is the official client library for C++ applications
+using the C++11 (or later) standard.
+
+- `Tutorial <http://mongocxx.org/mongocxx-v3/tutorial/>`__
+
+- `Usage Guide <http://mongocxx.org/mongocxx-v3/>`__
+
+- `API Reference <http://mongocxx.org/api/current/>`_
+
+- `Changelog <https://github.com/mongodb/mongo-cxx-driver/releases>`__
+
+- `Source Code <https://github.com/mongodb/mongo-cxx-driver/>`__
+
+
+Installation
+------------
+
+See `Installing the mongocxx driver <http://mongocxx.org/mongocxx-v3/installation/>`__.
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: cpp
+
+   #include <mongocxx/client.hpp>
+   #include <mongocxx/instance.hpp>
+
+   //...
+
+   mongocxx::instance inst{}; // This should be done only once.
+   mongocxx::client conn{
+      mongocxx::uri{
+         "mongodb+srv://<username>:<password>@<cluster-url>/test?retryWrites=true&w=majority"
+      }
+   };
+   mongocxx::database db = conn["test"];
+
+
+
+Compatibility
+-------------
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. admonition:: Development
+   :class: important
+
+   `*` denotes a version in development.
+
+.. include:: /includes/extracts/cpp-driver-compatibility-matrix-mongodb.rst
+
+.. include:: /includes/mongodb-compatibility-table-cxx.rst
+
+.. include:: /includes/older-server-versions-unsupported.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/cpp-driver-compatibility-matrix-language.rst
+
+.. include:: /includes/language-compatibility-table-cxx.rst
+
+.. include:: /includes/help-links-cxx.rst

@@ -1,0 +1,78 @@
+.. _csharp-language-center:
+
+.. include:: /includes/unicode-checkmark.rst
+
+==========================
+MongoDB C#/.NET Driver
+==========================
+
+.. default-domain:: mongodb
+
+.. contents:: On this page
+   :local:
+   :backlinks: none
+   :depth: 1
+   :class: twocols
+
+Introduction
+------------
+
+The official MongoDB C#/.NET Driver provides asynchronous interaction
+with MongoDB.
+
+- `Getting Started <https://mongodb.github.io/mongo-csharp-driver/2.10/getting_started/>`_
+
+- `API Reference <https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/R_Project_CSharpDriverDocs.htm>`_
+
+- `Changelog <https://mongodb.github.io/mongo-csharp-driver/2.10/what_is_new/>`_
+
+- `Source Code <https://github.com/mongodb/mongo-csharp-driver>`_
+
+
+Installation
+------------
+
+``NuGet`` is the simplest way to get the driver. Use
+`MongoDB.Driver <http://www.nuget.org/packages/mongodb.driver>`_ for
+all new projects.
+
+For more information, see `Installation
+<https://mongodb.github.io/mongo-csharp-driver/2.10/getting_started/installation/>`_.
+
+
+Connect to MongoDB Atlas
+------------------------
+
+.. include:: /includes/atlas-connect-blurb.rst
+
+.. code-block:: csharp
+
+   using MongoDB.Bson;
+   using MongoDB.Driver;
+   // ...
+   var client = new MongoClient(
+       "mongodb+srv://<username>:<password>@<cluster-address>/test?w=majority"
+   );
+   var database = client.GetDatabase("test");
+
+
+See `Connecting <https://mongodb.github.io/mongo-csharp-driver/2.10/reference/driver/connecting/>`__
+for more information.
+
+
+Compatibility
+-------------
+
+MongoDB Compatibility
+~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/mongodb-compatibility-table-csharp.rst
+
+Language Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: /includes/extracts/csharp-driver-compatibility-matrix-language.rst
+
+.. include:: /includes/language-compatibility-table-csharp.rst
+
+.. include:: /includes/help-links-csharp.rst

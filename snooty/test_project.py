@@ -5,20 +5,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, DefaultDict, List
-from .types import (
-    FileId,
-    Page,
-    Diagnostic,
-    ProjectConfig,
-    SerializableType,
-    BuildIdentifierSet,
-)
+from .types import FileId, Page, ProjectConfig, SerializableType, BuildIdentifierSet
+from .diagnostics import Diagnostic, GitMergeConflictArtifactFound, ConstantNotDeclared
 from .parser import Project
 from .util import ast_dive
 from .util_test import check_ast_testing_string
 from . import n
 
-build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": None}
+build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
 
 
 @dataclass
@@ -140,6 +134,7 @@ def test() -> None:
             project._project.get_parsed_branches()
         )
         assert len(published_branch_diagnostics) == 0
+        assert project.config.title == "MongoDB title"
         assert published_branches and published_branches.serialize() == {
             "git": {"branches": {"manual": "master", "published": ["master", "v1.0"]}},
             "version": {
@@ -160,11 +155,11 @@ def test_merge_conflict() -> None:
     file_path = Path("test_data/merge_conflict/source/index.txt")
     _, project_diagnostics = project_config.read(file_path)
 
-    assert project_diagnostics[-1].message.startswith(
-        "git merge conflict"
+    assert isinstance(
+        project_diagnostics[-1], GitMergeConflictArtifactFound
     ) and project_diagnostics[-1].start == (68, 0)
-    assert project_diagnostics[-2].message.startswith(
-        "git merge conflict"
+    assert isinstance(
+        project_diagnostics[-2], GitMergeConflictArtifactFound
     ) and project_diagnostics[-2].start == (35, 0)
 
 
@@ -175,7 +170,7 @@ def test_bad_project() -> None:
     assert list(backend.diagnostics.keys()) == [fileid]
     diagnostics = backend.diagnostics[fileid]
     assert len(diagnostics) == 1
-    assert "source constant" in diagnostics[0].message
+    assert isinstance(diagnostics[0], ConstantNotDeclared)
 
 
 def test_not_a_project() -> None:

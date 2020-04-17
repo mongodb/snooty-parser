@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
 from .types import BuildIdentifierSet, FileId
+from .diagnostics import TargetNotFound, AmbiguousTarget
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string
@@ -14,7 +15,7 @@ ROOT_PATH = Path("test_data")
 @pytest.fixture(scope="module")
 def backend() -> Backend:
     backend = Backend()
-    build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": None}
+    build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
     with Project(
         Path("test_data/test_postprocessor"), backend, build_identifiers
     ) as project:
@@ -187,10 +188,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
     assert len(diagnostics) == 1
-    assert (
-        "Target" in diagnostics[0].message
-        and "global-writes-collections" in diagnostics[0].message
-    )
+    assert isinstance(diagnostics[0], TargetNotFound)
 
 
 def test_role_explicit_title(backend: Backend) -> None:
@@ -255,7 +253,7 @@ def test_toctree(backend: Backend) -> None:
                 ],
             },
         ],
-        "title": "untitled",
+        "title": "MongoDB title",
         "slug": "/",
     }
 
@@ -373,7 +371,7 @@ def test_program_option(backend: Backend) -> None:
     # Test roles
     diagnostics = backend.diagnostics[page_id]
     assert len(diagnostics) == 1, diagnostics
-    assert "Ambiguous" in diagnostics[0].message
+    assert isinstance(diagnostics[0], AmbiguousTarget)
 
     roles = section.children[7].children
     check_ast_testing_string(
@@ -415,6 +413,35 @@ def test_program_option(backend: Backend) -> None:
         <literal><text>a-program -v</text></literal>
         </ref_role>
     """,
+    )
+
+
+def test_doc_titles(backend: Backend) -> None:
+    doc_id = FileId("folder/doc.txt")
+    ast = backend.pages[doc_id].ast
+
+    # Test relative path
+    paragraph = ast.children[0]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="../page1"><text>Print this heading</text></ref_role><text>) should read "Print this heading".</text></paragraph>""",
+    )
+
+    # Test no heading in page
+    paragraph = ast.children[1]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="/page3"></ref_role><text>) has no heading.</text></paragraph>""",
+    )
+
+    # Test doc with title specified inline
+    paragraph = ast.children[2]
+    assert isinstance(paragraph, n.Paragraph)
+    check_ast_testing_string(
+        paragraph,
+        """<paragraph><text>This doc role (</text><ref_role domain="std" name="doc" fileid="/page2"><text>A Title</text></ref_role><text>) says "A Title" inline.</text></paragraph>""",
     )
 
 

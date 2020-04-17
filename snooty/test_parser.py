@@ -1,7 +1,14 @@
 from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import Diagnostic, ProjectConfig
+from .types import ProjectConfig
+from .diagnostics import (
+    Diagnostic,
+    InvalidURL,
+    DocUtilsParseError,
+    CannotOpenFile,
+    InvalidLiteralInclude,
+)
 from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
@@ -44,11 +51,7 @@ def test_tabs() -> None:
         </root>""",
     )
 
-    assert (
-        len(diagnostics) == 1
-        and diagnostics[0].message.startswith("Unexpected field")
-        and diagnostics[0].start[0] == 61
-    )
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
 
 def test_codeblock() -> None:
@@ -178,7 +181,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
 
     page, diagnostics = parse_rst(
         parser,
@@ -190,7 +193,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
 
     page, diagnostics = parse_rst(
         parser,
@@ -200,7 +203,7 @@ def test_literalinclude() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 1 and isinstance(diagnostics[0], CannotOpenFile)
 
 
 def test_include() -> None:
@@ -463,36 +466,36 @@ def test_doc_role() -> None:
         <list>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index">
+        <ref_role domain="std" name="doc" fileid="/index">
         <text>Testing this</text>
-        </role>
+        </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index">
+        <ref_role domain="std" name="doc" fileid="./../source/index">
         <text>Testing that</text>
-        </role>
+        </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="index"></role>
+        <ref_role domain="std" name="doc" fileid="index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index"></role>
+        <ref_role domain="std" name="doc" fileid="/index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="./../source/index"></role>
+        <ref_role domain="std" name="doc" fileid="./../source/index"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <role name="doc" target="/index/"></role>
+        <ref_role domain="std" name="doc" fileid="/index/"></ref_role>
         </paragraph>
         </listItem>
         </list>
@@ -1025,6 +1028,8 @@ def test_toctree() -> None:
 """,
     )
     page.finish(diagnostics)
+
+    # MESSAGE need to create a toctree diagnostic
     assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
     check_ast_testing_string(
         page.ast,
@@ -1094,7 +1099,9 @@ def test_no_weird_targets() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 2
-    assert all("Links" in diag.message for diag in diagnostics)
+    assert isinstance(diagnostics[0], InvalidURL) and isinstance(
+        diagnostics[1], InvalidURL
+    )
 
 
 def test_dates() -> None:

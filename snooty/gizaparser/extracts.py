@@ -4,7 +4,8 @@ from typing import Callable, List, Tuple, Sequence, Optional
 from ..flutter import checked
 from .nodes import Inheritable, GizaCategory, HeadingMixin
 from .parse import parse
-from ..types import Diagnostic, EmbeddedRstParser, Page
+from ..types import EmbeddedRstParser, Page
+from ..diagnostics import Diagnostic, MissingRef
 from .. import n
 
 
@@ -42,11 +43,7 @@ class GizaExtractsCategory(GizaCategory[Extract]):
         extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
 
         def report_missing_ref(extract: Extract) -> bool:
-            diagnostics.append(
-                Diagnostic.error(
-                    "Missing ref; all extracts must define a ref", extract.line
-                )
-            )
+            diagnostics.append(MissingRef("extracts", extract.line))
             return False
 
         # All extracts must have an explicitly-defined ref ID
