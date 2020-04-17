@@ -15,15 +15,17 @@ from typing import (
     MutableSequence,
 )
 from .eventparser import EventParser
-from .types import (
+from .types import FileId, Page, ProjectConfig, SerializableType, TargetDatabase
+from .diagnostics import (
     Diagnostic,
-    FileId,
-    Page,
-    ProjectConfig,
-    SerializableType,
-    TargetDatabase,
+    MissingOption,
+    TargetNotFound,
+    AmbiguousTarget,
+    SubstitutionRefError,
+    ExpectedPathArg,
+    UnnamedPage,
 )
-from . import n
+from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -86,9 +88,7 @@ class ProgramOptionHandler:
         elif identifier == "std:option":
             if not self.pending_program:
                 line = node.start[0]
-                self.diagnostics[filename].append(
-                    Diagnostic.error("'.. option::' must follow '.. program::'", line)
-                )
+                self.diagnostics[filename].append(MissingOption(line))
                 return
             program_target = next(
                 self.pending_program.get_child_of_type(n.TargetIdentifier)
@@ -206,6 +206,25 @@ class Postprocessor:
     def reset_program(self, filename: FileId, page: Page) -> None:
         self.pending_program = None
 
+    def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
+        if not isinstance(node.fileid, str):
+            line = node.span[0]
+            self.diagnostics[filename].append(ExpectedPathArg(node.name, line))
+            return
+
+        relative, _ = util.reroot_path(
+            FileId(node.fileid), filename, self.project_config.source_path
+        )
+        slug = clean_slug(relative.as_posix())
+        title = self.slug_title_mapping.get(slug)
+
+        if not title:
+            line = node.span[0]
+            self.diagnostics[filename].append(UnnamedPage(node.fileid, line))
+            return
+
+        node.children = [deepcopy(node) for node in title]
+
     def handle_refs(self, filename: FileId, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
 
@@ -213,22 +232,29 @@ class Postprocessor:
         """
         if not isinstance(node, n.RefRole):
             return
+        key = f"{node.domain}:{node.name}"
 
-        key = f"{node.domain}:{node.name}:{node.target}"
+        if key == "std:doc":
+            if not node.children:
+                # If title is not explicitly given, search slug-title mapping for the page's title
+                self._attach_doc_title(filename, node)
+            return
+
+        key += f":{node.target}"
 
         # Add title and link target to AST
         target_candidates = self.targets[key]
         if not target_candidates:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f'Target not found: "{node.name}:{node.target}"', line)
+                TargetNotFound(node.name, node.target, line)
             )
             return
 
         if len(target_candidates) > 1:
             line = node.span[0]
             self.diagnostics[filename].append(
-                Diagnostic.error(f'Ambiguous target: "{node.name}:{node.target}"', line)
+                AmbiguousTarget(node.name, node.target, line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
@@ -261,6 +287,7 @@ class Postprocessor:
         When a substitution is referenced, populate its children if possible.
         If not, save this node to be populated at the end of the page.
         """
+
         try:
             line = node.span[0]
             if isinstance(node, n.SubstitutionDefinition):
@@ -280,7 +307,7 @@ class Postprocessor:
                     del self.substitution_definitions[node.name]
                     node.children = []
                     self.diagnostics[filename].append(
-                        Diagnostic.error(
+                        SubstitutionRefError(
                             f'Circular substitution definition referenced: "{node.name}"',
                             line,
                         )
@@ -309,7 +336,7 @@ class Postprocessor:
                 node.children = substitution
             else:
                 self.diagnostics[filename].append(
-                    Diagnostic.error(
+                    SubstitutionRefError(
                         f'Substitution reference could not be replaced: "|{node.name}|"',
                         line,
                     )
@@ -392,7 +419,13 @@ class Postprocessor:
 
         # Save the first heading we encounter to the slug title mapping
         if slug not in self.slug_title_mapping and isinstance(node, n.Heading):
+            self.targets.define_local_target(
+                "std", "doc", (slug,), filename, node.children
+            )
             self.slug_title_mapping[slug] = node.children
+            self.targets.define_local_target(
+                "std", "doc", (filename.without_known_suffix,), filename, node.children
+            )
 
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name

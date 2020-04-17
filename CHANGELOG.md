@@ -9,8 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `spec` role.
 - Support for deprecated versions (DOP-908).
+
+## [v0.4.3] - 2020-04-15
+
+### Added
+
+- Added `spec` role.
+- Added support for various roles & directive options.
+- Added support for passing a patch ID into the build identifier (DOP-948).
+- The `std:doc` role now emits `RefRole` nodes rather than `Role`, and titles are now
+  resolved in the parser (DOP-954).
+
+### Changed
+
+- Diagnostic refactoring (DOP-878).
+- The `doc` role is now in the `std` domain.
 
 ## [v0.4.2] - 2020-04-03
 

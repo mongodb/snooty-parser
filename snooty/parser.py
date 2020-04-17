@@ -4,6 +4,7 @@ import docutils.nodes
 import logging
 import multiprocessing
 import os
+import errno
 import pwd
 import subprocess
 import threading
@@ -25,7 +26,6 @@ from .gizaparser.published_branches import PublishedBranches
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .types import (
-    Diagnostic,
     SerializableType,
     Page,
     StaticAsset,
@@ -36,6 +36,22 @@ from .types import (
     Cache,
     TargetDatabase,
     BuildIdentifierSet,
+)
+from .diagnostics import (
+    Diagnostic,
+    OptionsNotSupported,
+    UnexpectedIndentation,
+    ExpectedPathArg,
+    ExpectedImageArg,
+    ImageSuggested,
+    TodoInfo,
+    DocUtilsParseError,
+    CannotOpenFile,
+    InvalidURL,
+    InvalidLiteralInclude,
+    InvalidTableStructure,
+    UnmarshallingError,
+    ErrorParsingYAMLFile,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -74,7 +90,7 @@ class PendingLiteralInclude(PendingTask):
             text = self.asset.path.read_text(encoding="utf-8")
         except OSError as err:
             diagnostics.append(
-                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
             )
             return
 
@@ -90,7 +106,10 @@ class PendingLiteralInclude(PendingTask):
             )
             if start_after < 0:
                 diagnostics.append(
-                    self.error(f'"{start_after_text}" not found in {self.asset.path}')
+                    InvalidLiteralInclude(
+                        f'"{start_after_text}" not found in {self.asset.path}',
+                        self.node.start[0],
+                    )
                 )
                 return
 
@@ -108,7 +127,10 @@ class PendingLiteralInclude(PendingTask):
             )
             if end_before < 0:
                 diagnostics.append(
-                    self.error(f'"{end_before_text}" not found in {self.asset.path}')
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" not found in {self.asset.path}',
+                        self.node.start[0],
+                    )
                 )
                 return
             end_before -= start_after
@@ -170,7 +192,7 @@ class PendingFigure(PendingTask):
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
-                self.error(f"Error opening {self.asset.fileid}: {err.strerror}")
+                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
             )
 
 
@@ -199,9 +221,7 @@ class JSONVisitor:
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
                 msg = node[0].astext()
-                self.diagnostics.append(
-                    Diagnostic.create(level, msg, util.get_line(node))
-                )
+                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
             raise docutils.nodes.SkipNode()
         elif isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
@@ -216,7 +236,7 @@ class JSONVisitor:
                 top.options[key] = value
             else:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    OptionsNotSupported(
                         "Options not supported here", util.get_line(node.children[0])
                     )
                 )
@@ -237,7 +257,7 @@ class JSONVisitor:
             # We are uninterested in docutils blockquotes: they're too easy to accidentally
             # invoke. Treat them as an error.
             self.diagnostics.append(
-                Diagnostic.error(
+                UnexpectedIndentation(
                     "Unexpected indentation", util.get_line(node.children[0])
                 )
             )
@@ -275,29 +295,33 @@ class JSONVisitor:
             role_name = node["name"]
             target = node["target"] if "target" in node else ""
             flag = node["flag"] if "flag" in node else ""
-            role = n.Role((line,), [], node["domain"], role_name, target, flag)
-            self.state.append(role)
 
             if role_name == "doc":
                 self.validate_doc_role(node)
+                role = n.RefRole(
+                    (line,), [], node["domain"], role_name, "", flag, target, None
+                )
+                self.state.append(role)
+                return
+
+            role = n.Role((line,), [], node["domain"], role_name, target, flag)
+            self.state.append(role)
             return
         elif isinstance(node, docutils.nodes.target):
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
+            if "refuri" in node:
+                raise docutils.nodes.SkipNode()
+
             if not node["ids"]:
-                self.diagnostics.append(
-                    Diagnostic.error(
-                        "Links must provide a valid URL", util.get_line(node)
-                    )
-                )
+                self.diagnostics.append(InvalidURL(util.get_line(node)))
                 # Remove the malformed node so it doesn't cause problems down the road
                 self.state.pop()
                 raise docutils.nodes.SkipNode()
 
             node_id = node["ids"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
-
             refuri = node["refuri"] if "refuri" in node else None
             self.state.append(n.Target((line,), children, "std", "label", refuri))
         elif isinstance(node, rstparser.target_identifier):
@@ -428,26 +452,21 @@ class JSONVisitor:
             todo_text = ["TODO"]
             if argument_text:
                 todo_text.extend([": ", argument_text])
-            self.diagnostics.append(
-                Diagnostic.info("".join(todo_text), util.get_line(node))
-            )
+            TodoInfo("".join(todo_text), util.get_line(node))
             return None
 
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
-                self.diagnostics.append(
-                    Diagnostic.error(
-                        f'"{name}" expected a path argument', util.get_line(node)
-                    )
-                )
+                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
                 return doc
 
             try:
                 static_asset = self.add_static_asset(Path(argument_text), upload=True)
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
-                msg = f'"{name}" could not open "{argument_text}": {os.strerror(err.errno)}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                )
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -463,9 +482,7 @@ class JSONVisitor:
 
         elif name == "literalinclude":
             if argument_text is None:
-                self.diagnostics.append(
-                    Diagnostic.error('"literalinclude" expected a path argument', line)
-                )
+                self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             asset_path = Path(argument_text)
@@ -480,21 +497,16 @@ class JSONVisitor:
                 static_asset = self.add_static_asset(asset_path, False)
                 self.pending.append(PendingLiteralInclude(code, static_asset, options))
             except OSError as err:
-                msg = '"literalinclude" could not open "{}": {}'.format(
-                    argument_text, os.strerror(err.errno)
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
                 )
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
             except ValueError as err:
                 msg = f'Invalid "literalinclude": {err}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node)))
             return code
         elif name == "include":
             if argument_text is None:
-                self.diagnostics.append(
-                    Diagnostic.error(
-                        f'"{name}" expected a path argument', util.get_line(node)
-                    )
-                )
+                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
                 return doc
 
             fileid, path = util.reroot_path(
@@ -515,14 +527,19 @@ class JSONVisitor:
                 ):
                     pass
                 else:
-                    msg = f'"{name}" could not open "{argument_text}": No such file exists'
-                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            argument_text,
+                            os.strerror(errno.ENOENT),
+                            util.get_line(node),
+                        )
+                    )
         elif name == "cardgroup-card":
             image_argument = options.get("image", None)
 
             if image_argument is None:
                 self.diagnostics.append(
-                    Diagnostic.error(
+                    ExpectedImageArg(
                         f'"{name}" expected an image argument', util.get_line(node)
                     )
                 )
@@ -532,8 +549,9 @@ class JSONVisitor:
                 static_asset = self.add_static_asset(Path(image_argument), upload=True)
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
-                msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                self.diagnostics.append(
+                    CannotOpenFile(image_argument, err.strerror, util.get_line(node))
+                )
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -543,11 +561,7 @@ class JSONVisitor:
 
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
-                self.diagnostics.append(
-                    Diagnostic.warning(
-                        f'"{name}" expected an image argument', util.get_line(node)
-                    )
-                )
+                self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
             else:
                 try:
                     static_asset = self.add_static_asset(
@@ -555,8 +569,11 @@ class JSONVisitor:
                     )
                     self.pending.append(PendingFigure(doc, static_asset))
                 except OSError as err:
-                    msg = f'"{name}" could not open "{image_argument}": {os.strerror(err.errno)}'
-                    self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            image_argument, err.strerror, util.get_line(node)
+                        )
+                    )
 
         return doc
 
@@ -567,8 +584,11 @@ class JSONVisitor:
         )
 
         if not resolved_target_path.is_file():
-            msg = f'"{node["name"]}" could not open "{resolved_target_path}": No such file exists'
-            self.diagnostics.append(Diagnostic.error(msg, util.get_line(node)))
+            self.diagnostics.append(
+                CannotOpenFile(
+                    resolved_target_path, os.strerror(errno.ENOENT), util.get_line(node)
+                )
+            )
 
     def validate_list_table(
         self, node: docutils.nodes.Node, expected_num_columns: int
@@ -582,7 +602,7 @@ class JSONVisitor:
                 f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             self.diagnostics.append(
-                Diagnostic.error(msg, util.get_line(node) + len(node.children) - 1)
+                InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
             )
             return
 
@@ -792,21 +812,17 @@ class _Project:
                     return result, []
                 except LoadError as err:
                     line: int = getattr(err.bad_data, "_start_line", 0) + 1
-                    error_node: Diagnostic = Diagnostic.error(
-                        f"Error loading file: {err}", line
-                    )
+                    error_node: Diagnostic = UnmarshallingError(str(err), line)
                     return None, [error_node]
         except FileNotFoundError:
             pass
         except LoadError as err:
             load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
-            load_error_node: Diagnostic = Diagnostic.error(
-                f"Error loading file: {err}", load_error_line
-            )
+            load_error_node: Diagnostic = UnmarshallingError(str(err), load_error_line)
             return None, [load_error_node]
         except yaml.error.MarkedYAMLError as err:
-            yaml_error_node: Diagnostic = Diagnostic.error(
-                f"Error parsing YAML: {err}", err.problem_mark.line
+            yaml_error_node: Diagnostic = ErrorParsingYAMLFile(
+                path, str(err), err.problem_mark.line
             )
             return None, [yaml_error_node]
         return None, []
@@ -960,10 +976,18 @@ class _Project:
         with util.PerformanceLogger.singleton().start("postprocessing"):
             post_metadata, post_diagnostics = self.postprocessor.run(self.pages)
 
+        static_files = {
+            "objects.inv": self.targets.generate_inventory("").dumps(
+                self.config.name, ""
+            )
+        }
+        post_metadata["static_files"] = static_files
+
         for fileid, page in self.postprocessor.pages.items():
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
         for fileid, diagnostics in post_diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
+
         self.backend.on_update_metadata(
             self.prefix, self.build_identifiers, post_metadata
         )

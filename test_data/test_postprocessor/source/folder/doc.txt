@@ -1,0 +1,5 @@
+This doc role (:doc:`../page1`) should read "Print this heading".
+
+This doc role (:doc:`/page3`) has no heading.
+
+This doc role (:doc:`A Title </page2>`) says "A Title" inline.

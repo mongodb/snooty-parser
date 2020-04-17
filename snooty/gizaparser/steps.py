@@ -5,7 +5,8 @@ from ..flutter import checked
 from .. import n
 from .parse import parse
 from .nodes import Inheritable, GizaCategory, HeadingMixin
-from ..types import Diagnostic, EmbeddedRstParser, Page
+from ..types import EmbeddedRstParser, Page
+from ..diagnostics import Diagnostic
 
 
 @checked

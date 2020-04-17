@@ -12,12 +12,12 @@ from dataclasses import dataclass, field
 from email.utils import formatdate
 from time import mktime
 from pathlib import Path
-from typing import Dict, Tuple, NamedTuple, Optional
+from typing import Dict, List, Tuple, NamedTuple, Optional
 import requests
 
 __all__ = ("TargetDefinition", "Inventory")
 DEFAULT_CACHE_DIR = Path.home().joinpath(".cache", "snooty")
-INVENTORY_PATTERN = re.compile(r"(?x)(.+?)\s+(\S*:\S*)\s+(-?\d+)\s+(\S+)\s+(.*)")
+INVENTORY_PATTERN = re.compile(r"(?x)(.+?)\s+(\S*:\S*)\s+(-?\d+)\s(\S*)\s+(.*)")
 logger = logging.Logger(__name__)
 
 
@@ -27,6 +27,7 @@ class TargetDefinition(NamedTuple):
     name: str
     role: Tuple[str, str]
     priority: int
+    uri_base: str
     uri: str
     display_name: str
 
@@ -47,6 +48,42 @@ class Inventory:
     def __getitem__(self, target: str) -> TargetDefinition:
         return self.targets[target]
 
+    def dumps(self, name: str, version: str) -> bytes:
+        """Serialize this inventory in the Intersphinx inventory format, and
+           return the resulting bytes."""
+        # Newlines break the (fragile) format; let's just be safe and make sure we're not smuggling any in.
+        if "\n" in name:
+            raise ValueError(name)
+        if "\n" in version:
+            raise ValueError(version)
+
+        buffer: List[bytes] = [
+            bytes(
+                f"# Sphinx inventory version 2\n# Project: {name}\n# Version: {version}\n# The remainder of this file is compressed using zlib.\n",
+                "utf-8",
+            )
+        ]
+
+        lines: List[str] = []
+        for target in self.targets.values():
+            lines.append(
+                " ".join(
+                    (
+                        target.name,
+                        ":".join(target.role),
+                        str(target.priority),
+                        target.uri_base,
+                        "-"
+                        if target.name == target.display_name
+                        else target.display_name,
+                    )
+                )
+            )
+
+        buffer.append(zlib.compress(bytes("\n".join(lines), "utf-8"), 9))
+
+        return b"".join(buffer)
+
     @classmethod
     def parse(cls, base_url: str, text: bytes) -> "Inventory":
         """Parse an intersphinx inventory from the given URL prefix and raw inventory contents."""
@@ -63,7 +100,7 @@ class Inventory:
 
             match = INVENTORY_PATTERN.match(line.rstrip())
             if match is None:
-                logger.debug(f"Invalid intersphinx line: {line}")
+                logger.info(f"Invalid intersphinx line: {line}")
                 continue
 
             name, domain_and_role, raw_priority, uri, dispname = match.groups()
@@ -72,6 +109,7 @@ class Inventory:
             if domain_and_role == "std:cmdoption":
                 domain_and_role = "std:option"
 
+            uri_base = uri
             if uri.endswith("$"):
                 uri = uri[:-1] + name
 
@@ -90,7 +128,7 @@ class Inventory:
                 dispname = name
 
             target_definition = TargetDefinition(
-                name, (domain, role), priority, uri, dispname
+                name, (domain, role), priority, uri_base, uri, dispname
             )
             inventory.targets[f"{domain_and_role}:{name}".lower()] = target_definition
 

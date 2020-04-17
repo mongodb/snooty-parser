@@ -25,7 +25,8 @@ from docopt import docopt
 from . import language_server
 from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS
-from .types import Page, Diagnostic, FileId, SerializableType, BuildIdentifierSet
+from .types import Page, FileId, SerializableType, BuildIdentifierSet
+from .diagnostics import Diagnostic
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
@@ -232,7 +233,6 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     identifiers = {}
 
     identifiers["commit_hash"] = args["--commit"]
-    identifiers["patch_id"] = args["--patch"]
 
     return identifiers
 

@@ -40,6 +40,8 @@ example = """.. list-table::
 """
 content_type = "list_table"
 argument_type = "string"
+options.align = "alignment"
+options.width = "string"
 options.widths = "string"
 options.class = "string"
 options.header-rows = "nonnegative_integer"
@@ -673,7 +675,7 @@ type = {link = "https://en.wikipedia.org/wiki/%s"}
 help = """Link to a URL in the current project."""
 type = "explicit_title"
 
-[role.doc]
+[role."std:doc"]
 help = """Link to a page in the current project."""
 type = "explicit_title"
 
@@ -774,7 +776,7 @@ type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9/scaladoc/org/mon
 
 [role.csharp-docs]
 help = """Link to a page in the C# driver's documentation."""
-type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/reference/%s"}
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/%s"}
 
 [role.csharp-api]
 help = """Link to a page in the C# driver's API reference."""

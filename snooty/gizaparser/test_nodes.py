@@ -3,7 +3,8 @@ from pathlib import Path, PurePath
 from typing import List, Optional, Dict
 from . import nodes
 from .release import GizaReleaseSpecificationCategory
-from ..types import Diagnostic, ProjectConfig
+from ..types import ProjectConfig
+from ..diagnostics import Diagnostic
 
 
 @dataclass

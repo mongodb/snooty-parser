@@ -1,5 +1,7 @@
 import dataclasses
 import logging
+import os
+import errno
 import re
 import docutils.nodes
 import networkx
@@ -22,7 +24,14 @@ from typing import (
     Set,
 )
 from ..flutter import checked
-from ..types import Diagnostic, Page, EmbeddedRstParser, ProjectConfig
+from ..types import Page, EmbeddedRstParser, ProjectConfig
+from ..diagnostics import (
+    Diagnostic,
+    UnknownSubstitution,
+    FailedToInheritRef,
+    CannotOpenFile,
+    RefAlreadyExists,
+)
 from .. import n
 
 _T = TypeVar("_T", str, object)
@@ -42,7 +51,7 @@ def substitute_text(
             return replacements[match.group(1)]
         except KeyError:
             diagnostics.append(
-                Diagnostic.warning(
+                UnknownSubstitution(
                     f'Unknown substitution: "{match.group(1)}". '
                     + "You may intend this substitution to be empty",
                     1,
@@ -216,8 +225,9 @@ class GizaCategory(Generic[_I]):
                 parent_sequence = self.nodes[parent_identifier.file].data
             except KeyError:
                 diagnostics.append(
-                    Diagnostic.error(
-                        f'No such file "{parent_identifier.file}"',
+                    CannotOpenFile(
+                        Path(parent_identifier.file),
+                        os.strerror(errno.ENOENT),
                         parent_identifier.line,
                     )
                 )
@@ -235,7 +245,7 @@ class GizaCategory(Generic[_I]):
                 parent = _parent
             except StopIteration:
                 diagnostics.append(
-                    Diagnostic.error(f"Failed to inherit {obj.ref}", obj.line)
+                    FailedToInheritRef(f"Failed to inherit {obj.ref}", obj.line)
                 )
                 logger.debug("Inheritance failed: %s", obj.ref)
                 return obj
@@ -248,7 +258,7 @@ class GizaCategory(Generic[_I]):
         # Check if ref already exists within the same file
         if obj.ref in refs_set:
             msg = f"ref {obj.ref} already exists"
-            diagnostics.append(Diagnostic.error(msg, obj.line))
+            diagnostics.append(RefAlreadyExists(msg, obj.line))
         elif obj.ref is not None:
             refs_set.add(obj.ref)
 

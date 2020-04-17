@@ -1,7 +1,8 @@
 from pathlib import Path, PurePath
 from typing import Dict, Tuple, List, Optional
 from .release import GizaReleaseSpecificationCategory
-from ..types import Diagnostic, Page, ProjectConfig
+from ..types import Page, ProjectConfig
+from ..diagnostics import Diagnostic
 from ..parser import EmbeddedRstParser
 from ..util_test import check_ast_testing_string
 

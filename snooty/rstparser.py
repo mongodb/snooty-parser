@@ -32,7 +32,8 @@ from typing import (
 from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
-from .types import Diagnostic, ProjectConfig
+from .types import ProjectConfig
+from .diagnostics import Diagnostic
 from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
