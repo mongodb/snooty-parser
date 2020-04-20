@@ -49,6 +49,8 @@ options.stub-columns = "nonnegative_integer"
 
 [directive."ecosystem:landing-page-tiles"]
 
+[directive."landing:deprecated-version-selector"]
+
 [directive.admonition]
 content_type = "block"
 argument_type = "string"
@@ -541,7 +543,6 @@ options.url = "uri"
 options.title = "string"
 options.image = ["path", "uri"]
 options.type = "string"
-
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"

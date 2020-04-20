@@ -377,6 +377,7 @@ class ProjectConfig:
     title: str = field(default="untitled")
     source: str = field(default="source")
     constants: Dict[str, object] = field(default_factory=dict)
+    deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.

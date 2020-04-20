@@ -173,6 +173,13 @@ def test_bad_project() -> None:
     assert isinstance(diagnostics[0], ConstantNotDeclared)
 
 
+def test_missing_deprecated_versions() -> None:
+    backend = Backend()
+    project = Project(Path("test_data/test_project"), backend, build_identifiers)
+    project.build()
+    assert "deprecated_versions" not in backend.metadata
+
+
 def test_not_a_project() -> None:
     backend = Backend()
     project = Project(Path("test_data/not_a_project"), backend, build_identifiers)

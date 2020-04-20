@@ -170,6 +170,8 @@ class Postprocessor:
     def generate_metadata(self) -> n.SerializedNode:
         document: Dict[str, SerializableType] = {}
         document["title"] = self.project_config.title
+        if self.project_config.deprecated_versions:
+            document["deprecated_versions"] = self.project_config.deprecated_versions
         # Update metadata document with key-value pairs defined in event parser
         document["slugToTitle"] = {
             k: [node.serialize() for node in v]

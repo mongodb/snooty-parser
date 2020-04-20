@@ -40,6 +40,13 @@ def test_slug_title_mapping(backend: Backend) -> None:
     assert slugToTitle["page4"][0]["value"] == "Skip includes"
 
 
+def test_deprecated_versions(backend: Backend) -> None:
+    assert backend.metadata["deprecated_versions"] == {
+        "manual": ["v2.2", "v2.4", "v2.6", "v3.0", "v3.2", "v3.4"],
+        "mms": ["v1.1", "v1.2", "v1.3"],
+    }
+
+
 def test_expand_includes(backend: Backend) -> None:
     page4_id = FileId("page4.txt")
     ast = backend.pages[page4_id].ast
