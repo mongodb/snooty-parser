@@ -29,9 +29,11 @@ def ast_to_testing_string(ast: Any) -> str:
     attr_pairs = [
         (k, v)
         for k, v in ast.items()
-        if k not in ("argument", "value", "children", "type", "position", "options")
+        if k
+        not in ("argument", "term", "value", "children", "type", "position", "options")
         and v
     ]
+
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
     attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
     contents = (
@@ -47,6 +49,15 @@ def ast_to_testing_string(ast: Any) -> str:
         contents = (
             "".join(ast_to_testing_string(part) for part in ast["argument"]) + contents
         )
+
+    if "term" in ast:
+        contents = (
+            "<term>"
+            + "".join(ast_to_testing_string(part) for part in ast["term"])
+            + "</term>"
+            + contents
+        )
+
     return "<{}{}>{}</{}>".format(
         ast["type"], " " + attrs if attrs else "", contents, ast["type"]
     )

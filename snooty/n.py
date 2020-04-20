@@ -203,7 +203,12 @@ class Heading(Parent[InlineNode]):
 class DefinitionListItem(Parent[Node]):
     __slots__ = ("term",)
     type = "definitionListItem"
-    term: List[InlineNode]
+    term: MutableSequence[InlineNode]
+
+    def verify(self) -> None:
+        super().verify()
+        for part in self.term:
+            part.verify()
 
 
 @dataclass
