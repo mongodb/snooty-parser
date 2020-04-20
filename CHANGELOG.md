@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for deprecated versions (DOP-908).
 
+### Fixed
+
+- Definition list AST format.
+
 ## [v0.4.3] - 2020-04-15
 
 ### Added

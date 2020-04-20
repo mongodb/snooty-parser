@@ -62,6 +62,19 @@ NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class _DefinitionListTerm(n.InlineParent):
+    """A private node used for internal book-keeping that should not be exported to the AST."""
+
+    __slots__ = ()
+    type = "definition_list_term"
+
+    def verify(self) -> None:
+        assert (
+            False
+        ), f"{self.__class__.__name__} is private and should have been removed from AST"
+
+
 class PendingLiteralInclude(PendingTask):
     """Transform a literal-include directive AST node into a code node."""
 
@@ -374,7 +387,7 @@ class JSONVisitor:
         elif isinstance(node, rstparser.directive_argument):
             self.state.append(n.DirectiveArgument((line,), []))
         elif isinstance(node, docutils.nodes.term):
-            self.state.append(n.RefRole((line,), [], "std", "term", "", "", None, None))
+            self.state.append(_DefinitionListTerm((line,), []))
         elif isinstance(node, docutils.nodes.line_block):
             self.state.append(n.LineBlock((line,), []))
         elif isinstance(node, docutils.nodes.line):
@@ -398,6 +411,14 @@ class JSONVisitor:
         popped = self.state.pop()
 
         top_of_state = self.state[-1]
+
+        if isinstance(popped, _DefinitionListTerm):
+            assert isinstance(
+                top_of_state, n.DefinitionListItem
+            ), "Definition list terms must be children of definition list items"
+            top_of_state.term = popped.children
+            return
+
         if not isinstance(top_of_state, NO_CHILDREN):
             if isinstance(top_of_state, n.Parent):
                 top_of_state.children.append(popped)

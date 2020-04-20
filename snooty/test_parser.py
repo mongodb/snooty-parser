@@ -1149,3 +1149,40 @@ def test_problematic() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
+
+
+def test_definition_list() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+A term
+  A definition for this term.
+
+``Another term``
+  A definition for *THIS* term.""",
+    )
+
+    assert not diagnostics
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <definitionList>
+        <definitionListItem>
+            <term><text>A term</text></term>
+            <paragraph><text>A definition for this term.</text></paragraph>
+        </definitionListItem>
+        <definitionListItem>
+            <term><literal><text>Another term</text></literal></term>
+            <paragraph><text>A definition for </text><emphasis><text>THIS</text></emphasis><text> term.</text></paragraph>
+        </definitionListItem>
+    </definitionList>
+</root>
+""",
+    )

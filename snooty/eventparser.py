@@ -62,6 +62,10 @@ class EventParser(EventListeners):
     def _iterate(self, d: n.Node, filename: FileId) -> None:
         self._on_object_enter_event(d, filename)
         if isinstance(d, n.Parent):
+            if isinstance(d, n.DefinitionListItem):
+                for child in d.term:
+                    self._iterate(child, filename)
+
             for child in d.children:
                 self._iterate(child, filename)
         self._on_object_exit_event(d, filename)
