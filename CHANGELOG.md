@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.4] - 2020-04-21
+
 ### Added
 
 - Support for deprecated versions (DOP-908).
