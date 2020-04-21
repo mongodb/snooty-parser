@@ -666,6 +666,7 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         copyable = "copyable" not in self.options or self.options["copyable"] == "true"
+        linenos = "linenos" in self.options
 
         try:
             n_lines = len(self.content)
@@ -683,6 +684,7 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
             node["lang"] = self.arguments[0]
         node["copyable"] = copyable
         node["emphasize_lines"] = emphasize_lines
+        node["linenos"] = linenos
         node.document = self.state.document
         node.source, node.line = source, line
         return [node]

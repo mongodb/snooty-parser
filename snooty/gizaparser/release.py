@@ -31,6 +31,7 @@ class ReleaseSpecification(Inheritable):
                     True if self.copyable is None else self.copyable,
                     None,
                     self.code,
+                    False,
                 )
             )
         return children
