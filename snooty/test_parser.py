@@ -87,6 +87,7 @@ def test_codeblock() -> None:
 .. code-block:: sh
    :copyable: false
    :emphasize-lines: 1, 2-3
+   :linenos:
 
    foo
    bar
@@ -97,7 +98,7 @@ def test_codeblock() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]">foo\nbar\nbaz</code>
+        <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]" linenos="True">foo\nbar\nbaz</code>
         </root>""",
     )
 
@@ -147,6 +148,7 @@ def test_literalinclude() -> None:
    :dedent:
    :start-after: Start Example 3
    :end-before: End Example 3
+   :linenos:
 """,
     )
     page.finish(diagnostics)
@@ -154,7 +156,7 @@ def test_literalinclude() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-<code lang="py">db.inventory.insert_many([
+<code lang="py" copyable="True" linenos="True">db.inventory.insert_many([
     {"item": "journal",
      "qty": 25,
      "tags": ["blank", "red"],

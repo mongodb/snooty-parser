@@ -261,6 +261,7 @@ class JSONVisitor:
                 node["copyable"],
                 node["emphasize_lines"] if "emphasize_lines" in node else None,
                 node.astext(),
+                node["linenos"],
             )
             top_of_state = self.state[-1]
             assert isinstance(top_of_state, n.Parent)
@@ -512,7 +513,14 @@ class JSONVisitor:
                 if "language" in options
                 else asset_path.suffix.lstrip(".")
             )
-            code = n.Code((line,), lang, "copyable" in options, [], "")
+            code = n.Code(
+                (line,),
+                lang,
+                "copyable" not in options or options["copyable"] == "true",
+                [],
+                "",
+                "linenos" in options,
+            )
 
             try:
                 static_asset = self.add_static_asset(asset_path, False)
