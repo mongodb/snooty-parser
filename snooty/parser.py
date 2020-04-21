@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path, PurePath
 from typing import Any, Dict, MutableSequence, Tuple, Optional, Set, List, Iterable
+from docutils.nodes import make_id
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
@@ -426,6 +427,18 @@ class JSONVisitor:
                     repr(top_of_state),
                     repr(popped),
                 )
+        if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
+          definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
+          if definition_list is None:
+              # Raise diagnostic
+              pass
+          for item in definition_list.get_child_of_type(n.DefinitionListItem):
+              term_text = "".join(term.get_text() for term in item.term)
+              print(term_text)
+              term_identifier = make_id(term_text)
+              identifier = n.TargetIdentifier(item.start, item.term, [term_identifier ])
+              target = n.InlineTarget(item.start, [identifier], "std", "term", None)
+              item.term.append(target)
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int

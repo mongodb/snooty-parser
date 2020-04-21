@@ -659,12 +659,30 @@ def test_glossary_node() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root>
-    <directive name="glossary" sorted="True">
-      <definitionList>
-        <definitionListItem><ref_role domain="std" name="term"><text>$cmd</text></ref_role><paragraph><text>foobar</text></paragraph></definitionListItem>
-      </definitionList>
-    </directive>
+<root>    
+  <directive name="glossary" sorted="True">
+    <definitionList>
+      <definitionListItem>
+        <inlineTarget domain="std" name="term">
+          <text>$cmd</text>
+          <target_identifier ids="[\"$cmd\"]"><text>$cmd</text>
+          </target_identifier>
+        </inlineTarget>
+        <paragraph><text>foobar</text></paragraph>
+      </definitionListItem>
+    </definitionList>
+  
+    <definitionList>
+      <definitionListItem>
+        <inlineTarget domain="std" name="term">
+          <text>_id</text><target_identifier ids="[\"_id\"]"><text>_id</text>
+          </target_identifier>
+        </inlineTarget>
+        <paragraph><text>foofoobarbar</text></paragraph>
+      </definitionListItem>
+    </definitionList>
+  </directive>
+
 </root>
 """,
     )
