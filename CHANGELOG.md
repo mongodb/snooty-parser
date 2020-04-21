@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Definition list AST format.
+- The code block `linenos` option is now correctly placed in the AST node.
 
 ## [v0.4.3] - 2020-04-15
 
