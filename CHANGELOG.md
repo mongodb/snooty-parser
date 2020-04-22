@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Support for links in step file headings (DOP-1015).
+
 ## [v0.4.4] - 2020-04-21
 
 ### Added

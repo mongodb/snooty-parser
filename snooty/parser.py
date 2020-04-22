@@ -658,13 +658,17 @@ class InlineJSONVisitor(JSONVisitor):
     """A JSONVisitor subclass which does not emit block nodes."""
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
-        if isinstance(node, docutils.nodes.Body):
+        if isinstance(node, docutils.nodes.Body) and not isinstance(
+            node, docutils.nodes.Inline
+        ):
             return
 
         JSONVisitor.dispatch_visit(self, node)
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
-        if isinstance(node, docutils.nodes.Body):
+        if isinstance(node, docutils.nodes.Body) and not isinstance(
+            node, docutils.nodes.Inline
+        ):
             return
 
         JSONVisitor.dispatch_departure(self, node)
