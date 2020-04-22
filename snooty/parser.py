@@ -440,25 +440,23 @@ class JSONVisitor:
 
             if definition_list is None:
                 self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
-                pass
+                return
 
             if popped.options.get("sorted", False) and definition_list is not None:
-                print("before", definition_list)
                 definition_list.children = sorted(
                     definition_list.children,
                     key=lambda DefinitionListItem: "".join(
                         term.get_text() for term in DefinitionListItem.term
                     ),
                 )
-                print("after", definition_list)
 
             for item in definition_list.get_child_of_type(n.DefinitionListItem):
                 term_text = "".join(term.get_text() for term in item.term)
                 term_identifier = make_id(term_text)
-                identifier = n.TargetIdentifier(
-                    item.start, item.term[:], [term_identifier]
-                )
-                target = n.InlineTarget(item.start, [identifier], "std", "term", None)
+                identifier = n.TargetIdentifier(item.start, [], [term_identifier])
+                identifier.children = item.term[:]
+                target = n.InlineTarget(item.start, [], "std", "term", None)
+                target.children = [identifier]
                 item.term.append(target)
 
     def handle_directive(
