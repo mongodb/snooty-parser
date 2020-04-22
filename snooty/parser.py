@@ -443,11 +443,14 @@ class JSONVisitor:
                 pass
 
             if popped.options.get("sorted", False) and definition_list is not None:
-                definition_list.children.sort(
+                print("before", definition_list)
+                definition_list.children = sorted(
+                    definition_list.children,
                     key=lambda DefinitionListItem: "".join(
                         term.get_text() for term in DefinitionListItem.term
-                    )
+                    ),
                 )
+                print("after", definition_list)
 
             for item in definition_list.get_child_of_type(n.DefinitionListItem):
                 term_text = "".join(term.get_text() for term in item.term)
