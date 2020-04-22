@@ -611,6 +611,7 @@ def test_accidental_indentation() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
 
+
 def test_glossary_node() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -695,6 +696,7 @@ def test_glossary_node() -> None:
 </root>
 """,
     )
+
 
 def test_cond() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

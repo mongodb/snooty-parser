@@ -301,11 +301,13 @@ class TargetIdentifier(InlineParent):
     type = "target_identifier"
     ids: List[str]
 
+
 @dataclass
 class InlineTarget(InlineParent, Target):
     __slots__ = ()
     type = "inline_target"
-    
+
+
 @dataclass
 class Reference(InlineParent):
     __slots__ = ("refuri", "refname")

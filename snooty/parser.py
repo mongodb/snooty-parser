@@ -51,7 +51,7 @@ from .diagnostics import (
     InvalidTableStructure,
     UnmarshallingError,
     ErrorParsingYAMLFile,
-    MissingDefinitionList
+    MissingDefinitionList,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -431,23 +431,32 @@ class JSONVisitor:
                     repr(popped),
                 )
 
-        if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
+        if (
+            isinstance(popped, n.Directive)
+            and f"{popped.domain}:{popped.name}" == ":glossary"
+        ):
 
-          definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
-          
-          if definition_list is None:
-              self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
-              pass
+            definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
 
-          if popped.options.get("sorted", False) and definition_list is not None:
-            definition_list.children.sort(key=lambda DefinitionListItem:"".join(term.get_text() for term in DefinitionListItem.term))
+            if definition_list is None:
+                self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
+                pass
 
-          for item in definition_list.get_child_of_type(n.DefinitionListItem):
-              term_text = "".join(term.get_text() for term in item.term)
-              term_identifier = make_id(term_text)
-              identifier = n.TargetIdentifier(item.start, item.term[:], [term_identifier])
-              target = n.InlineTarget(item.start, [identifier], "std", "term", None)
-              item.term.append(target)
+            if popped.options.get("sorted", False) and definition_list is not None:
+                definition_list.children.sort(
+                    key=lambda DefinitionListItem: "".join(
+                        term.get_text() for term in DefinitionListItem.term
+                    )
+                )
+
+            for item in definition_list.get_child_of_type(n.DefinitionListItem):
+                term_text = "".join(term.get_text() for term in item.term)
+                term_identifier = make_id(term_text)
+                identifier = n.TargetIdentifier(
+                    item.start, item.term[:], [term_identifier]
+                )
+                target = n.InlineTarget(item.start, [identifier], "std", "term", None)
+                item.term.append(target)
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int
@@ -505,7 +514,6 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, util.get_line(node))
                 )
-
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -604,7 +612,7 @@ class JSONVisitor:
         elif key in {"devhub:author", ":og", ":twitter"}:
             # Grab image from options array and save as static asset
             image_argument = options.get("image")
-            
+
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
