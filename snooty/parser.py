@@ -429,14 +429,14 @@ class JSONVisitor:
                 )
         if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
           definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
+          print(definition_list)
           if definition_list is None:
               # Raise diagnostic
               pass
           for item in definition_list.get_child_of_type(n.DefinitionListItem):
               term_text = "".join(term.get_text() for term in item.term)
-              print(term_text)
               term_identifier = make_id(term_text)
-              identifier = n.TargetIdentifier(item.start, item.term, [term_identifier ])
+              identifier = n.TargetIdentifier(item.start, item.term[:], [term_identifier ])
               target = n.InlineTarget(item.start, [identifier], "std", "term", None)
               item.term.append(target)
 
@@ -496,17 +496,8 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, util.get_line(node))
                 )
-        elif name == "glossary":
-          print(node)
-          for child in node.children:
-            print(child.__class__.__dict__)
-            for definition_list_item in child:
-              for term in definition_list_item:
-                print(term)
-                print(term.__class__.__name__)
-              
-      
-      
+
+
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
             expected_num_columns = 0
