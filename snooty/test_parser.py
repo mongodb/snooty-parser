@@ -9,12 +9,39 @@ from .diagnostics import (
     CannotOpenFile,
     InvalidLiteralInclude,
 )
-from .parser import parse_rst, JSONVisitor
+from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
 ROOT_PATH = Path("test_data")
 
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
+
+
+def test_inline_parser_references() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, InlineJSONVisitor)
+
+    # Test a simple code-block
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+`package management system <https://en.wikipedia.org/wiki/Package_manager>`_
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+        <root>
+        <reference refuri="https://en.wikipedia.org/wiki/Package_manager">
+        <text>package management system</text>
+        </reference>
+        </root>""",
+    )
 
 
 def test_tabs() -> None:

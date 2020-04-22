@@ -1,4 +1,4 @@
-title: Import the public key used by the package management system.
+title: Import the *public key* used by the `package management system <https://en.wikipedia.org/wiki/Package_manager>`_
 stepnum: 1
 level: 4
 ref: import-key
