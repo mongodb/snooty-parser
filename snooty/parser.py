@@ -429,15 +429,17 @@ class JSONVisitor:
                 )
         if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
           definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
-          print(definition_list)
+          print("HERE", definition_list)
           if definition_list is None:
               # Raise diagnostic
               pass
           for item in definition_list.get_child_of_type(n.DefinitionListItem):
+              print("HERE", item, "\n\n")
               term_text = "".join(term.get_text() for term in item.term)
               term_identifier = make_id(term_text)
               identifier = n.TargetIdentifier(item.start, item.term[:], [term_identifier ])
               target = n.InlineTarget(item.start, [identifier], "std", "term", None)
+              print(target, "\n\n")
               item.term.append(target)
 
     def handle_directive(
