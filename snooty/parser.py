@@ -20,6 +20,7 @@ import watchdog.events
 import networkx
 
 from . import n, gizaparser, rstparser, util
+from .n import DefinitionList
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .postprocess import DevhubPostprocessor, Postprocessor
@@ -427,19 +428,29 @@ class JSONVisitor:
                     repr(top_of_state),
                     repr(popped),
                 )
+
         if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
+
+          if(popped.options["sorted"]):
+            for index, descendant in enumerate(popped.children):
+              if isinstance(descendant, n.DefinitionList):
+                #sorted returns a list, in this case a list containing a single element (NoneType object)
+                sortedList = sorted(descendant.children, key=lambda DefinitionListItem:"".join(term.get_text() for term in DefinitionListItem.term))
+                #create a new DefinitionList with same span and resorted list children DefinitionListItems
+                span = descendant.span
+                popped.children[index] = DefinitionList(span, sortedList)
+
           definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
-          print("HERE", definition_list)
+          
           if definition_list is None:
               # Raise diagnostic
               pass
+
           for item in definition_list.get_child_of_type(n.DefinitionListItem):
-              print("HERE", item, "\n\n")
               term_text = "".join(term.get_text() for term in item.term)
               term_identifier = make_id(term_text)
-              identifier = n.TargetIdentifier(item.start, item.term[:], [term_identifier ])
+              identifier = n.TargetIdentifier(item.start, item.term[:], [term_identifier])
               target = n.InlineTarget(item.start, [identifier], "std", "term", None)
-              print(target, "\n\n")
               item.term.append(target)
 
     def handle_directive(

@@ -621,74 +621,80 @@ def test_glossary_node() -> None:
         path,
         """
 .. glossary::
-   :sorted:
+  :sorted:
 
-   $cmd
-      foobar
+  _id
+    foofoobarbar
+
+  index 
+    foofoofoofoobarbarbarbar
+
+  $cmd
+    foobar
     
-    _id
-      foofoobarbar
+  aggregate
+    foofoofoobarbarbar
+  
+  
 """,
     )
     page.finish(diagnostics)
 
-#     check_ast_testing_string(
-#         page.ast,
-#         """
-# <root> 
-#   <directive name="glossary" sorted="True">
-#     <definitionList>       
-#       <definitionListItem>         
-#         <term>           
-#           <text>$cmd</text>
-#           <inline_target domain="std" name="term">            
-#             <target_identifier ids="['cmd']">
-#               <text>$cmd</text></target_identifier>           
-#           </inline_target>         
-#         </term>
-#         <paragraph><text>foobar</text></paragraph>       
-#       </definitionListItem>        
+    check_ast_testing_string(
+        page.ast,
+        """
+<root> 
+  <directive name="glossary" sorted="True">
+    <definitionList>       
+      <definitionListItem>         
+        <term>           
+          <text>$cmd</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['cmd']">
+              <text>$cmd</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foobar</text></paragraph>       
+      </definitionListItem>        
 
-#       <definitionListItem>
-#         <term>           
-#           <text>_id</text>           
-#           <inline_target domain="std" name="term">
-#             <target_identifier ids="['_id']">               
-#               <text>_id</text>
-#             </target_identifier>
-#           </inline_target>         
-#         </term>         
-#         <paragraph><text>foofoobarbar</text></paragraph>
-#       </definitionListItem>     
-#     </definitionList>
-#   </directive>
-# </root>
-# """,
-#     )
+      <definitionListItem>
+        <term>           
+          <text>_id</text>           
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['id']">               
+              <text>_id</text>
+            </target_identifier>
+          </inline_target>         
+        </term>         
+        <paragraph><text>foofoobarbar</text></paragraph>
+      </definitionListItem>     
 
-    # """
-    
-    #   <definitionList>
-    #     <definitionListItem>
-    #       <term>
-    #         <text>$cmd</text>
-    #         <inline_target domain="std" name="term">
-    #           <target_identifier ids="['cmd']">
-    #             <text>$cmd</text>
-    #           </target_identifier>
-    #         </inline_target>
-    #       </term>
-    #       <paragraph><text>foobar</text></paragraph>
-          
-    #       <definitionList>
-    #       <definitionListItem>
-    #       <term><text>_id</text></term>
-    #       <paragraph><text>foofoobarbar</text></paragraph>
-          
-    #       </definitionListItem></definitionList></definitionListItem></definitionList>
-    
-    # """
-
+      <definitionListItem>         
+        <term>           
+          <text>aggregate</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['aggregate']">
+              <text>aggregate</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foofoofoobarbarbar</text></paragraph>       
+      </definitionListItem>
+      
+      <definitionListItem>         
+        <term>           
+          <text>index</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['index']">
+              <text>index</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>       
+      </definitionListItem>
+    </definitionList>
+  </directive>
+</root>
+""",
+    )
 
 # def test_cond() -> None:
 #     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -1231,38 +1237,38 @@ def test_glossary_node() -> None:
 #     check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
 
 
-# def test_definition_list() -> None:
-#     path = ROOT_PATH.joinpath(Path("test.rst"))
-#     project_config = ProjectConfig(ROOT_PATH, "", source="./")
-#     parser = rstparser.Parser(project_config, JSONVisitor)
+def test_definition_list() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
 
-#     page, diagnostics = parse_rst(
-#         parser,
-#         path,
-#         """
-# A term
-#   A definition for this term.
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+A term
+  A definition for this term.
 
-# ``Another term``
-#   A definition for *THIS* term.""",
-#     )
+``Another term``
+  A definition for *THIS* term.""",
+    )
 
-#     assert not diagnostics
+    assert not diagnostics
 
-#     check_ast_testing_string(
-#         page.ast,
-#         """
-# <root>
-#     <definitionList>
-#         <definitionListItem>
-#             <term><text>A term</text></term>
-#             <paragraph><text>A definition for this term.</text></paragraph>
-#         </definitionListItem>
-#         <definitionListItem>
-#             <term><literal><text>Another term</text></literal></term>
-#             <paragraph><text>A definition for </text><emphasis><text>THIS</text></emphasis><text> term.</text></paragraph>
-#         </definitionListItem>
-#     </definitionList>
-# </root>
-# """,
-#     )
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <definitionList>
+        <definitionListItem>
+            <term><text>A term</text></term>
+            <paragraph><text>A definition for this term.</text></paragraph>
+        </definitionListItem>
+        <definitionListItem>
+            <term><literal><text>Another term</text></literal></term>
+            <paragraph><text>A definition for </text><emphasis><text>THIS</text></emphasis><text> term.</text></paragraph>
+        </definitionListItem>
+    </definitionList>
+</root>
+""",
+    )
