@@ -20,7 +20,6 @@ import watchdog.events
 import networkx
 
 from . import n, gizaparser, rstparser, util
-from .n import DefinitionList
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .postprocess import DevhubPostprocessor, Postprocessor
