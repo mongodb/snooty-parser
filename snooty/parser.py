@@ -50,6 +50,9 @@ from .diagnostics import (
     InvalidURL,
     InvalidLiteralInclude,
     InvalidTableStructure,
+    UnmarshallingError,
+    ErrorParsingYAMLFile,
+    MissingDefinitionList
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -431,20 +434,14 @@ class JSONVisitor:
 
         if isinstance(popped, n.Directive) and f"{popped.domain}:{popped.name}" == ":glossary":
 
-          if(popped.options["sorted"]):
-            for index, descendant in enumerate(popped.children):
-              if isinstance(descendant, n.DefinitionList):
-                #sorted returns a list, in this case a list containing a single element (NoneType object)
-                sortedList = sorted(descendant.children, key=lambda DefinitionListItem:"".join(term.get_text() for term in DefinitionListItem.term))
-                #create a new DefinitionList with same span and resorted list children DefinitionListItems
-                span = descendant.span
-                popped.children[index] = DefinitionList(span, sortedList)
-
           definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
           
           if definition_list is None:
-              # Raise diagnostic
+              self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
               pass
+
+          if popped.options.get("sorted", False) and definition_list is not None:
+            definition_list.children.sort(key=lambda DefinitionListItem:"".join(term.get_text() for term in DefinitionListItem.term))
 
           for item in definition_list.get_child_of_type(n.DefinitionListItem):
               term_text = "".join(term.get_text() for term in item.term)

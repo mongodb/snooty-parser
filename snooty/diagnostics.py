@@ -203,6 +203,16 @@ class MissingRef(Diagnostic):
         super().__init__(f"Missing ref; all {name} must define a ref", start, end)
         self.name = name
 
+class MissingDefinitionList(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Missing definition list; all glossaries must define a definition list", start, end)
+
 
 class FailedToInheritRef(Diagnostic):
     severity = Diagnostic.Level.error
