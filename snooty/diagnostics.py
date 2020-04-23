@@ -1,6 +1,7 @@
 import enum
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 from pathlib import Path
+from .n import SerializableType
 
 
 class Diagnostic:
@@ -45,6 +46,15 @@ class Diagnostic:
     @property
     def severity_string(self) -> str:
         return self.severity.name.title()
+
+    @property
+    def serialize(self) -> SerializableType:
+        diag: Dict[str, SerializableType] = {}
+
+        diag["severity"] = self.severity_string.upper()
+        diag["start"] = self.start[0]
+        diag["message"] = self.message
+        return diag
 
 
 class UnexpectedIndentation(Diagnostic):

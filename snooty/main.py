@@ -81,16 +81,25 @@ class Backend:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        output = os.environ.get("DiagnosticsOutput", None)
+
         for diagnostic in diagnostics:
-            # Line numbers are currently... uh, "approximate"
-            print(
-                "{}({}:{}ish): {}".format(
-                    diagnostic.severity_string.upper(),
-                    path,
-                    diagnostic.start[0],
-                    diagnostic.message,
+            info = diagnostic.serialize
+            if output == "JSON":
+                document = {
+                    "severity": info["severity"],
+                    "path": path,
+                    "start": info["start"],
+                    "message": info["message"],
+                }
+                # TODO what to do with the document?? do i add all of the diags to same document?
+                # or make a document for each one?
+            else:
+                print(
+                    "{}({}:{}ish): {}".format(
+                        info["severity"], path, info["start"], info["message"]
+                    )
                 )
-            )
             self.total_warnings += 1
 
     def on_update(
