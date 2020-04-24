@@ -84,20 +84,16 @@ class Backend:
         output = os.environ.get("DiagnosticsOutput", None)
 
         for diagnostic in diagnostics:
-            info = diagnostic.serialize
+            info = diagnostic.serialize()
+            info["path"] = path
+            print(type(info))
             if output == "JSON":
-                document = {
-                    "severity": info["severity"],
-                    "path": path,
-                    "start": info["start"],
-                    "message": info["message"],
-                }
-                # TODO what to do with the document?? do i add all of the diags to same document?
-                # or make a document for each one?
+                document = {"diagnostic": info}
+                # TODO what to do with the document??
             else:
                 print(
                     "{}({}:{}ish): {}".format(
-                        info["severity"], path, info["start"], info["message"]
+                        info["severity"], path, diagnostic.start[0], diagnostic.message
                     )
                 )
             self.total_warnings += 1

@@ -25,7 +25,7 @@ def test_backend() -> None:
         assert backend.total_warnings == 3
     finally:
         builtins.print = orig_print
-
+    print(messages)
     assert messages == [
         "ERROR(foo/bar.rst:10ish): an error",
         "ERROR(foo/bar.rst:10ish): Invalid URL",

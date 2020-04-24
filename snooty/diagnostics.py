@@ -47,12 +47,11 @@ class Diagnostic:
     def severity_string(self) -> str:
         return self.severity.name.title()
 
-    @property
     def serialize(self) -> SerializableType:
         diag: Dict[str, SerializableType] = {}
 
         diag["severity"] = self.severity_string.upper()
-        diag["start"] = self.start[0]
+        diag["start"] = str(self.start[0])
         diag["message"] = self.message
         return diag
 
