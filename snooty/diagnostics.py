@@ -2,6 +2,7 @@ import enum
 from typing import Tuple, Union, Dict
 from pathlib import Path
 from .n import SerializableType
+from . import n
 
 
 class Diagnostic:
@@ -47,7 +48,7 @@ class Diagnostic:
     def severity_string(self) -> str:
         return self.severity.name.title()
 
-    def serialize(self) -> SerializableType:
+    def serialize(self) -> n.SerializedNode:
         diag: Dict[str, SerializableType] = {}
 
         diag["severity"] = self.severity_string.upper()

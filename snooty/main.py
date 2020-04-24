@@ -85,15 +85,15 @@ class Backend:
 
         for diagnostic in diagnostics:
             info = diagnostic.serialize()
-            info["path"] = path
-            print(type(info))
+            info["path"] = path.as_posix()
+
             if output == "JSON":
                 document = {"diagnostic": info}
-                # TODO what to do with the document??
+                print(document)
             else:
                 print(
                     "{}({}:{}ish): {}".format(
-                        info["severity"], path, diagnostic.start[0], diagnostic.message
+                        info["severity"], path, info["start"], info["message"]
                     )
                 )
             self.total_warnings += 1
