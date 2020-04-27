@@ -14,13 +14,14 @@ def test_backend() -> None:
     backend = main.Backend()
     orig_print = builtins.print
     builtins.print = test_print
+    test_diagnostics = [InvalidLiteralInclude("an error", 10, 12), InvalidURL((10, 0), (12, 30)), UnknownSubstitution("a warning", 10)]
     try:
         backend.on_diagnostics(
             FileId("foo/bar.rst"),
-            [InvalidLiteralInclude("an error", 10, 12), InvalidURL((10, 0), (12, 30))],
+            test_diagnostics[0:2],
         )
         backend.on_diagnostics(
-            FileId("foo/foo.rst"), [UnknownSubstitution("a warning", 10)]
+            FileId("foo/foo.rst"), test_diagnostics[2:],
         )
         assert backend.total_warnings == 3
     finally:
@@ -40,17 +41,16 @@ def test_backend() -> None:
     try:
         backend.on_diagnostics(
             FileId("foo/bar.rst"),
-            [InvalidLiteralInclude("an error", 10, 12), InvalidURL((10, 0), (12, 30))],
+            test_diagnostics[0:2],
         )
         backend.on_diagnostics(
-            FileId("foo/foo.rst"), [UnknownSubstitution("a warning", 10)]
+            FileId("foo/foo.rst"), test_diagnostics[2:]
         )
         assert backend.total_warnings == 3
     finally:
         builtins.print = orig_print
 
-    assert messages == [
-        """{'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': 'an error', 'path': 'foo/bar.rst'}}""", 
-        """{'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': 'Invalid URL', 'path': 'foo/bar.rst'}}""",  
-        """{'diagnostic': {'severity': 'WARNING', 'start': '10', 'message': 'a warning', 'path': 'foo/foo.rst'}}""",
-    ]
+    for index, item in enumerate(messages):
+      msg_str = eval(item)['diagnostic']['message']
+      assert msg_str == test_diagnostics[index].message
+
