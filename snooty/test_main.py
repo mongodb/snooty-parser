@@ -51,6 +51,7 @@ def test_backend() -> None:
         builtins.print = orig_print
 
     for index, item in enumerate(messages):
-      msg_str = eval(item)['diagnostic']['message']
-      assert msg_str == test_diagnostics[index].message
-
+      diag_dict = eval(item)['diagnostic']
+      assert diag_dict['message'] == test_diagnostics[index].message
+      assert diag_dict['start'] == str(test_diagnostics[index].start[0])
+      assert diag_dict['severity'] == test_diagnostics[index].severity_string.upper()
