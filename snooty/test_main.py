@@ -4,6 +4,7 @@ from .types import FileId
 from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
 from . import main
 import os
+import json
 
 
 def test_backend() -> None:
@@ -16,9 +17,9 @@ def test_backend() -> None:
     orig_print = builtins.print
     builtins.print = test_print
     test_diagnostics = [
-        InvalidLiteralInclude("an error", 10, 12),
+        InvalidLiteralInclude("invalid literal include error", 10, 12),
         InvalidURL((10, 0), (12, 30)),
-        UnknownSubstitution("a warning", 10),
+        UnknownSubstitution("unknown substitution warning", 10),
     ]
     try:
         backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
@@ -28,9 +29,9 @@ def test_backend() -> None:
         builtins.print = orig_print
 
     assert messages == [
-        "ERROR(foo/bar.rst:10ish): an error",
+        "ERROR(foo/bar.rst:10ish): invalid literal include error",
         "ERROR(foo/bar.rst:10ish): Invalid URL",
-        "WARNING(foo/foo.rst:10ish): a warning",
+        "WARNING(foo/foo.rst:10ish): unknown substitution warning",
     ]
 
     # test returning diagnostic messages as JSON
@@ -39,14 +40,19 @@ def test_backend() -> None:
     builtins.print = test_print
     os.environ["DiagnosticsOutput"] = "JSON"
     try:
-        backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
-        backend.on_diagnostics(FileId("foo/foo.rst"), test_diagnostics[2:])
+        backend.on_diagnostics(
+            FileId("foo/bar.rst"),
+            test_diagnostics[0:2]
+        )
+        backend.on_diagnostics(
+            FileId("foo/foo.rst"), test_diagnostics[2:]
+        )
         assert backend.total_warnings == 3
     finally:
         builtins.print = orig_print
 
-    for index, item in enumerate(messages):
-        diag_dict = eval(item)["diagnostic"]
-        assert diag_dict["message"] == test_diagnostics[index].message
-        assert diag_dict["start"] == str(test_diagnostics[index].start[0])
-        assert diag_dict["severity"] == test_diagnostics[index].severity_string.upper()
+    assert [json.loads(message) for message in messages] == [
+    {'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': test_diagnostics[0].message, 'path': 'foo/bar.rst'}},
+    {'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': test_diagnostics[1].message, 'path': 'foo/bar.rst'}},
+    {'diagnostic': {'severity': 'WARNING', 'start': '10', 'message': test_diagnostics[2].message, 'path': 'foo/foo.rst'}}
+    ]

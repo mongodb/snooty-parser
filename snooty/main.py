@@ -16,6 +16,7 @@ import os
 import pymongo
 import sys
 import toml
+import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -88,8 +89,10 @@ class Backend:
             info["path"] = path.as_posix()
 
             if output == "JSON":
-                document = {"diagnostic": info}
-                print(document)
+                document = {'\"diagnostic\"': info}
+                print(json.dumps({'diagnostic': info}))
+                #parsed = json.loads(f'{document}')
+                #print(json.dumps(parsed))
             else:
                 print(
                     "{}({}:{}ish): {}".format(
