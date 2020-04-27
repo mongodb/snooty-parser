@@ -89,7 +89,7 @@ class Backend:
             info["path"] = path.as_posix()
 
             if output == "JSON":
-                document = {'diagnostic': info}
+                document = {"diagnostic": info}
                 print(json.dumps(document))
 
             else:

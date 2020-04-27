@@ -40,19 +40,35 @@ def test_backend() -> None:
     builtins.print = test_print
     os.environ["DiagnosticsOutput"] = "JSON"
     try:
-        backend.on_diagnostics(
-            FileId("foo/bar.rst"),
-            test_diagnostics[0:2]
-        )
-        backend.on_diagnostics(
-            FileId("foo/foo.rst"), test_diagnostics[2:]
-        )
+        backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
+        backend.on_diagnostics(FileId("foo/foo.rst"), test_diagnostics[2:])
         assert backend.total_warnings == 3
     finally:
         builtins.print = orig_print
 
     assert [json.loads(message) for message in messages] == [
-    {'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': test_diagnostics[0].message, 'path': 'foo/bar.rst'}},
-    {'diagnostic': {'severity': 'ERROR', 'start': '10', 'message': test_diagnostics[1].message, 'path': 'foo/bar.rst'}},
-    {'diagnostic': {'severity': 'WARNING', 'start': '10', 'message': test_diagnostics[2].message, 'path': 'foo/foo.rst'}}
+        {
+            "diagnostic": {
+                "severity": "ERROR",
+                "start": "10",
+                "message": test_diagnostics[0].message,
+                "path": "foo/bar.rst",
+            }
+        },
+        {
+            "diagnostic": {
+                "severity": "ERROR",
+                "start": "10",
+                "message": test_diagnostics[1].message,
+                "path": "foo/bar.rst",
+            }
+        },
+        {
+            "diagnostic": {
+                "severity": "WARNING",
+                "start": "10",
+                "message": test_diagnostics[2].message,
+                "path": "foo/foo.rst",
+            }
+        },
     ]
