@@ -32,16 +32,11 @@ def test_backend() -> None:
         "WARNING(foo/foo.rst:10ish): a warning",
     ]
 
-def test_JSON_output() -> None:
-    os.environ["DiagnosticsOutput"] = "JSON"
-    messages: List[str] = []
-
-    def test_print(*values: Any, **kwargs: Any) -> None:
-        messages.extend(str(val) for val in values)
-
+    # test returning diagnostic messages as JSON
     backend = main.Backend()
-    orig_print = builtins.print
+    messages.clear()
     builtins.print = test_print
+    os.environ["DiagnosticsOutput"] = "JSON"
     try:
         backend.on_diagnostics(
             FileId("foo/bar.rst"),
