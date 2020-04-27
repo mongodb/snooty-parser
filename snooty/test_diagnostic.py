@@ -8,8 +8,6 @@ def test_diagnostics() -> None:
     assert diagnostic.severity == Diagnostic.Level.error
     assert diagnostic.start == (0, 0)
     assert diagnostic.end[0] == 10 and diagnostic.end[1] > 100
-    diagnostic2 = UnexpectedIndentation("foo", (0, 0), 10)
-    tes = diagnostic2.serialize
 
     # Make sure attempts to access abstract Diagnostic base class
     # results in TypeError

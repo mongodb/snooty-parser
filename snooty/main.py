@@ -80,7 +80,7 @@ class Backend:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:   
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         output = os.environ.get("DiagnosticsOutput", None)
 
         for diagnostic in diagnostics:
