@@ -89,10 +89,9 @@ class Backend:
             info["path"] = path.as_posix()
 
             if output == "JSON":
-                document = {'\"diagnostic\"': info}
-                print(json.dumps({'diagnostic': info}))
-                #parsed = json.loads(f'{document}')
-                #print(json.dumps(parsed))
+                document = {'diagnostic': info}
+                print(json.dumps(document))
+
             else:
                 print(
                     "{}({}:{}ish): {}".format(
