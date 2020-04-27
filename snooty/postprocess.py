@@ -393,7 +393,7 @@ class Postprocessor:
         if not isinstance(node, n.Directive):
             return
 
-        if node.name == "include":
+        if node.name == "include" or node.name == "literalinclude":
             argument = get_include_argument(node)
             include_slug = clean_slug(argument)
             include_fileid = self.slug_fileid_mapping.get(include_slug)
