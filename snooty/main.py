@@ -9,6 +9,12 @@ Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+
+Environment variables:
+  SNOOTY_ENV                [ , ] where development is default
+  PARANOID_MODE             [ , ] where 0 is default
+  DIAGNOSTICS_ENV           "JSON", None where None is default
+
 """
 import getpass
 import logging
@@ -82,7 +88,7 @@ class Backend:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        output = os.environ.get("DiagnosticsOutput", None)
+        output = os.environ.get("DIAGNOSTICS_ENV", None)
 
         for diagnostic in diagnostics:
             info = diagnostic.serialize()
@@ -91,13 +97,8 @@ class Backend:
             if output == "JSON":
                 document = {"diagnostic": info}
                 print(json.dumps(document))
-
             else:
-                print(
-                    "{}({}:{}ish): {}".format(
-                        info["severity"], path, info["start"], info["message"]
-                    )
-                )
+                print("{severity}({path}:{start}ish): {message}".format(**info))
             self.total_warnings += 1
 
     def on_update(
