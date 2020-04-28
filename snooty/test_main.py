@@ -38,7 +38,7 @@ def test_backend() -> None:
     backend = main.Backend()
     messages.clear()
     builtins.print = test_print
-    os.environ["DIAGNOSTICS_ENV"] = "JSON"
+    os.environ["DIAGNOSTICS_FORMAT"] = "JSON"
     try:
         backend.on_diagnostics(FileId("foo/bar.rst"), test_diagnostics[0:2])
         backend.on_diagnostics(FileId("foo/foo.rst"), test_diagnostics[2:])

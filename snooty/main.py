@@ -11,9 +11,8 @@ Options:
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
 
 Environment variables:
-  SNOOTY_ENV                [ , ] where development is default
-  PARANOID_MODE             [ , ] where 0 is default
-  DIAGNOSTICS_ENV           "JSON", None where None is default
+  SNOOTY_PARANOID           0, 1 where 0 is default
+  DIAGNOSTICS_FORMAT        JSON, None where None is default
 
 """
 import getpass
@@ -88,7 +87,7 @@ class Backend:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        output = os.environ.get("DIAGNOSTICS_ENV", None)
+        output = os.environ.get("DIAGNOSTICS_FORMAT", None)
 
         for diagnostic in diagnostics:
             info = diagnostic.serialize()
