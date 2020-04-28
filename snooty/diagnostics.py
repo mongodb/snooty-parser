@@ -50,7 +50,7 @@ class Diagnostic:
 
     def serialize(self) -> n.SerializedNode:
         diag: Dict[str, SerializableType] = {}
-        """Apply Giza-style replacements to a Giza node."""
+        """Create dict containing diagnostic attributes for neatly reporting diagnostics at program completion"""
         diag["severity"] = self.severity_string.upper()
         diag["start"] = self.start[0]
         diag["message"] = self.message
