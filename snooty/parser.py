@@ -442,7 +442,7 @@ class JSONVisitor:
                 self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
                 return
 
-            if popped.options.get("sorted", False) and definition_list is not None:
+            if popped.options.get("sorted", False):
                 definition_list.children = sorted(
                     definition_list.children,
                     key=lambda DefinitionListItem: "".join(
