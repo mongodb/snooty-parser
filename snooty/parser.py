@@ -51,7 +51,7 @@ from .diagnostics import (
     InvalidTableStructure,
     UnmarshallingError,
     ErrorParsingYAMLFile,
-    MissingDefinitionList,
+    MalformedGlossary,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -439,7 +439,7 @@ class JSONVisitor:
             definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
 
             if definition_list is None:
-                self.diagnostics.append(MissingDefinitionList(util.get_line(node)))
+                self.diagnostics.append(MalformedGlossary(util.get_line(node)))
                 return
 
             if popped.options.get("sorted", False):

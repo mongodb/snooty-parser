@@ -8,7 +8,7 @@ from .diagnostics import (
     DocUtilsParseError,
     CannotOpenFile,
     InvalidLiteralInclude,
-    MissingDefinitionList,
+    MalformedGlossary,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -710,7 +710,7 @@ def test_glossary_node() -> None:
     page.finish(diagnostics)
 
     assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], MissingDefinitionList)
+    assert isinstance(diagnostics[0], MalformedGlossary)
 
 
 def test_cond() -> None:

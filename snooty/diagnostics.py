@@ -204,7 +204,7 @@ class MissingRef(Diagnostic):
         self.name = name
 
 
-class MissingDefinitionList(Diagnostic):
+class MalformedGlossary(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
@@ -213,7 +213,7 @@ class MissingDefinitionList(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Missing definition list; all glossaries must define a definition list",
+            f"Malformed glossary: glossary is either missing a definition list or has more than one child node",
             start,
             end,
         )
