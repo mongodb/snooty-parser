@@ -6,9 +6,12 @@ on the docs front-end.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+from ..diagnostics import Diagnostic
 from ..flutter import checked
-from ..types import SerializableType
+from ..types import ProjectConfig, SerializableType
+from .parse import parse
 
 
 @checked
@@ -71,3 +74,15 @@ class PublishedBranches:
         published_branches_node["git"] = self.git.serialize()
 
         return published_branches_node
+
+
+def parse_published_branches(
+    path: Path, project_config: ProjectConfig, text: Optional[str] = None
+) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
+    try:
+        published_branches, _, diagnostics = parse(
+            PublishedBranches, path, project_config, text
+        )
+        return published_branches[0], diagnostics
+    except IndexError:
+        return None, diagnostics

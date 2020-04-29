@@ -8,7 +8,6 @@ import errno
 import pwd
 import subprocess
 import threading
-import yaml
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -19,10 +18,9 @@ import docutils.utils
 import watchdog.events
 import networkx
 
-from .flutter import check_type, LoadError
 from . import n, gizaparser, rstparser, util
 from .gizaparser.nodes import GizaCategory
-from .gizaparser.published_branches import PublishedBranches
+from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .types import (
@@ -50,8 +48,6 @@ from .diagnostics import (
     InvalidURL,
     InvalidLiteralInclude,
     InvalidTableStructure,
-    UnmarshallingError,
-    ErrorParsingYAMLFile,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -834,28 +830,13 @@ class _Project:
     def get_parsed_branches(
         self
     ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
-        path = self.config.root
         try:
-            with path.joinpath("published-branches.yaml").open(encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-                try:
-                    result = check_type(PublishedBranches, data)
-                    return result, []
-                except LoadError as err:
-                    line: int = getattr(err.bad_data, "_start_line", 0) + 1
-                    error_node: Diagnostic = UnmarshallingError(str(err), line)
-                    return None, [error_node]
+            path = self.config.root
+            return parse_published_branches(
+                path.joinpath("published-branches.yaml"), self.config
+            )
         except FileNotFoundError:
             pass
-        except LoadError as err:
-            load_error_line: int = getattr(err.bad_data, "_start_line", 0) + 1
-            load_error_node: Diagnostic = UnmarshallingError(str(err), load_error_line)
-            return None, [load_error_node]
-        except yaml.error.MarkedYAMLError as err:
-            yaml_error_node: Diagnostic = ErrorParsingYAMLFile(
-                path, str(err), err.problem_mark.line
-            )
-            return None, [yaml_error_node]
         return None, []
 
     def get_fileid(self, path: PurePath) -> FileId:
