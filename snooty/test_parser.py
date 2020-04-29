@@ -8,6 +8,7 @@ from .diagnostics import (
     DocUtilsParseError,
     CannotOpenFile,
     InvalidLiteralInclude,
+    MissingDefinitionList,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -696,6 +697,20 @@ def test_glossary_node() -> None:
 </root>
 """,
     )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+  :sorted:
+  
+""",
+    )
+    page.finish(diagnostics)
+
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], MissingDefinitionList)
 
 
 def test_cond() -> None:
