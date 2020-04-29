@@ -707,8 +707,26 @@ def test_glossary_node() -> None:
   
 """,
     )
+
     page.finish(diagnostics)
 
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], MalformedGlossary)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+
+  _id
+    foo
+  
+  This is a paragraph, not a definition list item.
+  
+""",
+    )
+    page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], MalformedGlossary)
 

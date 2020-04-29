@@ -442,6 +442,10 @@ class JSONVisitor:
                 self.diagnostics.append(MalformedGlossary(util.get_line(node)))
                 return
 
+            if len(popped.children) != 1:
+                self.diagnostics.append(MalformedGlossary(util.get_line(node)))
+                return
+
             if popped.options.get("sorted", False):
                 definition_list.children = sorted(
                     definition_list.children,
