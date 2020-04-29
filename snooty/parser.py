@@ -330,8 +330,6 @@ class JSONVisitor:
 
             if not node["ids"]:
                 self.diagnostics.append(InvalidURL(util.get_line(node)))
-                # Remove the malformed node so it doesn't cause problems down the road
-                self.state.pop()
                 raise docutils.nodes.SkipNode()
 
             node_id = node["ids"][0]
