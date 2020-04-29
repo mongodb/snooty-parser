@@ -1110,7 +1110,7 @@ def test_callable_target() -> None:
     )
 
 
-def test_no_weird_targets() -> None:
+def test_no_hyperlink_references() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
@@ -1130,6 +1130,16 @@ def test_no_weird_targets() -> None:
     assert len(diagnostics) == 2
     assert isinstance(diagnostics[0], InvalidURL) and isinstance(
         diagnostics[1], InvalidURL
+    )
+
+    check_ast_testing_string(
+        page.ast,
+        """
+    <root>
+    <paragraph><reference refname="ios-universal-links"><text>universal link</text></reference></paragraph>
+    <paragraph><reference refname="ios-universal-links"><text>universal link</text></reference></paragraph>
+    </root>
+    """,
     )
 
 
