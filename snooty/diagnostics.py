@@ -213,7 +213,7 @@ class MalformedGlossary(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Malformed glossary: glossary is either missing a definition list or has more than one child node",
+            f"Malformed glossary: glossary is either missing a definition list or the glossary has an extraneous RST element (such as a paragraph) where it should have only a single definition list",
             start,
             end,
         )

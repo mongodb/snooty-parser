@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _DefinitionListTerm(n.InlineParent):
-    """A private node used for internal book-keeping that should not be exported to the AST."""
+    """A vate node used for internal book-keeping that should not be exported to the AST."""
 
     __slots__ = ()
     type = "definition_list_term"
