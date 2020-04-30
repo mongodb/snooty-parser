@@ -28,11 +28,11 @@ def test_backend() -> None:
     finally:
         builtins.print = orig_print
 
-    # assert messages == [
-    #     f"ERROR(foo/bar.rst:10ish): {test_diagnostics[0].message}",
-    #     f"ERROR(foo/bar.rst:10ish): {test_diagnostics[1].message}",
-    #     f"WARNING(foo/foo.rst:10ish): {test_diagnostics[2].message}",
-    # ]
+    assert messages == [
+        f"ERROR(foo/bar.rst:10ish): {test_diagnostics[0].message}",
+        f"ERROR(foo/bar.rst:10ish): {test_diagnostics[1].message}",
+        f"WARNING(foo/foo.rst:10ish): {test_diagnostics[2].message}",
+    ]
 
     # test returning diagnostic messages as JSON
     backend = main.Backend()

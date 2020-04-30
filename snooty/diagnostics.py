@@ -49,8 +49,8 @@ class Diagnostic:
         return self.severity.name.title()
 
     def serialize(self) -> n.SerializedNode:
-        diag: Dict[str, SerializableType] = {}
         """Create dict containing diagnostic attributes for neatly reporting diagnostics at program completion"""
+        diag: Dict[str, SerializableType] = {}
         diag["severity"] = self.severity_string.upper()
         diag["start"] = self.start[0]
         diag["message"] = self.message

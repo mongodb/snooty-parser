@@ -12,7 +12,7 @@ Options:
 
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
-  DIAGNOSTICS_FORMAT        JSON, None where None is default
+  DIAGNOSTICS_FORMAT        JSON, text where text is default
 
 """
 import getpass
@@ -87,7 +87,7 @@ class Backend:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        output = os.environ.get("DIAGNOSTICS_FORMAT", None)
+        output = os.environ.get("DIAGNOSTICS_FORMAT", "text")
 
         for diagnostic in diagnostics:
             info = diagnostic.serialize()
