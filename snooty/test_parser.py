@@ -710,8 +710,7 @@ def test_glossary_node() -> None:
 
     page.finish(diagnostics)
 
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], MalformedGlossary)
+    assert len(diagnostics) == 0
 
     page, diagnostics = parse_rst(
         parser,

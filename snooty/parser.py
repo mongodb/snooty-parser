@@ -439,7 +439,6 @@ class JSONVisitor:
             definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
 
             if definition_list is None:
-                self.diagnostics.append(MalformedGlossary(util.get_line(node)))
                 return
 
             if len(popped.children) != 1:
