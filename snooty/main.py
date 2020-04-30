@@ -9,6 +9,11 @@ Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+
+Environment variables:
+  SNOOTY_PARANOID           0, 1 where 0 is default
+  DIAGNOSTICS_FORMAT        JSON, text where text is default
+
 """
 import getpass
 import logging
@@ -16,6 +21,7 @@ import os
 import pymongo
 import sys
 import toml
+import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -81,16 +87,17 @@ class Backend:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        output = os.environ.get("DIAGNOSTICS_FORMAT", "text")
+
         for diagnostic in diagnostics:
-            # Line numbers are currently... uh, "approximate"
-            print(
-                "{}({}:{}ish): {}".format(
-                    diagnostic.severity_string.upper(),
-                    path,
-                    diagnostic.start[0],
-                    diagnostic.message,
-                )
-            )
+            info = diagnostic.serialize()
+            info["path"] = path.as_posix()
+
+            if output == "JSON":
+                document = {"diagnostic": info}
+                print(json.dumps(document))
+            else:
+                print("{severity}({path}:{start}ish): {message}".format(**info))
             self.total_warnings += 1
 
     def on_update(
