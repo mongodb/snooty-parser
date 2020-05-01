@@ -49,8 +49,6 @@ from .diagnostics import (
     InvalidURL,
     InvalidLiteralInclude,
     InvalidTableStructure,
-    UnmarshallingError,
-    ErrorParsingYAMLFile,
     MalformedGlossary,
 )
 

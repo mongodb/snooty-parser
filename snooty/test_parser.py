@@ -10,7 +10,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     MalformedGlossary,
 )
-from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
+from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
 
