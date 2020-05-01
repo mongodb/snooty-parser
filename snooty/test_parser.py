@@ -8,40 +8,14 @@ from .diagnostics import (
     DocUtilsParseError,
     CannotOpenFile,
     InvalidLiteralInclude,
+    MalformedGlossary,
 )
-from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
+from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
 
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
-
-
-def test_inline_parser_references() -> None:
-    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "")
-    parser = rstparser.Parser(project_config, InlineJSONVisitor)
-
-    # Test a simple code-block
-    page, diagnostics = parse_rst(
-        parser,
-        tabs_path,
-        """
-`package management system <https://en.wikipedia.org/wiki/Package_manager>`_
-""",
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-    print(ast_to_testing_string(page.ast))
-    check_ast_testing_string(
-        page.ast,
-        """
-        <root>
-        <reference refuri="https://en.wikipedia.org/wiki/Package_manager">
-        <text>package management system</text>
-        </reference>
-        </root>""",
-    )
 
 
 def test_tabs() -> None:
@@ -639,6 +613,123 @@ def test_accidental_indentation() -> None:
     assert len(diagnostics) == 1
 
 
+def test_glossary_node() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+  :sorted:
+
+  _id
+    foofoobarbar
+
+  index 
+    foofoofoofoobarbarbarbar
+
+  $cmd
+    foobar
+    
+  aggregate
+    foofoofoobarbarbar
+  
+  
+""",
+    )
+    page.finish(diagnostics)
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root> 
+  <directive name="glossary" sorted="True">
+    <definitionList>       
+      <definitionListItem>         
+        <term>           
+          <text>$cmd</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['cmd']">
+              <text>$cmd</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foobar</text></paragraph>       
+      </definitionListItem>        
+
+      <definitionListItem>
+        <term>           
+          <text>_id</text>           
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['id']">               
+              <text>_id</text>
+            </target_identifier>
+          </inline_target>         
+        </term>         
+        <paragraph><text>foofoobarbar</text></paragraph>
+      </definitionListItem>     
+
+      <definitionListItem>         
+        <term>           
+          <text>aggregate</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['aggregate']">
+              <text>aggregate</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foofoofoobarbarbar</text></paragraph>       
+      </definitionListItem>
+      
+      <definitionListItem>         
+        <term>           
+          <text>index</text>
+          <inline_target domain="std" name="term">            
+            <target_identifier ids="['index']">
+              <text>index</text></target_identifier>           
+          </inline_target>         
+        </term>
+        <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>       
+      </definitionListItem>
+    </definitionList>
+  </directive>
+</root>
+""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+  :sorted:
+  
+""",
+    )
+
+    page.finish(diagnostics)
+
+    assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. glossary::
+
+  _id
+    foo
+  
+  This is a paragraph, not a definition list item.
+  
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], MalformedGlossary)
+
+
 def test_cond() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -1110,7 +1201,7 @@ def test_callable_target() -> None:
     )
 
 
-def test_no_hyperlink_references() -> None:
+def test_no_weird_targets() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
@@ -1130,16 +1221,6 @@ def test_no_hyperlink_references() -> None:
     assert len(diagnostics) == 2
     assert isinstance(diagnostics[0], InvalidURL) and isinstance(
         diagnostics[1], InvalidURL
-    )
-
-    check_ast_testing_string(
-        page.ast,
-        """
-    <root>
-    <paragraph><reference refname="ios-universal-links"><text>universal link</text></reference></paragraph>
-    <paragraph><reference refname="ios-universal-links"><text>universal link</text></reference></paragraph>
-    </root>
-    """,
     )
 
 

@@ -204,6 +204,21 @@ class MissingRef(Diagnostic):
         self.name = name
 
 
+class MalformedGlossary(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Malformed glossary: glossary must contain only a definition list",
+            start,
+            end,
+        )
+
+
 class FailedToInheritRef(Diagnostic):
     severity = Diagnostic.Level.error
 

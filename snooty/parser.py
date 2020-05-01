@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path, PurePath
 from typing import Any, Dict, MutableSequence, Tuple, Optional, Set, List, Iterable
+from docutils.nodes import make_id
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
@@ -48,6 +49,7 @@ from .diagnostics import (
     InvalidURL,
     InvalidLiteralInclude,
     InvalidTableStructure,
+    MalformedGlossary,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -60,7 +62,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _DefinitionListTerm(n.InlineParent):
-    """A private node used for internal book-keeping that should not be exported to the AST."""
+    """A vate node used for internal book-keeping that should not be exported to the AST."""
 
     __slots__ = ()
     type = "definition_list_term"
@@ -426,6 +428,37 @@ class JSONVisitor:
                     repr(top_of_state),
                     repr(popped),
                 )
+
+        if (
+            isinstance(popped, n.Directive)
+            and f"{popped.domain}:{popped.name}" == ":glossary"
+        ):
+
+            definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
+
+            if definition_list is None:
+                return
+
+            if len(popped.children) != 1:
+                self.diagnostics.append(MalformedGlossary(util.get_line(node)))
+                return
+
+            if popped.options.get("sorted", False):
+                definition_list.children = sorted(
+                    definition_list.children,
+                    key=lambda DefinitionListItem: "".join(
+                        term.get_text() for term in DefinitionListItem.term
+                    ),
+                )
+
+            for item in definition_list.get_child_of_type(n.DefinitionListItem):
+                term_text = "".join(term.get_text() for term in item.term)
+                term_identifier = make_id(term_text)
+                identifier = n.TargetIdentifier(item.start, [], [term_identifier])
+                identifier.children = item.term[:]
+                target = n.InlineTarget(item.start, [], "std", "term", None)
+                target.children = [identifier]
+                item.term.append(target)
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int
