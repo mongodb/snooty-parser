@@ -12,7 +12,7 @@ from .util import ast_dive
 from .util_test import check_ast_testing_string
 from . import n
 
-build_identifiers: BuildIdentifierSet = {"commit_hash": "123456"}
+build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "789"}
 
 
 @dataclass
