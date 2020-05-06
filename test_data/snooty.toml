@@ -4,3 +4,4 @@ name = "test_data"
 version = 3.4
 package-name-org = "mongodb-org"
 pgp-version = "{+version+}"
+atlas = "MongoDB Atlas"

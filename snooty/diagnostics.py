@@ -295,3 +295,20 @@ class CannotOpenFile(Diagnostic):
         super().__init__(f"Error opening {str(path)}: {reason}", start, end)
         self.path = path
         self.reason = reason
+
+
+class CannotRenderOpenAPI(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        path: Path,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Failed to render OpenAPI template for {str(path)}: {reason}", start, end
+        )
+        self.path = path
+        self.reason = reason
