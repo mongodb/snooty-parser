@@ -33,6 +33,7 @@ from . import n, gizaparser, rstparser, util
 from .cache import Cache
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
+from .openapi import OpenAPI
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
@@ -501,6 +502,42 @@ class JSONVisitor:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
+
+        elif name == "openapi":
+            if argument_text is None:
+                self.diagnostics.append(ExpectedPathArg(name, line))
+                return doc
+
+            _, filepath = util.reroot_path(
+                Path(argument_text), self.docpath, self.project_config.source_path
+            )
+
+            try:
+                with open(filepath) as f:
+                    openapi = OpenAPI.load(f)
+
+                def create_page() -> Tuple[Page, EmbeddedRstParser]:
+                    # Create dummy page in order to use EmbeddedRstParser
+                    page = Page.create(filepath, None, "", n.Root((-1,), [], {}))
+                    diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+                    return (
+                        page,
+                        EmbeddedRstParser(
+                            self.project_config,
+                            page,
+                            diagnostics.setdefault(filepath, []),
+                        ),
+                    )
+
+                openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
+                self.diagnostics.extend(diagnostics)
+                doc.children.extend(openapi_ast)
+
+            except OSError as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, line)
+                )
+                return doc
 
         elif name == "literalinclude":
             if argument_text is None:

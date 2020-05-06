@@ -606,6 +606,19 @@ inherit = "_guides-base"
 #    - second related page}
 # """
 
+[directive.openapi]
+help = """Include a reStructuredText file's contents."""
+argument_type = ["path", "uri"]
+
+[directive.operation]
+content_type = "block"
+options.hash = "string"
+options.method = "string"
+options.path = "string"
+
+[role.required]
+type = "explicit_title"
+
 ###### DevHub
 [directive._devhub-base]
 required_context = "devhub"
