@@ -131,6 +131,9 @@ class Postprocessor:
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
         self.pending_program: Optional[SerializableType] = None
+        # for attr in dir(self):
+        #     if not attr.startswith("__"):
+        #         print(f"{attr}:", getattr(self, attr))
 
     def run(
         self, pages: Dict[FileId, Page]
@@ -398,11 +401,10 @@ class Postprocessor:
             argument = get_include_argument(node)
             include_slug = clean_slug(argument)
             include_fileid = self.slug_fileid_mapping.get(include_slug)
-            print("\ninclude_fileid:", include_fileid)
             # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
             # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
             if include_fileid is None:
-                # This should be commented out: 
+                # This should be commented out:
                 include_slug = argument.strip("/")
                 include_fileid = self.slug_fileid_mapping.get(include_slug)
 
@@ -420,17 +422,86 @@ class Postprocessor:
             argument = get_include_argument(node)
             include_slug = clean_slug(argument)
 
-            print("\nself.slug_fileid_mapping:", self.slug_fileid_mapping)
-            print("\ninclude_slug:", include_slug)
-            print("\ncwd:", os.getcwd())
-            with open(include_slug) as file:
-                contents = file.read()
+            # print("\ncwd:", os.getcwd())
+            # print(
+            #     "\nfile location:",
+            #     self.project_config.root / self.project_config.source / include_slug,
+            # )
+
+            with open(
+                self.project_config.root / self.project_config.source / include_slug
+            ) as file:
+                # Split the file into lines, and find our start-after query
+                lines = file.read().split("\n")
+                start_after = 0
+                end_before = len(lines)
+                # Seems like this is off-by-one
+                if "start-after" in node.options:
+                    start_after_text = node.options["start-after"]
+                    assert isinstance(start_after_text, str)
+                    start_after = next(
+                        (
+                            idx
+                            for idx, line in enumerate(lines)
+                            if start_after_text in line
+                        ),
+                        -1,
+                    )
+                    if start_after < 0:
+                        # diagnostics.append(
+                        #     InvalidLiteralInclude(
+                        #         f'"{start_after_text}" not found in {node.asset.path}',
+                        #         node.node.start[0],
+                        #     )
+                        # )
+                        return
+
+                # ...now find the end-before query
+                if "end-before" in node.options:
+                    end_before_text = node.options["end-before"]
+                    assert isinstance(end_before_text, str)
+                    end_before = next(
+                        (
+                            idx
+                            for idx, line in enumerate(lines, start=start_after)
+                            if end_before_text in line
+                        ),
+                        -1,
+                    )
+                    if end_before < 0:
+                        # diagnostics.append(
+                        #     InvalidLiteralInclude(
+                        #         f'"{end_before_text}" not found in {node.asset.path}',
+                        #         node.node.start[0],
+                        #     )
+                        # )
+                        return
+                    end_before -= start_after
+
+                # Find the requested lines
+                # Removed a + 1 from start_after
+                lines = lines[(start_after):end_before]
+
+                # Deduce a reasonable dedent, if requested.
+                if "dedent" in node.options:
+                    try:
+                        dedent = min(
+                            len(line) - len(line.lstrip())
+                            for line in lines
+                            if len(line.lstrip()) > 0
+                        )
+                    except ValueError:
+                        # Handle the (unlikely) case where there are no non-empty lines
+                        dedent = 0
+                    lines = [line[dedent:] for line in lines]
+
+                # Add functionality to query self.project_config.options["language"]
                 _, ext = os.path.splitext(include_slug)
                 lang = ext.lstrip(".")
-                code = n.Code((1,), lang, True, [], contents, True)
+                content = "\n".join(lines)
+                code = n.Code((1,), lang, True, [], content, True)
 
             node.children.append(code)
-            # Start before and end before are options of the literalinclude directive (?)
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""

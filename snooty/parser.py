@@ -75,6 +75,7 @@ class _DefinitionListTerm(n.InlineParent):
         ), f"{self.__class__.__name__} is private and should have been removed from AST"
 
 
+# This is saved as a static asset
 # class PendingLiteralInclude(PendingTask):
 #     """Transform a literal-include directive AST node into a code node."""
 

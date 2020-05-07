@@ -161,6 +161,8 @@ def test_codeblock() -> None:
     )
 
 
+# Parser code has been removed, so we're still dealing with a literalinclude directive instead of a codeblock
+# Update this test appropriately
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

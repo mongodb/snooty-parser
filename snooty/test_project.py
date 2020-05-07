@@ -66,7 +66,7 @@ def test() -> None:
         code_length = 0
         checksums: List[str] = []
         index = backend.pages[index_id]
-        assert len(index.static_assets) == 2
+        assert len(index.static_assets) == 1
         assert not index.pending_tasks
         for node in ast_dive(index.ast):
             if isinstance(node, n.Code):
