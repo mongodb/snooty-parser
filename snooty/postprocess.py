@@ -131,9 +131,6 @@ class Postprocessor:
             clean_slug(slug) for slug in project_config.toc_landing_pages
         ]
         self.pending_program: Optional[SerializableType] = None
-        # for attr in dir(self):
-        #     if not attr.startswith("__"):
-        #         print(f"{attr}:", getattr(self, attr))
 
     def run(
         self, pages: Dict[FileId, Page]
@@ -421,21 +418,15 @@ class Postprocessor:
         elif node.name == "literalinclude":
             argument = get_include_argument(node)
             include_slug = clean_slug(argument)
-
-            # print("\ncwd:", os.getcwd())
-            # print(
-            #     "\nfile location:",
-            #     self.project_config.root / self.project_config.source / include_slug,
-            # )
-
-            with open(
+            include_filepath = (
                 self.project_config.root / self.project_config.source / include_slug
-            ) as file:
-                # Split the file into lines, and find our start-after query
+            )
+
+            with open(include_filepath) as file:
                 lines = file.read().split("\n")
+
+                # Locate the start-after query
                 start_after = 0
-                end_before = len(lines)
-                # Seems like this is off-by-one
                 if "start-after" in node.options:
                     start_after_text = node.options["start-after"]
                     assert isinstance(start_after_text, str)
@@ -456,7 +447,11 @@ class Postprocessor:
                         # )
                         return
 
-                # ...now find the end-before query
+                    # Only increment start_after if we located text (e.g. "// Example 5")
+                    start_after += 1
+
+                # ...now locate the end-before query
+                end_before = len(lines)
                 if "end-before" in node.options:
                     end_before_text = node.options["end-before"]
                     assert isinstance(end_before_text, str)
@@ -478,8 +473,6 @@ class Postprocessor:
                         return
                     end_before -= start_after
 
-                # Find the requested lines
-                # Removed a + 1 from start_after
                 lines = lines[(start_after):end_before]
 
                 # Deduce a reasonable dedent, if requested.
@@ -495,11 +488,16 @@ class Postprocessor:
                         dedent = 0
                     lines = [line[dedent:] for line in lines]
 
-                # Add functionality to query self.project_config.options["language"]
-                _, ext = os.path.splitext(include_slug)
-                lang = ext.lstrip(".")
-                content = "\n".join(lines)
-                code = n.Code((1,), lang, True, [], content, True)
+                selected_content = "\n".join(lines)
+
+                # Use the directive's language, if specified. Otherwise, use the file extension
+                language = (
+                    node.options["language"]
+                    if "language" in node.options
+                    else os.path.splitext(include_slug)[1].lstrip(".")
+                )
+
+                code = n.Code((1,), language, True, [], selected_content, True)
 
             node.children.append(code)
 

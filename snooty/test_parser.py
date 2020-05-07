@@ -185,20 +185,10 @@ def test_literalinclude() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-<code lang="py" copyable="True" linenos="True">db.inventory.insert_many([
-    {"item": "journal",
-     "qty": 25,
-     "tags": ["blank", "red"],
-     "size": {"h": 14, "w": 21, "uom": "cm"}},\n
-    {"item": "mat",
-     "qty": 85,
-     "tags": ["gray"],
-     "size": {"h": 27.9, "w": 35.5, "uom": "cm"}},\n
-    {"item": "mousepad",
-     "qty": 25,
-     "tags": ["gel", "blue"],
-     "size": {"h": 19, "w": 22.85, "uom": "cm"}}])</code>
-</root>""",
+            <directive dedent="True" end-before="End Example 3" linenos="True" name="literalinclude" start-after="Start Example 3">
+                <text>/driver-examples/pythonexample.py</text>
+            </directive>
+        </root>""",
     )
 
     # Test bad code-blocks
