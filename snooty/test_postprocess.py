@@ -53,12 +53,13 @@ def test_literal_includes(backend: Backend) -> None:
     literal_include_node = ast.children[0]
     assert isinstance(literal_include_node, n.Directive)
     assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) > 1
+    assert len(literal_include_node.children) == 1
 
     check_ast_testing_string(
         literal_include_node,
-        """<directive name="literalinclude">
-            <text>/includes/sample_code.rst</text>
+        r"""<directive name="literalinclude">
+            <text>/test_data/test_postprocessor/source/includes/sample_code.js</text>
+            <code copyable="True" lang="js" linenos="True">var str = "sample code";</code>
         </directive>""",
     )
 

@@ -378,6 +378,7 @@ class Postprocessor:
                 node.domain, node.name, target_ids, filename, title
             )
 
+    # Include the start/end line functionality
     def populate_include_nodes(self, filename: FileId, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
@@ -393,13 +394,15 @@ class Postprocessor:
         if not isinstance(node, n.Directive):
             return
 
-        if node.name == "include" or node.name == "literalinclude":
+        if node.name == "include":
             argument = get_include_argument(node)
             include_slug = clean_slug(argument)
             include_fileid = self.slug_fileid_mapping.get(include_slug)
+            print("\ninclude_fileid:", include_fileid)
             # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
             # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
             if include_fileid is None:
+                # This should be commented out: 
                 include_slug = argument.strip("/")
                 include_fileid = self.slug_fileid_mapping.get(include_slug)
 
@@ -412,6 +415,22 @@ class Postprocessor:
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
             node.children = ast.children
+
+        elif node.name == "literalinclude":
+            argument = get_include_argument(node)
+            include_slug = clean_slug(argument)
+
+            print("\nself.slug_fileid_mapping:", self.slug_fileid_mapping)
+            print("\ninclude_slug:", include_slug)
+            print("\ncwd:", os.getcwd())
+            with open(include_slug) as file:
+                contents = file.read()
+                _, ext = os.path.splitext(include_slug)
+                lang = ext.lstrip(".")
+                code = n.Code((1,), lang, True, [], contents, True)
+
+            node.children.append(code)
+            # Start before and end before are options of the literalinclude directive (?)
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""

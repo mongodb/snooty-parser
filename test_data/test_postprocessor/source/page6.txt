@@ -1,1 +1,1 @@
-.. literalinclude:: /includes/sample_code.rst
+.. literalinclude:: includes/sample_code.js

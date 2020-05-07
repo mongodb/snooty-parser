@@ -48,7 +48,7 @@ from .diagnostics import (
     DocUtilsParseError,
     CannotOpenFile,
     InvalidURL,
-    InvalidLiteralInclude,
+    # InvalidLiteralInclude,
     InvalidTableStructure,
     UnmarshallingError,
     ErrorParsingYAMLFile,
@@ -75,102 +75,102 @@ class _DefinitionListTerm(n.InlineParent):
         ), f"{self.__class__.__name__} is private and should have been removed from AST"
 
 
-class PendingLiteralInclude(PendingTask):
-    """Transform a literal-include directive AST node into a code node."""
+# class PendingLiteralInclude(PendingTask):
+#     """Transform a literal-include directive AST node into a code node."""
 
-    def __init__(
-        self, node: n.Code, asset: StaticAsset, options: Dict[str, SerializableType]
-    ) -> None:
-        super().__init__(node)
-        self.node: n.Code = node
-        self.asset = asset
-        self.options = options
+#     def __init__(
+#         self, node: n.Code, asset: StaticAsset, options: Dict[str, SerializableType]
+#     ) -> None:
+#         super().__init__(node)
+#         self.node: n.Code = node
+#         self.asset = asset
+#         self.options = options
 
-    def __call__(
-        self, diagnostics: List[Diagnostic], project: ProjectInterface
-    ) -> None:
-        """Load the literalinclude target text into our node."""
-        cache = project.expensive_operation_cache
-        # Use the cached node if our parameters match the cache entry
-        options_key = hash(tuple(((k, v) for k, v in self.options.items())))
-        entry = cache[(self.asset.fileid, options_key)]
-        if entry is not None:
-            assert isinstance(entry, n.Code)
-            dataclasses.replace(self.node, **dataclasses.asdict(entry))
-            return
+#     def __call__(
+#         self, diagnostics: List[Diagnostic], project: ProjectInterface
+#     ) -> None:
+#         """Load the literalinclude target text into our node."""
+#         cache = project.expensive_operation_cache
+#         # Use the cached node if our parameters match the cache entry
+#         options_key = hash(tuple(((k, v) for k, v in self.options.items())))
+#         entry = cache[(self.asset.fileid, options_key)]
+#         if entry is not None:
+#             assert isinstance(entry, n.Code)
+#             dataclasses.replace(self.node, **dataclasses.asdict(entry))
+#             return
 
-        try:
-            text = self.asset.path.read_text(encoding="utf-8")
-        except OSError as err:
-            diagnostics.append(
-                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
-            )
-            return
+#         try:
+#             text = self.asset.path.read_text(encoding="utf-8")
+#         except OSError as err:
+#             diagnostics.append(
+#                 CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
+#             )
+#             return
 
-        # Split the file into lines, and find our start-after query
-        lines = text.split("\n")
-        start_after = 0
-        end_before = len(lines)
-        if "start-after" in self.options:
-            start_after_text = self.options["start-after"]
-            assert isinstance(start_after_text, str)
-            start_after = next(
-                (idx for idx, line in enumerate(lines) if start_after_text in line), -1
-            )
-            if start_after < 0:
-                diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{start_after_text}" not found in {self.asset.path}',
-                        self.node.start[0],
-                    )
-                )
-                return
+#         # Split the file into lines, and find our start-after query
+#         lines = text.split("\n")
+#         start_after = 0
+#         end_before = len(lines)
+#         if "start-after" in self.options:
+#             start_after_text = self.options["start-after"]
+#             assert isinstance(start_after_text, str)
+#             start_after = next(
+#                 (idx for idx, line in enumerate(lines) if start_after_text in line), -1
+#             )
+#             if start_after < 0:
+#                 diagnostics.append(
+#                     InvalidLiteralInclude(
+#                         f'"{start_after_text}" not found in {self.asset.path}',
+#                         self.node.start[0],
+#                     )
+#                 )
+#                 return
 
-        # ...now find the end-before query
-        if "end-before" in self.options:
-            end_before_text = self.options["end-before"]
-            assert isinstance(end_before_text, str)
-            end_before = next(
-                (
-                    idx
-                    for idx, line in enumerate(lines, start=start_after)
-                    if end_before_text in line
-                ),
-                -1,
-            )
-            if end_before < 0:
-                diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{end_before_text}" not found in {self.asset.path}',
-                        self.node.start[0],
-                    )
-                )
-                return
-            end_before -= start_after
+#         # ...now find the end-before query
+#         if "end-before" in self.options:
+#             end_before_text = self.options["end-before"]
+#             assert isinstance(end_before_text, str)
+#             end_before = next(
+#                 (
+#                     idx
+#                     for idx, line in enumerate(lines, start=start_after)
+#                     if end_before_text in line
+#                 ),
+#                 -1,
+#             )
+#             if end_before < 0:
+#                 diagnostics.append(
+#                     InvalidLiteralInclude(
+#                         f'"{end_before_text}" not found in {self.asset.path}',
+#                         self.node.start[0],
+#                     )
+#                 )
+#                 return
+#             end_before -= start_after
 
-        # Find the requested lines
-        lines = lines[(start_after + 1) : end_before]
+#         # Find the requested lines
+#         lines = lines[(start_after + 1) : end_before]
 
-        # Deduce a reasonable dedent, if requested.
-        if "dedent" in self.options:
-            try:
-                dedent = min(
-                    len(line) - len(line.lstrip())
-                    for line in lines
-                    if len(line.lstrip()) > 0
-                )
-            except ValueError:
-                # Handle the (unlikely) case where there are no non-empty lines
-                dedent = 0
-            lines = [line[dedent:] for line in lines]
+#         # Deduce a reasonable dedent, if requested.
+#         if "dedent" in self.options:
+#             try:
+#                 dedent = min(
+#                     len(line) - len(line.lstrip())
+#                     for line in lines
+#                     if len(line.lstrip()) > 0
+#                 )
+#             except ValueError:
+#                 # Handle the (unlikely) case where there are no non-empty lines
+#                 dedent = 0
+#             lines = [line[dedent:] for line in lines]
 
-        if "emphasize_lines" in self.options:
-            self.node.emphasize_lines = self.options["emphasize_lines"]  # type: ignore
+#         if "emphasize_lines" in self.options:
+#             self.node.emphasize_lines = self.options["emphasize_lines"]  # type: ignore
 
-        self.node.value = "\n".join(lines)
+#         self.node.value = "\n".join(lines)
 
-        # Update the cache with this node
-        cache[(self.asset.fileid, options_key)] = self.node
+#         # Update the cache with this node
+#         cache[(self.asset.fileid, options_key)] = self.node
 
 
 class PendingFigure(PendingTask):
@@ -500,37 +500,38 @@ class JSONVisitor:
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
 
-        elif name == "literalinclude":
-            if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
-                return doc
+        # elif name == "literalinclude":
+        #     if argument_text is None:
+        #         self.diagnostics.append(ExpectedPathArg(name, line))
+        #         return doc
 
-            asset_path = Path(argument_text)
-            lang = (
-                options["language"]
-                if "language" in options
-                else asset_path.suffix.lstrip(".")
-            )
-            code = n.Code(
-                (line,),
-                lang,
-                "copyable" not in options or options["copyable"] == "true",
-                [],
-                "",
-                "linenos" in options,
-            )
+        #     asset_path = Path(argument_text)
+        #     lang = (
+        #         options["language"]
+        #         if "language" in options
+        #         else asset_path.suffix.lstrip(".")
+        #     )
+        #     code = n.Code(
+        #         (line,),
+        #         lang,
+        #         "copyable" not in options or options["copyable"] == "true",
+        #         [],
+        #         "",
+        #         "linenos" in options,
+        #     )
 
-            try:
-                static_asset = self.add_static_asset(asset_path, False)
-                self.pending.append(PendingLiteralInclude(code, static_asset, options))
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
-                )
-            except ValueError as err:
-                msg = f'Invalid "literalinclude": {err}'
-                self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node)))
-            return code
+        #     try:
+        #         static_asset = self.add_static_asset(asset_path, False)
+        #         self.pending.append(PendingLiteralInclude(code, static_asset, options))
+        #     except OSError as err:
+        #         self.diagnostics.append(
+        #             CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+        #         )
+        #     except ValueError as err:
+        #         msg = f'Invalid "literalinclude": {err}'
+        #         self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node))) # Keep validation here
+        #     return code
+
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
