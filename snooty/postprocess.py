@@ -380,12 +380,12 @@ class Postprocessor:
                 node.domain, node.name, target_ids, filename, title
             )
 
-    # Include the start/end line functionality
     def populate_include_nodes(self, filename: FileId, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
         Because the include contents are added to the tree on which the event parser is
-        running, they will automatically be parsed and have their includes expanded, too."""
+        running, they will automatically be parsed and have their includes expanded, too.
+        Literally-included contents may not be automatically parsed, and are handled below."""
 
         def get_include_argument(node: n.Directive) -> str:
             """Get filename of include"""
@@ -403,13 +403,7 @@ class Postprocessor:
             # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
             # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
             if include_fileid is None:
-                # This should be commented out:
-                include_slug = argument.strip("/")
-                include_fileid = self.slug_fileid_mapping.get(include_slug)
-
-                # End if we can't find a file
-                if include_fileid is None:
-                    return
+                return
 
             include_page = self.pages.get(include_fileid)
             assert include_page is not None

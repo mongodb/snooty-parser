@@ -160,7 +160,7 @@ def test_literalinclude() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    # Test a simple literal include directive (without handling the code block)
+    # Test a simple literal include directive (without handling the code-block)
     page, diagnostics = parse_rst(
         parser,
         path,
