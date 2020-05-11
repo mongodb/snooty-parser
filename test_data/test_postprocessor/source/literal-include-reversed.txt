@@ -1,0 +1,3 @@
+.. literalinclude:: includes/sample_code.py
+   :start-after: start example 2
+   :end-before: end example 1

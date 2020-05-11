@@ -24,6 +24,8 @@ from .diagnostics import (
     SubstitutionRefError,
     ExpectedPathArg,
     UnnamedPage,
+    InvalidLiteralInclude,
+    CannotOpenFile,
 )
 from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS
@@ -422,82 +424,100 @@ class Postprocessor:
                 self.project_config.root / self.project_config.source / include_slug
             )
 
-            with open(include_filepath) as file:
-                lines = file.read().split("\n")
+            # Attempt to read the literally included file
+            try:
+                with open(include_filepath) as file:
+                    # Do we need an encoding="utf-8"?
+                    text = file.read()
 
-                # Locate the start-after query
-                start_after = 0
-                if "start-after" in node.options:
-                    start_after_text = node.options["start-after"]
-                    assert isinstance(start_after_text, str)
-                    start_after = next(
-                        (
-                            idx
-                            for idx, line in enumerate(lines)
-                            if start_after_text in line
-                        ),
-                        -1,
-                    )
-                    if start_after < 0:
-                        # diagnostics.append(
-                        #     InvalidLiteralInclude(
-                        #         f'"{start_after_text}" not found in {node.asset.path}',
-                        #         node.node.start[0],
-                        #     )
-                        # )
-                        return
-
-                    # Only increment start_after if we located text (e.g. "// Example 5")
-                    start_after += 1
-
-                # ...now locate the end-before query
-                end_before = len(lines)
-                if "end-before" in node.options:
-                    end_before_text = node.options["end-before"]
-                    assert isinstance(end_before_text, str)
-                    end_before = next(
-                        (
-                            idx
-                            for idx, line in enumerate(lines, start=start_after)
-                            if end_before_text in line
-                        ),
-                        -1,
-                    )
-                    if end_before < 0:
-                        # diagnostics.append(
-                        #     InvalidLiteralInclude(
-                        #         f'"{end_before_text}" not found in {node.asset.path}',
-                        #         node.node.start[0],
-                        #     )
-                        # )
-                        return
-                    end_before -= start_after
-
-                lines = lines[(start_after):end_before]
-
-                # Deduce a reasonable dedent, if requested.
-                if "dedent" in node.options:
-                    try:
-                        dedent = min(
-                            len(line) - len(line.lstrip())
-                            for line in lines
-                            if len(line.lstrip()) > 0
-                        )
-                    except ValueError:
-                        # Handle the (unlikely) case where there are no non-empty lines
-                        dedent = 0
-                    lines = [line[dedent:] for line in lines]
-
-                selected_content = "\n".join(lines)
-
-                # Use the directive's language, if specified. Otherwise, use the file extension
-                language = (
-                    node.options["language"]
-                    if "language" in node.options
-                    else os.path.splitext(include_slug)[1].lstrip(".")
+            # Change -1 to the proper location of the literalinclude in bad-file.txt (from literalinclude span)
+            except OSError as err:
+                self.diagnostics[filename].append(
+                    CannotOpenFile(include_filepath, err.strerror, -1)
                 )
+                return
 
-                code = n.Code((1,), language, True, [], selected_content, True)
+            lines = text.split("\n")
+
+            # Locate the start-after query
+            start_after = 0
+            if "start-after" in node.options:
+                start_after_text = node.options["start-after"]
+                assert isinstance(start_after_text, str)
+                start_after = next(
+                    (idx for idx, line in enumerate(lines) if start_after_text in line),
+                    -1,
+                )
+                # Change -1 to the proper location of the literalinclude in bad-file.txt (from literalinclude span)
+                if start_after < 0:
+                    self.diagnostics[filename].append(
+                        InvalidLiteralInclude(
+                            f'"{start_after_text}" not found in {include_filepath}', -1
+                        )
+                    )
+                    return
+
+                # Only increment start_after if we located text (e.g. "// Example 5")
+                start_after += 1
+
+            # ...now locate the end-before query
+            end_before = len(lines)
+            if "end-before" in node.options:
+                end_before_text = node.options["end-before"]
+                assert isinstance(end_before_text, str)
+                end_before = next(
+                    (
+                        idx
+                        for idx, line in enumerate(lines, start=start_after)
+                        if end_before_text in line
+                    ),
+                    -1,
+                )
+                # Change -1 to the proper location of the literalinclude in bad-file.txt (from node.span)
+                if end_before < 0:
+                    self.diagnostics[filename].append(
+                        InvalidLiteralInclude(
+                            f'"{end_before_text}" not found in {include_filepath}', -1
+                        )
+                    )
+                    return
+                end_before -= start_after
+
+            # Check for end_before preceding start_after
+            if start_after >= end_before:
+                self.diagnostics[filename].append(
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" precedes {start_after_text} in {include_filepath}',
+                        -1,
+                    )
+                )
+                return
+
+            lines = lines[start_after:end_before]
+
+            # Deduce a reasonable dedent, if requested.
+            if "dedent" in node.options:
+                try:
+                    dedent = min(
+                        len(line) - len(line.lstrip())
+                        for line in lines
+                        if len(line.lstrip()) > 0
+                    )
+                except ValueError:
+                    # Handle the (unlikely) case where there are no non-empty lines
+                    dedent = 0
+                lines = [line[dedent:] for line in lines]
+
+            selected_content = "\n".join(lines)
+
+            # Use the directive's language, if specified. Otherwise, use the file extension
+            language = (
+                node.options["language"]
+                if "language" in node.options
+                else os.path.splitext(include_slug)[1].lstrip(".")
+            )
+
+            code = n.Code((1,), language, True, [], selected_content, True)
 
             node.children.append(code)
 

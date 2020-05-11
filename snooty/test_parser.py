@@ -2,13 +2,7 @@ from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
-from .diagnostics import (
-    Diagnostic,
-    InvalidURL,
-    DocUtilsParseError,
-    CannotOpenFile,
-    InvalidLiteralInclude,
-)
+from .diagnostics import Diagnostic, InvalidURL, DocUtilsParseError
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
 ROOT_PATH = Path("test_data")
@@ -161,14 +155,12 @@ def test_codeblock() -> None:
     )
 
 
-# Parser code has been removed, so we're still dealing with a literalinclude directive instead of a codeblock
-# Update this test appropriately
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    # Test a simple code-block
+    # Test a simple literal include directive (without handling the code block)
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -190,41 +182,6 @@ def test_literalinclude() -> None:
             </directive>
         </root>""",
     )
-
-    # Test bad code-blocks
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. literalinclude:: /driver-examples/pythonexample.py
-   :start-after: Start Example 0
-   :end-before: End Example 3
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
-
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. literalinclude:: /driver-examples/pythonexample.py
-   :start-after: Start Example 3
-   :end-before: End Example 0
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
-
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. literalinclude:: /driver-examples/garbagnrekvjisd.py
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], CannotOpenFile)
 
 
 def test_include() -> None:

@@ -1,1 +1,0 @@
-.. literalinclude:: includes/sample_code.js
