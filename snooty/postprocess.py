@@ -427,19 +427,17 @@ class Postprocessor:
             # Attempt to read the literally included file
             try:
                 with open(include_filepath) as file:
-                    # Do we need an encoding="utf-8"?
                     text = file.read()
 
-            # Change -1 to the proper location of the literalinclude in bad-file.txt (from literalinclude span)
             except OSError as err:
                 self.diagnostics[filename].append(
-                    CannotOpenFile(include_filepath, err.strerror, -1)
+                    CannotOpenFile(include_filepath, err.strerror, node.span + (-1,))
                 )
                 return
 
             lines = text.split("\n")
 
-            # Locate the start-after query
+            # Locate the start_after query
             start_after = 0
             if "start-after" in node.options:
                 start_after_text = node.options["start-after"]
@@ -448,19 +446,19 @@ class Postprocessor:
                     (idx for idx, line in enumerate(lines) if start_after_text in line),
                     -1,
                 )
-                # Change -1 to the proper location of the literalinclude in bad-file.txt (from literalinclude span)
                 if start_after < 0:
                     self.diagnostics[filename].append(
                         InvalidLiteralInclude(
-                            f'"{start_after_text}" not found in {include_filepath}', -1
+                            f'"{start_after_text}" not found in {include_filepath}',
+                            node.span + (-1,),
                         )
                     )
                     return
 
-                # Only increment start_after if we located text (e.g. "// Example 5")
+                # Only increment start_after if text is specified, to avoid capturing the start_after_text
                 start_after += 1
 
-            # ...now locate the end-before query
+            # ...now locate the end_before query
             end_before = len(lines)
             if "end-before" in node.options:
                 end_before_text = node.options["end-before"]
@@ -473,49 +471,35 @@ class Postprocessor:
                     ),
                     -1,
                 )
-                # Change -1 to the proper location of the literalinclude in bad-file.txt (from node.span)
                 if end_before < 0:
                     self.diagnostics[filename].append(
                         InvalidLiteralInclude(
-                            f'"{end_before_text}" not found in {include_filepath}', -1
+                            f'"{end_before_text}" not found in {include_filepath}',
+                            node.span + (-1,),
                         )
                     )
                     return
                 end_before -= start_after
 
-            # Check for end_before preceding start_after
+            # Check that start_after_text precedes end_before_text
             if start_after >= end_before:
                 self.diagnostics[filename].append(
                     InvalidLiteralInclude(
                         f'"{end_before_text}" precedes {start_after_text} in {include_filepath}',
-                        -1,
+                        node.span + (-1,),
                     )
                 )
                 return
 
             lines = lines[start_after:end_before]
 
-            # Deduce a reasonable dedent, if requested.
             if "dedent" in node.options:
-                try:
-                    dedent = min(
-                        len(line) - len(line.lstrip())
-                        for line in lines
-                        if len(line.lstrip()) > 0
-                    )
-                except ValueError:
-                    # Handle the (unlikely) case where there are no non-empty lines
-                    dedent = 0
-                lines = [line[dedent:] for line in lines]
+                assert isinstance(node.options["dedent"], int)
+                lines = [line[node.options["dedent"] :] for line in lines]
 
             selected_content = "\n".join(lines)
 
-            # Use the directive's language, if specified. Otherwise, use the file extension
-            language = (
-                node.options["language"]
-                if "language" in node.options
-                else os.path.splitext(include_slug)[1].lstrip(".")
-            )
+            language = node.options["language"] if "language" in node.options else ""
 
             code = n.Code((1,), language, True, [], selected_content, True)
 

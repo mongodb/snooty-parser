@@ -1,3 +1,0 @@
-.. literalinclude:: includes/sample_code.py
-   :start-after: does not exist
-   :end-before: end example 1

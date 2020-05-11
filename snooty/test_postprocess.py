@@ -54,19 +54,18 @@ def test_deprecated_versions(backend: Backend) -> None:
 
 def test_literal_includes(backend: Backend) -> None:
     # Test a simple literally-included code block
-    page_id = FileId("literal-include-default.txt")
+    page_id = FileId("literal-include.txt")
     ast = backend.pages[page_id].ast
     literal_include_node = ast.children[0]
     assert isinstance(literal_include_node, n.Directive)
     assert literal_include_node.name == "literalinclude"
     assert len(literal_include_node.children) == 1
 
-    # Check in atlas where the filename is include as a child or as a argument in the literalinclude directive
     check_ast_testing_string(
         literal_include_node,
         """<directive name="literalinclude">
-<text>includes/simple_sample_code.js</text>
-<code copyable="True" lang="js" linenos="True">var str = "sample code";
+<text>includes/sample_code.js</text>
+<code copyable="True" linenos="True">var str = "sample code";
 var i = 0;
 for (i = 0; i &lt; 10; i++) {
   str += i;
@@ -74,72 +73,35 @@ for (i = 0; i &lt; 10; i++) {
 </directive>""",
     )
 
-    # Test a literally-include code block with specified options
-    page_id = FileId("literal-include-options.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 1
+    # Test a literally-included code block with fully specified options
+    literal_include_node = ast.children[1]
+    check_ast_testing_string(
+        literal_include_node,
+        """<directive name="literalinclude" dedent="4" end-before="end example 1" language="python" start-after="start example 1">
+        <text>includes/sample_code.py</text>
+        <code copyable="True" lang="python" linenos="True">print("test dedent")</code>
+        </directive>""",
+    )
 
-    # check_ast_testing_string(
-    #     literal_include_node,
-    #     """<directive name="literalinclude" dedent="4" end-before: "end example 1" language: "python" start-after: "start example 1">
-    #     <text>includes/sample_code.py</text>
-    #     <code copyable="True" lang="python" linenos="True">print()</code>
-    #     </directive>""",
-    # )
-
+    # We have generated 4 errors from literal-include.txt (outlined below)
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 0
+    assert len(diagnostics) == 4
 
     # Test failure to locate included code file
-    page_id = FileId("bad-file.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 0
-
-    diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
+    literal_include_node = ast.children[2]
     assert isinstance(diagnostics[0], CannotOpenFile)
 
-    # Test failure to locate start line
-    page_id = FileId("literal-include-bad-start.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 0
+    # Test failure to locate start-after text
+    literal_include_node = ast.children[3]
+    assert isinstance(diagnostics[1], InvalidLiteralInclude)
 
-    diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    # Test failure to locate end-before text
+    literal_include_node = ast.children[4]
+    assert isinstance(diagnostics[2], InvalidLiteralInclude)
 
-    # Test failure to locate end line
-    page_id = FileId("literal-include-bad-end.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 0
-
-    diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], InvalidLiteralInclude)
-
-    # Test swapped start and end lines (e.g. end line is located higher than the start line)
-    page_id = FileId("literal-include-reversed.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 0
-
-    diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    # Test start-after text is below end-before text
+    literal_include_node = ast.children[5]
+    assert isinstance(diagnostics[3], InvalidLiteralInclude)
 
 
 def test_expand_includes(backend: Backend) -> None:
@@ -171,8 +133,6 @@ def test_expand_includes(backend: Backend) -> None:
             </section>
         </directive>""",
     )
-
-    # Why is there no other test here?
 
 
 def test_validate_ref_targets(backend: Backend) -> None:

@@ -1,5 +1,5 @@
     # start example 1
-    print()
+    print("test dedent")
     # end example 1
 
     # start example 2

@@ -1,5 +1,0 @@
-.. literalinclude:: includes/sample_code.py
-   :language: python
-   :start-after: start example 1
-   :end-before: end example 1
-   :dedent: 4
