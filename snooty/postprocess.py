@@ -403,7 +403,12 @@ class Postprocessor:
             # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
             # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
             if include_fileid is None:
-                return
+                include_slug = argument.strip("/")
+                include_fileid = self.slug_fileid_mapping.get(include_slug)
+
+                # End if we can't find a file
+                if include_fileid is None:
+                    return
 
             include_page = self.pages.get(include_fileid)
             assert include_page is not None
