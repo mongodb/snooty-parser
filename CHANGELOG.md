@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for literal includes (DOP-876).
 
+## [v0.4.6] - 2020-05-06
+
+### Added
+
+- Support for the glossery directive (DOP-888).
+- Optional support for logging diagnostics as JSON objects (DOP-969).
+
+### Changed
+
+- The optional patch ID is now written to the metadata document.
+
+## [v0.4.5] - 2020-04-29
+
 ### Fixed
 
 - Support for links in step file headings (DOP-1015).

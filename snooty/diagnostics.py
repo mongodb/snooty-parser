@@ -1,6 +1,8 @@
 import enum
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 from pathlib import Path
+from .n import SerializableType
+from . import n
 
 
 class Diagnostic:
@@ -27,15 +29,14 @@ class Diagnostic:
         self.end = (end_line, end_column)
 
     class Level(enum.IntEnum):
-        info = 0
-        error = 1
+        info = 1
         warning = 2
+        error = 3
 
         @classmethod
-        def from_docutils(cls, docutils_level: int) -> "Diagnostic.Level":
-            level = docutils_level - 1
-            level = min(level, cls.warning)
+        def from_docutils(cls, level: int) -> "Diagnostic.Level":
             level = max(level, cls.info)
+            level = min(level, cls.error)
             return cls(level)
 
     @property
@@ -45,6 +46,14 @@ class Diagnostic:
     @property
     def severity_string(self) -> str:
         return self.severity.name.title()
+
+    def serialize(self) -> n.SerializedNode:
+        """Create dict containing diagnostic attributes for neatly reporting diagnostics at program completion"""
+        diag: Dict[str, SerializableType] = {}
+        diag["severity"] = self.severity_string.upper()
+        diag["start"] = self.start[0]
+        diag["message"] = self.message
+        return diag
 
 
 class UnexpectedIndentation(Diagnostic):
@@ -192,6 +201,21 @@ class MissingRef(Diagnostic):
     ) -> None:
         super().__init__(f"Missing ref; all {name} must define a ref", start, end)
         self.name = name
+
+
+class MalformedGlossary(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Malformed glossary: glossary must contain only a definition list",
+            start,
+            end,
+        )
 
 
 class FailedToInheritRef(Diagnostic):

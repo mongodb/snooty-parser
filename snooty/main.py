@@ -9,6 +9,11 @@ Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+
+Environment variables:
+  SNOOTY_PARANOID           0, 1 where 0 is default
+  DIAGNOSTICS_FORMAT        JSON, text where text is default
+
 """
 import getpass
 import logging
@@ -16,6 +21,7 @@ import os
 import pymongo
 import sys
 import toml
+import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
@@ -39,6 +45,8 @@ if PACKAGE_ROOT.is_file():
 COLL_DOCUMENTS = "documents"
 COLL_METADATA = "metadata"
 COLL_ASSETS = "assets"
+
+EXIT_STATUS_ERROR_DIAGNOSTICS = 2
 
 
 class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
@@ -75,23 +83,26 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 
 class Backend:
     def __init__(self) -> None:
-        self.total_warnings = 0
+        self.total_errors = 0
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        output = os.environ.get("DIAGNOSTICS_FORMAT", "text")
+
         for diagnostic in diagnostics:
-            # Line numbers are currently... uh, "approximate"
-            print(
-                "{}({}:{}ish): {}".format(
-                    diagnostic.severity_string.upper(),
-                    path,
-                    diagnostic.start[0],
-                    diagnostic.message,
-                )
-            )
-            self.total_warnings += 1
+            info = diagnostic.serialize()
+            info["path"] = path.as_posix()
+
+            if output == "JSON":
+                document = {"diagnostic": info}
+                print(json.dumps(document))
+            else:
+                print("{severity}({path}:{start}ish): {message}".format(**info))
+
+            if diagnostic.severity >= Diagnostic.Level.error:
+                self.total_errors += 1
 
     def on_update(
         self,
@@ -233,6 +244,7 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     identifiers = {}
 
     identifiers["commit_hash"] = args["--commit"]
+    identifiers["patch_id"] = args["--patch"]
 
     return identifiers
 
@@ -276,5 +288,5 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
-    if args["build"] and backend.total_warnings > 0:
-        sys.exit(1)
+    if args["build"] and backend.total_errors > 0:
+        sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)

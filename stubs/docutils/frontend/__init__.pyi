@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Dict, Sequence
 import optparse
 
 
@@ -10,3 +10,5 @@ class Values(optparse.Values):
 class OptionParser:
     def __init__(self, components: Sequence[type]) -> None: ...
     def get_default_values(self) -> Values: ...
+
+    thresholds: Dict[str, int] = ...
