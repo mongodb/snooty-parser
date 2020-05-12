@@ -2,12 +2,7 @@ from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
-from .diagnostics import (
-    Diagnostic,
-    InvalidURL,
-    DocUtilsParseError,
-    MalformedGlossary,
-)
+from .diagnostics import Diagnostic, InvalidURL, DocUtilsParseError, MalformedGlossary
 from .parser import parse_rst, JSONVisitor
 
 ROOT_PATH = Path("test_data")
