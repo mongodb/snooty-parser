@@ -80,6 +80,9 @@ class Inventory:
                 )
             )
 
+        # giza/intermanual expects a terminating newline
+        lines.append("")
+
         buffer.append(zlib.compress(bytes("\n".join(lines), "utf-8"), 9))
 
         return b"".join(buffer)
