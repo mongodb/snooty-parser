@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Error code 2 is now returned if there are error diagnostics, leaving error code 1 for crashes (DOP-922).
+
+### Fixed
+
+- Generated intersphinx inventories are now compatible with older versions of Sphinx (DOP-1094).
+- Snooty no longer crashes when generating or loading an intersphinx inventory with invalid target names (DOP-1079).
+- Diagnostic levels are now dealt with more carefully.
+
 ## [v0.4.6] - 2020-05-06
 
 ### Added
