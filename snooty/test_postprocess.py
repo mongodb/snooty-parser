@@ -65,7 +65,7 @@ def test_literal_includes(backend: Backend) -> None:
         literal_include_node,
         """<directive name="literalinclude">
 <text>includes/sample_code.js</text>
-<code copyable="True" linenos="True">var str = "sample code";
+<code copyable="True">var str = "sample code";
 var i = 0;
 for (i = 0; i &lt; 10; i++) {
   str += i;
@@ -77,7 +77,7 @@ for (i = 0; i &lt; 10; i++) {
     literal_include_node = ast.children[1]
     check_ast_testing_string(
         literal_include_node,
-        """<directive name="literalinclude" dedent="4" end-before="end example 1" language="python" start-after="start example 1">
+        """<directive name="literalinclude" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1">
         <text>includes/sample_code.py</text>
         <code copyable="True" lang="python" linenos="True">print("test dedent")</code>
         </directive>""",

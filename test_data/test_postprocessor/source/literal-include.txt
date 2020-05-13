@@ -5,6 +5,8 @@
    :start-after: start example 1
    :end-before: end example 1
    :dedent: 4
+   :linenos:
+   :copyable: false
 
 .. literalinclude:: includes/does_not_exist.js
 

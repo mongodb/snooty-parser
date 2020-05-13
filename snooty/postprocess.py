@@ -27,7 +27,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     CannotOpenFile,
 )
-from . import n, util
+from . import n, util, rstparser
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -493,14 +493,48 @@ class Postprocessor:
             lines = lines[start_after:end_before]
 
             if "dedent" in node.options:
-                assert isinstance(node.options["dedent"], int)
-                lines = [line[node.options["dedent"] :] for line in lines]
+                dedent = 0
+                # Dedent is specified as a nonnegative integer (number of characters)
+                if isinstance(node.options["dedent"], int):
+                    dedent = node.options["dedent"]
+                    lines = [line[dedent:] for line in lines]
+                # Dedent is specified as a flag
+                elif isinstance(node.options["dedent"], bool):
+                    # Deduce a reasonable dedent
+                    try:
+                        dedent = min(
+                            len(line) - len(line.lstrip())
+                            for line in lines
+                            if len(line.lstrip()) > 0
+                        )
+                    except ValueError:
+                        # Handle the (unlikely) case where there are no non-empty lines
+                        dedent = 0
+                else:
+                    self.diagnostics[filename].append(
+                        InvalidLiteralInclude(
+                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                            node.span + (-1,),
+                        )
+                    )
 
-            selected_content = "\n".join(lines)
-
+            span = (1,)
             language = node.options["language"] if "language" in node.options else ""
+            copyable = (
+                "copyable" not in node.options or node.options["copyable"] == "true"
+            )
+            emphasize_lines = (
+                rstparser.parse_linenos(node.options["emphasize-lines"], len(lines))
+                if "emphasize-lines" in node.options
+                else None
+            )
+            selected_content = "\n".join(lines)
+            linenos = "linenos" in node.options
 
-            code = n.Code((1,), language, True, [], selected_content, True)
+            # Code(span, language, copyable, emphasize_lines, value, linenos)
+            code = n.Code(
+                span, language, copyable, emphasize_lines, selected_content, linenos
+            )
 
             node.children.append(code)
 

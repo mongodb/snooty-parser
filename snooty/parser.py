@@ -429,7 +429,10 @@ class JSONVisitor:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
-
+        elif name == "literalinclude":
+            if argument_text is None:
+                self.diagnostics.append(ExpectedPathArg(name, line))
+                return doc
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))

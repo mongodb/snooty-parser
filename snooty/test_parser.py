@@ -156,6 +156,17 @@ def test_literalinclude() -> None:
         </root>""",
     )
 
+    # Test a literalinclude that has no argument file
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude::
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
