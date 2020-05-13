@@ -3,6 +3,7 @@ from pathlib import Path
 from pytest import raises
 from .intersphinx import fetch_inventory, Inventory
 from .parser import Project
+from .types import TargetDatabase, FileId
 from .test_project import Backend
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")
@@ -89,3 +90,21 @@ def test_dump_target_database() -> None:
             continue
 
         assert reference_definition == generated_definition
+
+
+def test_target_strange_fields() -> None:
+    db = TargetDatabase()
+
+    # Ensure that a weird target with a colon does not crash inventory generation
+    db.define_local_target("std", "label", ["foo:bar"], FileId("foo"), [])
+    inventory = db.generate_inventory("")
+
+    # Now corrupt the domain:role name pair to ensure we don't crash
+    good_role_name = "std:label:foo:bar"
+    weird_role_name = "std:lab:el:foo:bar"
+    inventory.targets[weird_role_name] = inventory.targets[good_role_name]._replace(
+        role=("std", "lab:el")
+    )
+    del inventory.targets[good_role_name]
+    inventory_bytes = inventory.dumps("", "")
+    Inventory.parse("", inventory_bytes)

@@ -221,7 +221,7 @@ class TargetDatabase:
             definition = definitions[0]
             uri = definition.fileid.without_known_suffix + "/"
             dispname = "".join(node.get_text() for node in definition.title)
-            domain, role_name, name = key.split(":", 3)
+            domain, role_name, name = key.split(":", 2)
 
             if not dispname:
                 dispname = name
