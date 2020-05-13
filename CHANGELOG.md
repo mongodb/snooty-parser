@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.7] - 2020-05-13
+
 ### Changed
 
 - Error code 2 is now returned if there are error diagnostics, leaving error code 1 for crashes (DOP-922).
