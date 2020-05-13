@@ -124,7 +124,7 @@ class Inventory:
                 logger.debug(f"Invalid priority in intersphinx inventory: {line}")
                 continue
 
-            domain, role = domain_and_role.split(":", 2)
+            domain, role = domain_and_role.split(":", 1)
 
             # "If {dispname} is identical to {name}, it is stored as -"
             if dispname == "-":
