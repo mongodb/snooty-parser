@@ -114,6 +114,7 @@ inherit = "include"
 options.start-after = "linenos"
 options.end-before = "linenos"
 options.linenos = "flag"
+options.copyable = "boolean"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"

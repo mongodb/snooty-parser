@@ -520,8 +520,9 @@ class Postprocessor:
 
             span = (1,)
             language = node.options["language"] if "language" in node.options else ""
+            # "copyable" is NOT in node.options, because it's not a directive option
             copyable = (
-                "copyable" not in node.options or node.options["copyable"] == "true"
+                "copyable" not in node.options or node.options["copyable"] == "True"
             )
             emphasize_lines = (
                 rstparser.parse_linenos(node.options["emphasize-lines"], len(lines))
@@ -531,12 +532,15 @@ class Postprocessor:
             selected_content = "\n".join(lines)
             linenos = "linenos" in node.options
 
+            print("\nnode.options: ", node.options)
+            print("\ncopyable: ", copyable)
             # Code(span, language, copyable, emphasize_lines, value, linenos)
             code = n.Code(
                 span, language, copyable, emphasize_lines, selected_content, linenos
             )
-
+            print("\ncode: ", code)
             node.children.append(code)
+            print("\nnode.children: ", node.children)
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""
