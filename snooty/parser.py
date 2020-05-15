@@ -630,6 +630,21 @@ class JSONVisitor:
                             image_argument, err.strerror, util.get_line(node)
                         )
                     )
+        elif key in {"landing:card"}:
+            image_argument = options.get("icon")
+
+            if image_argument:
+                try:
+                    static_asset = self.add_static_asset(
+                        Path(image_argument), upload=True
+                    )
+                    self.pending.append(PendingFigure(doc, static_asset))
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            image_argument, err.strerror, util.get_line(node)
+                        )
+                    )
 
         return doc
 
@@ -810,7 +825,7 @@ class _Project:
 
         self.postprocessor = (
             DevhubPostprocessor(self.config, self.targets)
-            if self.config.default_domain
+            if self.config.default_domain == "devhub"
             else Postprocessor(self.config, self.targets)
         )
 

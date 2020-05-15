@@ -1,0 +1,40 @@
+:template: landing
+
+============================
+Getting Started with MongoDB
+============================
+
+.. introduction::
+
+   MongoDB is a distributed, object-oriented database that uses 
+   JSON-like documents to work with data in a more natural way.
+
+.. atf-image:: /images/pink.png
+
+.. card-group::
+
+   .. card::
+      :headline: Run a self-managed database
+      :cta: Get started with MongoDB
+      :url: http://mongodb.com
+      :icon: /images/purple.png
+      :icon-alt: Alt text
+      :tag: server
+      
+      Download and install the MongoDB database on your own 
+      infrastructure.
+
+Learn through examples and best practices
+-----------------------------------------
+
+Zoe works at a university that uses MongoDB to store student   
+records. Since her background is in SQL…   
+
+.. cta::
+
+   :manual:`Read the Introduction to MongoDB </introduction>`
+
+.. image:: /images/pink.png
+   :alt: Alt text label
+   :class: fancypantscalloutpicturething
+
