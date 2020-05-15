@@ -129,6 +129,7 @@ options.scale = "string"
 options.width = "length"
 options.align = "alignment"
 options.lightbox = "flag"
+options.class = "string"
 
 [directive.image]
 inherit = "figure"
@@ -424,11 +425,6 @@ options.github = "uri"
 options.linkedin = "uri"
 
 
-[directive."devhub:atf-image"]
-help = "Path to the image to use for the above-the-fold header image"
-inherit = "_devhub-inline"
-argument_type = ["path", "uri"]
-
 [directive."devhub:type"]
 help = "Specify the type of document: article, quickstart, how-to, video, or live"
 inherit = "_devhub-inline"
@@ -485,7 +481,57 @@ help = "List of related articles."
 inherit = "_devhub-block"
 content_type = "list"
 
+##### Landing Pages
+[directive._landing-base]
+required_context = "landing"
+
+[directive._landing-inline]
+inherit = "_landing-base"
+argument_type = "string"
+
+[directive._landing-block]
+inherit = "_landing-base"
+content_type = "block"
+
+[directive."landing:introduction"]
+inherit = "_landing-block"
+
+[directive."landing:cta"]
+help = "Call to action directing users to a new part of the site"
+example = """..cta::
+
+   :manual:`Read the Introduction to MongoDB </introduction>`
+"""
+inherit = "_landing-block"
+
+[directive."landing:card-group"]
+inherit = "_landing-block"
+
+[directive."landing:card"]
+example = """.. card::
+   :headline: Run a self-managed database
+   :cta: Get started with MongoDB
+   :url: https://mongodb.com
+   :icon: /path/to/icon
+   :icon-alt: Icon's alt text
+   :tag: server
+
+   Download and install the MongoDB database on your own 
+   infrastructure.
+"""
+inherit = "_landing-block"
+options.headline = "string"
+options.cta = "string"
+options.url = "uri"
+options.icon = ["path", "uri"]
+options.icon-alt = "string"
+options.tag = "string"
+
 ###### Misc.
+[directive.atf-image]
+help = "Path to the image to use for the above-the-fold header image"
+argument_type = ["path", "uri"]
+
 [directive.pubdate]
 help = "Date the article was published. Format: YYYY-MM-DD"
 argument_type = "iso_8601"
