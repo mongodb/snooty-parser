@@ -27,17 +27,6 @@ content_type = "block"
 
 [directive.list-table]
 help = """Define a table using nested lists."""
-example = """.. list-table::
-   :header-rows: 1
-   :stub-columns: 1
-
-   * - Platform
-     - 4.0 Community & Enterprise
-     - 3.6 Community & Enterprise
-   * - Ubuntu 16.04
-     - |checkmark|
-     - |checkmark|
-"""
 content_type = "list_table"
 argument_type = "string"
 options.align = "alignment"
@@ -46,6 +35,22 @@ options.widths = "string"
 options.class = "string"
 options.header-rows = "nonnegative_integer"
 options.stub-columns = "nonnegative_integer"
+example = """.. list-table::
+   :header-rows: ${1:1 (Optional)}
+   :stub-columns: ${2:1 (Optional)}
+   :widths: ${3:10 10 20 (Optional)}
+${4:   :align:
+   :width:
+   :class:}
+
+   * - ${5:Row 1, column 1}
+     - 
+     -
+   * - 
+     - 
+     -
+
+"""
 
 [directive."ecosystem:landing-page-tiles"]
 
@@ -55,45 +60,86 @@ options.stub-columns = "nonnegative_integer"
 content_type = "block"
 argument_type = "string"
 options.class = "string"
+example = """.. admonition:: ${1:Title}
+   
+   ${2:Admonition content}
+"""
 
 [directive.note]
 inherit = "admonition"
+example = """.. note::
+   
+   ${1:Note block content}
+"""
 
 [directive.warning]
 inherit = "admonition"
+example = """.. warning::
+   
+   ${1:Warning block content}
+"""
 
 [directive.important]
 inherit = "admonition"
+example = """.. important::
+   
+   ${1:Important block content}
+"""
 
 [directive.danger]
 inherit = "admonition"
+example = """.. danger::
+   
+   ${1:Danger block content}
+"""
 
 [directive.caution]
 inherit = "admonition"
+example = """.. caution::
+   
+   ${1:Caution block content}
+"""
 
 [directive.tip]
 inherit = "admonition"
+example = """.. tip::
+   
+   ${1:Tip content}
+"""
 
 [directive.versionchanged]
 argument_type = "string"
 content_type = "block"
+example = """.. versionchanged:: ${1:v1.0}
+   ${2:Describe what changed in that version. Description is optional.}
+"""
 
 [directive.versionadded]
 argument_type = "string"
 content_type = "block"
-
+example = """.. versionadded:: ${1:v1.0}
+   ${2:Describe what was added in that version. Description is optional.}
+"""
 [directive.deprecated]
 argument_type = "string"
 content_type = "block"
+example = """.. deprecated:: ${1:v1.0}
+   ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
+"""
 
 [directive.see]
 argument_type = "string"
 content_type = "block"
+example = """.. see::
+   
+   ${1:String}
+"""
 
 [directive.todo]
 help = """Describes a task to be completed by a writer in the future."""
 argument_type = "string"
 content_type = "string"
+example = """.. todo::"""
 
 [directive.contents]
 argument_type = "string"
@@ -101,12 +147,22 @@ options.local = "flag"
 options.backlinks = "backlinks"
 options.depth = "nonnegative_integer"
 options.class = "string"
+example = """.. contents:: ${1:string}
+   ${2::local: (Optional)}
+   :backlinks: ${3|entry,top,none}
+   :depth: ${4:1 (Optional)}
+   :class: ${5:Fancy (Optional)}
+"""
 
 [directive.include]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
 options.start-after = "string"
 options.end-before = "string"
+example = """.. include:: ${1:/includes/file.rst}
+   ${2::start-after:
+   ::end-before:}
+"""
 
 [directive.literalinclude]
 help = """Include a file as a block of code."""
@@ -119,11 +175,31 @@ options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
 options.lines = "linenos"
+example = """..literalinclude:: ${1:/path/to/file.js}
+   :start-after: ${2:line number (Optional}}
+   :end-before: ${3:line number (Optional}}
+   :language: ${4:language for syntax highlighting}
+   ${5::copyable:
+   :dedent:
+   :emphasize-lines:
+   :lines:}
+"""
 
 [directive.figure]
 help = """Include an image file."""
 argument_type = ["path", "uri"]
 content_type = "block"
+example = """.. figure:: ${1:/path or uri.png}
+   :alt: ${2:Alt text for the image}
+   ${3::figwidth:
+   :width:
+   :scale:
+   :align:
+   :lightbox:
+   :class:}
+   
+   ${0: Optional caption for the figure.}
+"""
 options.alt = "string"
 options.figwidth = "length"
 options.scale = "string"
@@ -132,16 +208,36 @@ options.align = "alignment"
 options.lightbox = "flag"
 options.class = "string"
 
+
 [directive.image]
 inherit = "figure"
+example = """.. image:: ${1:/path or uri.png}
+   :alt: ${2: Alt text for the image}
+   #{3::figwidth:
+   :width:
+   :scale:
+   :align:
+   :lightbox:
+   :class:}
+   
+   ${0: Optional caption for the figure.}
+"""
 
 [directive.example]
 help = """A section providing an example related to the surrounding text."""
 content_type = "block"
+example = """.. example::
+   
+   ${0:Example}
+"""
 
 [directive.optional]
-help = """A section optional information or steps."""
+help = """A section of optional information or steps."""
 content_type = "block"
+exmaple = """.. optional::
+
+   ${0:Optional content}
+"""
 
 [directive.raw]
 help = """Include raw unparsed content when rendering into a given output format."""
@@ -153,6 +249,10 @@ content_type = "string"
 help = """Only parse a chunk of content if the condition in the argument is true."""
 argument_type = "string"
 content_type = "block"
+example = """.. cond:: ${1: string}
+   
+   ${0:Content block}
+"""
 
 [directive.only]
 inherit = "cond"
@@ -173,10 +273,28 @@ help = """A nested document providing related or reference material."""
 argument_type = "string"
 options.subtitle = "string"
 content_type = "block"
+exmaple = """.. sidebar:: ${1:string}
+   :subtitle: ${2:string}
+
+   ${3:Content block}
+"""
 
 [directive.toctree]
 help = """List pages to treat as children of this page."""
 content_type = "block"
+example = """.. toctree::
+   :maxdepth: ${1:int}
+   ${2::titlesonly:}
+   ${3::hidden:}
+   ${4::caption:
+   :includehidden:
+   :reversed:
+   :numbered:
+   :glob:}
+
+   ${0:/path-to-first-page
+   /path-to-second-page}
+"""
 options.caption = "string"
 options.titlesonly = "flag"
 options.hidden = "flag"
@@ -198,6 +316,12 @@ content_type = "block"
 argument_type = "string"
 options.hidden = "boolean"
 options.tabset = "string"
+example = """.. tabs:: ${1: string}
+   :hidden: ${2|true,false|}
+   :tabset: ${3:string}
+
+   ${0:Content block}
+"""
 
 [directive.tabs-cloud]
 inherit = "tabs"
@@ -242,6 +366,11 @@ inherit = "tabs"
 argument_type = "string"
 content_type = "block"
 options.tabid = "string"
+example = """.. tab:: ${1:Tab Title}
+   :tabid: ${2:id of the tab}
+
+   ${0: Tab content.}
+"""
 
 [directive.index]
 argument_type = "string"
@@ -253,9 +382,18 @@ content_type = "block"
 [directive.glossary]
 content_type = "block"
 options.sorted = "flag"
+example = """.. glossary::
+
+   ${1:Term}
+      ${0:Term's definition}
+"""
 
 [directive.rubric]
 argument_type = "string"
+example = """.. rubric:: ${1:Paragraph heading that is not used to create a TOC node}
+
+   $0
+"""
 
 [directive.code-block]
 help = """A block of code to show the user."""
@@ -265,35 +403,62 @@ options.copyable = "boolean"
 options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
+example = """.. code-block:: ${1:language}
+   ${2::copyable: (bool)
+   :emphasize-lines: (string)
+   :class: (string)
+   :linenos: (flag)}
+
+   ${0:code content}
+"""
 
 [directive.code]
 help = """A block of code to show the user."""
 inherit = "code-block"
+example = """.. code:: ${1:language}
+   ${2::copyable: (bool)
+   :emphasize-lines: (string)
+   :class: (string)
+   :linenos: (flag)}
+
+   ${0:code content}
+"""
 
 [directive.cssclass]
 help = """Add the given CSS class name to generated HTML of the contained (if content is given) or
           following (if not) page element."""
 argument_type = "string"
 content_type = "block"
+example = """.. cssclass:: ${1:class name}
+
+   ${0:Optional content to which class will apply. If no content given, class applies to following page element.}
+"""
 
 [directive.uriwriter]
 
 [directive.card-group]
 options.type = "card_type"
 content_type = "block"
+example = """.. card-group:: 
+   :card_type: ${1:small or large}
+
+   ${0:Card content}
+"""
 
 ###### Guides
+# Examples commented out to avoid confusion with similar devhub directives;
+# can be used for workspace-specific snippets in future.
 [directive.card]
 help = """A single-page card."""
 argument_type = "string"
 
 [directive.multi-card]
 help = """A card with multiple pages."""
-example = """.. multi-card:: MongoDB in the Cloud
+# example = """.. multi-card:: ${1:Card Title}
 
-   * cloud/atlas
-   * cloud/connectionstring
-"""
+#    * ${0:/path-to-included-article
+#    * }
+# """
 argument_type = "string"
 content_type = "path-list"
 
@@ -315,19 +480,27 @@ content_type = "block"
 help = """The guide's type."""
 inherit = "_guides-base"
 argument_type = "guide_categories"
+# example = """.. category:: ${1:Getting Started}
+# """
 
 [directive.level]
 help = """The expected level of user experience for this guide."""
 inherit = "_guides-base"
 argument_type = "user_level"
+# example = """.. level:: ${0|beginner,intermediate,advanced|}
+# """
 
 [directive.author]
 help = """The author of this guide."""
 inherit = "_guides-base"
+# example = """.. author:: ${0: Author of the guide}
+# """
 
 [directive.product_version]
 help = """The version of product to which this guide applies."""
 inherit = "_guides-base"
+# example = """.. product_version:: ${0:v4.4}
+# """
 
 [directive.hlist]
 content_type = "list"
@@ -336,52 +509,94 @@ options.columns = "nonnegative_integer"
 [directive.blockquote]
 help = """A block of content which is quoted from another source."""
 content_type = "block"
+# example = """.. blockquote:: 
+#    ${0: quoted content}
+# """
 
 [directive.languages]
 help = """A list of languages that this guide supports."""
-example = """.. languages::
+# example = """.. languages::
 
-   * shell
-   * compass
-   * python
-"""
+#    * ${0:shell
+#    * compass
+#    * python}
+# """
 inherit = "_guides-base"
 content_type = "list"
 
 [directive.deployments]
 help = """Lists the expected types of MongoDB deployments for this guide."""
 inherit = "_guides-base"
+# example = """.. deployments::
+
+#    * ${0:standalone
+#    * replica set}
+# """
 
 [directive.result_description]
 help = """Describes the end result that the user should have once they have finished this guide."""
 inherit = "_guides-base"
+example = """.. result_description::
+
+   ${0:End result user should reach when they've finished the guide}
+"""
 
 [directive.prerequisites]
 help = """The prerequisites to start this guide."""
 inherit = "_guides-base"
+# example = """.. prerequisites::
+
+#    ${0:List of prerequisites required before starting the guide's procedure}
+# """
 
 [directive.check_your_environment]
 help = """Checks the user should perform before starting this guide."""
 inherit = "_guides-base"
+# example = """.. check_your_environment::
+
+#    ${0:Verifications user should perform to ensure they're ready to
+#    do the procedure}
+# """
 
 [directive.time]
 help = """Shows the time expected for this guide."""
 inherit = "_guides-base"
+# example = """.. time:: ${0:20 minutes}
+# """
 
 [directive.procedure]
 help = """This guide's main procedure."""
 inherit = "_guides-base"
+# example = """.. procedure::
+
+#    ${0:Main container for the procedure}
+# """
 
 [directive.summary]
 inherit = "_guides-base"
-
+# example = """.. summary::
+   
+#    ${0:In this guide, you will…}
+# """
 [directive.whats_next]
 help = """What the user should do next. Typically a brief paragraph, followed by a list of articles."""
 inherit = "_guides-base"
+# example = """.. whats_next::
+
+#    ${1:Brief paragraph indicating what the user should do next.}
+
+#    ${0:* article example 1
+#    * article example 2}
+# """
 
 [directive.seealso]
 help = """Related pages. Typically a list."""
 inherit = "_guides-base"
+# example = """.. seealso::
+
+#    ${0:- first related page
+#    - second related page}
+# """
 
 ###### DevHub
 [directive._devhub-base]
@@ -398,21 +613,26 @@ content_type = "block"
 [directive."devhub:meta-description"]
 help = "Short and simple explanation of what the page is about. Try to include a target keyword and call to action. 125–155 Characters."
 inherit = "_devhub-block"
+example = """.. meta-description::
+
+   ${0:Short and simple explanation of what the page is about. Try to 
+   include a target keyword and call to action. 125–155 Characters.}
+"""
 
 [directive."devhub:author"]
 help = "Author profile for the byline."
 example = """.. author::
-   :name: Eliot Horowitz
-   :image: /path/to/image.jpg
-   :location: New York, NY
-   :company: MongoDB Inc.
-   :title: CTO
-   :website: http://www.example.com
-   :twitter: https://twitter.com/eliothorowitz
-   :github: https://github.com/erh
-   :linkedin: https://www.linkedin.com/in/eliothorowitz/
+   :name: ${1:Eliot Horowitz}
+   :image: ${2:/path/to/image.jpg}
+   :location: ${3:New York, NY}
+   :company: ${4:MongoDB Inc.}
+   :title: ${5:Co-founder}
+   :website: ${6:http://www.example.com}
+   :twitter: ${7:https://twitter.com/eliothorowitz}
+   :github: ${8:https://github.com/erh}
+   :linkedin: ${9:https://www.linkedin.com/in/eliothorowitz/}
 
-   Author bio goes here.
+   ${0:Author bio goes here.}
 """
 inherit = "_devhub-block"
 options.name = "string"
@@ -427,32 +647,36 @@ options.linkedin = "uri"
 
 
 [directive."devhub:type"]
-help = "Specify the type of document: article, quickstart, how-to, video, or live"
+help = "Specify the type of document"
 inherit = "_devhub-inline"
 argument_type = "devhub_type"
+example = """.. type:: ${1|article,quickstart,how-to,video,live|}
+"""
 
 [directive."devhub:level"]
 help = "Specify the experience level of the audience: beginner, intermediate, or advanced"
 inherit = "_devhub-inline"
 argument_type = "user_level"
+example = """.. level:: ${1|beginner,intermediate,advanced|}
+"""
 
 [directive."devhub:tags"]
 help = "User-specified tags."
 example = """.. tags::
 
-   * foo
-   * bar
-   * baz
+   * ${0:first tag
+   * second tag
+   * third tag}
 """
 inherit = "_devhub-block"
 content_type = "list"
 
 [directive."devhub:products"]
 help = "MongoDB products discussed in the article"
-example = """.. product::
+example = """.. products::
 
-   * Realm
-   * MongoDB Atlas
+   * ${0:Realm
+   * MongoDB Atlas}
 """
 inherit = "_devhub-block"
 content_type = "list"
@@ -460,27 +684,53 @@ content_type = "list"
 [directive."devhub:callout"]
 help = "Call out a specific University course, blog post, event, etc."
 inherit = "_devhub-block"
+example = """.. callout::
+   ${0:Call out specific content, such as an event, University course, etc.}
+"""
 
 [directive."devhub:introduction"]
 help = "Capture the reader's attention, offer the reason for the article's existence, and explain how the content will address the problem. Use the target keyword in the first 100 words."
 inherit = "_devhub-block"
+example = """.. introduction::
+
+   ${0:Capture the reader's attention, offer the reason for the article's existence, 
+   and explain how the content will address the problem. 
+   Use the target keyword in the first 100 words.}
+"""
 
 [directive."devhub:prerequisites"]
 help = "If your content has prerequisites, describe them here."
 inherit = "_devhub-block"
+example = """.. prerequisites::
+
+   ${0:If your content has prerequisites, describe them here}
+"""
 
 [directive."devhub:content"]
 help = "Body of the article. Use headers, links, lists, etc."
 inherit = "_devhub-block"
+example = """.. content::
+
+   ${0:Article content}
+"""
 
 [directive."devhub:summary"]
 help = "Summarize or conclude the article. Include a relevant call to action."
 inherit = "_devhub-block"
+example = """.. summary::
+
+   ${0:Summarize or conclude the article. Include a relevant call to action.}
+"""
 
 [directive."devhub:related"]
 help = "List of related articles."
 inherit = "_devhub-block"
 content_type = "list"
+example = """.. related::
+
+   * ${0: /path-to-first-related-article
+   * https://url-of-related-article}
+"""
 
 ##### Landing Pages
 [directive._landing-base]
@@ -501,26 +751,32 @@ inherit = "_landing-block"
 help = "Call to action directing users to a new part of the site"
 example = """..cta::
 
-   :manual:`Read the Introduction to MongoDB </introduction>`
+   ${0::manual:`Read the Introduction to MongoDB </introduction>`}
 """
 inherit = "_landing-block"
 
 [directive."landing:card-group"]
 inherit = "_landing-block"
+help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
+example = """.. card-group::
+   ${1::columns: 2}
+
+   $0
+"""
 
 [directive."landing:card"]
 example = """.. card::
-   :headline: Run a self-managed database
-   :cta: Get started with MongoDB
-   :url: https://mongodb.com
-   :icon: /path/to/icon
+   :headline: ${1:Run a self-managed database}
+   :cta: ${2:Get started with MongoDB}
+   :url: {$3:url-card-should-link-to}
+   ${4::icon: /path-to-icon.svg
    :icon-alt: Icon's alt text
-   :tag: server
+   :tag: server}
 
-   Download and install the MongoDB database on your own 
-   infrastructure.
+   ${0:Card content.}
 """
+help = """Card in a card-group. Each card links to the specified URI, and can include an icon, as well as a call-to-action string"""
 inherit = "_landing-block"
 options.headline = "string"
 options.cta = "string"
@@ -533,34 +789,30 @@ options.tag = "string"
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
 argument_type = ["path", "uri"]
+example = """.. atf-image:: ${0:/path-or-url-to-image.png}"""
 
 [directive.pubdate]
 help = "Date the article was published. Format: YYYY-MM-DD"
 argument_type = "iso_8601"
+example = """.. pubdate:: ${0:YYYY-MM-DD}"""
 
 [directive.updated-date]
 help = "Date the post was most recently updated. Format: YYYY-MM-DD"
 argument_type = "iso_8601"
+example = """.. updated-date:: ${0:YYYY-MM-DD}"""
 
 [directive.twitter]
-help = """Options
-- site: Corporate twitter @username to which the card should be attributed (e.g. @mongodb)
-- creator: Human twitter @username of the person who wrote the article (e.g. @eliothorowitz)
-- title: Concise title of the article. Truncated to one line on web and two on mobile.
-- image: Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF.
-- image-alt: Text description of the image conveying the essential nature of the image to users who are visually impaired.
-
-Body
-Concise summary of the content. Do not re-use the title of the document. Truncated to three lines on web; not displayed on mobile.
-"""
+help = """Provide the metadata required to automatically generate a card when posting the link to twitter."""
 example = """.. twitter::
-   :site: @mongodb
-   :creator: @Lauren_Schaefer
-   :title: Wordswordswords
-   :image: </path/to/image>
-   :image-alt: Image description
+   :site: ${1:Corporate twitter @username to which the card should be attributed}
+   :creator: ${2:Human twitter @username of the person who wrote the article}
+   :title: ${3:Concise title of the article. Truncated to one line on web and two on mobile.}
+   :image: ${4:Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF}
+   :image-alt: ${5:Text description of the image conveying the essential nature of the image to users who are visually impaired.}
 
-   This is the description of the tweet in up to 200 characters.
+   ${0:Concise summary of the content. Do not re-use the title of the document. 
+   Truncated to three lines on web; not displayed on mobile.
+   Max 200 characters.}
 """
 content_type = "block"
 options.site = "string"
@@ -570,21 +822,16 @@ options.image = ["path", "uri"]
 options.image-alt = "string"
 
 [directive.og]
-help="""Options
-- url: the canonical URL of the page without any session variables, parameters, etc.
-- title: Title of the article without any branding.
-- image: URL of the image that appears when someone shares the content.
-- type: Type of the media content. Default is website. You probably want article.
-"""
+help="""Provide the metadata required to automatically generate a card when posting to OG social-using sites, such as Facebook."""
 example= """.. og::
-   :url: http://developer.mongodb.com/article/active-active-application-architectures
-   :type: article
-   :title: Active-Active Application Architectures
-   :image: http://developer.mongodb.com/images/atf-images/generic/purple.png
+   :url: ${1:Canonical URL of the page without any session variables, params, etc.}
+   :type: ${2:article}
+   :title: ${3:Title of article without any branding}
+   :image: ${4:URL of image that should appear when someone shares the content}
 
-   A brief description of the content, usually between 2 and 4
+   ${0:A brief description of the content, usually between 2 and 4
    sentences. This will displayed below the title of the post on
-   Facebook.
+   Facebook.}
 """
 content_type = "block"
 options.url = "uri"
@@ -596,6 +843,8 @@ options.type = "string"
 help = "Embed a video from YouTube in your article"
 argument_type = "string"
 content_type = "block"
+example = """.. youtube:: ${0:H3P0lW94L2Q}
+"""
 
 [directive.twitch]
 help = "Embed a Twitch stream in your article"
@@ -603,22 +852,15 @@ argument_type = "string"
 content_type = "block"
 
 [directive.charts]
-help = """Embed a chart from MongoDB Charts in your article. Options:
-- url: url of your charts dashboard
-- id: id of the chart
-- autorefresh: set a time (in seconds) for this chart to automatically refresh. Default: no refresh.
-- theme: specify dark or light mode, depending on your background
-- width: width of the embedded frame
-- height: height of the embedded frame
-"""
+help = """Embed a chart from MongoDB Charts in your article."""
 example= """.. charts::
-   :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
-   :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
-   :autorefresh: 3600
-   :theme: dark
-   :width: 760
-   :height: 570
-   :align: right
+   :url: ${1:https://charts.mongodb.com/charts-coronavirus-lwlvn (url of your charts dashboard)}
+   :id: ${2:6f921f0c-a1ee-4106-839c-412fad3c64e7 (id of the chart)}
+   :autorefresh: ${3:3600 (time in seconds to refresh. default is no refresh)}
+   :theme: ${4:dark (light or dark theme)}
+   :width: ${5:760 (width of embedded frame)}
+   :height: ${6:570 (height of embedded frame)}
+   :align: ${7:right (left, right, or center)}
 """
 options.url = "uri"
 options.id = "string"
@@ -633,11 +875,20 @@ help = """Add metadata to the site for SEO."""
 options.keywords = "string"
 options.description = "string"
 options.robots = "string"
+example = """.. meta::
+   :keywords: ${1:string}
+   :description: ${2:string}
+   :robots: ${3:string}
+"""
 
 [directive.topic]
 help = """A block with a self-contained chunk of information."""
 argument_type = "string"
 content_type = "block"
+example = """.. topic:: ${1:Title of block}
+
+   ${0:Content}
+"""
 
 ###### Roles
 [role.sub]
