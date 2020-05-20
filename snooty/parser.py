@@ -48,6 +48,7 @@ from .diagnostics import (
     CannotOpenFile,
     InvalidURL,
     InvalidTableStructure,
+    InvalidLiteralInclude,
     MalformedGlossary,
 )
 
@@ -429,10 +430,122 @@ class JSONVisitor:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
+
         elif name == "literalinclude":
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
+                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
                 return doc
+
+            fileID, filepath = util.reroot_path(
+                Path(argument_text), self.docpath, Path(self.project_config.source)
+            )
+
+            # Attempt to read the literally included file
+            try:
+                with open(filepath) as file:
+                    text = file.read()
+
+            except OSError as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                )
+                return doc
+
+            lines = text.split("\n")
+
+            def _locate_text(text: str, start_search: int = 0) -> int:
+                assert isinstance(text, str)
+                loc = next(
+                    (
+                        idx
+                        for idx, line in enumerate(lines, start=start_search)
+                        if text in line
+                    ),
+                    -1,
+                )
+                if loc < 0:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f'"{text}" not found in {filepath}', util.get_line(node)
+                        )
+                    )
+                return loc
+
+            # Locate the start_after query
+            start_after = 0
+            if "start-after" in options:
+                start_after_text = options["start-after"]
+                start_after = _locate_text(start_after_text)
+                # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                start_after += 1
+
+            # ...now locate the end_before query
+            end_before = len(lines)
+            if "end-before" in options:
+                end_before_text = options["end-before"]
+                end_before = _locate_text(end_before_text, start_search=start_after)
+                # Account for the start_search=start_after specification
+                end_before -= start_after
+
+            # Check that start_after_text precedes end_before_text (and end_before exists)
+            if start_after >= end_before >= 0:
+                self.diagnostics.append(
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                        util.get_line(node),
+                    )
+                )
+
+            lines = lines[start_after:end_before]
+
+            if "dedent" in options:
+                dedent = 0
+                # Dedent is specified as a nonnegative integer (number of characters)
+                if isinstance(options["dedent"], int):
+                    dedent = options["dedent"]
+                    lines = [line[dedent:] for line in lines]
+                # Dedent is specified as a flag
+                elif isinstance(options["dedent"], bool):
+                    # Deduce a reasonable dedent
+                    try:
+                        dedent = min(
+                            len(line) - len(line.lstrip())
+                            for line in lines
+                            if len(line.lstrip()) > 0
+                        )
+                    except ValueError:
+                        # Handle the (unlikely) case where there are no non-empty lines
+                        dedent = 0
+                else:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                            util.get_line(node),
+                        )
+                    )
+                    return doc
+
+            span = (line,)
+            language = options["language"] if "language" in options else ""
+            copyable = "copyable" not in options or options["copyable"] == "True"
+            emphasize_lines = (
+                rstparser.parse_linenos(options["emphasize-lines"], len(lines))
+                if "emphasize-lines" in options
+                else None
+            )
+            selected_content = "\n".join(lines)
+            linenos = "linenos" in options
+
+            # Code(span, language, copyable, emphasize_lines, value, linenos)
+            code = n.Code(
+                span, language, copyable, emphasize_lines, selected_content, linenos
+            )
+
+            top_of_state = self.state[-1]
+            assert isinstance(top_of_state, n.Parent)
+            top_of_state.children.append(code)
+            # raise docutils.nodes.SkipNode()
+
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
@@ -956,7 +1069,7 @@ class _Project:
                         image_value = image_value[1:]
                     full_path = self.get_full_path(FileId(image_value))
                     argument.value = full_path.as_posix()
-                # Check for include nodes among current node's children
+            # Check for include nodes among current node's children
             elif isinstance(node, n.Parent):
                 for child in node.children:
                     replace_nodes(child)

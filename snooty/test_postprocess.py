@@ -75,18 +75,18 @@ for (i = 0; i &lt; 10; i++) {
 
     # Test a literally-included code block with fully specified options
     literal_include_node = ast.children[1]
-    print("\nliteral_include_node:", literal_include_node)
-    # print("\nliteral_include_node.children[0].copyable: ", literal_include_node.children[0].copyable)
     check_ast_testing_string(
         literal_include_node,
         """<directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1">
         <text>includes/sample_code.py</text>
-        <code copyable="False" lang="python" linenos="True">print("test dedent")</code>
+        <code lang="python" linenos="True">print("test dedent")</code>
         </directive>""",
     )
 
     # We have generated 4 errors from literal-include.txt (outlined below)
     diagnostics = backend.diagnostics[page_id]
+    for d in diagnostics:
+        print(d.message)
     assert len(diagnostics) == 4
 
     # Test failure to locate included code file

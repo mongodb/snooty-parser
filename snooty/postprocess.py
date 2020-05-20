@@ -24,10 +24,8 @@ from .diagnostics import (
     SubstitutionRefError,
     ExpectedPathArg,
     UnnamedPage,
-    InvalidLiteralInclude,
-    CannotOpenFile,
 )
-from . import n, util, rstparser
+from . import n, util
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -415,132 +413,6 @@ class Postprocessor:
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
             node.children = ast.children
-
-        elif node.name == "literalinclude":
-            argument = get_include_argument(node)
-            include_slug = clean_slug(argument)
-            include_filepath = (
-                self.project_config.root / self.project_config.source / include_slug
-            )
-
-            # Attempt to read the literally included file
-            try:
-                with open(include_filepath) as file:
-                    text = file.read()
-
-            except OSError as err:
-                self.diagnostics[filename].append(
-                    CannotOpenFile(include_filepath, err.strerror, node.span + (-1,))
-                )
-                return
-
-            lines = text.split("\n")
-
-            # Locate the start_after query
-            start_after = 0
-            if "start-after" in node.options:
-                start_after_text = node.options["start-after"]
-                assert isinstance(start_after_text, str)
-                start_after = next(
-                    (idx for idx, line in enumerate(lines) if start_after_text in line),
-                    -1,
-                )
-                if start_after < 0:
-                    self.diagnostics[filename].append(
-                        InvalidLiteralInclude(
-                            f'"{start_after_text}" not found in {include_filepath}',
-                            node.span + (-1,),
-                        )
-                    )
-                    return
-
-                # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                start_after += 1
-
-            # ...now locate the end_before query
-            end_before = len(lines)
-            if "end-before" in node.options:
-                end_before_text = node.options["end-before"]
-                assert isinstance(end_before_text, str)
-                end_before = next(
-                    (
-                        idx
-                        for idx, line in enumerate(lines, start=start_after)
-                        if end_before_text in line
-                    ),
-                    -1,
-                )
-                if end_before < 0:
-                    self.diagnostics[filename].append(
-                        InvalidLiteralInclude(
-                            f'"{end_before_text}" not found in {include_filepath}',
-                            node.span + (-1,),
-                        )
-                    )
-                    return
-                end_before -= start_after
-
-            # Check that start_after_text precedes end_before_text
-            if start_after >= end_before:
-                self.diagnostics[filename].append(
-                    InvalidLiteralInclude(
-                        f'"{end_before_text}" precedes {start_after_text} in {include_filepath}',
-                        node.span + (-1,),
-                    )
-                )
-                return
-
-            lines = lines[start_after:end_before]
-
-            if "dedent" in node.options:
-                dedent = 0
-                # Dedent is specified as a nonnegative integer (number of characters)
-                if isinstance(node.options["dedent"], int):
-                    dedent = node.options["dedent"]
-                    lines = [line[dedent:] for line in lines]
-                # Dedent is specified as a flag
-                elif isinstance(node.options["dedent"], bool):
-                    # Deduce a reasonable dedent
-                    try:
-                        dedent = min(
-                            len(line) - len(line.lstrip())
-                            for line in lines
-                            if len(line.lstrip()) > 0
-                        )
-                    except ValueError:
-                        # Handle the (unlikely) case where there are no non-empty lines
-                        dedent = 0
-                else:
-                    self.diagnostics[filename].append(
-                        InvalidLiteralInclude(
-                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
-                            node.span + (-1,),
-                        )
-                    )
-
-            span = (1,)
-            language = node.options["language"] if "language" in node.options else ""
-            # "copyable" is NOT in node.options, because it's not a directive option
-            copyable = (
-                "copyable" not in node.options or node.options["copyable"] == "True"
-            )
-            emphasize_lines = (
-                rstparser.parse_linenos(node.options["emphasize-lines"], len(lines))
-                if "emphasize-lines" in node.options
-                else None
-            )
-            selected_content = "\n".join(lines)
-            linenos = "linenos" in node.options
-
-            print("\nnode.options: ", node.options)
-            print("\ncopyable: ", copyable)
-            # Code(span, language, copyable, emphasize_lines, value, linenos)
-            code = n.Code(
-                span, language, copyable, emphasize_lines, selected_content, linenos
-            )
-            print("\ncode: ", code)
-            node.children.append(code)
-            print("\nnode.children: ", node.children)
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""
