@@ -273,7 +273,8 @@ for (i = 0; i &lt; 10; i++) {
         <code copyable="True">    print("test dedent")
     # end example 1
 
-    # start example 2</code></directive>
+    # start example 2
+    print("hello world")</code></directive>
         </root>""",
     )
 

@@ -47,8 +47,8 @@ from .diagnostics import (
     DocUtilsParseError,
     CannotOpenFile,
     InvalidURL,
-    InvalidTableStructure,
     InvalidLiteralInclude,
+    InvalidTableStructure,
     MalformedGlossary,
 )
 
@@ -403,12 +403,12 @@ class JSONVisitor:
             todo_text = ["TODO"]
             if argument_text:
                 todo_text.extend([": ", argument_text])
-            TodoInfo("".join(todo_text), util.get_line(node))
+            TodoInfo("".join(todo_text), line)
             return None
 
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             try:
@@ -416,7 +416,7 @@ class JSONVisitor:
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                    CannotOpenFile(argument_text, err.strerror, line)
                 )
 
         elif name == "list-table":
@@ -433,7 +433,7 @@ class JSONVisitor:
 
         elif name == "literalinclude":
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             fileID, filepath = util.reroot_path(
@@ -447,7 +447,7 @@ class JSONVisitor:
 
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                    CannotOpenFile(argument_text, err.strerror, line)
                 )
                 return doc
 
@@ -465,9 +465,7 @@ class JSONVisitor:
                 )
                 if loc < 0:
                     self.diagnostics.append(
-                        InvalidLiteralInclude(
-                            f'"{text}" not found in {filepath}', util.get_line(node)
-                        )
+                        InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
                     )
                 return loc
 
@@ -491,7 +489,7 @@ class JSONVisitor:
                 self.diagnostics.append(
                     InvalidLiteralInclude(
                         f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
-                        util.get_line(node),
+                        line,
                     )
                 )
 
@@ -519,7 +517,7 @@ class JSONVisitor:
                     self.diagnostics.append(
                         InvalidLiteralInclude(
                             f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
-                            util.get_line(node),
+                            line,
                         )
                     )
                     return doc
@@ -572,6 +570,7 @@ class JSONVisitor:
                             util.get_line(node),
                         )
                     )
+
         elif name == "cardgroup-card":
             image_argument = options.get("image", None)
 
@@ -590,9 +589,11 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(image_argument, err.strerror, util.get_line(node))
                 )
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
+
         elif key in {"devhub:author", ":og", ":twitter"}:
             # Grab image from options array and save as static asset
             image_argument = options.get("image")
