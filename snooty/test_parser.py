@@ -8,6 +8,8 @@ from .diagnostics import (
     DocUtilsParseError,
     MalformedGlossary,
     ExpectedPathArg,
+    InvalidLiteralInclude,
+    CannotOpenFile,
 )
 from .parser import parse_rst, JSONVisitor
 
@@ -139,30 +141,55 @@ def test_literalinclude() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    #     # Test a simple literal include directive (without handling the code-block)
-    #     page, diagnostics = parse_rst(
-    #         parser,
-    #         path,
-    #         """
-    # .. literalinclude:: /driver-examples/pythonexample.py
-    #    :dedent:
-    #    :start-after: Start Example 3
-    #    :end-before: End Example 3
-    #    :linenos:
-    # """,
-    #     )
-    #     page.finish(diagnostics)
-    #     assert diagnostics == []
-    #     check_ast_testing_string(
-    #         page.ast,
-    #         """<root>
-    #             <directive dedent="True" end-before="End Example 3" linenos="True" name="literalinclude" start-after="Start Example 3">
-    #                 <text>/driver-examples/pythonexample.py</text>
-    #             </directive>
-    #         </root>""",
-    #     )
+    # Test a simple literally-included code block
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.js
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+  <directive name="literalinclude"><text>/test_parser/includes/sample_code.js</text><code copyable="True">var str = "sample code";
+var i = 0;
+for (i = 0; i &lt; 10; i++) {
+  str += i;
+}</code>
+    </directive>
+    </root>""",
+    )
 
-    # Test a literalinclude that has no argument file
+    # Test a literally-included code block with fully specified options
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :language: python
+   :start-after: start example 1
+   :end-before: end example 1
+   :dedent: 4
+   :linenos:
+   :copyable: false
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code lang="python" linenos="True">print("test dedent")</code>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to specify argument file
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -173,24 +200,104 @@ def test_literalinclude() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], ExpectedPathArg)
-    assert diagnostics[0].message == '"literalinclude" expected a path argument'
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude">
+        </directive>
+        </root>""",
+    )
 
-    # Test a simple literally-included code block
+    # Test failure to locate included code file
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. literalinclude:: test_parser/includes/sample_code.js
+.. literalinclude:: includes/does_not_exist.js
 """,
     )
     page.finish(diagnostics)
-    assert diagnostics == []
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
     check_ast_testing_string(
         page.ast,
         """<root>
-  <directive name="literalinclude"><text>includes/sample_code.js</text><code copyable="True">var
-  str = "sample code"; var i = 0; for (i = 0; i &lt; 10; i++) {   str += i; }</code> </directive>
-</root>""",
+        <directive name="literalinclude">
+        <text>includes/does_not_exist.js</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to locate start-after text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: does not exist
+   :end-before: end example 1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="does not exist" end-before="end example 1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    # start example 1
+    print("test dedent")</code>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to locate end-before text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: start example 1
+   :end-before: does not exist
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="start example 1" end-before="does not exist">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    print("test dedent")
+    # end example 1
+
+    # start example 2</code></directive>
+        </root>""",
+    )
+
+    # Test start-after text is below end-before text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: start example 2
+   :end-before: end example 1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="start example 2" end-before="end example 1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True"></code>
+        </directive>
+        </root>""",
     )
 
 

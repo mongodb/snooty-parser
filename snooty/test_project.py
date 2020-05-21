@@ -63,6 +63,8 @@ def test() -> None:
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
         assert list(backend.pages.keys()) == [index_id]
+        # Confirm that no diagnostics were created
+        assert backend.diagnostics[index_id] == []
         code_length = 0
         checksums: List[str] = []
         index = backend.pages[index_id]

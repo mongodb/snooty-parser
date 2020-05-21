@@ -437,7 +437,7 @@ class JSONVisitor:
                 return doc
 
             fileID, filepath = util.reroot_path(
-                Path(argument_text), self.docpath, Path(self.project_config.source)
+                Path(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Attempt to read the literally included file
@@ -484,7 +484,6 @@ class JSONVisitor:
             if "end-before" in options:
                 end_before_text = options["end-before"]
                 end_before = _locate_text(end_before_text, start_search=start_after)
-                # Account for the start_search=start_after specification
                 end_before -= start_after
 
             # Check that start_after_text precedes end_before_text (and end_before exists)
@@ -541,10 +540,7 @@ class JSONVisitor:
                 span, language, copyable, emphasize_lines, selected_content, linenos
             )
 
-            top_of_state = self.state[-1]
-            assert isinstance(top_of_state, n.Parent)
-            top_of_state.children.append(code)
-            # raise docutils.nodes.SkipNode()
+            doc.children.append(code)
 
         elif name == "include":
             if argument_text is None:
