@@ -459,14 +459,7 @@ class JSONVisitor:
                 add an InvalidLiteralInclude diagnostic.
                 """
                 assert isinstance(text, str)
-                loc = next(
-                    (
-                        idx
-                        for idx, line in enumerate(lines)
-                        if text in line
-                    ),
-                    -1,
-                )
+                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
                 if loc < 0:
                     self.diagnostics.append(
                         InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
