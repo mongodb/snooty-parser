@@ -274,7 +274,9 @@ for (i = 0; i &lt; 10; i++) {
     # end example 1
 
     # start example 2
-    print("hello world")</code></directive>
+    print("hello world")
+    # end example 2
+    </code></directive>
         </root>""",
     )
 

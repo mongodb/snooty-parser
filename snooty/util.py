@@ -192,23 +192,19 @@ class FileWatcher:
         return sum(len(w) for w in self.directories.values())
 
 
-# Should this really default to flag-like behavior? Seems iffy at best
 def option_bool(argument: Optional[str]) -> bool:
     """
     Check for a valid boolean option return it. If no argument is given,
     treat it as a flag, and return True.
     """
+    # Original logic:
+    # if argument and argument.strip():
+    #     return bool(docutils.parsers.rst.directives.choice(argument, ("true", "false")))
+    # else:
+    #     return True
     if argument and argument.strip():
-        if argument.strip().lower() == "true":
-            return True
-        elif argument.strip().lower() == "false":
-            return False
-        raise ValueError(
-            'invalid argument "%s" supplied; expected one of [true, True, false, False]'
-            % argument
-        )
-    else:
-        return True
+        return argument.strip().lower() == "true"
+    return True
 
 
 def option_flag(argument: Optional[str]) -> bool:

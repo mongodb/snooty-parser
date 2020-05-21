@@ -436,7 +436,7 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
-            fileID, filepath = util.reroot_path(
+            _, filepath = util.reroot_path(
                 Path(argument_text), self.docpath, self.project_config.source_path
             )
 
@@ -453,12 +453,16 @@ class JSONVisitor:
 
             lines = text.split("\n")
 
-            def _locate_text(text: str, start_search: int = 0) -> int:
+            def _locate_text(text: str) -> int:
+                """
+                Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                add an InvalidLiteralInclude diagnostic.
+                """
                 assert isinstance(text, str)
                 loc = next(
                     (
                         idx
-                        for idx, line in enumerate(lines, start=start_search)
+                        for idx, line in enumerate(lines)
                         if text in line
                     ),
                     -1,
@@ -481,8 +485,7 @@ class JSONVisitor:
             end_before = len(lines)
             if "end-before" in options:
                 end_before_text = options["end-before"]
-                end_before = _locate_text(end_before_text, start_search=start_after)
-                end_before -= start_after
+                end_before = _locate_text(end_before_text)
 
             # Check that start_after_text precedes end_before_text (and end_before exists)
             if start_after >= end_before >= 0:
@@ -492,6 +495,10 @@ class JSONVisitor:
                         line,
                     )
                 )
+
+            # If we failed to locate end_before text, default to the end-of-file
+            if end_before == -1:
+                end_before = len(lines)
 
             lines = lines[start_after:end_before]
 
@@ -533,7 +540,6 @@ class JSONVisitor:
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
 
-            # Code(span, language, copyable, emphasize_lines, value, linenos)
             code = n.Code(
                 span, language, copyable, emphasize_lines, selected_content, linenos
             )
