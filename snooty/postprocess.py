@@ -382,8 +382,7 @@ class Postprocessor:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
         Because the include contents are added to the tree on which the event parser is
-        running, they will automatically be parsed and have their includes expanded, too.
-        Literally-included contents may not be automatically parsed, and are handled below."""
+        running, they will automatically be parsed and have their includes expanded, too."""
 
         def get_include_argument(node: n.Directive) -> str:
             """Get filename of include"""
