@@ -13,13 +13,9 @@ _T = TypeVar("_T")
 logger = logging.getLogger(__name__)
 
 
-class ParseError(Exception):
-    def __init__(self, diagnostic: Diagnostic) -> None:
-        super(ParseError, self).__init__(diagnostic.message)
-        self.diagnostic = diagnostic
-
-
-def load_yaml(text: str) -> List[SerializableType]:
+def load_yaml(
+    path: Optional[Path], text: str
+) -> Tuple[List[SerializableType], Optional[Diagnostic]]:
     class MyLoader(yaml.SafeLoader):
         def compose_node(self, parent: yaml.nodes.Node, index: int) -> yaml.nodes.Node:
             # the line number where the previous token has ended (plus empty lines)
@@ -39,13 +35,19 @@ def load_yaml(text: str) -> List[SerializableType]:
     )
     result: List[SerializableType] = []
     while True:
-        data = loader.get_data()
+        try:
+            data = loader.get_data()
+        except yaml.error.MarkedYAMLError as err:
+            lineno = err.problem_mark.line
+            col = err.problem_mark.column
+            return [], ErrorParsingYAMLFile(path, err.problem, (lineno, col))
+
         if data:
             result.append(data)
         else:
             break
 
-    return result
+    return result, None
 
 
 def parse(
@@ -55,16 +57,10 @@ def parse(
     if text is None:
         text, diagnostics = project_config.read(path)
 
-    try:
-        parsed_yaml = load_yaml(text)
-    except yaml.error.MarkedYAMLError as err:
-        lineno = err.problem_mark.line
-        col = err.problem_mark.column
-        return (
-            [],
-            text,
-            diagnostics + [ErrorParsingYAMLFile(path, err.problem, (lineno, col))],
-        )
+    parsed_yaml, parse_diagnostic = load_yaml(path, text)
+    if parse_diagnostic:
+        diagnostics.append(parse_diagnostic)
+        return ([], text, diagnostics)
 
     try:
         parsed = [check_type(ty, data) for data in parsed_yaml]

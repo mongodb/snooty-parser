@@ -9,6 +9,7 @@ from .diagnostics import (
     CannotOpenFile,
     InvalidLiteralInclude,
     MalformedGlossary,
+    ErrorParsingYAMLFile,
 )
 from .parser import parse_rst, JSONVisitor
 
@@ -53,6 +54,32 @@ def test_tabs() -> None:
     )
 
     assert isinstance(diagnostics[0], DocUtilsParseError)
+
+
+def test_tabs_invalid_yaml() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. tabs-drivers::
+
+   tabs:
+
+     - id: java-sync
+
+         .. code-block:: java
+            :emphasize-lines: 2
+            HashMap<String, BsonDocument> schemaMap = new HashMap<String, BsonDocument>();
+            schemaMap.put("medicalRecords.patients", BsonDocument.parse(jsonSchema));
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], ErrorParsingYAMLFile)
+    assert diagnostics[0].start[0] == 6
 
 
 def test_codeblock() -> None:
@@ -628,16 +655,16 @@ def test_glossary_node() -> None:
   _id
     foofoobarbar
 
-  index 
+  index
     foofoofoofoobarbarbarbar
 
   $cmd
     foobar
-    
+
   aggregate
     foofoofoobarbarbar
-  
-  
+
+
 """,
     )
     page.finish(diagnostics)
@@ -645,52 +672,52 @@ def test_glossary_node() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root> 
+<root>
   <directive name="glossary" sorted="True">
-    <definitionList>       
-      <definitionListItem>         
-        <term>           
+    <definitionList>
+      <definitionListItem>
+        <term>
           <text>$cmd</text>
-          <inline_target domain="std" name="term">            
+          <inline_target domain="std" name="term">
             <target_identifier ids="['cmd']">
-              <text>$cmd</text></target_identifier>           
-          </inline_target>         
+              <text>$cmd</text></target_identifier>
+          </inline_target>
         </term>
-        <paragraph><text>foobar</text></paragraph>       
-      </definitionListItem>        
+        <paragraph><text>foobar</text></paragraph>
+      </definitionListItem>
 
       <definitionListItem>
-        <term>           
-          <text>_id</text>           
+        <term>
+          <text>_id</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['id']">               
+            <target_identifier ids="['id']">
               <text>_id</text>
             </target_identifier>
-          </inline_target>         
-        </term>         
+          </inline_target>
+        </term>
         <paragraph><text>foofoobarbar</text></paragraph>
-      </definitionListItem>     
-
-      <definitionListItem>         
-        <term>           
-          <text>aggregate</text>
-          <inline_target domain="std" name="term">            
-            <target_identifier ids="['aggregate']">
-              <text>aggregate</text></target_identifier>           
-          </inline_target>         
-        </term>
-        <paragraph><text>foofoofoobarbarbar</text></paragraph>       
       </definitionListItem>
-      
-      <definitionListItem>         
-        <term>           
-          <text>index</text>
-          <inline_target domain="std" name="term">            
-            <target_identifier ids="['index']">
-              <text>index</text></target_identifier>           
-          </inline_target>         
+
+      <definitionListItem>
+        <term>
+          <text>aggregate</text>
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['aggregate']">
+              <text>aggregate</text></target_identifier>
+          </inline_target>
         </term>
-        <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>       
+        <paragraph><text>foofoofoobarbarbar</text></paragraph>
+      </definitionListItem>
+
+      <definitionListItem>
+        <term>
+          <text>index</text>
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['index']">
+              <text>index</text></target_identifier>
+          </inline_target>
+        </term>
+        <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>
       </definitionListItem>
     </definitionList>
   </directive>
@@ -704,7 +731,7 @@ def test_glossary_node() -> None:
         """
 .. glossary::
   :sorted:
-  
+
 """,
     )
 
@@ -720,9 +747,9 @@ def test_glossary_node() -> None:
 
   _id
     foo
-  
+
   This is a paragraph, not a definition list item.
-  
+
 """,
     )
     page.finish(diagnostics)
@@ -1127,6 +1154,30 @@ def test_cardgroup() -> None:
         </directive>
         </root>""",
     )
+
+
+def test_cardgroup_invalid_yaml() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. card-group::
+
+    cards:
+
+    - id test-one
+      headline: Test One
+      image: /compass-explain-plan-with-index-raw-json.png
+      link: https://docs.mongodb.com/guides/server/delete
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], ErrorParsingYAMLFile)
+    assert diagnostics[0].start[0] == 5
 
 
 def test_toctree() -> None:
