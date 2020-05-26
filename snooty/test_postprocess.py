@@ -1,13 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
 from .types import BuildIdentifierSet, FileId
-from .diagnostics import (
-    TargetNotFound,
-    AmbiguousTarget,
-    CannotOpenFile,
-    InvalidLiteralInclude,
-    ExpectedPathArg,
-)
+from .diagnostics import TargetNotFound, AmbiguousTarget
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string
@@ -51,62 +45,6 @@ def test_deprecated_versions(backend: Backend) -> None:
         "manual": ["v2.2", "v2.4", "v2.6", "v3.0", "v3.2", "v3.4"],
         "mms": ["v1.1", "v1.2", "v1.3"],
     }
-
-
-def test_literal_includes(backend: Backend) -> None:
-    # Test a simple literally-included code block
-    page_id = FileId("literal-include.txt")
-    ast = backend.pages[page_id].ast
-    literal_include_node = ast.children[0]
-    assert isinstance(literal_include_node, n.Directive)
-    assert literal_include_node.name == "literalinclude"
-    assert len(literal_include_node.children) == 1
-
-    check_ast_testing_string(
-        literal_include_node,
-        """<directive name="literalinclude">
-<text>includes/sample_code.js</text>
-<code copyable="True">var str = "sample code";
-var i = 0;
-for (i = 0; i &lt; 10; i++) {
-  str += i;
-}</code>
-</directive>""",
-    )
-
-    # Test a literally-included code block with fully specified options
-    literal_include_node = ast.children[1]
-    check_ast_testing_string(
-        literal_include_node,
-        """<directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1">
-        <text>includes/sample_code.py</text>
-        <code lang="python" linenos="True">print("test dedent")</code>
-        </directive>""",
-    )
-
-    # We have generated 5 errors from literal-include.txt (outlined below)
-    diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 5
-
-    # Test failure to specify argument file
-    literal_include_node = ast.children[2]
-    assert isinstance(diagnostics[0], ExpectedPathArg)
-
-    # Test failure to locate included code file
-    literal_include_node = ast.children[3]
-    assert isinstance(diagnostics[1], CannotOpenFile)
-
-    # Test failure to locate start-after text
-    literal_include_node = ast.children[4]
-    assert isinstance(diagnostics[2], InvalidLiteralInclude)
-
-    # Test failure to locate end-before text
-    literal_include_node = ast.children[5]
-    assert isinstance(diagnostics[3], InvalidLiteralInclude)
-
-    # Test start-after text is below end-before text
-    literal_include_node = ast.children[6]
-    assert isinstance(diagnostics[4], InvalidLiteralInclude)
 
 
 def test_expand_includes(backend: Backend) -> None:

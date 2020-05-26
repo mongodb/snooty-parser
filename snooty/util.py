@@ -197,14 +197,11 @@ def option_bool(argument: Optional[str]) -> bool:
     Check for a valid boolean option return it. If no argument is given,
     treat it as a flag, and return True.
     """
-    # Original logic:
-    # if argument and argument.strip():
-    #     return bool(docutils.parsers.rst.directives.choice(argument, ("true", "false")))
-    # else:
-    #     return True
     if argument and argument.strip():
-        return argument.strip().lower() == "true"
-    return True
+        output = docutils.parsers.rst.directives.choice(argument, ("true", "false"))
+        return output == "true"
+    else:
+        return True
 
 
 def option_flag(argument: Optional[str]) -> bool:
