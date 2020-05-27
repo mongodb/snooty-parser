@@ -194,11 +194,12 @@ class FileWatcher:
 
 def option_bool(argument: Optional[str]) -> bool:
     """
-    Check for a valid boolean option return it. If not argument is given,
+    Check for a valid boolean option return it. If no argument is given,
     treat it as a flag, and return True.
     """
     if argument and argument.strip():
-        return bool(docutils.parsers.rst.directives.choice(argument, ("true", "false")))
+        output = docutils.parsers.rst.directives.choice(argument, ("true", "false"))
+        return output == "true"
     else:
         return True
 

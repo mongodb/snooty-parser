@@ -73,104 +73,6 @@ class _DefinitionListTerm(n.InlineParent):
         ), f"{self.__class__.__name__} is private and should have been removed from AST"
 
 
-class PendingLiteralInclude(PendingTask):
-    """Transform a literal-include directive AST node into a code node."""
-
-    def __init__(
-        self, node: n.Code, asset: StaticAsset, options: Dict[str, SerializableType]
-    ) -> None:
-        super().__init__(node)
-        self.node: n.Code = node
-        self.asset = asset
-        self.options = options
-
-    def __call__(
-        self, diagnostics: List[Diagnostic], project: ProjectInterface
-    ) -> None:
-        """Load the literalinclude target text into our node."""
-        cache = project.expensive_operation_cache
-        # Use the cached node if our parameters match the cache entry
-        options_key = hash(tuple(((k, v) for k, v in self.options.items())))
-        entry = cache[(self.asset.fileid, options_key)]
-        if entry is not None:
-            assert isinstance(entry, n.Code)
-            dataclasses.replace(self.node, **dataclasses.asdict(entry))
-            return
-
-        try:
-            text = self.asset.path.read_text(encoding="utf-8")
-        except OSError as err:
-            diagnostics.append(
-                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
-            )
-            return
-
-        # Split the file into lines, and find our start-after query
-        lines = text.split("\n")
-        start_after = 0
-        end_before = len(lines)
-        if "start-after" in self.options:
-            start_after_text = self.options["start-after"]
-            assert isinstance(start_after_text, str)
-            start_after = next(
-                (idx for idx, line in enumerate(lines) if start_after_text in line), -1
-            )
-            if start_after < 0:
-                diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{start_after_text}" not found in {self.asset.path}',
-                        self.node.start[0],
-                    )
-                )
-                return
-
-        # ...now find the end-before query
-        if "end-before" in self.options:
-            end_before_text = self.options["end-before"]
-            assert isinstance(end_before_text, str)
-            end_before = next(
-                (
-                    idx
-                    for idx, line in enumerate(lines, start=start_after)
-                    if end_before_text in line
-                ),
-                -1,
-            )
-            if end_before < 0:
-                diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{end_before_text}" not found in {self.asset.path}',
-                        self.node.start[0],
-                    )
-                )
-                return
-            end_before -= start_after
-
-        # Find the requested lines
-        lines = lines[(start_after + 1) : end_before]
-
-        # Deduce a reasonable dedent, if requested.
-        if "dedent" in self.options:
-            try:
-                dedent = min(
-                    len(line) - len(line.lstrip())
-                    for line in lines
-                    if len(line.lstrip()) > 0
-                )
-            except ValueError:
-                # Handle the (unlikely) case where there are no non-empty lines
-                dedent = 0
-            lines = [line[dedent:] for line in lines]
-
-        if "emphasize_lines" in self.options:
-            self.node.emphasize_lines = self.options["emphasize_lines"]  # type: ignore
-
-        self.node.value = "\n".join(lines)
-
-        # Update the cache with this node
-        cache[(self.asset.fileid, options_key)] = self.node
-
-
 class PendingFigure(PendingTask):
     """Add an image's checksum."""
 
@@ -504,12 +406,12 @@ class JSONVisitor:
             todo_text = ["TODO"]
             if argument_text:
                 todo_text.extend([": ", argument_text])
-            TodoInfo("".join(todo_text), util.get_line(node))
+            TodoInfo("".join(todo_text), line)
             return None
 
         if name in {"figure", "image", "atf-image"}:
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             try:
@@ -517,7 +419,7 @@ class JSONVisitor:
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                    CannotOpenFile(argument_text, err.strerror, line)
                 )
 
         elif name == "list-table":
@@ -537,32 +439,122 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
-            asset_path = Path(argument_text)
-            lang = (
-                options["language"]
-                if "language" in options
-                else asset_path.suffix.lstrip(".")
-            )
-            code = n.Code(
-                (line,),
-                lang,
-                "copyable" not in options or options["copyable"] == "true",
-                [],
-                "",
-                "linenos" in options,
+            _, filepath = util.reroot_path(
+                Path(argument_text), self.docpath, self.project_config.source_path
             )
 
+            # Attempt to read the literally included file
             try:
-                static_asset = self.add_static_asset(asset_path, False)
-                self.pending.append(PendingLiteralInclude(code, static_asset, options))
+                with open(filepath) as file:
+                    text = file.read()
+
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, util.get_line(node))
+                    CannotOpenFile(argument_text, err.strerror, line)
                 )
-            except ValueError as err:
-                msg = f'Invalid "literalinclude": {err}'
-                self.diagnostics.append(InvalidLiteralInclude(msg, util.get_line(node)))
-            return code
+                return doc
+
+            lines = text.split("\n")
+
+            def _locate_text(text: str) -> int:
+                """
+                Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                add an InvalidLiteralInclude diagnostic.
+                """
+                assert isinstance(text, str)
+                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
+                if loc < 0:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
+                    )
+                return loc
+
+            # Locate the start_after query
+            start_after = 0
+            if "start-after" in options:
+                start_after_text = options["start-after"]
+                start_after = _locate_text(start_after_text)
+                # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                start_after += 1
+
+            # ...now locate the end_before query
+            end_before = len(lines)
+            if "end-before" in options:
+                end_before_text = options["end-before"]
+                end_before = _locate_text(end_before_text)
+
+            # Check that start_after_text precedes end_before_text (and end_before exists)
+            if start_after >= end_before >= 0:
+                self.diagnostics.append(
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                        line,
+                    )
+                )
+
+            # If we failed to locate end_before text, default to the end-of-file
+            if end_before == -1:
+                end_before = len(lines)
+
+            # Capture the original file-length before splicing it
+            len_file = len(lines)
+            lines = lines[start_after:end_before]
+
+            dedent = 0
+            if "dedent" in options:
+                # Dedent is specified as a flag
+                if isinstance(options["dedent"], bool):
+                    # Deduce a reasonable dedent
+                    try:
+                        dedent = min(
+                            len(line) - len(line.lstrip())
+                            for line in lines
+                            if len(line.lstrip()) > 0
+                        )
+                    except ValueError:
+                        # Handle the (unlikely) case where there are no non-empty lines
+                        dedent = 0
+                # Dedent is specified as a nonnegative integer (number of characters):
+                # Note: since boolean is a subtype of int, this conditonal must follow the
+                # above bool-type conditional.
+                elif isinstance(options["dedent"], int):
+                    dedent = options["dedent"]
+                else:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                            line,
+                        )
+                    )
+                    return doc
+
+            lines = [line[dedent:] for line in lines]
+
+            emphasize_lines = None
+            if "emphasize-lines" in options:
+                try:
+                    emphasize_lines = rstparser.parse_linenos(
+                        options["emphasize-lines"], len_file
+                    )
+                except ValueError as err:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f"Invalid emphasize-lines specification caused: {err}", line
+                        )
+                    )
+
+            span = (line,)
+            language = options["language"] if "language" in options else ""
+            copyable = "copyable" not in options or options["copyable"] == "True"
+            selected_content = "\n".join(lines)
+            linenos = "linenos" in options
+
+            code = n.Code(
+                span, language, copyable, emphasize_lines, selected_content, linenos
+            )
+
+            doc.children.append(code)
+
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
@@ -593,6 +585,7 @@ class JSONVisitor:
                             util.get_line(node),
                         )
                     )
+
         elif name == "cardgroup-card":
             image_argument = options.get("image", None)
 
@@ -611,9 +604,11 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(image_argument, err.strerror, util.get_line(node))
                 )
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
+
         elif key in {"devhub:author", ":og", ":twitter"}:
             # Grab image from options array and save as static asset
             image_argument = options.get("image")
@@ -1101,7 +1096,7 @@ class _Project:
                         image_value = image_value[1:]
                     full_path = self.get_full_path(FileId(image_value))
                     argument.value = full_path.as_posix()
-                # Check for include nodes among current node's children
+            # Check for include nodes among current node's children
             elif isinstance(node, n.Parent):
                 for child in node.children:
                     replace_nodes(child)

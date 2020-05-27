@@ -373,19 +373,24 @@ class LinkRoleHandler:
 def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
     """Parse a comma-delimited list of line numbers and ranges."""
     results: List[Tuple[int, int]] = []
-    for term in (term for term in term.split(",") if term.strip()):
+    if not term.strip():
+        return []
+    for term in term.strip().split(","):
         parts = term.split("-", 1)
         lower = int(parts[0])
         higher = int(parts[1]) if len(parts) == 2 else lower
-
-        if (
-            lower < 0
-            or lower > max_val
-            or higher < 0
-            or higher > max_val
-            or lower > higher
-        ):
-            raise ValueError(f"Invalid line number specification: {term}")
+        if lower < 0 or higher < 0:
+            raise ValueError(
+                f"Invalid line number specification: {term}. Expects non-negative integers."
+            )
+        elif lower > max_val or higher > max_val:
+            raise ValueError(
+                f"Invalid line number specification: {term}. Expects maximum value of {max_val}."
+            )
+        elif lower > higher:
+            raise ValueError(
+                f"Invalid line number specification: {term}. Expects {lower} < {higher}."
+            )
 
         results.append((lower, higher))
 

@@ -6,9 +6,10 @@ from .diagnostics import (
     Diagnostic,
     InvalidURL,
     DocUtilsParseError,
-    CannotOpenFile,
-    InvalidLiteralInclude,
     MalformedGlossary,
+    ExpectedPathArg,
+    InvalidLiteralInclude,
+    CannotOpenFile,
     ErrorParsingYAMLFile,
 )
 from .parser import parse_rst, JSONVisitor
@@ -167,16 +168,12 @@ def test_literalinclude() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    # Test a simple code-block
+    # Test a simple literally-included code block
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. literalinclude:: /driver-examples/pythonexample.py
-   :dedent:
-   :start-after: Start Example 3
-   :end-before: End Example 3
-   :linenos:
+.. literalinclude:: /test_parser/includes/sample_code.js
 """,
     )
     page.finish(diagnostics)
@@ -184,56 +181,208 @@ def test_literalinclude() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-<code lang="py" copyable="True" linenos="True">db.inventory.insert_many([
-    {"item": "journal",
-     "qty": 25,
-     "tags": ["blank", "red"],
-     "size": {"h": 14, "w": 21, "uom": "cm"}},\n
-    {"item": "mat",
-     "qty": 85,
-     "tags": ["gray"],
-     "size": {"h": 27.9, "w": 35.5, "uom": "cm"}},\n
-    {"item": "mousepad",
-     "qty": 25,
-     "tags": ["gel", "blue"],
-     "size": {"h": 19, "w": 22.85, "uom": "cm"}}])</code>
-</root>""",
+  <directive name="literalinclude"><text>/test_parser/includes/sample_code.js</text><code copyable="True">var str = "sample code";
+var i = 0;
+for (i = 0; i &lt; 10; i++) {
+  str += i;
+}</code>
+    </directive>
+    </root>""",
     )
 
-    # Test bad code-blocks
+    # Test a literally-included code block with fully specified options
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. literalinclude:: /driver-examples/pythonexample.py
-   :start-after: Start Example 0
-   :end-before: End Example 3
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :language: python
+   :start-after: start example 1
+   :end-before: end example 1
+   :dedent: 4
+   :linenos:
+   :copyable: false
+   :emphasize-lines: 1,2-4
+   :lines: 1
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" linenos="True">print("test dedent")</code>
+        </directive>
+        </root>""",
+    )
 
+    # Test failure to specify argument file
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. literalinclude:: /driver-examples/pythonexample.py
-   :start-after: Start Example 3
-   :end-before: End Example 0
+.. literalinclude::
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], InvalidLiteralInclude)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], ExpectedPathArg)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude">
+        </directive>
+        </root>""",
+    )
 
+    # Test failure to locate included code file
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. literalinclude:: /driver-examples/garbagnrekvjisd.py
+.. literalinclude:: includes/does_not_exist.js
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1 and isinstance(diagnostics[0], CannotOpenFile)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude">
+        <text>includes/does_not_exist.js</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to locate start-after text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: does not exist
+   :end-before: end example 1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="does not exist" end-before="end example 1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    # start example 1
+    print("test dedent")</code>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to locate end-before text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: start example 1
+   :end-before: does not exist
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="start example 1" end-before="does not exist">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+    </code></directive>
+        </root>""",
+    )
+
+    # Test start-after text is below end-before text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after: start example 2
+   :end-before: end example 1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="start example 2" end-before="end example 1">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True"></code>
+        </directive>
+        </root>""",
+    )
+
+    # Test poorly specified linenos: out-of-bounds (greater than file length)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: 100
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
+    # Test poorly specified linenos: out-of-bounds (negative)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: -1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
+    # Test poorly specified linenos: wrong order (expects 2 < 1)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: 2-1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
+    # Test poorly specified dedent
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :dedent: True
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
 
 def test_include() -> None:

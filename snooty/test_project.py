@@ -63,10 +63,12 @@ def test() -> None:
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
         assert list(backend.pages.keys()) == [index_id]
+        # Confirm that no diagnostics were created
+        assert backend.diagnostics[index_id] == []
         code_length = 0
         checksums: List[str] = []
         index = backend.pages[index_id]
-        assert len(index.static_assets) == 2
+        assert len(index.static_assets) == 1
         assert not index.pending_tasks
         for node in ast_dive(index.ast):
             if isinstance(node, n.Code):
@@ -83,31 +85,6 @@ def test() -> None:
         # unknown reasons.
         if sys.platform != "darwin":
             return
-
-        # Confirm that modifying an asset reparses the dependent files
-        literalinclude_id = FileId("driver-examples/DocumentationExamples.cs")
-        with project._lock:
-            assert list(
-                project._project.expensive_operation_cache.get_versions(
-                    literalinclude_id
-                )
-            ) == [1, 1]
-        with project.config.source_path.joinpath(literalinclude_id).open(
-            mode="r+b"
-        ) as f:
-            text = f.read()
-            f.seek(0)
-            f.truncate(0)
-            f.write(text)
-            f.flush()
-        time.sleep(0.1)
-        with project._lock:
-            assert list(
-                project._project.expensive_operation_cache.get_versions(
-                    literalinclude_id
-                )
-            ) == [2, 2]
-        assert backend.updates == [index_id, index_id]
 
         figure_id = FileId("images/compass-create-database.png")
         with project._lock:
@@ -126,8 +103,8 @@ def test() -> None:
                 project._project.expensive_operation_cache.get_versions(figure_id)
             ) == [2]
 
-        # Ensure that the page has been reparsed 3 times
-        assert backend.updates == [index_id, index_id, index_id]
+        # Ensure that the page has been reparsed 2 times
+        assert backend.updates == [index_id, index_id]
 
         # Ensure that published-branches.yaml has been parsed
         published_branches, published_branch_diagnostics = (

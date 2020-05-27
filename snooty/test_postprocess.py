@@ -50,73 +50,32 @@ def test_deprecated_versions(backend: Backend) -> None:
 def test_expand_includes(backend: Backend) -> None:
     page4_id = FileId("page4.txt")
     ast = backend.pages[page4_id].ast
-    child = ast.children[0]
-    assert isinstance(child, n.Directive)
-    assert child.name == "include"
-    assert len(child.children) > 1
-    assert child.serialize()["children"] == [
-        {
-            "type": "target",
-            "position": {"start": {"line": 1}},
-            "domain": "std",
-            "name": "label",
-            "children": [
-                {
-                    "type": "target_identifier",
-                    "ids": ["connection-limits"],
-                    "position": {"start": {"line": 1}},
-                    "children": [
-                        {
-                            "type": "text",
-                            "position": {"start": {"line": 5}},
-                            "value": "Skip includes",
-                        }
-                    ],
-                }
-            ],
-        },
-        {
-            "type": "section",
-            "position": {"start": {"line": 5}},
-            "children": [
-                {
-                    "type": "heading",
-                    "position": {"start": {"line": 5}},
-                    "id": "skip-includes",
-                    "children": [
-                        {
-                            "type": "text",
-                            "position": {"start": {"line": 5}},
-                            "value": "Skip includes",
-                        }
-                    ],
-                },
-                {
-                    "type": "directive",
-                    "position": {"start": {"line": 7}},
-                    "domain": "",
-                    "name": "default-domain",
-                    "argument": [
-                        {
-                            "type": "text",
-                            "position": {"start": {"line": 7}},
-                            "value": "mongodb",
-                        }
-                    ],
-                    "children": [],
-                },
-                {
-                    "type": "directive",
-                    "position": {"start": {"line": 9}},
-                    "domain": "",
-                    "name": "meta",
-                    "argument": [],
-                    "options": {"keywords": "connect"},
-                    "children": [],
-                },
-            ],
-        },
-    ]
+    include_node = ast.children[0]
+    assert isinstance(include_node, n.Directive)
+    assert include_node.name == "include"
+    assert len(include_node.children) > 1
+
+    check_ast_testing_string(
+        include_node,
+        """<directive name="include">
+            <text>/includes/test.rst</text>
+            <target domain="std" name="label">
+                <target_identifier ids="['connection-limits']">
+                    <text>Skip includes</text>
+                </target_identifier>
+            </target>
+            <section>
+                <heading id="skip-includes">
+                    <text>Skip includes</text>
+                </heading>
+                <directive name="default-domain">
+                    <text>mongodb</text>
+                </directive>
+                <directive name="meta" keywords="connect">
+                </directive>
+            </section>
+        </directive>""",
+    )
 
 
 def test_validate_ref_targets(backend: Backend) -> None:
