@@ -344,6 +344,19 @@ for (i = 0; i &lt; 10; i++) {
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], InvalidLiteralInclude)
 
+    # Test poorly specified dedent
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :dedent: True
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
