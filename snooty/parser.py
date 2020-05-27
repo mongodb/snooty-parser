@@ -227,14 +227,7 @@ class JSONVisitor:
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
 
-        if isinstance(node, docutils.nodes.system_message):
-            level = int(node["level"])
-            if level >= 2:
-                level = Diagnostic.Level.from_docutils(level)
-                msg = node[0].astext()
-                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
+        if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
         elif isinstance(node, docutils.nodes.document):
             self.state.append(n.Root((0,), [], {}))
@@ -398,6 +391,16 @@ class JSONVisitor:
             (docutils.nodes.comment, docutils.nodes.problematic, docutils.nodes.label),
         ):
             raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.system_message):
+            level = int(node["level"])
+            if level >= 2:
+                level = Diagnostic.Level.from_docutils(level)
+                msg = node[0].astext()
+                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
+            raise docutils.nodes.SkipNode()
+        elif isinstance(node, rstparser.snooty_diagnostic):
+            self.diagnostics.append(node["diagnostic"])
+            return
         else:
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 

@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional
 from pathlib import Path
 from .n import SerializableType
 from . import n
@@ -144,12 +144,17 @@ class ErrorParsingYAMLFile(Diagnostic):
 
     def __init__(
         self,
-        path: Path,
+        path: Optional[Path],
         reason: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"Error parsing YAML file {str(path)}: {reason}", start, end)
+        message = (
+            f"Error parsing YAML file {str(path)}: {reason}"
+            if path
+            else f"Error parsing YAML: {reason}"
+        )
+        super().__init__(message, start, end)
         self.path = path
         self.reason = reason
 

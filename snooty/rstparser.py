@@ -173,6 +173,12 @@ class ref_role(role):
     pass
 
 
+class snooty_diagnostic(docutils.nodes.Element):
+    def __init__(self, diagnostic: Diagnostic) -> None:
+        super().__init__("")
+        self["diagnostic"] = diagnostic
+
+
 def handle_role_null(
     typ: str,
     rawtext: str,
@@ -535,13 +541,19 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
 
 class BaseCardGroupDirective(BaseDocutilsDirective):
     def run(self) -> List[docutils.nodes.Node]:
-        parsed = load_yaml("\n".join(self.content))[0]
+        parsed, diagnostic = load_yaml(None, "\n".join(self.content))
+        if diagnostic is not None:
+            diagnostic.start = (diagnostic.start[0] + self.lineno, diagnostic.start[1])
+            return [snooty_diagnostic(diagnostic)]
+
         try:
-            loaded = check_type(CardGroupDefinition, parsed)
+            loaded = check_type(CardGroupDefinition, parsed[0])
         except LoadError as err:
             line = self.lineno + getattr(err.bad_data, "_start_line", 0) + 1
             error_node = self.state.document.reporter.error(str(err), line=line)
             return [error_node]
+        except IndexError:
+            loaded = CardGroupDefinition([])
 
         node = directive("", "card-group")
         node.document = self.state.document
@@ -594,9 +606,25 @@ class BaseTabsDirective(BaseDocutilsDirective):
         # Transform the old YAML-based syntax into the new pure-rst syntax.
         # This heuristic guesses whether we have the old syntax or the NEW.
         if any(line == "tabs:" for line in self.content):
-            parsed = load_yaml("\n".join(self.content))[0]
+            parsed, diagnostic = load_yaml(None, "\n".join(self.content))
+
+            if diagnostic is not None:
+                diagnostic.start = (
+                    diagnostic.start[0] + self.lineno,
+                    diagnostic.start[1],
+                )
+                return [snooty_diagnostic(diagnostic)]
+
             try:
-                loaded = check_type(LegacyTabsDefinition, parsed)
+                first_parsed = parsed[0]
+            except IndexError:
+                error_node = self.state.document.reporter.error(
+                    "At least one tab required", line=self.lineno
+                )
+                return [error_node]
+
+            try:
+                loaded = check_type(LegacyTabsDefinition, first_parsed)
             except LoadError as err:
                 line = self.lineno + getattr(err.bad_data, "_start_line", 0) + 1
                 error_node = self.state.document.reporter.error(str(err), line=line)
