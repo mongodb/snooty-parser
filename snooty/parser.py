@@ -499,11 +499,8 @@ class JSONVisitor:
 
             dedent = 0
             if "dedent" in options:
-                # Dedent is specified as a nonnegative integer (number of characters)
-                if type(options["dedent"]) is int:
-                    dedent = options["dedent"]
                 # Dedent is specified as a flag
-                elif isinstance(options["dedent"], bool):
+                if isinstance(options["dedent"], bool):
                     # Deduce a reasonable dedent
                     try:
                         dedent = min(
@@ -514,6 +511,11 @@ class JSONVisitor:
                     except ValueError:
                         # Handle the (unlikely) case where there are no non-empty lines
                         dedent = 0
+                # Dedent is specified as a nonnegative integer (number of characters):
+                # Note: since boolean is a subtype of int, this conditonal must follow the
+                # above bool-type conditional.
+                elif isinstance(options["dedent"], int):
+                    dedent = options["dedent"]
                 else:
                     self.diagnostics.append(
                         InvalidLiteralInclude(
