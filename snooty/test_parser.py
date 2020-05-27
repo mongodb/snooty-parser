@@ -175,6 +175,8 @@ for (i = 0; i &lt; 10; i++) {
    :dedent: 4
    :linenos:
    :copyable: false
+   :emphasize-lines: 1,2-4
+   :lines: 1
 """,
     )
     page.finish(diagnostics)
@@ -182,9 +184,9 @@ for (i = 0; i &lt; 10; i++) {
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1">
+        <directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
         <text>/test_parser/includes/sample_code.py</text>
-        <code lang="python" linenos="True">print("test dedent")</code>
+        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" linenos="True">print("test dedent")</code>
         </directive>
         </root>""",
     )

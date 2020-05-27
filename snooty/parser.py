@@ -493,6 +493,8 @@ class JSONVisitor:
             if end_before == -1:
                 end_before = len(lines)
 
+            # Capture the original file-length before splicing it
+            len_file = len(lines)
             lines = lines[start_after:end_before]
 
             if "dedent" in options:
@@ -525,8 +527,9 @@ class JSONVisitor:
             span = (line,)
             language = options["language"] if "language" in options else ""
             copyable = "copyable" not in options or options["copyable"] == "True"
+            print(filepath)
             emphasize_lines = (
-                rstparser.parse_linenos(options["emphasize-lines"], len(lines))
+                rstparser.parse_linenos(options["emphasize-lines"], len_file)
                 if "emphasize-lines" in options
                 else None
             )
