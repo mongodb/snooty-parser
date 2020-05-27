@@ -129,14 +129,7 @@ class JSONVisitor:
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
 
-        if isinstance(node, docutils.nodes.system_message):
-            level = int(node["level"])
-            if level >= 2:
-                level = Diagnostic.Level.from_docutils(level)
-                msg = node[0].astext()
-                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
+        if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
         elif isinstance(node, docutils.nodes.document):
             self.state.append(n.Root((0,), [], {}))
@@ -300,6 +293,16 @@ class JSONVisitor:
             (docutils.nodes.comment, docutils.nodes.problematic, docutils.nodes.label),
         ):
             raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.system_message):
+            level = int(node["level"])
+            if level >= 2:
+                level = Diagnostic.Level.from_docutils(level)
+                msg = node[0].astext()
+                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
+            raise docutils.nodes.SkipNode()
+        elif isinstance(node, rstparser.snooty_diagnostic):
+            self.diagnostics.append(node["diagnostic"])
+            return
         else:
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 
@@ -625,6 +628,21 @@ class JSONVisitor:
                             image_argument, err.strerror, util.get_line(node)
                         )
                     )
+        elif key in {"landing:card"}:
+            image_argument = options.get("icon")
+
+            if image_argument:
+                try:
+                    static_asset = self.add_static_asset(
+                        Path(image_argument), upload=True
+                    )
+                    self.pending.append(PendingFigure(doc, static_asset))
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(
+                            image_argument, err.strerror, util.get_line(node)
+                        )
+                    )
 
         return doc
 
@@ -805,7 +823,7 @@ class _Project:
 
         self.postprocessor = (
             DevhubPostprocessor(self.config, self.targets)
-            if self.config.default_domain
+            if self.config.default_domain == "devhub"
             else Postprocessor(self.config, self.targets)
         )
 

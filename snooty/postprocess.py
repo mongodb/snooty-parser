@@ -594,7 +594,7 @@ class DevhubPostprocessor(Postprocessor):
     # These directives have their content represented as children; they will return a list of nodes
     BLOCK_FIELDS = {"devhub:meta-description"}
     # These directives have their content represented as an argument; they will return a string
-    ARG_FIELDS = {"devhub:level", "devhub:type", "devhub:atf-image"}
+    ARG_FIELDS = {"devhub:level", "devhub:type", ":atf-image"}
     # These directives have their content represented as children, along with a series of options;
     # they will return a dictionary with all options represented, and with the content represented as a list of nodes whose key is `children`.
     OPTION_BLOCK_FIELDS = {":og", ":twitter"}

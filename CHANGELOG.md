@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for literal includes (DOP-876).
 
+## [v0.4.8] - 2020-05-27
+
+### Added
+
+- Homepage directives (DOP-1120).
+
+### Changed
+
+- The `rfc` role is now an extlink and actually creates a reference (DOP-1128).
+
+### Fixed
+
+- Invalid YAML in tabs and card groups no longer triggers a crash (DOP-1135).
+
+## [v0.4.7] - 2020-05-13
+
+### Changed
+
+- Error code 2 is now returned if there are error diagnostics, leaving error code 1 for crashes (DOP-922).
+
+### Fixed
+
+- Generated intersphinx inventories are now compatible with older versions of Sphinx (DOP-1094).
+- Snooty no longer crashes when generating or loading an intersphinx inventory with invalid target names (DOP-1079).
+- Diagnostic levels are now dealt with more carefully.
+
 ## [v0.4.6] - 2020-05-06
 
 ### Added

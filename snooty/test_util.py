@@ -43,6 +43,7 @@ def test_get_files() -> None:
         Path("test_data/get-preview/snooty.toml"),
         Path("test_data/test_devhub/snooty.toml"),
         Path("test_data/test_intersphinx/snooty.toml"),
+        Path("test_data/test_landing/snooty.toml"),
     }
 
 
