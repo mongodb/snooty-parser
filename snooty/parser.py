@@ -497,12 +497,11 @@ class JSONVisitor:
             len_file = len(lines)
             lines = lines[start_after:end_before]
 
+            dedent = 0
             if "dedent" in options:
-                dedent = 0
                 # Dedent is specified as a nonnegative integer (number of characters)
-                if isinstance(options["dedent"], int):
+                if type(options["dedent"]) is int:
                     dedent = options["dedent"]
-                    lines = [line[dedent:] for line in lines]
                 # Dedent is specified as a flag
                 elif isinstance(options["dedent"], bool):
                     # Deduce a reasonable dedent
@@ -524,9 +523,8 @@ class JSONVisitor:
                     )
                     return doc
 
-            span = (line,)
-            language = options["language"] if "language" in options else ""
-            copyable = "copyable" not in options or options["copyable"] == "True"
+            lines = [line[dedent:] for line in lines]
+
             emphasize_lines = None
             if "emphasize-lines" in options:
                 try:
@@ -540,6 +538,9 @@ class JSONVisitor:
                         )
                     )
 
+            span = (line,)
+            language = options["language"] if "language" in options else ""
+            copyable = "copyable" not in options or options["copyable"] == "True"
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
 

@@ -75,7 +75,7 @@ def test() -> None:
                 code_length += len(node.value)
             elif isinstance(node, n.Directive) and node.name == "figure":
                 checksums.append(node.options["checksum"])
-        assert code_length == 400
+        assert code_length == 345
         assert checksums == [
             "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"
         ]
