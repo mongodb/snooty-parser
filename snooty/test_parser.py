@@ -418,12 +418,12 @@ def test_roles() -> None:
             </listItem>
             <listItem>
             <paragraph>
-            <role name="rfc" target="1149"></role>
+            <reference refuri="https://tools.ietf.org/html/1149"><text>https://tools.ietf.org/html/1149</text></reference>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <role name="rfc" target="1149"><text>RFC-1149</text></role>
+            <reference refuri="https://tools.ietf.org/html/1149"><text>RFC-1149</text></reference>
             </paragraph>
             </listItem>
             <listItem>
