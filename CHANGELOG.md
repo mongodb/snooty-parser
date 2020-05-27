@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Homepage directives (DOP-1120).
+
+### Changed
+
+- The `rfc` role is now an extlink and actually creates a reference (DOP-1128).
+
+### Fixed
+
+- Invalid YAML in tabs and card groups no longer triggers a crash (DOP-1135).
+
 ## [v0.4.7] - 2020-05-13
 
 ### Changed
