@@ -711,7 +711,7 @@ type = "text"
 
 [role.rfc]
 help = """Reference an IETF RFC."""
-type = {link = "https://https://tools.ietf.org/html/%s"}
+type = {link = "https://tools.ietf.org/html/%s"}
 
 [role.wikipedia]
 help = """Reference a Wikipedia page."""
