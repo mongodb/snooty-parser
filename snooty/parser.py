@@ -527,12 +527,19 @@ class JSONVisitor:
             span = (line,)
             language = options["language"] if "language" in options else ""
             copyable = "copyable" not in options or options["copyable"] == "True"
-            print(filepath)
-            emphasize_lines = (
-                rstparser.parse_linenos(options["emphasize-lines"], len_file)
-                if "emphasize-lines" in options
-                else None
-            )
+            emphasize_lines = None
+            if "emphasize-lines" in options:
+                try:
+                    emphasize_lines = rstparser.parse_linenos(
+                        options["emphasize-lines"], len_file
+                    )
+                except ValueError as err:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f"Invalid emphasize-lines specification caused: {err}", line
+                        )
+                    )
+
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
 

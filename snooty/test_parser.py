@@ -305,6 +305,45 @@ for (i = 0; i &lt; 10; i++) {
         </root>""",
     )
 
+    # Test poorly specified linenos: out-of-bounds (greater than file length)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: 100
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
+    # Test poorly specified linenos: out-of-bounds (negative)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: -1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
+    # Test poorly specified linenos: wrong order (expects 2 < 1)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :emphasize-lines: 2-1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
