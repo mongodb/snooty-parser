@@ -506,6 +506,7 @@ inherit = "_landing-block"
 
 [directive."landing:card-group"]
 inherit = "_landing-block"
+options.columns = "nonnegative_integer"
 
 [directive."landing:card"]
 example = """.. card::
