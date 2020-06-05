@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.4.9] - 2020-06-05
+
 ### Added
 
 - Columns option to card-group.
