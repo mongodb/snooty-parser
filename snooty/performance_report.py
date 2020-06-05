@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 from .parser import Project
-from .types import Page, FileId, SerializableType, BuildIdentifierSet
+from .types import FileId, SerializableType, BuildIdentifierSet
+from .page import Page
 from .diagnostics import Diagnostic
 from .util import PerformanceLogger
 
