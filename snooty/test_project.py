@@ -5,7 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, DefaultDict, List
-from .types import FileId, Page, ProjectConfig, SerializableType, BuildIdentifierSet
+from .types import FileId, ProjectConfig, SerializableType, BuildIdentifierSet
+from .page import Page
 from .diagnostics import Diagnostic, GitMergeConflictArtifactFound, ConstantNotDeclared
 from .parser import Project
 from .util import ast_dive

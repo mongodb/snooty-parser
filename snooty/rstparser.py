@@ -1,5 +1,4 @@
 import re
-import sys
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -58,9 +57,6 @@ PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
 PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
-PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
-if PACKAGE_ROOT.is_file():
-    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
@@ -865,7 +861,7 @@ class Registry:
             return Registry(default_domain, self.domains)
 
     # This is effectively an LRU cache of size 1
-    CURRENT_REGISTRY: Optional[Tuple[Path, Optional[str], "Registry"]] = None
+    CURRENT_REGISTRY: Optional[Tuple[Optional[str], "Registry"]] = None
 
     def __init__(
         self, default_domain: Optional[str], domains: Dict[str, Domain]
@@ -919,18 +915,15 @@ class Registry:
         docutils.parsers.rst.roles.role = self.lookup_role
 
     @classmethod
-    def get(cls, path: Path, default_domain: Optional[str]) -> "Registry":
+    def get(cls, default_domain: Optional[str]) -> "Registry":
         if (
             cls.CURRENT_REGISTRY is not None
-            and cls.CURRENT_REGISTRY[0] == path
-            and cls.CURRENT_REGISTRY[1] == default_domain
+            and cls.CURRENT_REGISTRY[0] == default_domain
         ):
-            return cls.CURRENT_REGISTRY[2]
+            return cls.CURRENT_REGISTRY[1]
 
-        with path.open(encoding="utf-8") as f:
-            spec = specparser.Spec.loads(f.read())
-        registry = register_spec_with_docutils(spec, default_domain)
-        cls.CURRENT_REGISTRY = (path, default_domain, registry)
+        registry = register_spec_with_docutils(specparser.SPEC, default_domain)
+        cls.CURRENT_REGISTRY = (default_domain, registry)
         return registry
 
 
@@ -1044,16 +1037,13 @@ def register_spec_with_docutils(
     return builder.build(default_domain)
 
 
-GLOBAL_SPEC_PATH = PACKAGE_ROOT.joinpath("rstspec.toml")
-
-
 class Parser(Generic[_V]):
     __slots__ = ("project_config", "visitor_class")
 
     def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
-        Registry.get(GLOBAL_SPEC_PATH, project_config.default_domain).activate()
+        Registry.get(project_config.default_domain).activate()
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         diagnostics: List[Diagnostic] = []

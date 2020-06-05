@@ -3,8 +3,10 @@
 
 import dataclasses
 import toml
+import sys
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 import docutils.nodes
 import docutils.parsers.rst
 import docutils.parsers.rst.directives
@@ -25,6 +27,10 @@ from typing import (
 )
 from typing_extensions import Protocol
 
+
+PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
+if PACKAGE_ROOT.is_file():
+    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 #: Types of formatting that can be applied to a role.
 FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
@@ -247,6 +253,17 @@ class Spec:
 
         return root
 
+    def strip_prefix_from_name(self, rstobject_id: str, title: str) -> str:
+        rstobject = self.rstobject.get(rstobject_id, None)
+        if rstobject is None:
+            return title
+
+        candidate = f"{rstobject.prefix}."
+        if title.startswith(candidate):
+            return title[len(candidate) :]
+
+        return title
+
     def get_validator(self, option_spec: ArgumentType) -> Callable[[str], object]:
         """Return a validation function for a given argument type. This function will take in a
            string, and either throw an exception or return an output value."""
@@ -323,3 +340,7 @@ class Spec:
 
         for key, inheritable in inheritable_index.items():
             resolve_value(key, inheritable)
+
+
+GLOBAL_SPEC_PATH = PACKAGE_ROOT.joinpath("rstspec.toml")
+SPEC = Spec.loads(GLOBAL_SPEC_PATH.read_text(encoding="utf-8"))
