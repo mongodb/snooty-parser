@@ -102,13 +102,13 @@ RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
 VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.integer: int,
     PrimitiveType.nonnegative_integer: docutils.parsers.rst.directives.nonnegative_int,
-    PrimitiveType.path: str,
+    PrimitiveType.path: util.option_string,
     PrimitiveType.uri: docutils.parsers.rst.directives.uri,
-    PrimitiveType.string: str,
+    PrimitiveType.string: util.option_string,
     PrimitiveType.length: docutils.parsers.rst.directives.length_or_percentage_or_unitless,
     PrimitiveType.boolean: util.option_bool,
     PrimitiveType.flag: util.option_flag,
-    PrimitiveType.linenos: str,
+    PrimitiveType.linenos: util.option_string,
 }
 
 #: Option types can be a primitive type (PrimitiveType), an enum

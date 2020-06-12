@@ -192,6 +192,16 @@ class FileWatcher:
         return sum(len(w) for w in self.directories.values())
 
 
+def option_string(argument: Optional[str]) -> str:
+    """
+    If None-type None is received, convert to empty string instead of
+    to string-type "None".
+    """
+    if argument and argument.strip():
+        return argument
+    return ""
+
+
 def option_bool(argument: Optional[str]) -> bool:
     """
     Check for a valid boolean option return it. If no argument is given,

@@ -473,15 +473,25 @@ class JSONVisitor:
             start_after = 0
             if "start-after" in options:
                 start_after_text = options["start-after"]
-                start_after = _locate_text(start_after_text)
+                if start_after_text == "":
+                    self.diagnostics.append(
+                        InvalidLiteralInclude("Must specify start-after text", line)
+                    )
                 # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                start_after += 1
+                else:
+                    start_after = _locate_text(start_after_text)
+                    start_after += 1
 
             # ...now locate the end_before query
             end_before = len(lines)
             if "end-before" in options:
                 end_before_text = options["end-before"]
-                end_before = _locate_text(end_before_text)
+                if end_before_text == "":
+                    self.diagnostics.append(
+                        InvalidLiteralInclude("Must specify end-before text", line)
+                    )
+                else:
+                    end_before = _locate_text(end_before_text)
 
             # Check that start_after_text precedes end_before_text (and end_before exists)
             if start_after >= end_before >= 0:

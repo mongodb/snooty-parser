@@ -218,12 +218,15 @@ for (i = 0; i &lt; 10; i++) {
         </root>""",
     )
 
-    # Test failure to specify argument file
+    # Test failure to specify argument file and string options
     page, diagnostics = parse_rst(
         parser,
         path,
         """
 .. literalinclude::
+    :language:
+    :emphasize-lines:
+    :lines:
 """,
     )
     page.finish(diagnostics)
@@ -232,7 +235,63 @@ for (i = 0; i &lt; 10; i++) {
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="literalinclude">
+        <directive name="literalinclude" language="" emphasize-lines="" lines="">
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to specify start-after text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+    :start-after:
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" start-after="">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2</code>
+        </directive>
+        </root>""",
+    )
+
+    # Test failure to specify end-before text
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+    :end-before:
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidLiteralInclude)
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="literalinclude" end-before="">
+        <text>/test_parser/includes/sample_code.py</text>
+        <code copyable="True">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2</code>
         </directive>
         </root>""",
     )
