@@ -39,7 +39,6 @@ PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
-
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
 
@@ -251,7 +250,6 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
-
     args = docopt(__doc__, argv)
 
     logging.basicConfig(level=logging.INFO)
@@ -264,7 +262,6 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
         return
 
     url = args["<mongodb-url>"]
-
     connection = (
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
@@ -275,6 +272,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
 
     try:
         project.build()
+
         if args["watch"]:
             observer = watchdog.observers.Observer()
             handler = ObserveHandler(project)

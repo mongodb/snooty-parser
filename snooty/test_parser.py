@@ -23,8 +23,6 @@ ROOT_PATH = Path("test_data")
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
-    print(project_config)
-    assert False
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
@@ -88,8 +86,6 @@ def test_tabs_invalid_yaml() -> None:
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
-    print(project_config)
-    assert False
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple code-block
@@ -391,8 +387,6 @@ for (i = 0; i &lt; 10; i++) {
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
-    print(parser.project_config)
-    assert False
 
 
 def test_include() -> None:
@@ -609,7 +603,6 @@ def test_roles() -> None:
             </list>
             </root>""",
     )
-    assert False
 
 
 def test_doc_role() -> None:

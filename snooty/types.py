@@ -410,7 +410,6 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-
                 diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
