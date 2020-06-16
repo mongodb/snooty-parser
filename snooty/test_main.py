@@ -2,7 +2,6 @@ import os
 import json
 import builtins
 import subprocess
-from pathlib import Path
 from typing import Any, List
 from .types import FileId
 from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
