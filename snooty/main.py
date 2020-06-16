@@ -25,7 +25,7 @@ import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Sequence
 from docopt import docopt
 
 from . import language_server
@@ -248,10 +248,9 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
 
     return identifiers
 
-
-def main() -> None:
+def main(argv: Optional[Sequence[str]] = None) -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
-    args = docopt(__doc__)
+    args = docopt(__doc__, argv)
 
     logging.basicConfig(level=logging.INFO)
 
@@ -287,6 +286,9 @@ def main() -> None:
         if connection:
             print("Closing connection...")
             connection.close()
+
+    if project.config.fail_on_diagnostics:
+        EXIT_STATUS_ERROR_DIAGNOSTICS = 1
 
     if args["build"] and backend.total_errors > 0:
         sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)
