@@ -249,56 +249,10 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
 
     return identifiers
 
-def test_main(argv: Optional[Sequence[str]] = None) -> None:
+def main(argv: Optional[Sequence[str]] = None) -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
 
     args = docopt(__doc__, argv)
-
-    logging.basicConfig(level=logging.INFO)
-
-    if PARANOID_MODE:
-        logger.info("Paranoid mode on")
-
-    if args["language-server"]:
-        language_server.start()
-        return
-
-    url = args["<mongodb-url>"]
-
-    connection = (
-        None if not url else pymongo.MongoClient(url, password=getpass.getpass())
-    )
-    backend = MongoBackend(connection) if connection else Backend()
-    assert args["<source-path>"] is not None
-    root_path = Path(args["<source-path>"])
-    project = Project(root_path, backend, _generate_build_identifiers(args))
-
-    try:
-        project.build()
-        if args["watch"]:
-            observer = watchdog.observers.Observer()
-            handler = ObserveHandler(project)
-            logger.info("Watching for changes...")
-            observer.schedule(handler, str(root_path), recursive=True)
-            observer.start()
-            observer.join()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        if connection:
-            print("Closing connection...")
-            connection.close()
-
-    if project.config.fail_on_diagnostics:
-        EXIT_STATUS_ERROR_DIAGNOSTICS = 1
-
-    if args["build"] and backend.total_errors > 0:
-        sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)
-
-def main() -> None:
-    # docopt will terminate here and display usage instructions if snooty is run improperly
-
-    args = docopt(__doc__)
 
     logging.basicConfig(level=logging.INFO)
 
