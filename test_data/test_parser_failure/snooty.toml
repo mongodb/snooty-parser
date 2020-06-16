@@ -1,0 +1,7 @@
+name = "test_data"
+fail_on_diagnostics = true
+
+[constants]
+version = 3.4
+package-name-org = "mongodb-org"
+pgp-version = "{+version+}"
