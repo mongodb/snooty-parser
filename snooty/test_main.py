@@ -1,6 +1,9 @@
 import os
 import json
 import builtins
+import subprocess
+from subprocess import run
+from pathlib import Path
 from typing import Any, List
 from .types import FileId
 from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
@@ -72,3 +75,8 @@ def test_backend() -> None:
             }
         },
     ]
+
+def test_main():
+  subprocess.call(["snooty", "build", "test_data/test_parser_failure"])
+  #subprocess.call(["ls", "-l"])
+  #main.main(["build", 'test_data'])

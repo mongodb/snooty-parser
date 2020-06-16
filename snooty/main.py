@@ -25,7 +25,7 @@ import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Sequence
 from docopt import docopt
 
 from . import language_server
@@ -39,6 +39,7 @@ PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
+
 if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
 
@@ -82,6 +83,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 
 
 class Backend:
+
     def __init__(self) -> None:
         self.total_errors = 0
 
@@ -249,9 +251,10 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     return identifiers
 
 
-def main() -> None:
+def main(argv: Optional[Sequence[str]] = None) -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
-    args = docopt(__doc__)
+    print(argv)
+    args = docopt(__doc__, argv)
 
     logging.basicConfig(level=logging.INFO)
 
@@ -263,6 +266,7 @@ def main() -> None:
         return
 
     url = args["<mongodb-url>"]
+
     connection = (
         None if not url else pymongo.MongoClient(url, password=getpass.getpass())
     )
@@ -288,5 +292,11 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
+    if(project.config.fail_on_diagnostics):
+      EXIT_STATUS_ERROR_DIAGNOSTICS = 1
+      #print("TOTAL ERRORS: ", project.config.fail_on_diagnostics, "\n\n cheese")
+      print(backend.total_errors)
+      assert False
+      
     if args["build"] and backend.total_errors > 0:
         sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)

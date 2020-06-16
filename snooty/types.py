@@ -373,6 +373,7 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
+    fail_on_diagnostics: bool
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
@@ -401,6 +402,7 @@ class ProjectConfig:
             try:
                 with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
                     data = toml.load(f)
+                    print(data)
                     data["root"] = path
                     result, parsed_diagnostics = check_type(
                         ProjectConfig, data
@@ -409,6 +411,7 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
+                
                 diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
