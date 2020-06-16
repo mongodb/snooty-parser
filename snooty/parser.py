@@ -172,6 +172,7 @@ class JSONVisitor:
         elif isinstance(node, rstparser.target_directive):
             self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
         elif isinstance(node, rstparser.directive):
+            print("OK OK WE ARE HERE")
             directive = self.handle_directive(node, line)
             if directive:
                 self.state.append(directive)
@@ -435,6 +436,7 @@ class JSONVisitor:
                     self.validate_list_table(bullets, expected_num_columns)
 
         elif name == "literalinclude":
+            print("we are called right here!!!")
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
@@ -461,6 +463,7 @@ class JSONVisitor:
                 Searches the literally-included file ('lines') for the specified text. If no such text is found,
                 add an InvalidLiteralInclude diagnostic.
                 """
+                print("we are called!!!")
                 assert isinstance(text, str)
                 loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
                 if loc < 0:
@@ -973,6 +976,7 @@ class _Project:
         self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
     def build(self, max_workers: Optional[int] = None) -> None:
+        print("HELLO")
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
