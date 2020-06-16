@@ -373,7 +373,6 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
-    fail_on_diagnostics: bool
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
@@ -410,7 +409,6 @@ class ProjectConfig:
             except FileNotFoundError:
                 pass
             except LoadError as err:
-
                 diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent

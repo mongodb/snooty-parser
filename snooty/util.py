@@ -47,17 +47,13 @@ def reroot_path(
 def get_files(root: PurePath, extensions: Container[str]) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
        only filenames with the given extensions."""
-    print("get_files: ", list(os.walk(root)))
-    print('\n\n\n')
     for base, dirs, files in os.walk(root):
-        print("we enter the first here!")
         for name in files:
             ext = os.path.splitext(name)[1]
-            print("we enter the second here!")
+
             if ext not in extensions:
-                print("we not in here!")
                 continue
-            print(base, name)
+
             yield Path(os.path.join(base, name))
 
 
