@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Populate literal include nodes (DOP-876).
+- Improve string-handling in spec-parser (DOP-1148).
 
 ## [v0.4.9] - 2020-06-05
 
