@@ -248,6 +248,7 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
 
     return identifiers
 
+
 def main(argv: Optional[Sequence[str]] = None) -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
     args = docopt(__doc__, argv)

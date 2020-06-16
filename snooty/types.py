@@ -414,7 +414,7 @@ class ProjectConfig:
 
             path = path.parent
 
-        return cls(root, name="unnamed"), diagnostics
+        return cls(root, name="unnamed", fail_on_diagnostics=False), diagnostics
 
     def render_constants(self) -> Tuple["ProjectConfig", List[Diagnostic]]:
         if not self.constants:

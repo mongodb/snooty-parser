@@ -2,7 +2,6 @@ import os
 import json
 import builtins
 import subprocess
-from subprocess import run
 from pathlib import Path
 from typing import Any, List
 from .types import FileId
@@ -77,6 +76,6 @@ def test_backend() -> None:
     ]
 
 
-def test_parser_failure():
+def test_parser_failure() -> None:
     return_code = subprocess.call(["snooty", "build", "test_data/test_parser_failure"])
     assert return_code == 1

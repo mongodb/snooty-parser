@@ -8,7 +8,7 @@ from ..util_test import check_ast_testing_string
 
 
 def test_release_specification() -> None:
-    project_config = ProjectConfig(Path("test_data"), "")
+    project_config = ProjectConfig(Path("test_data"), "", False)
     project_config.constants["version"] = "3.4"
     category = GizaReleaseSpecificationCategory(project_config)
     path = Path("test_data/release-specifications.yaml")

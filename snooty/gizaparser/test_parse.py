@@ -5,7 +5,7 @@ from ..types import ProjectConfig
 
 
 def test_invalid_yaml() -> None:
-    project_config = ProjectConfig(Path("test_data"), "")
+    project_config = ProjectConfig(Path("test_data"), "", False)
     pages, text, diagnostics = parse(
         Extract,
         Path(""),

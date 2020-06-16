@@ -9,7 +9,7 @@ def test_legacy_guides() -> None:
     root = Path("test_data")
     legacy_path = Path(root).joinpath(Path("guides/test_legacy_guides.rst"))
     new_path = Path(root).joinpath(Path("guides/test_guides.rst"))
-    project_config = ProjectConfig(root, "")
+    project_config = ProjectConfig(root, "", False)
     parser = rstparser.Parser(project_config, JSONVisitor)
     legacy_page, legacy_diagnostics = parse_rst(parser, legacy_path, None)
     new_page, new_diagnostics = parse_rst(parser, new_path, None)
