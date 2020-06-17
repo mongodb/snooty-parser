@@ -234,7 +234,7 @@ example = """.. example::
 [directive.optional]
 help = """A section of optional information or steps."""
 content_type = "block"
-exmaple = """.. optional::
+example = """.. optional::
 
    ${0:Optional content}
 """
@@ -273,7 +273,7 @@ help = """A nested document providing related or reference material."""
 argument_type = "string"
 options.subtitle = "string"
 content_type = "block"
-exmaple = """.. sidebar:: ${1:string}
+example = """.. sidebar:: ${1:string}
    :subtitle: ${2:string}
 
    ${3:Content block}
