@@ -22,7 +22,7 @@ ROOT_PATH = Path("test_data")
 
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False)
+    project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
@@ -59,7 +59,7 @@ def test_tabs() -> None:
 
 def test_tabs_invalid_yaml() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False)
+    project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(
         parser,
@@ -85,7 +85,7 @@ def test_tabs_invalid_yaml() -> None:
 
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False)
+    project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple code-block
@@ -165,7 +165,7 @@ def test_codeblock() -> None:
 
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple literally-included code block
@@ -387,7 +387,7 @@ for (i = 0; i &lt; 10; i++) {
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test good include
@@ -426,7 +426,7 @@ def test_include() -> None:
 
 def test_admonition() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -453,7 +453,7 @@ def test_admonition() -> None:
 
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -523,7 +523,7 @@ foo |double arrow ->| bar
 
 def test_roles() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test both forms of :manual: (an extlink), :rfc: (explicit title),
@@ -604,7 +604,7 @@ def test_roles() -> None:
 def test_doc_role() -> None:
     project_root = ROOT_PATH.joinpath("test_project")
     path = project_root.joinpath(Path("source/test.rst")).resolve()
-    project_config = ProjectConfig(project_root, "", False)
+    project_config = ProjectConfig(project_root, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test bad text
@@ -684,7 +684,7 @@ def test_doc_role() -> None:
 
 def test_rstobject() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test both forms of :manual: (an extlink), :rfc: (explicit title),
@@ -715,7 +715,7 @@ def test_rstobject() -> None:
 
 def test_bad_option() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(
         parser,
@@ -739,7 +739,7 @@ def test_bad_option() -> None:
 
 def test_accidental_indentation() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -791,7 +791,7 @@ def test_accidental_indentation() -> None:
 
 def test_glossary_node() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -908,7 +908,7 @@ def test_glossary_node() -> None:
 
 def test_cond() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -947,7 +947,7 @@ def test_cond() -> None:
 
 def test_version() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1041,7 +1041,7 @@ A new paragraph.
 
 def test_list_table() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1152,7 +1152,7 @@ def test_list_table() -> None:
 
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1205,7 +1205,7 @@ def test_footnote() -> None:
 
     # Test that docutils <label> nodes do not crash the parser.
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1223,7 +1223,7 @@ def test_footnote() -> None:
 
 def test_footnote_reference() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1269,7 +1269,7 @@ This is an autonumbered footnote [#]_ in use.
 
 def test_cardgroup() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1307,7 +1307,7 @@ def test_cardgroup() -> None:
 
 def test_cardgroup_invalid_yaml() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(
         parser,
@@ -1331,7 +1331,7 @@ def test_cardgroup_invalid_yaml() -> None:
 
 def test_toctree() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1361,7 +1361,7 @@ def test_toctree() -> None:
 
 def test_callable_target() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1403,7 +1403,7 @@ def test_callable_target() -> None:
 
 def test_no_weird_targets() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1426,7 +1426,7 @@ def test_no_weird_targets() -> None:
 
 def test_dates() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1456,7 +1456,7 @@ def test_problematic() -> None:
        role isn't known --- are excluded from the output AST. We might change this
        behavior, but for now we should define it."""
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -1473,7 +1473,7 @@ def test_problematic() -> None:
 
 def test_definition_list() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", False, source="./")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(

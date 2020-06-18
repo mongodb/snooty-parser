@@ -373,7 +373,7 @@ class Page:
 class ProjectConfig:
     root: Path
     name: str
-    fail_on_diagnostics: bool
+    fail_on_diagnostics: bool = field(default=False)
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")

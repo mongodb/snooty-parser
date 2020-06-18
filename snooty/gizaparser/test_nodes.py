@@ -89,7 +89,7 @@ def test_inheritance() -> None:
 
 def test_reify_all_files() -> None:
     """Test to see if repeated refs in a YAML are detected"""
-    project_config = ProjectConfig(Path("test_data"), "", False)
+    project_config = ProjectConfig(Path("test_data"), "")
     project_config.constants["version"] = "3.4"
 
     # Place good path and bad path here

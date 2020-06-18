@@ -8,7 +8,7 @@ from ..util_test import ast_to_testing_string
 
 
 def test_extract() -> None:
-    project_config = ProjectConfig(Path("test_data"), "", False)
+    project_config = ProjectConfig(Path("test_data"), "")
     category = GizaExtractsCategory(project_config)
     path = Path("test_data/extracts-test.yaml")
     parent_path = Path("test_data/extracts-test-parent.yaml")
