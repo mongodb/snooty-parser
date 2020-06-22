@@ -25,7 +25,7 @@ import json
 import watchdog.events
 import watchdog.observers
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Optional, Union, Sequence
+from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
 
 from . import language_server
@@ -249,9 +249,9 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
     return identifiers
 
 
-def main(argv: Optional[Sequence[str]] = None) -> None:
+def main() -> None:
     # docopt will terminate here and display usage instructions if snooty is run improperly
-    args = docopt(__doc__, argv)
+    args = docopt(__doc__)
 
     logging.basicConfig(level=logging.INFO)
 
