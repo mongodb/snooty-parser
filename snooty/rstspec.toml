@@ -167,8 +167,8 @@ example = """.. include:: ${1:/includes/file.rst}
 [directive.literalinclude]
 help = """Include a file as a block of code."""
 inherit = "include"
-options.start-after = "linenos"
-options.end-before = "linenos"
+options.start-after = "string"
+options.end-before = "string"
 options.linenos = "flag"
 options.copyable = "boolean"
 options.language = "string"
