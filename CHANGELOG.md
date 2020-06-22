@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- fail_on_diagnostics toml flag (DOP-1132)
+
 ## [v0.4.10] - 2020-06-17
 
 ### Changed
