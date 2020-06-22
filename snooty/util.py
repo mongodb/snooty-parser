@@ -50,7 +50,6 @@ def get_files(root: PurePath, extensions: Container[str]) -> Iterator[Path]:
     for base, dirs, files in os.walk(root):
         for name in files:
             ext = os.path.splitext(name)[1]
-            print(base, " ", ext)
             if ext not in extensions:
                 continue
 
