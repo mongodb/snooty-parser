@@ -24,7 +24,7 @@ from typing import (
     Set,
 )
 from ..flutter import checked
-from ..types import Page, EmbeddedRstParser, ProjectConfig
+from ..types import EmbeddedRstParser, ProjectConfig
 from ..diagnostics import (
     Diagnostic,
     UnknownSubstitution,
@@ -32,6 +32,7 @@ from ..diagnostics import (
     CannotOpenFile,
     RefAlreadyExists,
 )
+from ..page import Page
 from .. import n
 
 _T = TypeVar("_T", str, object)

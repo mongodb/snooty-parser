@@ -3,7 +3,8 @@ from pathlib import Path
 from pytest import raises
 from .intersphinx import fetch_inventory, Inventory
 from .parser import Project
-from .types import TargetDatabase, FileId
+from .types import FileId
+from .target_database import TargetDatabase
 from .test_project import Backend
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")

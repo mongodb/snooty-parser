@@ -31,7 +31,8 @@ from docopt import docopt
 from . import language_server
 from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS
-from .types import Page, FileId, SerializableType, BuildIdentifierSet
+from .types import FileId, SerializableType, BuildIdentifierSet
+from .page import Page
 from .diagnostics import Diagnostic
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
