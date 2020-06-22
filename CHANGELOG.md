@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fail_on_diagnostics toml flag (DOP-1132)
 
+## [v0.4.11] - 2020-06-22
+
 ### Fixed
 
 - Python 3.7 support.
