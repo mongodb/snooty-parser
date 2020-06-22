@@ -140,7 +140,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         name="binary"
         target="bin.mongod"
         url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod">
-        <literal><text>bin.mongod</text></literal>
+        <literal><text>mongod</text></literal>
         </ref_role>""",
     )
 

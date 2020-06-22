@@ -29,7 +29,11 @@ class TargetDefinition(NamedTuple):
     priority: int
     uri_base: str
     uri: str
-    display_name: str
+    display_name: Optional[str]
+
+    @property
+    def domain_and_role(self) -> str:
+        return f"{self.role[0]}:{self.role[1]}"
 
 
 @dataclass
@@ -73,9 +77,7 @@ class Inventory:
                         ":".join(target.role),
                         str(target.priority),
                         target.uri_base,
-                        "-"
-                        if target.name == target.display_name
-                        else target.display_name,
+                        "-" if target.display_name is None else target.display_name,
                     )
                 )
             )
@@ -106,7 +108,7 @@ class Inventory:
                 logger.info(f"Invalid intersphinx line: {line}")
                 continue
 
-            name, domain_and_role, raw_priority, uri, dispname = match.groups()
+            name, domain_and_role, raw_priority, uri, raw_dispname = match.groups()
 
             # This is hard-coded in Sphinx as well. Support this name for compatibility.
             if domain_and_role == "std:cmdoption":
@@ -127,8 +129,7 @@ class Inventory:
             domain, role = domain_and_role.split(":", 1)
 
             # "If {dispname} is identical to {name}, it is stored as -"
-            if dispname == "-":
-                dispname = name
+            dispname = None if raw_dispname == "-" else raw_dispname
 
             target_definition = TargetDefinition(
                 name, (domain, role), priority, uri_base, uri, dispname

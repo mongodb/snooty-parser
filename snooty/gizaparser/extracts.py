@@ -4,7 +4,8 @@ from typing import Callable, List, Tuple, Sequence, Optional
 from ..flutter import checked
 from .nodes import Inheritable, GizaCategory, HeadingMixin
 from .parse import parse
-from ..types import EmbeddedRstParser, Page
+from ..types import EmbeddedRstParser
+from ..page import Page
 from ..diagnostics import Diagnostic, MissingRef
 from .. import n
 

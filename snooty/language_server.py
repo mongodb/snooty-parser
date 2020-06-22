@@ -25,7 +25,8 @@ from typing import (
 )
 from .flutter import checked, check_type
 from .types import BuildIdentifierSet, FileId, SerializableType
-from . import types, util, n
+from . import util, n
+from .page import Page
 from .parser import Project
 from .diagnostics import Diagnostic
 
@@ -176,7 +177,7 @@ class Backend:
         prefix: List[str],
         build_identifiers: BuildIdentifierSet,
         page_id: FileId,
-        page: types.Page,
+        page: Page,
     ) -> None:
         pass
 

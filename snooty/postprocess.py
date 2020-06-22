@@ -15,7 +15,7 @@ from typing import (
     MutableSequence,
 )
 from .eventparser import EventParser
-from .types import FileId, Page, ProjectConfig, SerializableType, TargetDatabase
+from .types import FileId, ProjectConfig, SerializableType
 from .diagnostics import (
     Diagnostic,
     MissingOption,
@@ -26,6 +26,8 @@ from .diagnostics import (
     UnnamedPage,
 )
 from . import n, util
+from .page import Page
+from .target_database import TargetDatabase
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)

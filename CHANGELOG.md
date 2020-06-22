@@ -11,9 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fail_on_diagnostics toml flag (DOP-1132)
 
+## [v0.4.10] - 2020-06-17
+
 ### Changed
 
 - Populate literal include nodes (DOP-876).
+
+### Fixed
+
+- RefRole nodes no longer render with the prefix if no title is found (DOP-1073).
 
 ## [v0.4.9] - 2020-06-05
 
