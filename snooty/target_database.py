@@ -4,7 +4,8 @@ import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
 from docutils.nodes import make_id
-from typing import Dict, DefaultDict, NamedTuple, Sequence, List, Protocol, Optional
+from typing import Dict, DefaultDict, NamedTuple, Sequence, List, Optional
+from typing_extensions import Protocol
 from .types import normalize_target, FileId, ProjectConfig
 from .cache import Cache
 from . import n, intersphinx, specparser
