@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Improve string-handling in spec-parser (DOP-1148).
+
 ## [v0.4.11] - 2020-06-22
 
 ### Fixed
