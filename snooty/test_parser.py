@@ -1039,6 +1039,56 @@ A new paragraph.
     )
 
 
+def test_list() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+- First bulleted item
+- Second
+- Third
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <list>
+        <listItem><paragraph><text>First bulleted item</text></paragraph></listItem>
+        <listItem><paragraph><text>Second</text></paragraph></listItem>
+        <listItem><paragraph><text>Third</text></paragraph></listItem>
+        </list>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+a. First list item
+#. Second
+#. Third
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <list ordered="True" enumtype="loweralpha">
+        <listItem><paragraph><text>First list item</text></paragraph></listItem>
+        <listItem><paragraph><text>Second</text></paragraph></listItem>
+        <listItem><paragraph><text>Third</text></paragraph></listItem>
+        </list>
+        </root>""",
+    )
+
+
 def test_list_table() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

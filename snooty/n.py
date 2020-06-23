@@ -226,9 +226,10 @@ class ListNodeItem(Parent[Node]):
 
 @dataclass
 class ListNode(Parent[ListNodeItem]):
-    __slots__ = ("ordered",)
+    __slots__ = ("ordered", "enumtype")
     type = "list"
     ordered: bool
+    enumtype: Optional[str]
 
 
 @dataclass
