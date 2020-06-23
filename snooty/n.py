@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
@@ -37,6 +38,9 @@ __all__ = (
 
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 SerializedNode = Dict[str, SerializableType]
+ListEnumType = Enum(
+    "ListEnumType", ("arabic", "loweralpha", "upperalpha", "lowerroman", "upperroman")
+)
 _T = TypeVar("_T")
 
 
@@ -229,7 +233,7 @@ class ListNode(Parent[ListNodeItem]):
     __slots__ = ("ordered", "enumtype")
     type = "list"
     ordered: bool
-    enumtype: Optional[str]
+    enumtype: Optional[ListEnumType]
 
 
 @dataclass
