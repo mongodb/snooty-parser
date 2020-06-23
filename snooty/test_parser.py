@@ -384,36 +384,6 @@ for (i = 0; i &lt; 10; i++) {
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
-    # Test poorly specified start_after_text and end_before_text
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. literalinclude:: /test_parser/includes/sample_code.py
-   :start-after:
-   :end-before:
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 2
-    assert isinstance(diagnostics[0], InvalidLiteralInclude)
-    assert isinstance(diagnostics[1], InvalidLiteralInclude)
-    check_ast_testing_string(
-        page.ast,
-        """<root>
-        <directive name="literalinclude" start-after="None" end-before="None">
-        <text>/test_parser/includes/sample_code.py</text>
-        <code copyable="True">    # start example 1
-    print("test dedent")
-    # end example 1
-
-    # start example 2
-    print("hello world")
-    # end example 2
-    </code></directive>
-        </root>""",
-    )
-
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

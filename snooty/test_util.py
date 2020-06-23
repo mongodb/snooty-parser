@@ -4,20 +4,8 @@ import sys
 import time
 import watchdog.events
 from pathlib import Path, PurePath
-from typing import Callable, List, Tuple, Type
+from typing import List, Tuple
 from . import util
-
-
-def expect_exception(f: Callable[[], None], exception_ty: Type[Exception]) -> None:
-    """Assert that the given function f raises the given exception type."""
-    try:
-        f()
-    except exception_ty:
-        return
-    except Exception as err:
-        raise AssertionError(f"Expected {exception_ty.__name__}; got {err}")
-
-    raise AssertionError(f"Expected {exception_ty.__name__} to be raised")
 
 
 def test_reroot_path() -> None:
@@ -29,6 +17,34 @@ def test_reroot_path() -> None:
     assert util.reroot_path(
         PurePath("../bar/baz.rst"), PurePath("foo/dir/test.txt"), Path("foo")
     )[0] == PurePath("foo/bar/baz.rst")
+
+
+def test_option_string() -> None:
+    assert util.option_string("Test") == "Test"
+    # No input or blank input should raise a ValueError
+    try:
+        util.option_string(" ")
+    except ValueError:
+        pass
+
+
+def test_option_bool() -> None:
+    assert util.option_bool("tRuE") == True
+    assert util.option_bool("FaLsE") == False
+    # No input or blank input should raise a ValueError
+    try:
+        util.option_bool(" ")
+    except ValueError:
+        pass
+
+
+def test_option_flag() -> None:
+    assert util.option_flag("") == True
+    # Specifying an argument should raise a ValueError
+    try:
+        util.option_flag("test")
+    except ValueError:
+        pass
 
 
 def test_get_files() -> None:

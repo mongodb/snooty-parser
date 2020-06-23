@@ -195,11 +195,11 @@ class FileWatcher:
 def option_string(argument: Optional[str]) -> Optional[str]:
     """
     Check for a valid string option and return it. If no argument is given,
-    return None.
+    raise ``ValueError``.
     """
     if argument and argument.strip():
         return argument
-    return None
+    raise ValueError("Must supply string argument to option")
 
 
 def option_bool(argument: Optional[str]) -> bool:
