@@ -444,7 +444,7 @@ def test_admonition() -> None:
         page.ast,
         """<root>
         <directive name="note">
-        <list><listItem><paragraph><text>foo</text></paragraph></listItem>
+        <list enumtype="unordered"><listItem><paragraph><text>foo</text></paragraph></listItem>
         <listItem><paragraph><text>bar</text></paragraph></listItem></list>
         </directive>
         </root>""",
@@ -552,7 +552,7 @@ def test_roles() -> None:
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
                 <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
             </target>
-            <list>
+            <list enumtype="unordered">
             <listItem>
             <paragraph>
             <reference refuri="https://docs.mongodb.com/manual/introduction/">
@@ -642,7 +642,7 @@ def test_doc_role() -> None:
         page.ast,
         """
         <root>
-        <list>
+        <list enumtype="unordered">
         <listItem>
         <paragraph>
         <ref_role domain="std" name="doc" fileid="/index">
@@ -1058,7 +1058,7 @@ def test_list() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <list>
+        <list enumtype="unordered">
         <listItem><paragraph><text>First bulleted item</text></paragraph></listItem>
         <listItem><paragraph><text>Second</text></paragraph></listItem>
         <listItem><paragraph><text>Third</text></paragraph></listItem>
@@ -1080,7 +1080,7 @@ a. First list item
     check_ast_testing_string(
         page.ast,
         """<root>
-        <list ordered="True" enumtype="loweralpha">
+        <list enumtype="loweralpha">
         <listItem><paragraph><text>First list item</text></paragraph></listItem>
         <listItem><paragraph><text>Second</text></paragraph></listItem>
         <listItem><paragraph><text>Third</text></paragraph></listItem>
@@ -1439,7 +1439,7 @@ def test_callable_target() -> None:
     <text>Creates an index on the specified field if the index does not already exist.</text>
     </paragraph>
     </target>
-    <list>
+    <list enumtype="unordered">
     <listItem><paragraph>
         <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"><literal /></ref_role>
     </paragraph></listItem>
