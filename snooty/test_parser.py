@@ -1073,6 +1073,10 @@ def test_list() -> None:
 a. First list item
 #. Second
 #. Third
+
+e. Fifth list item
+#. Sixth
+#. Seventh
 """,
     )
     page.finish(diagnostics)
@@ -1084,6 +1088,11 @@ a. First list item
         <listItem><paragraph><text>First list item</text></paragraph></listItem>
         <listItem><paragraph><text>Second</text></paragraph></listItem>
         <listItem><paragraph><text>Third</text></paragraph></listItem>
+        </list>
+        <list enumtype="loweralpha" startat="5">
+        <listItem><paragraph><text>Fifth list item</text></paragraph></listItem>
+        <listItem><paragraph><text>Sixth</text></paragraph></listItem>
+        <listItem><paragraph><text>Seventh</text></paragraph></listItem>
         </list>
         </root>""",
     )

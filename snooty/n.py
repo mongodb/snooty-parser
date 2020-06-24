@@ -233,9 +233,10 @@ class ListNodeItem(Parent[Node]):
 
 @dataclass
 class ListNode(Parent[ListNodeItem]):
-    __slots__ = "enumtype"
+    __slots__ = ("enumtype", "startat")
     type = "list"
     enumtype: ListEnumType
+    startat: Optional[int]
 
 
 @dataclass
