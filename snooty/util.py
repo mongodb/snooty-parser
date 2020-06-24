@@ -191,6 +191,16 @@ class FileWatcher:
         return sum(len(w) for w in self.directories.values())
 
 
+def option_string(argument: Optional[str]) -> Optional[str]:
+    """
+    Check for a valid string option and return it. If no argument is given,
+    raise ``ValueError``.
+    """
+    if argument and argument.strip():
+        return argument
+    raise ValueError("Must supply string argument to option")
+
+
 def option_bool(argument: Optional[str]) -> bool:
     """
     Check for a valid boolean option return it. If no argument is given,
@@ -199,8 +209,7 @@ def option_bool(argument: Optional[str]) -> bool:
     if argument and argument.strip():
         output = docutils.parsers.rst.directives.choice(argument, ("true", "false"))
         return output == "true"
-    else:
-        return True
+    return True
 
 
 def option_flag(argument: Optional[str]) -> bool:
@@ -213,8 +222,7 @@ def option_flag(argument: Optional[str]) -> bool:
     """
     if argument and argument.strip():
         raise ValueError('no argument is allowed; "%s" supplied' % argument)
-    else:
-        return True
+    return True
 
 
 def split_domain(name: str) -> Tuple[str, str]:
@@ -227,7 +235,6 @@ def split_domain(name: str) -> Tuple[str, str]:
     parts = name.split(":", 1)
     if len(parts) == 1:
         return "", parts[0]
-
     return parts[0], parts[1]
 
 
