@@ -1103,7 +1103,7 @@ type = {link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s"}
 
 [role.atlas]
 help = """Link to the synchronous Atlas documentation."""
-type = {link = "https://docs.atlas.mongodb.com/%s"}
+type = {link = "https://docs.atlas.mongodb.com%s"}
 
 [role."v2.2"]
 type = {link = "https://docs.mongodb.com/v2.2%s"}
