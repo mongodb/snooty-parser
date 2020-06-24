@@ -234,9 +234,9 @@ class JSONVisitor:
         elif isinstance(node, docutils.nodes.definition_list_item):
             self.state.append(n.DefinitionListItem((line,), [], []))
         elif isinstance(node, docutils.nodes.bullet_list):
-            self.state.append(n.ListNode((line,), [], False))
+            self.state.append(n.ListNode((line,), [], n.ListEnumType.unordered))
         elif isinstance(node, docutils.nodes.enumerated_list):
-            self.state.append(n.ListNode((line,), [], True))
+            self.state.append(n.ListNode((line,), [], n.ListEnumType[node["enumtype"]]))
         elif isinstance(node, docutils.nodes.list_item):
             self.state.append(n.ListNodeItem((line,), []))
         elif isinstance(node, docutils.nodes.title):
