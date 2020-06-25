@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fail_on_diagnostics toml flag (DOP-1132)
 - Support additional ordered list labels (DOP-1129)
 - Support ordered list "start" attribute (DOP-1210)
+- Logging of the parser's version at startup (DOP-1213).
 
 ### Changed
 

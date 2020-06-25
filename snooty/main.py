@@ -28,7 +28,7 @@ from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
 
-from . import language_server
+from . import __version__, language_server
 from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS
 from .types import FileId, SerializableType, BuildIdentifierSet
@@ -255,6 +255,8 @@ def main() -> None:
     args = docopt(__doc__)
 
     logging.basicConfig(level=logging.INFO)
+
+    logger.info(f"Snooty {__version__} starting")
 
     if PARANOID_MODE:
         logger.info("Paranoid mode on")
