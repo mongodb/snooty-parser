@@ -384,6 +384,19 @@ for (i = 0; i &lt; 10; i++) {
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+    # Test poorly specified arbitrary string option
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :start-after:
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -444,7 +457,7 @@ def test_admonition() -> None:
         page.ast,
         """<root>
         <directive name="note">
-        <list><listItem><paragraph><text>foo</text></paragraph></listItem>
+        <list enumtype="unordered"><listItem><paragraph><text>foo</text></paragraph></listItem>
         <listItem><paragraph><text>bar</text></paragraph></listItem></list>
         </directive>
         </root>""",
@@ -552,7 +565,7 @@ def test_roles() -> None:
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
                 <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
             </target>
-            <list>
+            <list enumtype="unordered">
             <listItem>
             <paragraph>
             <reference refuri="https://docs.mongodb.com/manual/introduction/">
@@ -642,7 +655,7 @@ def test_doc_role() -> None:
         page.ast,
         """
         <root>
-        <list>
+        <list enumtype="unordered">
         <listItem>
         <paragraph>
         <ref_role domain="std" name="doc" fileid="/index">
@@ -1039,6 +1052,65 @@ A new paragraph.
     )
 
 
+def test_list() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+- First bulleted item
+- Second
+- Third
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <list enumtype="unordered">
+        <listItem><paragraph><text>First bulleted item</text></paragraph></listItem>
+        <listItem><paragraph><text>Second</text></paragraph></listItem>
+        <listItem><paragraph><text>Third</text></paragraph></listItem>
+        </list>
+        </root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+a. First list item
+#. Second
+#. Third
+
+e. Fifth list item
+#. Sixth
+#. Seventh
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <list enumtype="loweralpha">
+        <listItem><paragraph><text>First list item</text></paragraph></listItem>
+        <listItem><paragraph><text>Second</text></paragraph></listItem>
+        <listItem><paragraph><text>Third</text></paragraph></listItem>
+        </list>
+        <list enumtype="loweralpha" startat="5">
+        <listItem><paragraph><text>Fifth list item</text></paragraph></listItem>
+        <listItem><paragraph><text>Sixth</text></paragraph></listItem>
+        <listItem><paragraph><text>Seventh</text></paragraph></listItem>
+        </list>
+        </root>""",
+    )
+
+
 def test_list_table() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -1389,7 +1461,7 @@ def test_callable_target() -> None:
     <text>Creates an index on the specified field if the index does not already exist.</text>
     </paragraph>
     </target>
-    <list>
+    <list enumtype="unordered">
     <listItem><paragraph>
         <ref_role domain="mongodb" name="method" target="db.collection.ensureIndex"><literal /></ref_role>
     </paragraph></listItem>

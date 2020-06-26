@@ -28,10 +28,11 @@ from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
 
-from . import language_server
+from . import __version__, language_server
 from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS
-from .types import Page, FileId, SerializableType, BuildIdentifierSet
+from .types import FileId, SerializableType, BuildIdentifierSet
+from .page import Page
 from .diagnostics import Diagnostic
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
@@ -255,6 +256,8 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO)
 
+    logger.info(f"Snooty {__version__} starting")
+
     if PARANOID_MODE:
         logger.info("Paranoid mode on")
 
@@ -287,6 +290,9 @@ def main() -> None:
         if connection:
             print("Closing connection...")
             connection.close()
+
+    if project.config.fail_on_diagnostics:
+        EXIT_STATUS_ERROR_DIAGNOSTICS = 1
 
     if args["build"] and backend.total_errors > 0:
         sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)

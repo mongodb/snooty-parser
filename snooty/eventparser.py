@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union
-from .types import FileId, Page
+from .types import FileId
+from .page import Page
 from . import n
 
 

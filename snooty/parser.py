@@ -20,20 +20,18 @@ import watchdog.events
 import networkx
 
 from . import n, gizaparser, rstparser, util
+from .cache import Cache
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
+from .page import Page, PendingTask
+from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     SerializableType,
-    Page,
     StaticAsset,
     ProjectConfig,
-    PendingTask,
     FileId,
-    ProjectInterface,
-    Cache,
-    TargetDatabase,
     BuildIdentifierSet,
 )
 from .diagnostics import (
@@ -236,9 +234,16 @@ class JSONVisitor:
         elif isinstance(node, docutils.nodes.definition_list_item):
             self.state.append(n.DefinitionListItem((line,), [], []))
         elif isinstance(node, docutils.nodes.bullet_list):
-            self.state.append(n.ListNode((line,), [], False))
+            self.state.append(n.ListNode((line,), [], n.ListEnumType.unordered, None))
         elif isinstance(node, docutils.nodes.enumerated_list):
-            self.state.append(n.ListNode((line,), [], True))
+            self.state.append(
+                n.ListNode(
+                    (line,),
+                    [],
+                    n.ListEnumType[node["enumtype"]],
+                    node["start"] if "start" in node else None,
+                )
+            )
         elif isinstance(node, docutils.nodes.list_item):
             self.state.append(n.ListNodeItem((line,), []))
         elif isinstance(node, docutils.nodes.title):
@@ -858,7 +863,7 @@ class _Project:
         self.pages: Dict[FileId, Page] = {}
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
-        self.expensive_operation_cache = Cache()
+        self.expensive_operation_cache: Cache[FileId] = Cache()
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
         if published_branches:

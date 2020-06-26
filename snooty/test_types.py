@@ -1,5 +1,6 @@
 from pathlib import Path, PurePath
-from .types import ProjectConfig, StaticAsset, Page, FileId
+from .types import ProjectConfig, StaticAsset, FileId
+from .page import Page
 
 
 def test_project() -> None:

@@ -7,9 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- fail_on_diagnostics toml flag (DOP-1132)
+- Support additional ordered list labels (DOP-1129)
+- Support ordered list "start" attribute (DOP-1210)
+- Logging of the parser's version at startup (DOP-1213).
+
+### Changed
+
+- Improve string-handling in spec-parser (DOP-1148).
+
+## [v0.4.11] - 2020-06-22
+
+### Fixed
+
+- Python 3.7 support.
+
+## [v0.4.10] - 2020-06-17
+
 ### Changed
 
 - Populate literal include nodes (DOP-876).
+
+### Fixed
+
+- RefRole nodes no longer render with the prefix if no title is found (DOP-1073).
 
 ## [v0.4.9] - 2020-06-05
 

@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
@@ -37,6 +38,10 @@ __all__ = (
 
 SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
 SerializedNode = Dict[str, SerializableType]
+ListEnumType = Enum(
+    "ListEnumType",
+    ("unordered", "arabic", "loweralpha", "upperalpha", "lowerroman", "upperroman"),
+)
 _T = TypeVar("_T")
 
 
@@ -65,6 +70,8 @@ class Node:
                 # We exclude empty dicts, since they're mainly used for directive options and other such things.
                 if value:
                     result[field.name] = value
+            elif isinstance(value, Enum):
+                result[field.name] = value.name
             elif isinstance(value, (list, tuple)):
                 # This is a bit unsafe, but it's the most expedient option right now. If the child
                 # has a serialize() method, call that; otherwise, include it as-is.
@@ -226,9 +233,10 @@ class ListNodeItem(Parent[Node]):
 
 @dataclass
 class ListNode(Parent[ListNodeItem]):
-    __slots__ = ("ordered",)
+    __slots__ = ("enumtype", "startat")
     type = "list"
-    ordered: bool
+    enumtype: ListEnumType
+    startat: Optional[int]
 
 
 @dataclass
