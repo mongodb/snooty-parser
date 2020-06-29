@@ -362,7 +362,6 @@ class JSONVisitor:
                 )
 
             for item in definition_list.get_child_of_type(n.DefinitionListItem):
-                # need to write a test for this !!
                 term_text = "".join(term.get_text() for term in item.term)
                 term_identifier = make_id("term-" + term_text)
                 identifier = n.TargetIdentifier(item.start, [], [term_identifier])
