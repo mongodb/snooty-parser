@@ -30,3 +30,12 @@ Testing Sibling Nodes
 
    /page1
    /page2
+
+.. _100_stacked_example:
+
+*100* Stacked Examples
+---------------------
+
+.. method:: amethod(param1, param2)
+
+   Testing :ref:`<100_stacked_example>`.

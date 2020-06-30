@@ -15,3 +15,5 @@ requirements for sharding collections for |global-write|, see
 And this is a link to :method:`amethod`.
 
 And this is a link to :binary:`mongod`.
+
+|service| does not require developers, see :ref:`100_stacked_example`.

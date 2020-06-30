@@ -247,7 +247,10 @@ class Postprocessor:
         # Add title and link target to AST
         target_candidates = self.targets[key]
         if not target_candidates:
+            #print("\n\nthese are the self . targets: ", self.targets)
             line = node.span[0]
+            print("target candidates: ", target_candidates)
+            print("this is the key: ", key, node.name, node.target, line, '\n\n')
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
             )
@@ -255,6 +258,8 @@ class Postprocessor:
 
         if len(target_candidates) > 1:
             line = node.span[0]
+            print("target candidates ambigu: ", target_candidates)
+            print("this is the key: ", key, node.name, node.target, line, '\n\n')
             self.diagnostics[filename].append(
                 AmbiguousTarget(node.name, node.target, line)
             )

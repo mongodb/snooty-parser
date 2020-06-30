@@ -78,7 +78,9 @@ def assert_etree_equals(e1: ET.Element, goal: ET.Element) -> None:
     assert (e1.tail or "").strip() == (goal.tail or "").strip()
 
     assert e1.attrib == goal.attrib
+
     assert len(e1) == len(goal)
+    
     for c1, goalc in zip(e1, goal):
         try:
             assert_etree_equals(c1, goalc)
@@ -94,8 +96,8 @@ def assert_etree_equals(e1: ET.Element, goal: ET.Element) -> None:
             eprint(
                 "{}\n{}\nshould be\n{}".format(
                     err,
-                    "\n".join(wrapper.wrap(ET.tostring(c1, encoding="unicode"))),
                     "\n".join(wrapper.wrap(ET.tostring(goalc, encoding="unicode"))),
+                    "\n".join(wrapper.wrap(ET.tostring(c1, encoding="unicode"))),
                 )
             )
 
