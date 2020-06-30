@@ -534,6 +534,40 @@ foo |double arrow ->| bar
     )
 
 
+def test_labels() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # test label starting with a number
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:ref:`100_stacked_example`
+
+.. _100_stacked_example:
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+
+    ast = page.ast
+    check_ast_testing_string(
+        ast,
+        """
+        <root>
+        <paragraph>
+                <ref_role domain="std" name="label" target="100_stacked_example"/>
+        </paragraph>
+        <target domain="std" name="label">
+                <target_identifier ids="['100_stacked_example']" />
+        </target>
+        </root>
+        """,
+    )
+
+
 def test_roles() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

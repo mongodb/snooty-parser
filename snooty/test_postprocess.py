@@ -140,11 +140,38 @@ def test_validate_ref_targets(backend: Backend) -> None:
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
+    # Assert that refs beginning with number and containing underscores, work
+    paragraph = ast.children[5]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[2]
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="100_stacked_example"
+        fileid="index">
+        <text>100 Stacked Examples</text>
+        </ref_role>""",
+    )
 
+    paragraph = ast.children[6]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[2]
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="z100_stacked_example"
+        fileid="index">
+        <text>Z100 Stacked Examples</text>
+        </ref_role>""",
+    )
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], TargetNotFound)
+    assert isinstance(diagnostics[1], AmbiguousTarget)
 
 
 def test_role_explicit_title(backend: Backend) -> None:

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support labels beginning with numbers that contain underscores (DOP-1188)
+
 ## [v0.5.0] - 2020-07-08
 
 ### Added
