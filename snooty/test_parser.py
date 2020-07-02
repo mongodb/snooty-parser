@@ -550,7 +550,8 @@ def test_ref_role() -> None:
     )
     page.finish(diagnostics)
 
-    # assert diagnostics == []
+    assert diagnostics == []
+    print("these are the diags: ", diagnostics, "\n\n\n")
     check_ast_testing_string(
         page.ast,
         """<root>
@@ -559,7 +560,6 @@ def test_ref_role() -> None:
             </paragraph>
             </root>""",
     )
-    #assert False
 
 
 # def test_roles() -> None:

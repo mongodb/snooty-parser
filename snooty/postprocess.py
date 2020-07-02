@@ -162,7 +162,7 @@ class Postprocessor:
             ],
             [(EventParser.PAGE_START_EVENT, self.reset_program)],
         )
-
+        print("we are here where we handle targets before the refs")
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
         document = self.generate_metadata()
@@ -247,10 +247,8 @@ class Postprocessor:
         # Add title and link target to AST
         target_candidates = self.targets[key]
         if not target_candidates:
-            #print("\n\nthese are the self . targets: ", self.targets)
             line = node.span[0]
-            print("target candidates: ", target_candidates)
-            print("this is the key: ", key, node.name, node.target, line, '\n\n')
+            
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
             )
@@ -258,8 +256,6 @@ class Postprocessor:
 
         if len(target_candidates) > 1:
             line = node.span[0]
-            print("target candidates ambigu: ", target_candidates)
-            print("this is the key: ", key, node.name, node.target, line, '\n\n')
             self.diagnostics[filename].append(
                 AmbiguousTarget(node.name, node.target, line)
             )
@@ -371,6 +367,7 @@ class Postprocessor:
             self.pending_targets = []
 
     def handle_target(self, filename: FileId, node: n.Node) -> None:
+         
         if not isinstance(node, n.Target):
             return
 
@@ -381,6 +378,7 @@ class Postprocessor:
                 title = target_node.children  # type: ignore
 
             target_ids = target_node.ids
+            #print("hi node name: ", node.name, node.domain, title, "\n\n")     
             self.targets.define_local_target(
                 node.domain, node.name, target_ids, filename, title
             )
@@ -646,7 +644,7 @@ class DevhubPostprocessor(Postprocessor):
                 return None
 
             return cleaned
-
+            
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.handle_refs),
