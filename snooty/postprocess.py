@@ -480,6 +480,7 @@ class Postprocessor:
         if isinstance(ast, n.TocTreeDirective):
             # Recursively build the tree for each toctree node in this entries list
             for entry in ast.entries:
+                print("ast entry: ", entry)
                 toctree_node: Dict[str, object] = {}
                 if entry.url:
                     toctree_node = {

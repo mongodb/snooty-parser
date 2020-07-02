@@ -566,25 +566,53 @@ def test_labels() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
+   
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-:ref:`_100-stacked-example`
+:ref:`_100_stacked-example`
+
+.. _100_stacked-example:
+
+:ref:`100_stacked-example`
+
+.. 100_stacked-example:
 """,
     )
     page.finish(diagnostics)
 
     assert diagnostics == []
-    print("these are the diags: ", diagnostics, "\n\n\n")
+
+    # test label starting with underscore followed by number
+    ast = page.ast
+    paragraph = ast.children[1]
     check_ast_testing_string(
-        page.ast,
-        """<root>
-            <paragraph>
-            <ref_role domain="std" name="label" target="_100-stacked-example"/>
-            </paragraph>
-            </root>""",
+        paragraph,
+        """
+        <target domain='std' name='label'>
+        <target_identifier
+        ids="['100_stacked-example']"/>
+        </target>
+        """,
     )
+
+
+    # test label starting with number
+    # paragraph = ast.children[1]
+    # check_ast_testing_string(
+    #     paragraph,
+    #     """
+    #     <target domain='std' name='label'>
+    #     <ref_role 
+    #     domain="std" 
+    #     name="label" 
+    #     target="100-stacked-example" 
+    #     fileid='None' />
+    #     </target>
+    #     """,
+    # )
+
 
 # def test_roles() -> None:
 #     path = ROOT_PATH.joinpath(Path("test.rst"))
