@@ -33,7 +33,16 @@ Testing Sibling Nodes
 
 .. _100_stacked_example:
 
-*100* Stacked Examples
+100 Stacked Examples
+---------------------
+
+.. method:: amethod(param1, param2)
+
+   Testing :ref:`<100_stacked_example>`.
+
+.. _z100_stacked_example:
+
+Z100 Stacked Examples
 ---------------------
 
 .. method:: amethod(param1, param2)

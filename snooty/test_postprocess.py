@@ -157,10 +157,23 @@ def test_validate_ref_targets(backend: Backend) -> None:
         target="100_stacked_example">
         </ref_role>""",
     )
+
+    paragraph = ast.children[6]
+    #assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[2]
+    print("ref role 1: ", ref_role)
+    print(ast_to_testing_string(ref_role))
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="z100_stacked_example">
+        </ref_role>""",
+    )
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-    for diag in diagnostics:
-      print(diag)
+
     # assert len(diagnostics) == 1
     # assert isinstance(diagnostics[0], TargetNotFound)
 
