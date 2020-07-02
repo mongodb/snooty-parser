@@ -126,7 +126,7 @@ class JSONVisitor:
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
-
+        print("dispatched visit@!!!!")
         if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
         elif isinstance(node, docutils.nodes.document):
@@ -146,6 +146,7 @@ class JSONVisitor:
                 )
             raise docutils.nodes.SkipNode()
         elif isinstance(node, rstparser.code):
+            print("149")
             doc = n.Code(
                 (line,),
                 node["lang"] if "lang" in node else None,
@@ -168,27 +169,35 @@ class JSONVisitor:
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
+            print(172)
             self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
         elif isinstance(node, rstparser.directive):
+            print(175)
             directive = self.handle_directive(node, line)
             if directive:
                 self.state.append(directive)
         elif isinstance(node, docutils.nodes.Text):
+            print(180)
             self.state.append(n.Text((line,), str(node)))
             return
         elif isinstance(node, docutils.nodes.literal_block):
+            print(184)
             self.state.append(n.LiteralBlock((line,), []))
             return
         elif isinstance(node, docutils.nodes.literal):
+            print(189)
             self.state.append(n.Literal((line,), []))
             return
         elif isinstance(node, docutils.nodes.emphasis):
+            print(192)
             self.state.append(n.Emphasis((line,), []))
             return
         elif isinstance(node, docutils.nodes.strong):
+            print(197)
             self.state.append(n.Strong((line,), []))
             return
         elif isinstance(node, rstparser.ref_role):
+            print(200, node)
             role_name = node["name"]
             flag = node["flag"] if "flag" in node else ""
             role: n.Role = n.RefRole(
@@ -197,6 +206,7 @@ class JSONVisitor:
             self.state.append(role)
             return
         elif isinstance(node, rstparser.role):
+            print(208, node["name"], node["target"])
             role_name = node["name"]
             target = node["target"] if "target" in node else ""
             flag = node["flag"] if "flag" in node else ""
@@ -213,6 +223,7 @@ class JSONVisitor:
             self.state.append(role)
             return
         elif isinstance(node, docutils.nodes.target):
+            print("\n\nthe id: ", node["ids"], "the target: ", node["target"], "\n\n")
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
@@ -251,6 +262,7 @@ class JSONVisitor:
             assert node.parent
             self.state.append(n.Heading((line,), [], node.parent["ids"][0]))
         elif isinstance(node, docutils.nodes.reference):
+            print(265)
             self.state.append(
                 n.Reference(
                     (line,),
@@ -278,27 +290,36 @@ class JSONVisitor:
             refname = node["refname"] if "refname" in node else None
             self.state.append(n.FootnoteReference((line,), [], node["ids"][0], refname))
         elif isinstance(node, docutils.nodes.section):
+            print(293)
             self.state.append(n.Section((line,), []))
         elif isinstance(node, docutils.nodes.paragraph):
             self.state.append(n.Paragraph((line,), []))
         elif isinstance(node, rstparser.directive_argument):
+            print(298)
             self.state.append(n.DirectiveArgument((line,), []))
         elif isinstance(node, docutils.nodes.term):
+            print(301)
             self.state.append(_DefinitionListTerm((line,), []))
         elif isinstance(node, docutils.nodes.line_block):
+            print(304)
             self.state.append(n.LineBlock((line,), []))
         elif isinstance(node, docutils.nodes.line):
+            print(307)
             self.state.append(n.Line((line,), []))
         elif isinstance(node, docutils.nodes.transition):
+            print(310)
             self.state.append(n.Transition((line,)))
         elif isinstance(node, docutils.nodes.table):
+            print(313)
             raise docutils.nodes.SkipNode()
         elif isinstance(
             node,
             (docutils.nodes.comment, docutils.nodes.problematic, docutils.nodes.label),
         ):
+            print(319)
             raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.system_message):
+            print(322)
             level = int(node["level"])
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
@@ -306,9 +327,11 @@ class JSONVisitor:
                 self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
             raise docutils.nodes.SkipNode()
         elif isinstance(node, rstparser.snooty_diagnostic):
+            print(330)
             self.diagnostics.append(node["diagnostic"])
             return
         else:
+            print(334)
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:

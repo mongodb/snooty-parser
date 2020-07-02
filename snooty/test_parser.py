@@ -534,18 +534,43 @@ ROOT_PATH = Path("test_data")
 #     )
 
 
-def test_ref_role() -> None:
+# def test_ref_role() -> None:
+#     path = ROOT_PATH.joinpath(Path("test.rst"))
+#     project_config = ProjectConfig(ROOT_PATH, "", source="./")
+#     parser = rstparser.Parser(project_config, JSONVisitor)
+
+#     # Test both forms of :manual: (an extlink), :rfc: (explicit title),
+#     # :binary: (rstobject), and :guilabel: (plain text)
+#     page, diagnostics = parse_rst(
+#         parser,
+#         path,
+#         """
+# :ref:`100-stacked-example`
+# """,
+#     )
+#     page.finish(diagnostics)
+
+#     assert diagnostics == []
+#     print("these are the diags: ", diagnostics, "\n\n\n")
+#     check_ast_testing_string(
+#         page.ast,
+#         """<root>
+#             <paragraph>
+#             <ref_role domain="std" name="label" target="100-stacked-example"/>
+#             </paragraph>
+#             </root>""",
+#     )
+
+def test_labels() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    # Test both forms of :manual: (an extlink), :rfc: (explicit title),
-    # :binary: (rstobject), and :guilabel: (plain text)
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-:ref:`100-stacked-example`
+:ref:`_100-stacked-example`
 """,
     )
     page.finish(diagnostics)
@@ -556,11 +581,10 @@ def test_ref_role() -> None:
         page.ast,
         """<root>
             <paragraph>
-            <ref_role domain="std" name="label" target="100-stacked-example"/>
+            <ref_role domain="std" name="label" target="_100-stacked-example"/>
             </paragraph>
             </root>""",
     )
-
 
 # def test_roles() -> None:
 #     path = ROOT_PATH.joinpath(Path("test.rst"))
