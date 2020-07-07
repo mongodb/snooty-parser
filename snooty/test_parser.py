@@ -569,7 +569,6 @@ def test_labels() -> None:
 
     target_db = TargetDatabase.load(parser.project_config)
 
-
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -580,10 +579,6 @@ def test_labels() -> None:
 """,
     )
     page.finish(diagnostics)
-    print(len(target_db.local_definitions.keys()))
-    for item in target_db.local_definitions:
-      print(item)
-
     assert diagnostics == []
 
     # test label starting with underscore followed by number
@@ -595,7 +590,7 @@ def test_labels() -> None:
     check_ast_testing_string(
         ref_role,
         """
-        <ref_role domain="std" name="label" target="100_stacked_example" />
+        <ref_role domain="std" name="label" target="100_stacked_example"/>
         """,
     )
 
