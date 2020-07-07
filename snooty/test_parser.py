@@ -567,8 +567,6 @@ def test_labels() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    target_db = TargetDatabase.load(parser.project_config)
-
     page, diagnostics = parse_rst(
         parser,
         path,
