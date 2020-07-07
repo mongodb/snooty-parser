@@ -104,7 +104,7 @@ class TargetDatabase:
         # e.g. if a RefRole links to "-v", we want it to get normalized to "mongod.-v" if that's
         # what gets resolved.
         
-        #print("the title: ", title)
+        print("the title: ", title)
         canonical_target_name = max(targets, key=lambda x: x.count("."))
 
         for target in targets:
