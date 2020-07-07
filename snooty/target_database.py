@@ -40,7 +40,6 @@ class TargetDatabase:
     )
 
     def __contains__(self, key: str) -> bool:
-        print("something")
         key = normalize_target(key)
         if key in self.local_definitions:
             return True
@@ -54,7 +53,7 @@ class TargetDatabase:
     def __getitem__(self, key: str) -> Sequence["TargetDatabase.Result"]:
         key = normalize_target(key)
         results: List[TargetDatabase.Result] = []
-        print("yo")
+
         # Check to see if the target is defined locally
         try:
             results.extend(
@@ -104,11 +103,9 @@ class TargetDatabase:
         # e.g. if a RefRole links to "-v", we want it to get normalized to "mongod.-v" if that's
         # what gets resolved.
         
-        print("the title: ", title)
         canonical_target_name = max(targets, key=lambda x: x.count("."))
 
         for target in targets:
-            print(target)
             target = normalize_target(target)
             key = f"{domain}:{name}:{target}"
             self.local_definitions[key].append(
@@ -129,9 +126,7 @@ class TargetDatabase:
         targets: Dict[str, intersphinx.TargetDefinition] = {}
         for key, definitions in self.local_definitions.items():
             if not definitions:
-                print("aha! we skip here!! ", key, definitions)
                 continue
-            print(key)
             definition = definitions[0]
             uri = definition.fileid.without_known_suffix + "/"
             dispname: Optional[str] = "".join(

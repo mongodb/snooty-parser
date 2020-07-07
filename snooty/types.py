@@ -49,7 +49,6 @@ class FileId(PurePosixPath):
     def without_known_suffix(self) -> str:
         """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
         fileid = self.with_name(PAT_FILE_EXTENSIONS.sub("", self.name))
-        print("this is filid ", fileid)
         return fileid.as_posix()
 
 

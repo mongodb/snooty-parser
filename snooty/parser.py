@@ -188,7 +188,6 @@ class JSONVisitor:
             self.state.append(n.Strong((line,), []))
             return
         elif isinstance(node, rstparser.ref_role):
-            print("yo we called here")
             role_name = node["name"]
             flag = node["flag"] if "flag" in node else ""
             role: n.Role = n.RefRole(
@@ -309,7 +308,6 @@ class JSONVisitor:
             self.diagnostics.append(node["diagnostic"])
             return
         else:
-            print(334)
             raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
@@ -724,7 +722,6 @@ def parse_rst(
     parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
 ) -> Tuple[Page, List[Diagnostic]]:
     visitor, text = parser.parse(path, text)
-
     top_of_state = visitor.state[-1]
     assert isinstance(top_of_state, n.Parent)
     page = Page.create(path, None, text, top_of_state)
@@ -816,7 +813,7 @@ class _Project:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
         self.targets = TargetDatabase.load(self.config)
-        print("here we init!!!")
+
         if config_diagnostics:
             backend.on_diagnostics(
                 FileId(self.config.config_path.relative_to(root)), config_diagnostics

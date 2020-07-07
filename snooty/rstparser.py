@@ -304,7 +304,6 @@ class RefRoleHandler:
             target = strip_parameters(target)
         elif self.target_type == specparser.TargetType.cmdline_option:
             target = ".".join(target.split())
-        print("ref creation: ", self.domain, self.name, lineno, target)
         node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
 
         label_node: Optional[docutils.nodes.Node] = None

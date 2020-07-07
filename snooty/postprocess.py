@@ -162,7 +162,6 @@ class Postprocessor:
             ],
             [(EventParser.PAGE_START_EVENT, self.reset_program)],
         )
-        print("we are here where we handle targets before the refs")
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
         document = self.generate_metadata()
@@ -377,8 +376,7 @@ class Postprocessor:
             else:
                 title = target_node.children  # type: ignore
 
-            target_ids = target_node.ids
-            #print("hi node name: ", node.name, node.domain, title, "\n\n")     
+            target_ids = target_node.ids 
             self.targets.define_local_target(
                 node.domain, node.name, target_ids, filename, title
             )
@@ -480,7 +478,6 @@ class Postprocessor:
         if isinstance(ast, n.TocTreeDirective):
             # Recursively build the tree for each toctree node in this entries list
             for entry in ast.entries:
-                print("ast entry: ", entry)
                 toctree_node: Dict[str, object] = {}
                 if entry.url:
                     toctree_node = {

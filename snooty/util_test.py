@@ -80,12 +80,6 @@ def assert_etree_equals(e1: ET.Element, goal: ET.Element) -> None:
     assert e1.attrib == goal.attrib
 
     assert len(e1) == len(goal)
-    for item in e1: 
-      print("\nthis is the item in e1, ", item)
-    print("\n\n this is the goal ", goal)
-    for item in goal:
-      print("\n this is item in goal: ", item)
-    
 
     for c1, goalc in zip(e1, goal):
         try:
