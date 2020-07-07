@@ -188,6 +188,7 @@ class JSONVisitor:
             self.state.append(n.Strong((line,), []))
             return
         elif isinstance(node, rstparser.ref_role):
+            print("yo we called here")
             role_name = node["name"]
             flag = node["flag"] if "flag" in node else ""
             role: n.Role = n.RefRole(
@@ -815,7 +816,7 @@ class _Project:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
         self.targets = TargetDatabase.load(self.config)
-
+        print("here we init!!!")
         if config_diagnostics:
             backend.on_diagnostics(
                 FileId(self.config.config_path.relative_to(root)), config_diagnostics

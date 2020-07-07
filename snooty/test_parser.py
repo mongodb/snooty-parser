@@ -2,6 +2,7 @@ from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
+from .target_database import ProjectInterface, TargetDatabase
 from .diagnostics import (
     Diagnostic,
     InvalidURL,
@@ -566,18 +567,18 @@ def test_labels() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
-   
+    target_db = TargetDatabase.load(parser.project_config)
+    print(len(target_db.local_definitions.keys()))
+    for item in target_db.local_definitions:
+      print(item)
+
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-:ref:`_100_stacked-example`
+:ref:`100_stacked_example`
 
-.. _100_stacked-example:
-
-:ref:`100_stacked-example`
-
-.. 100_stacked-example:
+.. _100_stacked_example:
 """,
     )
     page.finish(diagnostics)
@@ -586,17 +587,16 @@ def test_labels() -> None:
 
     # test label starting with underscore followed by number
     ast = page.ast
-    paragraph = ast.children[1]
+    paragraph = ast.children[0]
+
+    ref_role = paragraph.children[0]
+    print("the first ast \n", ref_role,"\n\n")
     check_ast_testing_string(
-        paragraph,
+        ref_role,
         """
-        <target domain='std' name='label'>
-        <target_identifier
-        ids="['100_stacked-example']"/>
-        </target>
+        <ref_role domain="std" name="label" target="100_stacked_example" />
         """,
     )
-
 
     # test label starting with number
     # paragraph = ast.children[1]
@@ -604,11 +604,11 @@ def test_labels() -> None:
     #     paragraph,
     #     """
     #     <target domain='std' name='label'>
-    #     <ref_role 
-    #     domain="std" 
-    #     name="label" 
-    #     target="100-stacked-example" 
-    #     fileid='None' />
+        # <ref_role 
+        # domain="std" 
+        # name="label" 
+        # target="100-stacked-example" 
+        # fileid='None' />
     #     </target>
     #     """,
     # )
