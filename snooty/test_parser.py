@@ -568,9 +568,7 @@ def test_labels() -> None:
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     target_db = TargetDatabase.load(parser.project_config)
-    print(len(target_db.local_definitions.keys()))
-    for item in target_db.local_definitions:
-      print(item)
+
 
     page, diagnostics = parse_rst(
         parser,
@@ -582,6 +580,9 @@ def test_labels() -> None:
 """,
     )
     page.finish(diagnostics)
+    print(len(target_db.local_definitions.keys()))
+    for item in target_db.local_definitions:
+      print(item)
 
     assert diagnostics == []
 
