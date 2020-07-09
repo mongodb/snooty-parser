@@ -102,7 +102,6 @@ class TargetDatabase:
         # into referring RefRole nodes. This is an odd heuristic, but should work for now.
         # e.g. if a RefRole links to "-v", we want it to get normalized to "mongod.-v" if that's
         # what gets resolved.
-
         canonical_target_name = max(targets, key=lambda x: x.count("."))
 
         for target in targets:
@@ -127,6 +126,7 @@ class TargetDatabase:
         for key, definitions in self.local_definitions.items():
             if not definitions:
                 continue
+
             definition = definitions[0]
             uri = definition.fileid.without_known_suffix + "/"
             dispname: Optional[str] = "".join(
