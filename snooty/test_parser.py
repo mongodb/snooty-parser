@@ -2,7 +2,6 @@ from pathlib import Path
 from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
-from .target_database import ProjectInterface, TargetDatabase
 from .diagnostics import (
     Diagnostic,
     InvalidURL,
@@ -555,11 +554,12 @@ def test_labels() -> None:
     # test label starting with a number
     ast = page.ast
     paragraph = ast.children[0]
-    ref_role = paragraph.children[0]
     check_ast_testing_string(
-        ref_role,
+        paragraph,
         """
+        <paragraph>
         <ref_role domain="std" name="label" target="100_stacked_example"/>
+        </paragraph>
         """,
     )
 

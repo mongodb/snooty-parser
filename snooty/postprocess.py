@@ -247,7 +247,7 @@ class Postprocessor:
         target_candidates = self.targets[key]
         if not target_candidates:
             line = node.span[0]
-            
+
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
             )
@@ -366,7 +366,7 @@ class Postprocessor:
             self.pending_targets = []
 
     def handle_target(self, filename: FileId, node: n.Node) -> None:
-         
+
         if not isinstance(node, n.Target):
             return
 
@@ -376,7 +376,7 @@ class Postprocessor:
             else:
                 title = target_node.children  # type: ignore
 
-            target_ids = target_node.ids 
+            target_ids = target_node.ids
             self.targets.define_local_target(
                 node.domain, node.name, target_ids, filename, title
             )
@@ -642,7 +642,7 @@ class DevhubPostprocessor(Postprocessor):
                 return None
 
             return cleaned
-            
+
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.handle_refs),
