@@ -143,7 +143,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
-    # Assert that refs beginning with numnber work
+    # Assert that refs beginning with number work
     paragraph = ast.children[5]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[2]
