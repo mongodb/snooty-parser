@@ -538,7 +538,8 @@ def test_labels() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
-
+    
+    # test label starting with a number
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -551,7 +552,6 @@ def test_labels() -> None:
     page.finish(diagnostics)
     assert diagnostics == []
 
-    # test label starting with a number
     ast = page.ast
     paragraph = ast.children[0]
     check_ast_testing_string(
