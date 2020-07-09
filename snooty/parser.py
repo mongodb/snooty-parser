@@ -126,6 +126,7 @@ class JSONVisitor:
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
+
         if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
             return
         elif isinstance(node, docutils.nodes.document):
@@ -722,6 +723,7 @@ def parse_rst(
     parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
 ) -> Tuple[Page, List[Diagnostic]]:
     visitor, text = parser.parse(path, text)
+
     top_of_state = visitor.state[-1]
     assert isinstance(top_of_state, n.Parent)
     page = Page.create(path, None, text, top_of_state)

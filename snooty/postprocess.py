@@ -162,6 +162,7 @@ class Postprocessor:
             ],
             [(EventParser.PAGE_START_EVENT, self.reset_program)],
         )
+
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
         document = self.generate_metadata()
@@ -247,7 +248,6 @@ class Postprocessor:
         target_candidates = self.targets[key]
         if not target_candidates:
             line = node.span[0]
-
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
             )
@@ -366,7 +366,6 @@ class Postprocessor:
             self.pending_targets = []
 
     def handle_target(self, filename: FileId, node: n.Node) -> None:
-
         if not isinstance(node, n.Target):
             return
 

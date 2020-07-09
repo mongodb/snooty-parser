@@ -563,7 +563,6 @@ def test_labels() -> None:
         """,
     )
 
-
 def test_roles() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
