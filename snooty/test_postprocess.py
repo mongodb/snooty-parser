@@ -86,6 +86,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     paragraph = ast.children[0]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[0]
+    # print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
         """<ref_role
@@ -117,6 +118,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     paragraph = ast.children[1]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[-2]
+    print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
         """<ref_role
@@ -125,11 +127,12 @@ def test_validate_ref_targets(backend: Backend) -> None:
         target="global-writes-zones"
         fileid="index"><emphasis><text>Global</text></emphasis><text> Writes Zones</text></ref_role>""",
     )
-    
+
     # Assert that local targets with a prefix correctly resolved
     paragraph = ast.children[4]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[1]
+    print(ast_to_testing_string(ref_role))
     check_ast_testing_string(
         ref_role,
         """<ref_role
@@ -140,7 +143,6 @@ def test_validate_ref_targets(backend: Backend) -> None:
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
-
     # Assert that refs beginning with numnber work
     paragraph = ast.children[5]
     assert isinstance(paragraph, n.Parent)
@@ -171,7 +173,6 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-
     assert len(diagnostics) == 2
     assert isinstance(diagnostics[0], TargetNotFound)
 
@@ -196,6 +197,7 @@ def test_role_explicit_title(backend: Backend) -> None:
         <text>explicit title</text>
         </ref_role>""",
     )
+
 
 def test_toctree(backend: Backend) -> None:
     assert backend.metadata["toctree"] == {
