@@ -172,10 +172,8 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
 
-    #assert len(diagnostics) == 1
-    for diagnostic in diagnostics:
-      print(diagnostic, diagnostic.start)
-    #assert isinstance(diagnostics[0], TargetNotFound)
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], TargetNotFound)
 
 
 def test_role_explicit_title(backend: Backend) -> None:
@@ -194,27 +192,6 @@ def test_role_explicit_title(backend: Backend) -> None:
         domain="std"
         name="label"
         target="global-writes-zones"
-        fileid="index">
-        <text>explicit title</text>
-        </ref_role>""",
-    )
-
-def test_ref_role_number_in_title(backend: Backend) -> None:
-    page_id = FileId("index.txt")
-    ast = backend.pages[page_id].ast
-    assert isinstance(ast, n.Root)
-
-    # Assert that ref_roles with an explicit title work
-    paragraph = cast(Any, ast).children[1].children[4].children[1].children[3]
-    assert isinstance(paragraph, n.Paragraph)
-    ref_role = paragraph.children[1]
-    print(ast_to_testing_string(ref_role))
-    check_ast_testing_string(
-        ref_role,
-        """<ref_role
-        domain="std"
-        name="label"
-        target="100_stacked_example"
         fileid="index">
         <text>explicit title</text>
         </ref_role>""",

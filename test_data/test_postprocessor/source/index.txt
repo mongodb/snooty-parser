@@ -47,4 +47,4 @@ Z100 Stacked Examples
 
 .. method:: amethod(param1, param2)
 
-   Testing :ref:`<100_stacked_example>`.
+   Testing :ref:`<z100_stacked_example>`.

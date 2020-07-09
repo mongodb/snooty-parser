@@ -18,4 +18,4 @@ And this is a link to :binary:`mongod`.
 
 |service| does not require developers, see :ref:`100_stacked_example`.
 
-|this| does require developers, see  :ref:`z100_stacked_example`.
+|service| does require developers, see  :ref:`z100_stacked_example`.
