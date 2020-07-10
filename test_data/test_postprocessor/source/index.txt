@@ -4,8 +4,6 @@
 Connection Limits and Cluster Tier
 ====================================
 
-.. default-domain:: mongodb
-
 .. meta::
    :keywords: connect
 

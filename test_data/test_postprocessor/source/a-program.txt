@@ -2,8 +2,6 @@
 A Program
 =========
 
-.. default-domain:: mongodb
-
 .. program:: a-program
 
 .. include:: /includes/option-version.rst
