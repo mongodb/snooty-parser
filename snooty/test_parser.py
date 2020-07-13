@@ -1543,6 +1543,28 @@ def test_problematic() -> None:
     check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
 
 
+def test_deprecated() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. raw:: html
+
+   <div>Test raw directive</div>
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    check_ast_testing_string(
+        page.ast,
+        """<root><directive name="raw"><directive_argument><text>html</text></directive_argument><FixedTextElement /></directive></root>""",
+    )
+
+
 def test_definition_list() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
