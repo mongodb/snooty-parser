@@ -174,6 +174,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
     assert isinstance(diagnostics[0], TargetNotFound)
+    assert isinstance(diagnostics[1], AmbiguousTarget)
 
 
 def test_role_explicit_title(backend: Backend) -> None:

@@ -538,7 +538,7 @@ def test_labels() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
-    
+
     # test label starting with a number
     page, diagnostics = parse_rst(
         parser,
@@ -553,13 +553,17 @@ def test_labels() -> None:
     assert diagnostics == []
 
     ast = page.ast
-    paragraph = ast.children[0]
     check_ast_testing_string(
-        paragraph,
+        ast,
         """
+        <root>
         <paragraph>
-        <ref_role domain="std" name="label" target="100_stacked_example"/>
+                <ref_role domain="std" name="label" target="100_stacked_example"/>
         </paragraph>
+        <target domain="std" name="label">
+                <target_identifier ids="['100_stacked_example']" />
+        </target>
+        </root>
         """,
     )
 
