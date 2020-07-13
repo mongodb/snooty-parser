@@ -875,7 +875,7 @@ def test_glossary_node() -> None:
         <term>
           <text>$cmd</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['cmd']">
+            <target_identifier ids="['term-cmd']">
               <text>$cmd</text></target_identifier>
           </inline_target>
         </term>
@@ -886,7 +886,7 @@ def test_glossary_node() -> None:
         <term>
           <text>_id</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['id']">
+            <target_identifier ids="['term-id']">
               <text>_id</text>
             </target_identifier>
           </inline_target>
@@ -898,7 +898,7 @@ def test_glossary_node() -> None:
         <term>
           <text>aggregate</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['aggregate']">
+            <target_identifier ids="['term-aggregate']">
               <text>aggregate</text></target_identifier>
           </inline_target>
         </term>
@@ -909,7 +909,7 @@ def test_glossary_node() -> None:
         <term>
           <text>index</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['index']">
+            <target_identifier ids="['term-index']">
               <text>index</text></target_identifier>
           </inline_target>
         </term>
@@ -1575,6 +1575,28 @@ def test_problematic() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
+
+
+def test_deprecated() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. raw:: html
+
+   <div>Test raw directive</div>
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    check_ast_testing_string(
+        page.ast,
+        """<root><directive name="raw"><directive_argument><text>html</text></directive_argument><FixedTextElement /></directive></root>""",
+    )
 
 
 def test_definition_list() -> None:

@@ -291,8 +291,8 @@ def main() -> None:
             print("Closing connection...")
             connection.close()
 
-    if project.config.fail_on_diagnostics:
-        EXIT_STATUS_ERROR_DIAGNOSTICS = 1
-
     if args["build"] and backend.total_errors > 0:
-        sys.exit(EXIT_STATUS_ERROR_DIAGNOSTICS)
+        exit_code = (
+            1 if project.config.fail_on_diagnostics else EXIT_STATUS_ERROR_DIAGNOSTICS
+        )
+        sys.exit(exit_code)

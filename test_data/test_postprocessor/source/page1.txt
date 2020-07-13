@@ -4,8 +4,6 @@
 Print this heading
 ==================
 
-.. default-domain:: mongodb
-
 .. meta::
    :keywords: connect
 
