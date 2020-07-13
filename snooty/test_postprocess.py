@@ -143,7 +143,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
-    # Assert that refs beginning with number work
+    # Assert that refs beginning with number and containing underscores, work
     paragraph = ast.children[5]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[2]
@@ -173,7 +173,6 @@ def test_validate_ref_targets(backend: Backend) -> None:
     )
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 2
     assert isinstance(diagnostics[0], TargetNotFound)
 
 
