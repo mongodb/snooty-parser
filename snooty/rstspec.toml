@@ -59,6 +59,7 @@ ${4:   :align:
 content_type = "block"
 argument_type = "string"
 options.class = "string"
+deprecated = true
 example = """.. admonition:: ${1:Title}
    
    ${2:Admonition content}
@@ -66,27 +67,28 @@ example = """.. admonition:: ${1:Title}
 
 [directive.note]
 inherit = "admonition"
-example = """.. note::
+example = """.. note:: ${1:Title}
    
-   ${1:Note block content}
+   ${2:Note block content}
 """
 
 [directive.warning]
 inherit = "admonition"
-example = """.. warning::
+example = """.. warning:: ${1:Title}
    
-   ${1:Warning block content}
+   ${2:Warning block content}
 """
 
 [directive.important]
 inherit = "admonition"
-example = """.. important::
+example = """.. important:: ${1:Title}
    
-   ${1:Important block content}
+   ${2:Important block content}
 """
 
 [directive.danger]
 inherit = "admonition"
+deprecated = true
 example = """.. danger::
    
    ${1:Danger block content}
@@ -94,16 +96,17 @@ example = """.. danger::
 
 [directive.caution]
 inherit = "admonition"
-example = """.. caution::
+deprecated = true
+example = """.. caution:: ${1:Title}
    
-   ${1:Caution block content}
+   ${2:Caution block content}
 """
 
 [directive.tip]
 inherit = "admonition"
-example = """.. tip::
+example = """.. tip:: ${1:Title}
    
-   ${1:Tip content}
+   ${2:Tip content}
 """
 
 [directive.versionchanged]
@@ -127,11 +130,10 @@ example = """.. deprecated:: ${1:v1.0}
 """
 
 [directive.see]
-argument_type = "string"
-content_type = "block"
-example = """.. see::
+inherit = "admonition"
+example = """.. see:: ${1:Title}
    
-   ${1:String}
+   ${2:String}
 """
 
 [directive.todo]
@@ -224,7 +226,7 @@ example = """.. image:: ${1:/path or uri.png}
 
 [directive.example]
 help = """A section providing an example related to the surrounding text."""
-content_type = "block"
+inherit = "admonition"
 example = """.. example::
    
    ${0:Example}
@@ -590,8 +592,8 @@ inherit = "_guides-base"
 
 [directive.seealso]
 help = """Related pages. Typically a list."""
-inherit = "_guides-base"
-# example = """.. seealso::
+inherit = "admonition"
+# example = """.. seealso:: ${1:Title}
 
 #    ${0:- first related page
 #    - second related page}
@@ -884,6 +886,7 @@ example = """.. meta::
 help = """A block with a self-contained chunk of information."""
 argument_type = "string"
 content_type = "block"
+deprecated = true
 example = """.. topic:: ${1:Title of block}
 
    ${0:Content}
