@@ -68,9 +68,6 @@ def test_expand_includes(backend: Backend) -> None:
                 <heading id="skip-includes">
                     <text>Skip includes</text>
                 </heading>
-                <directive name="default-domain">
-                    <text>mongodb</text>
-                </directive>
                 <directive name="meta" keywords="connect">
                 </directive>
             </section>
@@ -143,11 +140,38 @@ def test_validate_ref_targets(backend: Backend) -> None:
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
+    # Assert that refs beginning with number and containing underscores, work
+    paragraph = ast.children[5]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[2]
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="100_stacked_example"
+        fileid="index">
+        <text>100 Stacked Examples</text>
+        </ref_role>""",
+    )
 
+    paragraph = ast.children[6]
+    assert isinstance(paragraph, n.Parent)
+    ref_role = paragraph.children[2]
+    check_ast_testing_string(
+        ref_role,
+        """<ref_role
+        domain="std"
+        name="label"
+        target="z100_stacked_example"
+        fileid="index">
+        <text>Z100 Stacked Examples</text>
+        </ref_role>""",
+    )
     # Check that undeclared targets raise an error
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], TargetNotFound)
+    assert isinstance(diagnostics[1], AmbiguousTarget)
 
 
 def test_role_explicit_title(backend: Backend) -> None:
@@ -156,7 +180,7 @@ def test_role_explicit_title(backend: Backend) -> None:
     assert isinstance(ast, n.Root)
 
     # Assert that ref_roles with an explicit title work
-    paragraph = cast(Any, ast).children[1].children[4].children[1].children[2]
+    paragraph = cast(Any, ast).children[1].children[3].children[1].children[2]
     assert isinstance(paragraph, n.Paragraph)
     ref_role = paragraph.children[1]
     print(ast_to_testing_string(ref_role))
@@ -243,7 +267,7 @@ def test_target_titles(backend: Backend) -> None:
     # Assert that titles are correctly located
     section = ast.children[1]
     assert isinstance(section, n.Parent)
-    section = section.children[4]
+    section = section.children[3]
     assert isinstance(section, n.Parent)
     target1 = section.children[-2]
     target2 = section.children[-1]
@@ -263,12 +287,12 @@ def test_program_option(backend: Backend) -> None:
     assert isinstance(ast, n.Root)
 
     section: Any = ast.children[0]
-    include = section.children[3]
-    program1 = section.children[2]
+    include = section.children[2]
+    program1 = section.children[1]
     option1_1 = include.children[0]
-    option1_2 = section.children[4]
-    program2 = section.children[5]
-    option2_1 = section.children[6]
+    option1_2 = section.children[3]
+    program2 = section.children[4]
+    option2_1 = section.children[5]
 
     # Test directives
     check_ast_testing_string(
@@ -332,7 +356,7 @@ def test_program_option(backend: Backend) -> None:
     assert len(diagnostics) == 1, diagnostics
     assert isinstance(diagnostics[0], AmbiguousTarget)
 
-    roles = section.children[7].children
+    roles = section.children[6].children
     check_ast_testing_string(
         roles[0].children[0].children[0],
         """

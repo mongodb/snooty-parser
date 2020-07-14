@@ -13,7 +13,6 @@ charts_theme = ["light", "dark"]
 
 [directive.default-domain]
 argument_type = "string"
-deprecated = true
 
 [directive.div]
 deprecated = true

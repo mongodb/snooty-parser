@@ -408,6 +408,14 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
         self.add_name(node)
 
+        # If directive is deprecated, warn
+        if self.directive_spec.deprecated == True:
+            node.append(
+                self.state.document.reporter.warning(
+                    f'Directive "{self.name}" has been deprecated', line=line
+                )
+            )
+
         # If this is an rstobject, we need to generate a target property
         if rstobject_spec is not None:
             prefix = rstobject_spec.prefix + "." if rstobject_spec.prefix else ""

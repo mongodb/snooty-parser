@@ -534,6 +534,40 @@ foo |double arrow ->| bar
     )
 
 
+def test_labels() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # test label starting with a number
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:ref:`100_stacked_example`
+
+.. _100_stacked_example:
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+
+    ast = page.ast
+    check_ast_testing_string(
+        ast,
+        """
+        <root>
+        <paragraph>
+                <ref_role domain="std" name="label" target="100_stacked_example"/>
+        </paragraph>
+        <target domain="std" name="label">
+                <target_identifier ids="['100_stacked_example']" />
+        </target>
+        </root>
+        """,
+    )
+
+
 def test_roles() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -1541,6 +1575,28 @@ def test_problematic() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
+
+
+def test_deprecated() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. raw:: html
+
+   <div>Test raw directive</div>
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    check_ast_testing_string(
+        page.ast,
+        """<root><directive name="raw"><directive_argument><text>html</text></directive_argument><FixedTextElement /></directive></root>""",
+    )
 
 
 def test_definition_list() -> None:

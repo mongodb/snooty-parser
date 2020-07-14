@@ -223,7 +223,7 @@ class JSONVisitor:
                 self.diagnostics.append(InvalidURL(util.get_line(node)))
                 raise docutils.nodes.SkipNode()
 
-            node_id = node["ids"][0]
+            node_id = node["names"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
             refuri = node["refuri"] if "refuri" in node else None
             self.state.append(n.Target((line,), children, "std", "label", refuri))
