@@ -136,6 +136,13 @@ example = """.. see:: ${1:Title}
    ${2:String}
 """
 
+[directive.seealso]
+inherit = "admonition"
+example = """.. seealso:: ${1:Title}
+
+   ${2:String}
+"""
+
 [directive.todo]
 help = """Describes a task to be completed by a writer in the future."""
 argument_type = "string"
@@ -590,10 +597,10 @@ inherit = "_guides-base"
 #    * article example 2}
 # """
 
-[directive.seealso]
+[directive."guide:seealso"]
 help = """Related pages. Typically a list."""
-inherit = "admonition"
-# example = """.. seealso:: ${1:Title}
+inherit = "_guides-base"
+# example = """.. seealso::
 
 #    ${0:- first related page
 #    - second related page}
