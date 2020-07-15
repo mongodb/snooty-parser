@@ -1011,12 +1011,24 @@ help = """Link to a page in the MongoDB Guides site."""
 type = {link = "https://docs.mongodb.com/guides%s"}
 
 [role.mms-docs]
-help = """Link to a page in the MongoDB Guides site."""
+help = """Link to a page in the Cloud Manager documentation."""
 type = {link = "https://docs.cloud.mongodb.com%s"}
 
 [role.mms-home]
 help = """Link to a MongoDB Cloud Services page."""
 type = {link = "https://cloud.mongodb.com%s"}
+
+[role.osb]
+help = """Link to a page in the Atlas Open Service Broker documentation."""
+type = {link = "https://docs.mongodb.com/atlas-open-service-broker/current%s"}
+
+[role.adl]
+help = """Link to a page in the Atlas Data Lake documentation."""
+type = {link = "https://docs.mongodb.com/datalake%s"}
+
+[role.dochub]
+help = """Specify a dochub link."""
+type = {link = "https://dochub.mongodb.org/core/%s"}
 
 [role.mongo-spark]
 help = """Link to a page in the MongoDB Spark Connector GitHub project."""
@@ -1045,6 +1057,14 @@ type = {link = "https://jira.mongodb.org/browse/%s"}
 help = "Link to the MongoDB support site."
 type = {link = "https://docs.mongodb.com/manual/support%s"}
 
+[role.contact]
+help = """Link to the MongoDB contact page."""
+type = {link = "https://www.mongodb.com/contact%s"}
+
+[role.mdbacct]
+help = """Link to the MongoDB Account page."""
+type = {link = "https://account.mongodb.com/account%s"}
+
 [role.community-forum]
 help = "Link to the MongoDB Community Forums page."
 type = {link = "https://community.mongodb.com/%s"}
@@ -1064,6 +1084,10 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.5/api/%s"}
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
 type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
+
+[role.ruby]
+help = """Link to a page in the Ruby driver's documentation."""
+type = {link = "https://docs.mongodb.com/ruby-driver/current%s"}
 
 [role.scala-docs]
 help = "Link to a page in the Scala driver's documentation"
@@ -1145,9 +1169,12 @@ type = {link = "https://docs.cloudmanager.mongodb.com%s"}
 help = """Link to a page in the MMS Ops Manager documentation."""
 type = {link = "https://docs.opsmanager.mongodb.com/current%s"}
 
+[role.realm]
+help = """Link to a page in the Realm docs."""
+type = {link = "https://docs.mongodb.com/realm%s"}
+
 [role.stitch]
-help = """Link to a page in the Stitch docs."""
-type = {link = "https://docs.mongodb.com/stitch%s"}
+inherit = "realm"
 
 [role.charts]
 help = """Link to a page in the Charts docs."""
