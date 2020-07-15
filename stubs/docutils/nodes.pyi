@@ -1,6 +1,6 @@
 import docutils.nodes
 import docutils.utils
-from typing import Any, Optional, Sequence, Iterable, Union
+from typing import Any, Optional, List, Iterable, Union
 from typing_extensions import Protocol
 
 
@@ -17,7 +17,7 @@ class Node:
     line: Optional[int]
     parent: Optional[Node]
     document: Optional[Node]
-    children: Sequence[Node]
+    children: List[Node]
 
     def walkabout(self, visitor: NodeVisitor) -> None: ...
     def astext(self) -> str: ...

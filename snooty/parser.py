@@ -385,20 +385,26 @@ class JSONVisitor:
 
         doc = n.Directive((line,), [], domain, name, [], options)
 
-        if (
-            node.children
-            and node.children[0].__class__.__name__ == "directive_argument"
-        ):
-            visitor = self.__make_child_visitor()
-            node.children[0].walkabout(visitor)
-            top_of_visitor_state = visitor.state[-1]
-            assert isinstance(top_of_visitor_state, n.Parent)
-            argument = top_of_visitor_state.children
-            doc.argument = argument  # type: ignore
-            node.children = node.children[1:]
-        else:
-            argument = []
-            doc.argument = argument
+        # Find and move the argument from the children to the "argument" field.
+        argument: MutableSequence[Any] = []
+        if node.children:
+            index_of_argument = next(
+                (
+                    idx
+                    for idx, value in enumerate(node.children)
+                    if isinstance(value, rstparser.directive_argument)
+                ),
+                None,
+            )
+            if index_of_argument is not None:
+                visitor = self.__make_child_visitor()
+                node.children[index_of_argument].walkabout(visitor)
+                top_of_visitor_state = visitor.state[-1]
+                assert isinstance(top_of_visitor_state, n.Parent)
+                argument = top_of_visitor_state.children
+                del node.children[index_of_argument]
+
+        doc.argument = argument
 
         argument_text = None
         try:
