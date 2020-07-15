@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support labels beginning with numbers that contain underscores (DOP-1188)
+- Support for extlinks used by Atlas docs (DOP-1233)
 
 ## [v0.5.0] - 2020-07-08
 
