@@ -1595,7 +1595,7 @@ def test_deprecated() -> None:
     assert len(diagnostics) == 1
     check_ast_testing_string(
         page.ast,
-        """<root><directive name="raw"><directive_argument><text>html</text></directive_argument><FixedTextElement /></directive></root>""",
+        """<root><directive name="raw"><text>html</text><FixedTextElement /></directive></root>""",
     )
 
 

@@ -257,7 +257,7 @@ class Directive(Parent[Node]):
     type = "directive"
     domain: str
     name: str
-    argument: List["Text"]
+    argument: MutableSequence["Text"]
     options: Dict[str, str]
 
     def verify(self) -> None:
