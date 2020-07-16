@@ -160,7 +160,7 @@ options.start-after = "string"
 options.end-before = "string"
 example = """.. include:: ${1:/includes/file.rst}
    ${2::start-after:
-   ::end-before:}
+   :end-before:}
 """
 
 [directive.literalinclude]
