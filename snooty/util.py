@@ -1,5 +1,6 @@
 import logging
 import os
+import pickle
 import time
 import docutils.nodes
 import docutils.parsers.rst.directives
@@ -27,6 +28,7 @@ from .types import FileId
 from . import n
 
 logger = logging.getLogger(__name__)
+_T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
@@ -236,6 +238,12 @@ def split_domain(name: str) -> Tuple[str, str]:
     if len(parts) == 1:
         return "", parts[0]
     return parts[0], parts[1]
+
+
+def fast_deep_copy(d: Dict[_K, _T]) -> Dict[_K, _T]:
+    """Time-efficiently create deep copy of a dictionary containing trusted data.
+       This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
+    return {k: pickle.loads(pickle.dumps(v)) for k, v in d.items()}
 
 
 class PerformanceLogger:
