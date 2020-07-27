@@ -853,7 +853,7 @@ class PageDatabase:
         return self.__postprocessed.items()
 
     def flush(
-        self
+        self,
     ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
         if not self.__changed_pages:
@@ -948,7 +948,7 @@ class _Project:
             )
 
     def get_parsed_branches(
-        self
+        self,
     ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
         try:
             path = self.config.root
