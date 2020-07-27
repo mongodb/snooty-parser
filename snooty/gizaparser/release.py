@@ -39,15 +39,6 @@ class ReleaseSpecification(Inheritable):
         return children
 
 
-def release_specification_to_page(
-    page: Page, node: ReleaseSpecification, rst_parser: EmbeddedRstParser
-) -> n.Directive:
-    rendered = node.render(page, rst_parser)
-    directive = n.Directive((node.line,), [], "", "release_specification", [], {})
-    directive.children = rendered
-    return directive
-
-
 class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
     def parse(
         self, path: Path, text: Optional[str] = None
@@ -73,6 +64,8 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
         nodes: Sequence[ReleaseSpecification],
     ) -> List[Page]:
         pages: List[Page] = []
+        source_fileid = self.project_config.get_fileid(source_path)
+
         for node in nodes:
             assert node.ref is not None
             if node.ref.startswith("_"):
@@ -80,7 +73,16 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
 
             page, rst_parser = page_factory(f"{node.ref}.rst")
             page.category = "release"
-            page.ast = release_specification_to_page(page, node, rst_parser)
+
+            rendered = node.render(page, rst_parser)
+            release_directive = n.Directive(
+                (node.line,), [], "", "release_specification", [], {}
+            )
+            release_directive.children = rendered
+
+            page.ast = n.Root((0,), [], source_fileid, {})
+            page.ast.children.append(release_directive)
+
             pages.append(page)
 
         return pages

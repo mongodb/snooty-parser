@@ -93,7 +93,10 @@ def test_reify_all_files() -> None:
     project_config.constants["version"] = "3.4"
 
     # Place good path and bad path here
-    paths = ("test_data/release-base.yaml", "test_data/release-base-repeat.yaml")
+    paths = (
+        "test_data/test_gizaparser/source/includes/release-base.yaml",
+        "test_data/test_gizaparser/source/includes/release-base-repeat.yaml",
+    )
 
     for i, path in enumerate(paths):
         test_path = Path(path)

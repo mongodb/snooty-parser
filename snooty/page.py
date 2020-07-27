@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 from pathlib import Path, PurePath
 from .diagnostics import Diagnostic
-from .types import StaticAsset
+from .types import StaticAsset, FileId
 from .target_database import ProjectInterface, EmptyProjectInterface
 from . import n
 
@@ -45,7 +45,7 @@ class Page:
             output_filename = source_path.name
 
         if ast is None:
-            ast = n.Root((0,), [], {})
+            ast = n.Root((0,), [], FileId(source_path), {})
 
         return Page(source_path, output_filename, source, ast)
 

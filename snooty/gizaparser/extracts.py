@@ -28,15 +28,6 @@ class Extract(Inheritable, HeadingMixin):
         return children
 
 
-def extract_to_page(
-    page: Page, extract: Extract, rst_parser: EmbeddedRstParser
-) -> n.Directive:
-    rendered = extract.render(page, rst_parser)
-    directive = n.Directive((extract.line,), [], "", "extract", [], {})
-    directive.children = rendered
-    return directive
-
-
 class GizaExtractsCategory(GizaCategory[Extract]):
     def parse(
         self, path: Path, text: Optional[str] = None
@@ -62,6 +53,8 @@ class GizaExtractsCategory(GizaCategory[Extract]):
         extracts: Sequence[Extract],
     ) -> List[Page]:
         pages: List[Page] = []
+        source_fileid = self.project_config.get_fileid(source_path)
+
         for extract in extracts:
             assert extract.ref is not None
             if extract.ref.startswith("_"):
@@ -69,7 +62,11 @@ class GizaExtractsCategory(GizaCategory[Extract]):
 
             page, rst_parser = page_factory(f"{extract.ref}.rst")
             page.category = "extracts"
-            page.ast = extract_to_page(page, extract, rst_parser)
+            rendered = extract.render(page, rst_parser)
+            extract_directive = n.Directive((extract.line,), [], "", "extract", [], {})
+            extract_directive.children = rendered
+            page.ast = n.Root((0,), [], source_fileid, {})
+            page.ast.children.append(extract_directive)
             pages.append(page)
 
         return pages

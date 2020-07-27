@@ -156,7 +156,9 @@ class JSONVisitor:
             self.state.append(n.FieldList((line,), []))
             return
         elif isinstance(node, docutils.nodes.document):
-            self.state.append(n.Root((0,), [], {}))
+            self.state.append(
+                n.Root((0,), [], self.project_config.get_fileid(self.docpath), {})
+            )
             return
         elif isinstance(node, docutils.nodes.field):
             field_name = node.children[0].astext()
@@ -576,7 +578,7 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
-            _, filepath = util.reroot_path(
+            openapi_fileid, filepath = util.reroot_path(
                 Path(argument_text), self.docpath, self.project_config.source_path
             )
 
@@ -586,7 +588,9 @@ class JSONVisitor:
 
                 def create_page() -> Tuple[Page, EmbeddedRstParser]:
                     # Create dummy page in order to use EmbeddedRstParser
-                    page = Page.create(filepath, None, "", n.Root((-1,), [], {}))
+                    page = Page.create(
+                        filepath, None, "", n.Root((-1,), [], openapi_fileid, {})
+                    )
                     diagnostics: Dict[PurePath, List[Diagnostic]] = {}
                     return (
                         page,
@@ -1074,7 +1078,8 @@ class _Project:
 
             if substitution_diagnostics:
                 backend.on_diagnostics(
-                    self.get_fileid(self.config.config_path), substitution_diagnostics
+                    self.config.get_fileid(self.config.config_path),
+                    substitution_diagnostics,
                 )
 
         self.config.substitution_nodes = substitution_nodes
@@ -1112,7 +1117,8 @@ class _Project:
 
         if published_branches_diagnostics:
             backend.on_diagnostics(
-                self.get_fileid(self.config.config_path), published_branches_diagnostics
+                self.config.get_fileid(self.config.config_path),
+                published_branches_diagnostics,
             )
 
     def get_parsed_branches(
@@ -1127,16 +1133,13 @@ class _Project:
             pass
         return None, []
 
-    def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(os.path.relpath(path, self.config.source_path))
-
     def get_full_path(self, fileid: FileId) -> Path:
         return self.config.source_path.joinpath(fileid)
 
     def get_page_ast(self, path: Path) -> n.Node:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
-        fileid = self.get_fileid(path)
+        fileid = self.config.get_fileid(path)
         post_metadata, post_diagnostics = self.pages.flush()
         for fileid, diagnostics in post_diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
@@ -1185,7 +1188,12 @@ class _Project:
 
                 def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
                     page = Page.create(
-                        giza_node.path, filename, text, n.Root((-1,), [], {})
+                        giza_node.path,
+                        filename,
+                        text,
+                        n.Root(
+                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
+                        ),
                     )
                     return (
                         page,
@@ -1202,11 +1210,13 @@ class _Project:
             raise ValueError("Unknown file type: " + str(path))
 
         for source_path, diagnostic_list in diagnostics.items():
-            self.backend.on_diagnostics(self.get_fileid(source_path), diagnostic_list)
+            self.backend.on_diagnostics(
+                self.config.get_fileid(source_path), diagnostic_list
+            )
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
-            fileid = self.get_fileid(page.fake_full_path())
+            fileid = self.config.get_fileid(page.fake_full_path())
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
         self.backend.flush()
 
@@ -1215,7 +1225,7 @@ class _Project:
         for giza_category in self.yaml_mapping.values():
             del giza_category[file_id]
 
-        self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
+        self.backend.on_delete(self.config.get_fileid(path), self.build_identifiers)
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
@@ -1260,7 +1270,12 @@ class _Project:
 
                 def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
                     page = Page.create(
-                        giza_node.path, filename, giza_node.text, n.Root((-1,), [], {})
+                        giza_node.path,
+                        filename,
+                        giza_node.text,
+                        n.Root(
+                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
+                        ),
                     )
                     return (
                         page,
@@ -1310,7 +1325,7 @@ class _Project:
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
         removed_assets: Set[StaticAsset] = set()
-        fileid = self.get_fileid(page.fake_full_path())
+        fileid = self.config.get_fileid(page.fake_full_path())
 
         logger.debug("Updated: %s", fileid)
 
@@ -1333,20 +1348,25 @@ class _Project:
 
         # Update dependents
         try:
-            self.asset_dg.remove_node(self.get_fileid(page.source_path))
+            self.asset_dg.remove_node(self.config.get_fileid(page.source_path))
         except networkx.exception.NetworkXError:
             pass
         self.asset_dg.add_edges_from(
-            (self.get_fileid(page.source_path), self.get_fileid(asset.path))
+            (
+                self.config.get_fileid(page.source_path),
+                self.config.get_fileid(asset.path),
+            )
             for asset in page.static_assets
         )
 
         # Report to our backend
         self.pages[fileid] = page
-        self.backend.on_diagnostics(self.get_fileid(page.source_path), diagnostics)
+        self.backend.on_diagnostics(
+            self.config.get_fileid(page.source_path), diagnostics
+        )
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
-        asset_path = self.get_fileid(Path(ev.src_path))
+        asset_path = self.config.get_fileid(Path(ev.src_path))
 
         # Revoke any caching that might have been performed on this file
         try:
@@ -1380,12 +1400,6 @@ class Project:
     @property
     def config(self) -> ProjectConfig:
         return self._project.config
-
-    def get_fileid(self, path: PurePath) -> FileId:
-        """Create a FileId from a path."""
-        # We don't need to obtain a lock because this method only operates on
-        # _Project.root, which never changes after creation.
-        return self._project.get_fileid(path)
 
     def get_full_path(self, fileid: FileId) -> Path:
         # We don't need to obtain a lock because this method only operates on

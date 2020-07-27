@@ -127,6 +127,11 @@ class GizaStepsCategory(GizaCategory[Step]):
         output_filename = output_filename[len("steps-") :]
         page, rst_parser = page_factory(output_filename)
         page.category = "steps"
-        page.ast = n.Directive((0,), [], "", "steps", [], {})
-        page.ast.children = [step_to_page(page, step, rst_parser) for step in steps]
+        source_fileid = self.project_config.get_fileid(source_path)
+        steps_directive = n.Directive((0,), [], "", "steps", [], {})
+        steps_directive.children = [
+            step_to_page(page, step, rst_parser) for step in steps
+        ]
+        page.ast = n.Root((0,), [], source_fileid, {})
+        page.ast.children.append(steps_directive)
         return [page]

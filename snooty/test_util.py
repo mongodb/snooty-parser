@@ -49,7 +49,7 @@ def test_option_flag() -> None:
 
 def test_get_files() -> None:
     assert set(util.get_files(PurePath("test_data"), (".toml",))) == {
-        Path("test_data/snooty.toml"),
+        Path("test_data/test_gizaparser/snooty.toml"),
         Path("test_data/bad_project/snooty.toml"),
         Path("test_data/empty_project/snooty.toml"),
         Path("test_data/test_project/snooty.toml"),

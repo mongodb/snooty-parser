@@ -300,7 +300,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             raise ValueError("Only file:// URIs may be resolved", uri)
 
         path = Path(parsed.netloc).joinpath(Path(parsed.path)).resolve()
-        return self.project.get_fileid(path)
+        return self.project.config.get_fileid(path)
 
     def fileid_to_uri(self, fileid: FileId) -> str:
         if not self.project:
@@ -396,12 +396,12 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
                 children,
                 "",
                 "include",
-                [n.Text((0,), self.project.get_fileid(filePath).as_posix())],
+                [n.Text((0,), self.project.config.get_fileid(filePath).as_posix())],
                 {},
             )
 
             # Insert modified ast as a child of a pseudo empty page ast
-            pseudo_ast = n.Root((0,), [], {})
+            pseudo_ast = n.Root((0,), [], self.project.config.get_fileid(filePath), {})
             pseudo_ast.children.append(rst_ast)
             return pseudo_ast.serialize()
 
@@ -423,7 +423,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             logger.warn("Project uninitialized")
             return None
 
-        fileid = self.project.get_fileid(PurePath(filePath))
+        fileid = self.project.config.get_fileid(PurePath(filePath))
         return fileid.without_known_suffix
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:

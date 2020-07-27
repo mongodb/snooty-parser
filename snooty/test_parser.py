@@ -28,14 +28,14 @@ ROOT_PATH = Path("test_data")
 
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test_tabs.rst">
         <directive name="tabs" hidden="True"><directive name="tab" tabid="bionic"><text>Ubuntu 18.04 (Bionic)</text>
         <paragraph><text>Bionic content</text></paragraph></directive>
         <directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>
@@ -60,13 +60,13 @@ def test_tabs() -> None:
                 <paragraph><text>Linux Content</text></paragraph>
             </directive>
         </directive>
-        
+
         <directive name="tabs" tabset="platforms">
             <directive name="tab" tabid="bobs_your_uncle">
             <paragraph><text>Windows Content</text></paragraph>
             </directive>
         </directive>
-    
+
         <directive name="tabs" tabset="platfors">
             <directive name="tab" tabid="linux">
             <paragraph><text>Linux Content</text></paragraph>
@@ -88,14 +88,14 @@ def test_tabs() -> None:
 
 def test_tabsets_with_options() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs_options.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test_tabs_options.rst">
     <directive name="tabs" hidden="True" tabset="drivers">
         <directive name="tab" tabid="java-sync">
             <text>Java (Sync)</text><paragraph><text>Text</text></paragraph>
@@ -137,7 +137,7 @@ def test_tabs_invalid_yaml() -> None:
 
 def test_tabs_reorder() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(
         parser,
@@ -161,7 +161,7 @@ def test_tabs_reorder() -> None:
     check_ast_testing_string(
         page.ast,
         r"""
-<root>
+<root fileid="test.rst">
 <directive name="tabs" tabset="drivers">
 <directive name="tab" tabid="python"><text>Python</text>
 <paragraph><text>This tab should be first</text></paragraph>
@@ -177,7 +177,7 @@ def test_tabs_reorder() -> None:
 
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test a simple code-block
@@ -195,7 +195,7 @@ def test_codeblock() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <code lang="sh" copyable="True">foo bar\n  indented\nend</code>
         </root>""",
     )
@@ -218,7 +218,7 @@ def test_codeblock() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]" linenos="True">foo\nbar\nbaz</code>
         </root>""",
     )
@@ -249,7 +249,7 @@ def test_codeblock() -> None:
     assert not diagnostics
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <code copyable="True">foo</code>
         </root>""",
     )
@@ -269,7 +269,7 @@ def test_codeblock() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <code lang="java" caption="Test caption">foo</code>
         </root>""",
     )
@@ -306,7 +306,7 @@ def test_literalinclude() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
   <directive name="literalinclude"><text>/test_parser/includes/sample_code.js</text><code copyable="True">var str = "sample code";
 var i = 0;
 for (i = 0; i &lt; 10; i++) {
@@ -337,7 +337,7 @@ for (i = 0; i &lt; 10; i++) {
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude" caption="Sample Code" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
         <text>/test_parser/includes/sample_code.py</text>
         <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True">print("test dedent")</code>
@@ -358,7 +358,7 @@ for (i = 0; i &lt; 10; i++) {
     assert isinstance(diagnostics[0], ExpectedPathArg)
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude">
         </directive>
         </root>""",
@@ -377,7 +377,7 @@ for (i = 0; i &lt; 10; i++) {
     assert isinstance(diagnostics[0], CannotOpenFile)
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude">
         <text>includes/does_not_exist.js</text>
         </directive>
@@ -399,7 +399,7 @@ for (i = 0; i &lt; 10; i++) {
     assert isinstance(diagnostics[0], InvalidLiteralInclude)
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude" start-after="does not exist" end-before="end example 1">
         <text>/test_parser/includes/sample_code.py</text>
         <code copyable="True">    # start example 1
@@ -423,7 +423,7 @@ for (i = 0; i &lt; 10; i++) {
     assert isinstance(diagnostics[0], InvalidLiteralInclude)
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude" start-after="start example 1" end-before="does not exist">
         <text>/test_parser/includes/sample_code.py</text>
         <code copyable="True">    print("test dedent")
@@ -451,7 +451,7 @@ for (i = 0; i &lt; 10; i++) {
     assert isinstance(diagnostics[0], InvalidLiteralInclude)
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="literalinclude" start-after="start example 2" end-before="end example 1">
         <text>/test_parser/includes/sample_code.py</text>
         <code copyable="True"></code>
@@ -595,7 +595,7 @@ def test_admonition() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="note">
         <list enumtype="unordered"><listItem><paragraph><text>foo</text></paragraph></listItem>
         <listItem><paragraph><text>bar</text></paragraph></listItem></list>
@@ -631,7 +631,7 @@ def test_admonition_versionchanged() -> None:
     assert [type(diag) for diag in diagnostics] == [DocUtilsParseError]
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="versionchanged"><text>v3.2</text>
             <paragraph><text>Content</text></paragraph>
         </directive>
@@ -667,7 +667,7 @@ def test_admonition_deprecated() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="deprecated"><text>v3.2</text>
             <paragraph><text>Content</text></paragraph>
         </directive>
@@ -696,7 +696,7 @@ foo |new version| bar
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <substitution_definition name="new version">
         <text>3.4</text>
         </substitution_definition>
@@ -721,7 +721,7 @@ foo |double arrow ->| bar
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <substitution_definition name="double arrow ->">
         <text>foo</text><text>➤</text><text>➤</text>
         </substitution_definition>
@@ -739,7 +739,7 @@ foo |double arrow ->| bar
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <paragraph>
         <text>foo </text>
         <substitution_reference name="bar"></substitution_reference>
@@ -770,7 +770,7 @@ def test_labels() -> None:
     check_ast_testing_string(
         ast,
         """
-        <root>
+        <root fileid="test.rst">
         <paragraph>
                 <ref_role domain="std" name="label" target="100_stacked_example"/>
         </paragraph>
@@ -811,7 +811,7 @@ def test_roles() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
             <target domain="mongodb" name="binary">
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
                 <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
@@ -922,7 +922,7 @@ def test_doc_role() -> None:
     check_ast_testing_string(
         page.ast,
         """
-        <root>
+        <root fileid="test.rst">
         <list enumtype="unordered">
         <listItem>
         <paragraph>
@@ -984,7 +984,7 @@ def test_rstobject() -> None:
     print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
             <target domain="std" name="option">
             <directive_argument><literal><text>--slowms &lt;integer&gt;</text></literal></directive_argument>
             <target_identifier ids="['--slowms']"><text>--slowms</text></target_identifier>
@@ -1010,7 +1010,7 @@ def test_bad_option() -> None:
     print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
             <target domain="std" name="option">
             <directive_argument><literal><text>=</text></literal></directive_argument>
             </target>
@@ -1040,7 +1040,7 @@ def test_accidental_indentation() -> None:
     assert len(diagnostics) == 1
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="note">
         <paragraph><text>This is</text></paragraph>
         <paragraph><text>a</text></paragraph>
@@ -1105,7 +1105,7 @@ def test_glossary_node() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
   <directive name="glossary" sorted="True">
     <definitionList>
       <definitionListItem>
@@ -1228,7 +1228,7 @@ def test_cond() -> None:
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="cond">
         <text>(not man) or html</text>
         <directive name="note"><paragraph><text>A note.</text></paragraph></directive>
@@ -1262,7 +1262,7 @@ This paragraph is not a child.
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="versionchanged">
         <text>
         2.0
@@ -1293,7 +1293,7 @@ A new paragraph.
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="deprecated">
         <text>
         1.8
@@ -1319,7 +1319,7 @@ A new paragraph.
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="versionadded">
         <text>
         2.1
@@ -1353,7 +1353,7 @@ def test_list() -> None:
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <list enumtype="unordered">
         <listItem><paragraph><text>First bulleted item</text></paragraph></listItem>
         <listItem><paragraph><text>Second</text></paragraph></listItem>
@@ -1379,7 +1379,7 @@ e. Fifth list item
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <list enumtype="loweralpha">
         <listItem><paragraph><text>First list item</text></paragraph></listItem>
         <listItem><paragraph><text>Second</text></paragraph></listItem>
@@ -1623,7 +1623,7 @@ def test_footnote() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <footnote id="footnote-test" name="footnote-test">
         <paragraph>
         <text>This is an example of what a footnote looks like.</text>
@@ -1647,7 +1647,7 @@ def test_footnote() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <footnote id="id1">
         <paragraph>
         <text>This is an autonumbered footnote.</text>
@@ -1690,7 +1690,7 @@ This is a footnote [#test-footnote]_ in use.
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <paragraph>
         <text>This is a footnote</text>
         <footnote_reference id="id1" refname="test-footnote" />
@@ -1710,7 +1710,7 @@ This is an autonumbered footnote [#]_ in use.
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <paragraph>
         <text>This is an autonumbered footnote</text>
         <footnote_reference id="id1" />
@@ -1749,7 +1749,7 @@ def test_cardgroup() -> None:
     assert len(diagnostics) == 0
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="card-group" type="small">
         <directive name="cardgroup-card" cardid="test-one" headline="Test One" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/delete" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
         <directive name="cardgroup-card" cardid="test-two" headline="Test Two" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/update" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
@@ -1806,7 +1806,7 @@ def test_toctree() -> None:
     assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://docs.atlas.mongodb.com'}]" />
         </root>""",
     )
@@ -1834,7 +1834,7 @@ def test_callable_target() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <target domain="mongodb" name="method">
     <directive_argument><literal><text>db.collection.ensureIndex (keys, options)</text></literal></directive_argument>
     <target_identifier ids="['db.collection.ensureIndex']"><text>db.collection.ensureIndex()</text></target_identifier>
@@ -1868,7 +1868,7 @@ def test_callable_target() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root></root>""",
+<root fileid="test.rst"></root>""",
     )
 
 
@@ -1914,7 +1914,7 @@ def test_dates() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <directive name="pubdate" date="2020-03-04"></directive>
     <directive name="updated-date"></directive>
 </root>
@@ -1939,7 +1939,9 @@ def test_problematic() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
-    check_ast_testing_string(page.ast, "<root><paragraph></paragraph></root>")
+    check_ast_testing_string(
+        page.ast, '<root fileid="test.rst"><paragraph></paragraph></root>'
+    )
 
 
 def test_deprecated() -> None:
@@ -1960,7 +1962,7 @@ def test_deprecated() -> None:
     assert len(diagnostics) == 1
     check_ast_testing_string(
         page.ast,
-        """<root><directive name="raw"><text>html</text><FixedTextElement /></directive></root>""",
+        """<root fileid="test.rst"><directive name="raw"><text>html</text><FixedTextElement /></directive></root>""",
     )
 
 
@@ -1985,7 +1987,7 @@ A term
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <definitionList>
         <definitionListItem>
             <term><text>A term</text></term>
@@ -2015,7 +2017,7 @@ collection.createIndex( { name : -1 }, function(err, result) {
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <definitionList>
         <definitionListItem>
             <term><text>collection.createIndex( { name : -1 }, function(err, result) {</text></term>
@@ -2073,7 +2075,7 @@ def test_fields() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <target domain="mongodb" name="method">
     <directive_argument><literal><text>utils.jwt.encode()</text></literal></directive_argument>
     <target_identifier ids="['utils.jwt.encode']"><text>utils.jwt.encode()</text></target_identifier>
@@ -2104,7 +2106,7 @@ on the specified </text><literal><text>signingMethod</text></literal><text> and 
     check_ast_testing_string(
         page.ast,
         """
-<root>
+<root fileid="test.rst">
     <target domain="mongodb" name="method">
     <directive_argument><literal><text>utils.crypto.encrypt()</text></literal></directive_argument>
     <target_identifier ids="['utils.crypto.encrypt']"><text>utils.crypto.encrypt()</text></target_identifier>
@@ -2132,7 +2134,7 @@ def test_malformed_monospace() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root><literal><text>malformed syntax</text></literal></root>
+<root fileid="test.rst"><literal><text>malformed syntax</text></literal></root>
 """,
     )
 
@@ -2158,7 +2160,7 @@ def test_malformed_external_link() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
+<root fileid="test.rst"><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
 """,
     )
 
@@ -2181,14 +2183,14 @@ def test_explicit_title_parsing() -> None:
     check_ast_testing_string(
         page.ast,
         r"""
-<root>
+<root fileid="test.rst">
     <target domain="mongodb" name="writeconcern">
         <directive_argument>
             <literal><text>&lt;custom write concern name&gt;</text></literal>
         </directive_argument>
         <target_identifier ids="['writeconcern.&lt;custom write concern name&gt;']"><text>&lt;custom write concern name&gt;</text></target_identifier>
     </target>
-    
+
     <paragraph>
         <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&lt;custom write concern name&gt;">
             <literal><text>w:1</text></literal>
