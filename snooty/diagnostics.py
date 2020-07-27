@@ -217,7 +217,7 @@ class MalformedGlossary(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Malformed glossary: glossary must contain only a definition list",
+            "Malformed glossary: glossary must contain only a definition list",
             start,
             end,
         )

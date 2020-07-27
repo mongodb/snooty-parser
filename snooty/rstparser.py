@@ -255,7 +255,7 @@ def format_node(
 
 
 def layer_formatting(
-    formatting: AbstractSet[specparser.FormattingType]
+    formatting: AbstractSet[specparser.FormattingType],
 ) -> Optional[docutils.nodes.Node]:
     """Create a nested sequence of formatting nodes."""
     node = None

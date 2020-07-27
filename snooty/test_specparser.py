@@ -4,7 +4,7 @@ from . import specparser
 
 def test_load() -> None:
     spec = specparser.Spec.loads(
-        f"""
+        """
     [meta]
     version = 0
 
@@ -70,7 +70,7 @@ def test_load() -> None:
 def test_inheritance_cycle() -> None:
     with pytest.raises(ValueError):
         specparser.Spec.loads(
-            f"""
+            """
         [meta]
         version = 0
 
@@ -86,7 +86,7 @@ def test_inheritance_cycle() -> None:
 def test_missing_parent() -> None:
     with pytest.raises(ValueError):
         specparser.Spec.loads(
-            f"""
+            """
         [meta]
         version = 0
 
@@ -101,7 +101,7 @@ def test_missing_parent() -> None:
 
 def test_bad_type() -> None:
     spec = specparser.Spec.loads(
-        f"""
+        """
     [meta]
     version = 0
     """
@@ -114,14 +114,14 @@ def test_bad_type() -> None:
 def test_bad_version() -> None:
     with pytest.raises(ValueError):
         specparser.Spec.loads(
-            f"""
+            """
         [meta]
         version = -1"""
         )
 
     with pytest.raises(ValueError):
         specparser.Spec.loads(
-            f"""
+            """
         [meta]
         version = 1"""
         )

@@ -10,30 +10,30 @@ home-page = "https://github.com/mongodb/snooty-parser"
 classifiers = ["License :: OSI Approved :: Apache Software License"]
 requires-python = "~= 3.7"
 requires = [
-    "pymongo[srv,tls] ~= 3.7.2",
+    "pymongo[srv,tls] ~= 3.10.1",
     "docutils == 0.16",
-    "dnspython ~= 1.16.0",
-    "watchdog ~= 0.9.0",
-    "requests ~= 2.22.0",
-    "toml ~= 0.10.0",
-    "pyyaml ~= 5.1",
-    "typing-extensions ~= 3.7.2",
-    "python-jsonrpc-server ~= 0.1.2",
+    "dnspython ~= 2.0.0",
+    "watchdog ~= 0.10.3",
+    "requests ~= 2.24.0",
+    "toml ~= 0.10.1",
+    "pyyaml ~= 5.3.1",
+    "typing-extensions ~= 3.7.4.1",
+    "python-jsonrpc-server ~= 0.3.4",
     "fett ~= 0.3.2",
-    "networkx ~= 2.3",
+    "networkx ~= 2.4",
     "docopt ~= 0.6.2"
 ]
 
 [tool.flit.metadata.requires-extra]
 dev = [
-    "black ~= 19.3b0",
-    "pyflakes ~= 2.1.1",
-    "mypy ~= 0.701",
-    "pyinstaller ~= 3.5"
+    "black ~= 19.10b0",
+    "pyflakes ~= 2.2.0",
+    "mypy ~= 0.782",
+    "pyinstaller ~= 3.6"
 ]
 test = [
-    "pytest ~= 4.4.1",
-    "pytest-cov ~= 2.6.1"
+    "pytest ~= 5.4.3",
+    "pytest-cov ~= 2.10.0"
 ]
 
 [tool.flit.scripts]

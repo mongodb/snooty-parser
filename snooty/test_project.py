@@ -108,9 +108,10 @@ def test() -> None:
         assert backend.updates == [index_id, index_id]
 
         # Ensure that published-branches.yaml has been parsed
-        published_branches, published_branch_diagnostics = (
-            project._project.get_parsed_branches()
-        )
+        (
+            published_branches,
+            published_branch_diagnostics,
+        ) = project._project.get_parsed_branches()
         assert len(published_branch_diagnostics) == 0
         assert project.config.title == "MongoDB title"
         assert published_branches and published_branches.serialize() == {
