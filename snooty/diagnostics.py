@@ -118,6 +118,10 @@ class OptionsNotSupported(Diagnostic):
     severity = Diagnostic.Level.error
 
 
+class InvalidField(Diagnostic):
+    severity = Diagnostic.Level.error
+
+
 class GitMergeConflictArtifactFound(Diagnostic):
     severity = Diagnostic.Level.error
 

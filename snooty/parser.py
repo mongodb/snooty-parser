@@ -48,6 +48,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     InvalidTableStructure,
     MalformedGlossary,
+    InvalidField,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -127,7 +128,10 @@ class JSONVisitor:
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
 
-        if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
+        if isinstance(node, docutils.nodes.definition):
+            return
+        if isinstance(node, docutils.nodes.field_list):
+            self.state.append(n.FieldList((line,), []))
             return
         elif isinstance(node, docutils.nodes.document):
             self.state.append(n.Root((0,), [], {}))
@@ -138,13 +142,27 @@ class JSONVisitor:
             top = self.state[-1]
             if isinstance(top, n.Root):
                 top.options[key] = value
-            else:
+                raise docutils.nodes.SkipNode()
+
+            # Convert list of mixed strings and tuples into a key: value map
+            supported_fields = {(f if isinstance(f, str) else f[0]): (None if isinstance(f, str) else f[1]) for f in node.parent.parent["fields"]}
+
+            field_name = node.children[0].astext()
+            if field_name not in supported_fields.keys():
                 self.diagnostics.append(
-                    OptionsNotSupported(
-                        "Options not supported here", util.get_line(node.children[0])
+                    InvalidField(
+                        f"""Field {field_name} not supported by directive {node.parent["name"]}""", util.get_line(node.children[0])
                     )
                 )
+                raise docutils.nodes.SkipNode()
+
+            self.state.append(n.Field((line,), [], field_name, supported_fields[field_name]))
+            return
+        elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.field_body):
+            # Omit the field_body wrapper, but parse its children
+            raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.code):
             doc = n.Code(
                 (line,),
