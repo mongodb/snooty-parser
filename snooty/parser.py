@@ -1048,7 +1048,9 @@ class _Project:
 
         self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
@@ -1107,23 +1109,26 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        post_metadata, post_diagnostics = self.pages.flush()
+        if postprocess:
+            post_metadata, post_diagnostics = self.pages.flush()
 
-        static_files = {
-            "objects.inv": self.targets.generate_inventory("").dumps(
-                self.config.name, ""
+            static_files = {
+                "objects.inv": self.targets.generate_inventory("").dumps(
+                    self.config.name, ""
+                )
+            }
+            post_metadata["static_files"] = static_files
+
+            for fileid, page in self.pages.items():
+                self.backend.on_update(
+                    self.prefix, self.build_identifiers, fileid, page
+                )
+            for fileid, diagnostics in post_diagnostics.items():
+                self.backend.on_diagnostics(fileid, diagnostics)
+
+            self.backend.on_update_metadata(
+                self.prefix, self.build_identifiers, post_metadata
             )
-        }
-        post_metadata["static_files"] = static_files
-
-        for fileid, page in self.pages.items():
-            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        for fileid, diagnostics in post_diagnostics.items():
-            self.backend.on_diagnostics(fileid, diagnostics)
-
-        self.backend.on_update_metadata(
-            self.prefix, self.build_identifiers, post_metadata
-        )
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1233,10 +1238,12 @@ class Project:
         with self._lock:
             self._project.delete(path)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         """Build the full project."""
         with self._lock:
-            self._project.build(max_workers)
+            self._project.build(max_workers, postprocess)
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""
