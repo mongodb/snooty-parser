@@ -45,7 +45,6 @@ from .types import (
 )
 from .diagnostics import (
     Diagnostic,
-    OptionsNotSupported,
     UnexpectedIndentation,
     ExpectedPathArg,
     ExpectedImageArg,
@@ -140,32 +139,38 @@ class JSONVisitor:
         if isinstance(node, docutils.nodes.definition):
             return
         if isinstance(node, docutils.nodes.field_list):
+            top = self.state[-1]
+            if isinstance(top, n.Root):
+                for field in node.children:
+                    key = field.children[0].astext()
+                    value = field.children[1].astext()
+                    top.options[key] = value
+                raise docutils.nodes.SkipNode()
+
             self.state.append(n.FieldList((line,), []))
             return
         elif isinstance(node, docutils.nodes.document):
             self.state.append(n.Root((0,), [], {}))
             return
         elif isinstance(node, docutils.nodes.field):
-            key = node.children[0].astext()
-            value = node.children[1].astext()
-            top = self.state[-1]
-            if isinstance(top, n.Root):
-                top.options[key] = value
-                raise docutils.nodes.SkipNode()
+            field_list = node.parent
+            assert isinstance(field_list, docutils.nodes.field_list)
+            rstobject = field_list.parent
+            assert isinstance(rstobject, rstparser.target_directive)
 
             # Convert list of mixed strings and tuples into a key: value map
             supported_fields = {
                 (f if isinstance(f, str) else f[0]): (
                     None if isinstance(f, str) else f[1]
                 )
-                for f in node.parent.parent["fields"]
+                for f in rstobject["fields"]
             }
 
             field_name = node.children[0].astext()
             if field_name not in supported_fields.keys():
                 self.diagnostics.append(
                     InvalidField(
-                        f"""Field {field_name} not supported by directive {node.parent["name"]}""",
+                        f"""Field {field_name} not supported by directive {rstobject["name"]}""",
                         util.get_line(node.children[0]),
                     )
                 )
