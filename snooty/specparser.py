@@ -295,7 +295,11 @@ class Spec:
         raise ValueError(f'Unknown directive argument type "{option_spec}"')
 
     def _resolve_inheritance(self) -> None:
-        """Directives can inherit from other directives; resolve this."""
+        """Spec entries can inherit from other entries; resolve this.
+
+           Not all fields are implicitly inherited: only fields with a default value
+           of None or MissingDict are inherited. This means that, for example content_type
+           is inherited, but as of this writing, deprecated is not."""
         self._resolve_category(self.directive)
         self._resolve_category(self.role)
         self._resolve_category(self.rstobject)

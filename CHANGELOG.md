@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- To prepare for updating the version of the parser used by the VSCode extension,
+  the postprocessor has been temporarily disabled in the language server.
+
+### Deprecated
+
+- The following directives are deprecated: `admonition`, `danger`, `caution`, and `topic` (DOP-1243).
+
 ## [v0.5.2] - 2020-07-15
 
 ### Fixed
