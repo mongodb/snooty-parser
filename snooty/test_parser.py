@@ -1673,6 +1673,7 @@ on the specified </text><literal><text>signingMethod</text></literal><text> and 
 </root>""",
     )
 
+    # Test invalid field
     page, diagnostics = parse_rst(
         parser,
         path,

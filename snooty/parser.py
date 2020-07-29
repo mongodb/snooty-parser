@@ -156,18 +156,33 @@ class JSONVisitor:
             field_list = node.parent
             assert isinstance(field_list, docutils.nodes.field_list)
             rstobject = field_list.parent
-            assert isinstance(rstobject, rstparser.target_directive)
-
-            # Convert list of mixed strings and tuples into a key: value map
-            supported_fields = {
-                (f if isinstance(f, str) else f[0]): (
-                    None if isinstance(f, str) else f[1]
-                )
-                for f in rstobject["fields"]
-            }
-
             field_name = node.children[0].astext()
-            if field_name not in supported_fields.keys():
+            try:
+                assert isinstance(rstobject, rstparser.directive)
+
+                # Convert list of mixed strings and tuples into a key: value map
+                supported_fields = {
+                    (f if isinstance(f, str) else f[0]): (
+                        None if isinstance(f, str) else f[1]
+                    )
+                    for f in rstobject["fields"]
+                }
+
+                self.state.append(
+                    n.Field((line,), [], field_name, supported_fields[field_name])
+                )
+                return
+            except AssertionError:
+                # Handle case where :field: does not appear in a directive
+                self.diagnostics.append(
+                    InvalidField(
+                        f"""Field {field_name} must be used in a valid directive""",
+                        util.get_line(node.children[0]),
+                    )
+                )
+            except KeyError:
+                # Handle case where field is not included in directive's rstspec entry
+                assert isinstance(rstobject, rstparser.directive)
                 self.diagnostics.append(
                     InvalidField(
                         f"""Field {field_name} not supported by directive {rstobject["name"]}""",
@@ -175,11 +190,6 @@ class JSONVisitor:
                     )
                 )
                 raise docutils.nodes.SkipNode()
-
-            self.state.append(
-                n.Field((line,), [], field_name, supported_fields[field_name])
-            )
-            return
         elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.field_body):

@@ -1329,6 +1329,7 @@ prefix = "bin"
 
 [rstobject."mongodb:dbcommand"]
 prefix = "dbcmd"
+fields = [["returns", "Returns"]]
 
 [rstobject."mongodb:expression"]
 help = """aggregation framework transformation expression"""
