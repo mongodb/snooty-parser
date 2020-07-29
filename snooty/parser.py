@@ -1,5 +1,4 @@
 import collections
-import dataclasses
 import docutils.nodes
 import logging
 import multiprocessing
@@ -12,7 +11,17 @@ from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path, PurePath
-from typing import Any, Dict, MutableSequence, Tuple, Optional, Set, List, Iterable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    MutableSequence,
+    Tuple,
+    Optional,
+    Set,
+    List,
+    Iterable,
+)
 from docutils.nodes import make_id
 from typing_extensions import Protocol
 import docutils.utils
@@ -145,18 +154,26 @@ class JSONVisitor:
                 raise docutils.nodes.SkipNode()
 
             # Convert list of mixed strings and tuples into a key: value map
-            supported_fields = {(f if isinstance(f, str) else f[0]): (None if isinstance(f, str) else f[1]) for f in node.parent.parent["fields"]}
+            supported_fields = {
+                (f if isinstance(f, str) else f[0]): (
+                    None if isinstance(f, str) else f[1]
+                )
+                for f in node.parent.parent["fields"]
+            }
 
             field_name = node.children[0].astext()
             if field_name not in supported_fields.keys():
                 self.diagnostics.append(
                     InvalidField(
-                        f"""Field {field_name} not supported by directive {node.parent["name"]}""", util.get_line(node.children[0])
+                        f"""Field {field_name} not supported by directive {node.parent["name"]}""",
+                        util.get_line(node.children[0]),
                     )
                 )
                 raise docutils.nodes.SkipNode()
 
-            self.state.append(n.Field((line,), [], field_name, supported_fields[field_name]))
+            self.state.append(
+                n.Field((line,), [], field_name, supported_fields[field_name])
+            )
             return
         elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
@@ -826,6 +843,62 @@ class ProjectBackend(Protocol):
         ...
 
 
+class PageDatabase:
+    """A database of FileId->Page mappings that ensures the postprocessing pipeline
+       is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
+       pages can be accessed."""
+
+    def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
+        self.postprocessor_factory = postprocessor_factory
+        self.parsed: Dict[FileId, Page] = {}
+        self.__postprocessed: Dict[FileId, Page] = {}
+        self.__changed_pages: Set[FileId] = set()
+
+    def __setitem__(self, key: FileId, value: Page) -> None:
+        """Set a raw parsed page."""
+        self.parsed[key] = value
+        self.__changed_pages.add(key)
+
+    def __getitem__(self, key: FileId) -> Page:
+        """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
+        assert not self.__changed_pages
+        return self.__postprocessed[key]
+
+    def __contains__(self, key: FileId) -> bool:
+        """Check if a given page exists in the parsed set."""
+        return key in self.parsed
+
+    def values(self) -> Iterable[Page]:
+        """Iterate over postprocessed pages."""
+        assert not self.__changed_pages
+        return self.__postprocessed.values()
+
+    def items(self) -> Iterable[Tuple[FileId, Page]]:
+        """Iterate over the postprocessed (FileId, Page) set."""
+        assert not self.__changed_pages
+        return self.__postprocessed.items()
+
+    def flush(
+        self,
+    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+        """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
+        if not self.__changed_pages:
+            return {}, {}
+
+        postprocessor = self.postprocessor_factory()
+
+        with util.PerformanceLogger.singleton().start("copy"):
+            copied_pages = util.fast_deep_copy(self.parsed)
+
+        with util.PerformanceLogger.singleton().start("postprocessing"):
+            post_metadata, post_diagnostics = postprocessor.run(copied_pages)
+
+        self.__postprocessed = postprocessor.pages
+        self.__changed_pages.clear()
+
+        return post_metadata, post_diagnostics
+
+
 class _Project:
     """Internal representation of a Snooty project with no data locking."""
 
@@ -849,12 +922,6 @@ class _Project:
         self.backend = backend
         self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
-
-        self.postprocessor = (
-            DevhubPostprocessor(self.config, self.targets)
-            if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets)
-        )
 
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
@@ -884,7 +951,11 @@ class _Project:
         ).strip()
         self.prefix = [self.config.name, username, branch]
 
-        self.pages: Dict[FileId, Page] = {}
+        self.pages = PageDatabase(
+            lambda: DevhubPostprocessor(self.config, self.targets)
+            if self.config.default_domain == "devhub"
+            else Postprocessor(self.config, self.targets)
+        )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
@@ -903,7 +974,7 @@ class _Project:
             )
 
     def get_parsed_branches(
-        self
+        self,
     ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
         try:
             path = self.config.root
@@ -924,11 +995,13 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.get_fileid(path)
+        post_metadata, post_diagnostics = self.pages.flush()
+        for fileid, diagnostics in post_diagnostics.items():
+            self.backend.on_diagnostics(fileid, diagnostics)
         page = self.pages[fileid]
 
-        # Fill in missing include nodes
         assert isinstance(page.ast, n.Parent)
-        return self._populate_include_nodes(page.ast)
+        return page.ast
 
     def get_project_name(self) -> str:
         return self.config.name
@@ -1001,7 +1074,9 @@ class _Project:
 
         self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
@@ -1060,80 +1135,26 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        with util.PerformanceLogger.singleton().start("postprocessing"):
-            post_metadata, post_diagnostics = self.postprocessor.run(self.pages)
+        if postprocess:
+            post_metadata, post_diagnostics = self.pages.flush()
 
-        static_files = {
-            "objects.inv": self.targets.generate_inventory("").dumps(
-                self.config.name, ""
+            static_files = {
+                "objects.inv": self.targets.generate_inventory("").dumps(
+                    self.config.name, ""
+                )
+            }
+            post_metadata["static_files"] = static_files
+
+            for fileid, page in self.pages.items():
+                self.backend.on_update(
+                    self.prefix, self.build_identifiers, fileid, page
+                )
+            for fileid, diagnostics in post_diagnostics.items():
+                self.backend.on_diagnostics(fileid, diagnostics)
+
+            self.backend.on_update_metadata(
+                self.prefix, self.build_identifiers, post_metadata
             )
-        }
-        post_metadata["static_files"] = static_files
-
-        for fileid, page in self.postprocessor.pages.items():
-            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        for fileid, diagnostics in post_diagnostics.items():
-            self.backend.on_diagnostics(fileid, diagnostics)
-
-        self.backend.on_update_metadata(
-            self.prefix, self.build_identifiers, post_metadata
-        )
-
-    def _populate_include_nodes(self, root: n.Parent[n.Node]) -> n.Node:
-        """
-        Add include nodes to page AST's children.
-
-        To render images on the Snooty extension's Snooty Preview,
-        we must use the full path of the image on the user's local machine. Note that this does change the
-        figure's value within the parser's dict. However, this should not change the value when using the parser
-        outside of Snooty Preview, since this function is currently only called by the language server.
-        """
-
-        def replace_nodes(node: n.Node) -> n.Node:
-            if isinstance(node, n.Directive):
-                if node.name == "include":
-                    # Get the name of the file
-                    argument = node.argument[0]
-                    include_filename = argument.value
-                    include_filename = include_filename[1:]
-
-                    # Get children of include file
-                    include_file_page_ast = self.pages[FileId(include_filename)].ast
-                    assert isinstance(include_file_page_ast, n.Parent)
-                    include_node_children = include_file_page_ast.children
-
-                    # Resolve includes within include node
-                    replaced_include = list(map(replace_nodes, include_node_children))
-                    node.children = replaced_include
-                # Replace instances of an image's name with its full path. This allows Snooty Preview to render an image by
-                # using the location of the image on the user's local machine
-                elif node.name == "figure":
-                    # Obtain subset of the image's path (name)
-                    argument = node.argument[0]
-                    image_value = argument.value
-
-                    # Prevents the image from having a redundant path if Snooty Preview already replaced
-                    # its original value.
-                    source_path_str = self.config.source_path.as_posix()
-                    index_match = image_value.find(source_path_str)
-                    if index_match != -1:
-                        repeated_offset = index_match + len(source_path_str)
-                        image_value = image_value[repeated_offset:]
-
-                    # Replace subset of path with full path of image
-                    if image_value[0] == "/":
-                        image_value = image_value[1:]
-                    full_path = self.get_full_path(FileId(image_value))
-                    argument.value = full_path.as_posix()
-            # Check for include nodes among current node's children
-            elif isinstance(node, n.Parent):
-                for child in node.children:
-                    replace_nodes(child)
-            return node
-
-        return dataclasses.replace(
-            root, children=list(map(replace_nodes, root.children))
-        )
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1148,7 +1169,7 @@ class _Project:
         logger.debug("Updated: %s", fileid)
 
         if fileid in self.pages:
-            old_page = self.pages[fileid]
+            old_page = self.pages.parsed[fileid]
             old_assets = old_page.static_assets
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
@@ -1243,10 +1264,12 @@ class Project:
         with self._lock:
             self._project.delete(path)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         """Build the full project."""
         with self._lock:
-            self._project.build(max_workers)
+            self._project.build(max_workers, postprocess)
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""

@@ -314,7 +314,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             root_path = Path(rootUri.replace("file://", "", 1))
             self.project = Project(root_path, self.backend, {})
             self.notify_diagnostics()
-            self.project.build()
+
+            # XXX: Disabling the postprocessor is temporary until we can test
+            # its usage in the language server more extensively
+            self.project.build(postprocess=False)
 
         if processId is not None:
 

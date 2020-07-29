@@ -128,7 +128,7 @@ class Backend:
 
 
 def construct_build_identifiers_filter(
-    build_identifiers: BuildIdentifierSet
+    build_identifiers: BuildIdentifierSet,
 ) -> Dict[str, Union[str, Dict[str, Any]]]:
     """Given a dictionary of build identifiers associated with build, construct
     a filter to properly query MongoDB for associated documents.

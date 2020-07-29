@@ -55,7 +55,7 @@ def lint_changelog(data: str) -> None:
             if not match:
                 fail(
                     i,
-                    f"Bad version name: should either be '## [Unreleased]', or follow '## [MAJOR.MINOR.PATCH] - YYYY-MM-DD'",
+                    "Bad version name: should either be '## [Unreleased]', or follow '## [MAJOR.MINOR.PATCH] - YYYY-MM-DD'",
                 )
             date_string = match["date"]
             try:

@@ -140,9 +140,6 @@ def test_text_doc_get_page_ast() -> None:
 
         source_path = server.project.config.source_path
 
-        # Image found in test file
-        image_path = Path("images/compass-create-database.png")
-        full_image_path = source_path.joinpath(image_path)
         # Change image path to be full path
         index_ast_string = (
             """<root>
@@ -153,7 +150,7 @@ def test_text_doc_get_page_ast() -> None:
             <heading id="id1"><text>Guides</text></heading>
             <directive name="figure" alt="Sample images" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
             <text>"""
-            + full_image_path.as_posix()
+            + "/images/compass-create-database.png"
             + """</text></directive>
             <directive name="include"><text>/includes/test_rst.rst</text>
             <directive name="include"><text>/includes/include_child.rst</text>
