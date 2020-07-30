@@ -1288,12 +1288,14 @@ def test_footnote() -> None:
         </root>""",
     )
 
+    # Test autonumbered footnotes.
     page, diagnostics = parse_rst(
         parser,
         path,
         """
-.. [#]
-    This is an autonumbered footnote.
+.. [#regular-footnote] This is a regular footnote.
+.. [#] This is an autonumbered footnote.
+.. [#] This is another autonumbered footnote.
 """,
     )
     page.finish(diagnostics)
@@ -1301,9 +1303,19 @@ def test_footnote() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
+        <footnote id="regular-footnote" name="regular-footnote">
+        <paragraph>
+        <text>This is a regular footnote.</text>
+        </paragraph>
+        </footnote>
         <footnote id="id1">
         <paragraph>
         <text>This is an autonumbered footnote.</text>
+        </paragraph>
+        </footnote>
+        <footnote id="id2">
+        <paragraph>
+        <text>This is another autonumbered footnote.</text>
         </paragraph>
         </footnote>
         </root>""",
@@ -1352,11 +1364,15 @@ This is a footnote [#test-footnote]_ in use.
         </root>""",
     )
 
+    # Test autonumbered footnote references.
     page, diagnostics = parse_rst(
         parser,
         path,
         """
+This is a regular footnote [#regular-footnote]_ in use.
 This is an autonumbered footnote [#]_ in use.
+This is another regular footnote [#regular-footnote2]_ in use.
+This is another autonumbered footnote [#]_ in use.
 """,
     )
     page.finish(diagnostics)
@@ -1365,9 +1381,18 @@ This is an autonumbered footnote [#]_ in use.
         page.ast,
         """<root>
         <paragraph>
-        <text>This is an autonumbered footnote</text>
-        <footnote_reference id="id1" />
-        <text> in use.</text>
+        <text>This is a regular footnote </text>
+        <footnote_reference id="id1" refname="regular-footnote" />
+        <text> in use.
+This is an autonumbered footnote </text>
+        <footnote_reference id="id2" />
+        <text> in use.
+This is another regular footnote </text>
+        <footnote_reference id="id3" refname="regular-footnote2" />
+        <text> in use.
+This is another autonumbered footnote </text>
+        <footnote_reference id="id4" />
+        <text> in use. </text>
         </paragraph>
         </root>""",
     )
