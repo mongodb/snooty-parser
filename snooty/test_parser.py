@@ -1295,6 +1295,7 @@ def test_footnote() -> None:
         """
 .. [#regular-footnote] This is a regular footnote.
 .. [#] This is an autonumbered footnote.
+.. [#regular-footnote2] This is another regular footnote.
 .. [#] This is another autonumbered footnote.
 """,
     )
@@ -1311,6 +1312,11 @@ def test_footnote() -> None:
         <footnote id="id1">
         <paragraph>
         <text>This is an autonumbered footnote.</text>
+        </paragraph>
+        </footnote>
+        <footnote id="regular-footnote2" name="regular-footnote2">
+        <paragraph>
+        <text>This is another regular footnote.</text>
         </paragraph>
         </footnote>
         <footnote id="id2">
