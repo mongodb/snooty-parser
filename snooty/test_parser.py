@@ -1379,6 +1379,7 @@ This is a regular footnote [#regular-footnote]_ in use.
 This is an autonumbered footnote [#]_ in use.
 This is another regular footnote [#regular-footnote2]_ in use.
 This is another autonumbered footnote [#]_ in use.
+We could re-use a footnote [#regular-footnote]_ if we wanted to.
 """,
     )
     page.finish(diagnostics)
@@ -1398,7 +1399,10 @@ This is another regular footnote </text>
         <text> in use.
 This is another autonumbered footnote </text>
         <footnote_reference id="id4" />
-        <text> in use. </text>
+        <text> in use.
+We could re-use a footnote </text>
+        <footnote_reference id="id5" refname="regular-footnote" />
+        <text> if we wanted to. </text>
         </paragraph>
         </root>""",
     )
