@@ -1162,9 +1162,16 @@ type = {link = "https://docs.mongodb.com/v3.6%s"}
 [role."v4.0"]
 type = {link = "https://docs.mongodb.com/v4.0%s"}
 
+[role."v4.2"]
+type = {link = "https://docs.mongodb.com/v4.2%s"}
+
 [role.website]
 help = """Link to a page in the MongoDB website."""
-type = {link = "https://www.mongodb.com%s?jmp=docs"}
+type = {link = "https://www.mongodb.com%s?tck=docs"}
+
+[role.legal]
+help = """Link to mongodb.com/legal/whatever"""
+type = {link = "https://www.mongodb.com/legal%s?tck=docs_atlas"}
 
 [role.manual]
 help = """Link to a page in the latest stable version of the MongoDB manual."""
@@ -1228,10 +1235,10 @@ type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
 type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s"}
 
 [role.product]
-type = {link = "http://www.mongodb.com/products/%s?jmp=docs"}
+type = {link = "http://www.mongodb.com/products/%s?tck=docs"}
 
 [role.dl]
-type = {link = "http://www.mongodb.com/download-center/%s?jmp=docs"}
+type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
