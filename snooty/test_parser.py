@@ -1269,6 +1269,27 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Incorrectly delimited width option should fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38,,72
+
+   * - Stage
+     - Description
+     - Description 2
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+
     # Nesting
     page, diagnostics = parse_rst(
         parser,

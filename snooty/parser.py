@@ -447,7 +447,9 @@ class JSONVisitor:
             # Calculate the expected number of columns for this list-table structure.
             expected_num_columns = 0
             if "widths" in options:
-                expected_num_columns = len(re.split(r"[,\s][\s]?", options["widths"]))
+                widths = re.split(r"[,\s][\s]?", options["widths"])
+                self.validate_list_table_widths(node, widths)
+                expected_num_columns = len(widths)
             bullet_list = node.children[0]
             for list_item in bullet_list.children:
                 if expected_num_columns == 0:
@@ -680,6 +682,15 @@ class JSONVisitor:
                 )
             )
 
+    def validate_list_table_widths(
+        self, node: docutils.nodes.Node, option_list: List[str]
+    ) -> None:
+        """Validate output from comma and/or space-delimited width option"""
+        for option in option_list:
+            if not re.match(r"\d+", option):
+                msg = f"Invalid option list: {option_list}"
+                self.diagnostics.append(InvalidTableStructure(msg, util.get_line(node)))
+
     def validate_list_table(
         self, node: docutils.nodes.Node, expected_num_columns: int
     ) -> None:
@@ -689,7 +700,7 @@ class JSONVisitor:
             and len(node.children) != expected_num_columns
         ):
             msg = (
-                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+                f'Expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             self.diagnostics.append(
                 InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
