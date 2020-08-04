@@ -24,6 +24,7 @@ from typing import (
     Union,
     TypeVar,
     Mapping,
+    FrozenSet,
 )
 from typing_extensions import Protocol
 
@@ -82,6 +83,7 @@ class RefRoleType:
 
 
 _T = TypeVar("_T", bound=_Inheritable)
+_V = TypeVar("_V")
 SPEC_VERSION = 0
 StringOrStringlist = Union[List[str], str, None]
 PrimitiveType = Enum(
@@ -122,7 +124,7 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
 ArgumentType = Union[List[Union[PrimitiveType, str]], PrimitiveType, str, None]
 
 
-class MissingDict(Dict[str, ArgumentType]):
+class MissingDict(Dict[str, _V]):
     pass
 
 
@@ -132,6 +134,13 @@ class Meta:
     """Meta information about the file as a whole."""
 
     version: int
+
+
+@checked
+@dataclass
+class DirectiveOption:
+    type: ArgumentType
+    required: bool = field(default=False)
 
 
 @checked
@@ -147,9 +156,24 @@ class Directive:
     required_context: Optional[str]
     domain: Optional[str]
     deprecated: bool = field(default=False)
-    options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
+    options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
+        default_factory=MissingDict
+    )
     name: str = field(default="")
     rstobject: "Optional[RstObject]" = field(default=None)
+
+    # Add a required_options attribute for quickly enumerating options that must exist
+    # This is a little hacky, but is the best we can do in Python 3.7 using dataclasses.
+    def __post_init__(self) -> None:
+        self.__required_options = frozenset(
+            k
+            for k, v in self.options.items()
+            if isinstance(v, DirectiveOption) and v.required
+        )
+
+    @property
+    def required_options(self) -> FrozenSet[str]:
+        return self.__required_options
 
 
 @checked
@@ -264,9 +288,14 @@ class Spec:
 
         return title
 
-    def get_validator(self, option_spec: ArgumentType) -> Callable[[str], object]:
+    def get_validator(
+        self, option_spec: Union[DirectiveOption, ArgumentType]
+    ) -> Callable[[str], object]:
         """Return a validation function for a given argument type. This function will take in a
            string, and either throw an exception or return an output value."""
+        if isinstance(option_spec, DirectiveOption):
+            option_spec = option_spec.type
+
         if isinstance(option_spec, list):
             child_validators = [self.get_validator(spec) for spec in option_spec]
 

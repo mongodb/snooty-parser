@@ -1634,3 +1634,26 @@ A term
 </root>
 """,
     )
+
+
+def test_required_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. figure:: compass-create-database.png""",
+    )
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. figure:: compass-create-database.png
+    :alt: alt text""",
+    )
+    assert [type(d) for d in diagnostics] == []
