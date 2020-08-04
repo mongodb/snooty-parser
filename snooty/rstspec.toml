@@ -43,10 +43,10 @@ ${4:   :align:
    :class:}
 
    * - ${5:Row 1, column 1}
-     - 
      -
-   * - 
-     - 
+     -
+   * -
+     -
      -
 
 """
@@ -61,28 +61,28 @@ argument_type = "string"
 options.class = "string"
 deprecated = true
 example = """.. admonition:: ${1:Title}
-   
+
    ${2:Admonition content}
 """
 
 [directive.note]
 inherit = "admonition"
 example = """.. note:: ${1:Title}
-   
+
    ${2:Note block content}
 """
 
 [directive.warning]
 inherit = "admonition"
 example = """.. warning:: ${1:Title}
-   
+
    ${2:Warning block content}
 """
 
 [directive.important]
 inherit = "admonition"
 example = """.. important:: ${1:Title}
-   
+
    ${2:Important block content}
 """
 
@@ -90,7 +90,7 @@ example = """.. important:: ${1:Title}
 inherit = "admonition"
 deprecated = true
 example = """.. danger::
-   
+
    ${1:Danger block content}
 """
 
@@ -98,14 +98,14 @@ example = """.. danger::
 inherit = "admonition"
 deprecated = true
 example = """.. caution:: ${1:Title}
-   
+
    ${2:Caution block content}
 """
 
 [directive.tip]
 inherit = "admonition"
 example = """.. tip:: ${1:Title}
-   
+
    ${2:Tip content}
 """
 
@@ -132,7 +132,7 @@ example = """.. deprecated:: ${1:v1.0}
 [directive.see]
 inherit = "admonition"
 example = """.. see:: ${1:Title}
-   
+
    ${2:String}
 """
 
@@ -205,10 +205,10 @@ example = """.. figure:: ${1:/path or uri.png}
    :align:
    :lightbox:
    :class:}
-   
+
    ${0: Optional caption for the figure.}
 """
-options.alt = "string"
+options.alt = {type = "string", required = true}
 options.figwidth = "length"
 options.scale = "string"
 options.width = "length"
@@ -227,7 +227,7 @@ example = """.. image:: ${1:/path or uri.png}
    :align:
    :lightbox:
    :class:}
-   
+
    ${0: Optional caption for the figure.}
 """
 
@@ -235,7 +235,7 @@ example = """.. image:: ${1:/path or uri.png}
 help = """A section providing an example related to the surrounding text."""
 inherit = "admonition"
 example = """.. example::
-   
+
    ${0:Example}
 """
 
@@ -258,7 +258,7 @@ help = """Only parse a chunk of content if the condition in the argument is true
 argument_type = "string"
 content_type = "block"
 example = """.. cond:: ${1: string}
-   
+
    ${0:Content block}
 """
 
@@ -447,7 +447,7 @@ example = """.. cssclass:: ${1:class name}
 [directive.card-group]
 options.type = "card_type"
 content_type = "block"
-example = """.. card-group:: 
+example = """.. card-group::
    :card_type: ${1:small or large}
 
    ${0:Card content}
@@ -517,7 +517,7 @@ options.columns = "nonnegative_integer"
 [directive.blockquote]
 help = """A block of content which is quoted from another source."""
 content_type = "block"
-# example = """.. blockquote:: 
+# example = """.. blockquote::
 #    ${0: quoted content}
 # """
 
@@ -583,7 +583,7 @@ inherit = "_guides-base"
 [directive.summary]
 inherit = "_guides-base"
 # example = """.. summary::
-   
+
 #    ${0:In this guide, you will…}
 # """
 [directive.whats_next]
@@ -623,7 +623,7 @@ help = "Short and simple explanation of what the page is about. Try to include a
 inherit = "_devhub-block"
 example = """.. meta-description::
 
-   ${0:Short and simple explanation of what the page is about. Try to 
+   ${0:Short and simple explanation of what the page is about. Try to
    include a target keyword and call to action. 125–155 Characters.}
 """
 
@@ -701,8 +701,8 @@ help = "Capture the reader's attention, offer the reason for the article's exist
 inherit = "_devhub-block"
 example = """.. introduction::
 
-   ${0:Capture the reader's attention, offer the reason for the article's existence, 
-   and explain how the content will address the problem. 
+   ${0:Capture the reader's attention, offer the reason for the article's existence,
+   and explain how the content will address the problem.
    Use the target keyword in the first 100 words.}
 """
 
@@ -818,16 +818,16 @@ example = """.. twitter::
    :image: ${4:Path to a unique image representing the content of the page. Aspect ration 2:1, must be JPG, PNG, WEBP, or GIF}
    :image-alt: ${5:Text description of the image conveying the essential nature of the image to users who are visually impaired.}
 
-   ${0:Concise summary of the content. Do not re-use the title of the document. 
+   ${0:Concise summary of the content. Do not re-use the title of the document.
    Truncated to three lines on web; not displayed on mobile.
    Max 200 characters.}
 """
 content_type = "block"
-options.site = "string"
-options.creator = "string"
-options.title = "string"
-options.image = ["path", "uri"]
-options.image-alt = "string"
+options.site = {type = "string", required = true}
+options.creator = {type = "string", required = true}
+options.title = {type = "string", required = true}
+options.image = {type = ["path", "uri"], required = true}
+options.image-alt = {type = "string", required = true}
 
 [directive.og]
 help="""Provide the metadata required to automatically generate a card when posting to OG social-using sites, such as Facebook."""
@@ -842,10 +842,10 @@ example= """.. og::
    Facebook.}
 """
 content_type = "block"
-options.url = "uri"
-options.title = "string"
-options.image = ["path", "uri"]
-options.type = "string"
+options.url = {required = true, type = "uri"}
+options.title = {required = true, type = "string"}
+options.image = {required = true, type = ["path", "uri"]}
+options.type = {required = true, type = "string"}
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
