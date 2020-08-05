@@ -1192,6 +1192,10 @@ type = {link = "https://docs.mongodb.com/realm%s"}
 [role.stitch]
 inherit = "realm"
 
+[role.mdb-shell]
+help = """Link to a page in the MongoDB Shell docs."""
+type = {link = "https://docs.mongodb.com/mongodb-shell%s"}
+
 [role.charts]
 help = """Link to a page in the Charts docs."""
 type = {link = "https://docs.mongodb.com/charts/saas%s"}
