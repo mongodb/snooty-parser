@@ -153,26 +153,35 @@ class JSONVisitor:
             self.state.append(n.Root((0,), [], {}))
             return
         elif isinstance(node, docutils.nodes.field):
+            field_name = node.children[0].astext()
             field_list = node.parent
             assert isinstance(field_list, docutils.nodes.field_list)
             rstobject = field_list.parent
-            field_name = node.children[0].astext()
-            try:
-                assert isinstance(rstobject, rstparser.directive)
+            if isinstance(rstobject, rstparser.directive):
+                try:
+                    # Convert list of mixed strings and tuples into a key: value map
+                    supported_fields = {
+                        (f if isinstance(f, str) else f[0]): (
+                            None if isinstance(f, str) else f[1]
+                        )
+                        for f in rstobject["fields"]
+                    }
 
-                # Convert list of mixed strings and tuples into a key: value map
-                supported_fields = {
-                    (f if isinstance(f, str) else f[0]): (
-                        None if isinstance(f, str) else f[1]
+                    self.state.append(
+                        n.Field((line,), [], field_name, supported_fields[field_name])
                     )
-                    for f in rstobject["fields"]
-                }
-
-                self.state.append(
-                    n.Field((line,), [], field_name, supported_fields[field_name])
-                )
-                return
-            except AssertionError:
+                    return
+                except KeyError:
+                    # Handle case where field is not included in directive's rstspec entry
+                    assert isinstance(rstobject, rstparser.directive)
+                    self.diagnostics.append(
+                        InvalidField(
+                            f"""Field {field_name} not supported by directive {rstobject["name"]}""",
+                            util.get_line(node.children[0]),
+                        )
+                    )
+                    raise docutils.nodes.SkipNode()
+            else:
                 # Handle case where :field: does not appear in a directive
                 self.diagnostics.append(
                     InvalidField(
@@ -180,16 +189,6 @@ class JSONVisitor:
                         util.get_line(node.children[0]),
                     )
                 )
-            except KeyError:
-                # Handle case where field is not included in directive's rstspec entry
-                assert isinstance(rstobject, rstparser.directive)
-                self.diagnostics.append(
-                    InvalidField(
-                        f"""Field {field_name} not supported by directive {rstobject["name"]}""",
-                        util.get_line(node.children[0]),
-                    )
-                )
-                raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.field_body):
