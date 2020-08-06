@@ -1269,7 +1269,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
-    # Incorrectly delimited width option should fail
+    # Incorrectly delimited width option should not fail
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1288,7 +1288,7 @@ def test_list_table() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 1
+    assert len(diagnostics) == 0
 
     # Nesting
     page, diagnostics = parse_rst(
