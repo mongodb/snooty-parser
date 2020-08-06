@@ -1150,6 +1150,7 @@ def test_list_table() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
+    # Correct list-table
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1169,6 +1170,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Excess rows
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1188,6 +1190,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
 
+    # No width option variant
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1206,6 +1209,88 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Comma-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38,72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # ", "-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38, 72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # "  "-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38  72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Incorrectly delimited width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38,,72
+
+   * - Stage
+     - Description
+     - Description 2
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Nesting
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1227,6 +1312,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Nested list-tables
     page, diagnostics = parse_rst(
         parser,
         path,
