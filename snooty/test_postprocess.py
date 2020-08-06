@@ -572,3 +572,20 @@ def test_substitutions(backend: Backend) -> None:
         substitution_reference,
         """<substitution_reference name="weather"><substitution_reference name="sun"><text>sun</text></substitution_reference></substitution_reference>""",
     )
+
+
+def test_process_arguments(backend: Backend) -> None:
+    """Ensure that directive arguments are ingested by postprocess layer"""
+    note_id = FileId("note.txt")
+    ast = backend.pages[note_id].ast
+    note = ast.children[0]
+    assert isinstance(note, n.Directive)
+
+    print(ast_to_testing_string(note))
+    check_ast_testing_string(
+        note,
+        """<directive name="note">
+        <text>What's new in</text>
+        <substitution_reference name="service"><text>Atlas</text></substitution_reference>
+        <paragraph><text>Describe what's new.</text></paragraph></directive>""",
+    )
