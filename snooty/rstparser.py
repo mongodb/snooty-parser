@@ -408,6 +408,19 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
         self.add_name(node)
 
+        # Check for required options
+        option_names = set(self.options.keys())
+        missing_options = self.directive_spec.required_options - option_names
+        if missing_options:
+            missing_option_names = ", ".join(missing_options)
+            pluralization = "s" if len(missing_option_names) > 1 else ""
+            node.append(
+                self.state.document.reporter.error(
+                    f'"{self.name}" requires the following option{pluralization}: {missing_option_names}',
+                    line=line,
+                )
+            )
+
         # If directive is deprecated, warn
         if self.directive_spec.deprecated == True:
             node.append(

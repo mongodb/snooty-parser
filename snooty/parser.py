@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import errno
 import pwd
+import re
 import subprocess
 import threading
 from copy import deepcopy
@@ -486,7 +487,8 @@ class JSONVisitor:
             # Calculate the expected number of columns for this list-table structure.
             expected_num_columns = 0
             if "widths" in options:
-                expected_num_columns = len(options["widths"].split(" "))
+                widths = re.split(r"[,\s][\s]?", options["widths"])
+                expected_num_columns = len(widths)
             bullet_list = node.children[0]
             for list_item in bullet_list.children:
                 if expected_num_columns == 0:
@@ -728,7 +730,7 @@ class JSONVisitor:
             and len(node.children) != expected_num_columns
         ):
             msg = (
-                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+                f'Expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             self.diagnostics.append(
                 InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
