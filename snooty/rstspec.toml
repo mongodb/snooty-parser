@@ -901,7 +901,6 @@ example = """.. topic:: ${1:Title of block}
 
 [directive.search-results]
 help = """Shows search results from browser query params (no arguments)."""
-argument_type = "none"
 
 ###### Roles
 [role.sub]
