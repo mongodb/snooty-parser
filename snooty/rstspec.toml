@@ -899,6 +899,9 @@ example = """.. topic:: ${1:Title of block}
    ${0:Content}
 """
 
+[directive.search-results]
+help = """Shows search results from browser query params (no arguments)."""
+
 ###### Roles
 [role.sub]
 help = """Used to denote subscript text."""
