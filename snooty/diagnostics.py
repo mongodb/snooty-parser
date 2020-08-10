@@ -114,7 +114,7 @@ class ImageSuggested(Diagnostic):
         self.name = name
 
 
-class OptionsNotSupported(Diagnostic):
+class InvalidField(Diagnostic):
     severity = Diagnostic.Level.error
 
 

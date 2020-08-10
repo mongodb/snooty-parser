@@ -128,6 +128,10 @@ class MissingDict(Dict[str, _V]):
     pass
 
 
+class MissingList(List[ArgumentType]):
+    pass
+
+
 @checked
 @dataclass
 class Meta:
@@ -159,6 +163,7 @@ class Directive:
     options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
         default_factory=MissingDict
     )
+    fields: List[ArgumentType] = field(default_factory=MissingList)
     name: str = field(default="")
     rstobject: "Optional[RstObject]" = field(default=None)
 
@@ -211,6 +216,7 @@ class RstObject:
     type: TargetType = field(default=TargetType.plain)
     deprecated: bool = field(default=False)
     name: str = field(default="")
+    fields: List[ArgumentType] = field(default_factory=MissingList)
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
@@ -226,6 +232,7 @@ class RstObject:
             domain=self.domain,
             deprecated=self.deprecated,
             options={},
+            fields=[],
             name=self.name,
             rstobject=self,
         )
@@ -362,7 +369,8 @@ class Spec:
                     **{
                         k: v
                         for k, v in dataclasses.asdict(inheritable).items()
-                        if v is not None and not isinstance(v, MissingDict)
+                        if v is not None
+                        and not isinstance(v, (MissingDict, MissingList))
                     },
                 )
                 inheritable_index[key] = inheritable

@@ -463,6 +463,9 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 identifier_node["ids"] = [target_id]
                 identifier_node.append(docutils.nodes.Text(target_title))
                 node.append(identifier_node)
+
+            # Append list of supported fields
+            node["fields"] = rstobject_spec.fields
         elif self.name in {"pubdate", "updated-date"}:
             date = self.parse_date(self.arguments[0])
             if isinstance(date, ValueError):

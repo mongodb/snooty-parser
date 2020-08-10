@@ -1340,6 +1340,7 @@ prefix = "bin"
 
 [rstobject."mongodb:dbcommand"]
 prefix = "dbcmd"
+fields = [["returns", "Returns"]]
 
 [rstobject."mongodb:expression"]
 help = """aggregation framework transformation expression"""
@@ -1371,6 +1372,7 @@ prefix = "proj"
 
 [rstobject."mongodb:method"]
 type = "callable"
+fields = [["returns", "Returns"]]
 
 [rstobject."mongodb:authrole"]
 [rstobject."mongodb:authaction"]

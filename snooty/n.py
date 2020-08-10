@@ -376,6 +376,20 @@ class Emphasis(InlineParent):
 
 
 @dataclass
+class Field(Parent[Node]):
+    __slots__ = ("name", "label")
+    type = "field"
+    name: str
+    label: Optional[str]
+
+
+@dataclass
+class FieldList(Parent[Field]):
+    __slots__ = ()
+    type = "field_list"
+
+
+@dataclass
 class Strong(InlineParent):
     __slots__ = ()
     type = "strong"
