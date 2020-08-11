@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import sys
 import time
 import docutils.nodes
 import docutils.parsers.rst.directives
@@ -21,6 +22,7 @@ from typing import (
     Optional,
     Tuple,
     TypeVar,
+    TextIO,
     Iterator,
     Hashable,
 )
@@ -262,6 +264,12 @@ class PerformanceLogger:
 
     def times(self) -> Dict[str, float]:
         return {k: min(v) for k, v in self._times.items()}
+
+    def print(self, file: TextIO = sys.stdout) -> None:
+        times = self.times()
+        title_column_width = max(len(x) for x in times.keys())
+        for name, entry_time in times.items():
+            print(f"{name:{title_column_width}} {entry_time:.2f}", file=file)
 
     @classmethod
     def singleton(cls) -> "PerformanceLogger":

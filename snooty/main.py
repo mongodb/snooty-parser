@@ -13,6 +13,7 @@ Options:
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
   DIAGNOSTICS_FORMAT        JSON, text where text is default
+  SNOOTY_PERF_SUMMARY       0, 1 where 0 is default
 
 """
 import getpass
@@ -30,7 +31,7 @@ from docopt import docopt
 
 from . import __version__, language_server
 from .parser import Project
-from .util import SOURCE_FILE_EXTENSIONS
+from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
 from .types import FileId, SerializableType, BuildIdentifierSet
 from .page import Page
 from .diagnostics import Diagnostic
@@ -276,6 +277,9 @@ def main() -> None:
 
     try:
         project.build()
+
+        if os.environ.get("SNOOTY_PERF_SUMMARY", "0") == "1":
+            PerformanceLogger.singleton().print(sys.stderr)
 
         if args["watch"]:
             observer = watchdog.observers.Observer()

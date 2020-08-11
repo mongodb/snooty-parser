@@ -1161,10 +1161,12 @@ class _Project:
             }
             post_metadata["static_files"] = static_files
 
-            for fileid, page in self.pages.items():
-                self.backend.on_update(
-                    self.prefix, self.build_identifiers, fileid, page
-                )
+            with util.PerformanceLogger.singleton().start("commit"):
+                for fileid, page in self.pages.items():
+                    self.backend.on_update(
+                        self.prefix, self.build_identifiers, fileid, page
+                    )
+
             for fileid, diagnostics in post_diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
