@@ -53,8 +53,7 @@ def main() -> None:
                 for page in project._project.pages.values():
                     page.ast.serialize()
 
-    for name, time in PerformanceLogger.singleton().times().items():
-        print(f"{name}:{time:10.4}")
+    PerformanceLogger.singleton().print()
 
 
 if __name__ == "__main__":
