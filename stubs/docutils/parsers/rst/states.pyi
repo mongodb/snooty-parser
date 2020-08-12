@@ -20,6 +20,10 @@ class RSTState(docutils.statemachine.State):
     def inline_text(self, text: str, lineno: int) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]: ...
 
 
+class Text(RSTState):
+    classifier_delimiter: object
+
+
 class Struct:
     section_level: int
 

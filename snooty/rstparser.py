@@ -67,6 +67,15 @@ DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
 RoleHandler = Callable[..., Any]
 
 
+# Monkey patch out the docutils "classifier" node
+class _ClassifierDelimiterPatch:
+    def split(self, text: str) -> List[str]:
+        return [text]
+
+
+docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatch()
+
+
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
        e.g. foo(bar, baz) -> foo."""
