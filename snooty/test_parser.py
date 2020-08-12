@@ -1722,6 +1722,32 @@ A term
 """,
     )
 
+    # Test a bizarre case
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+collection.createIndex( { name : -1 }, function(err, result) {
+    console.log
+""",
+    )
+
+    assert not diagnostics
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <definitionList>
+        <definitionListItem>
+            <term><text>collection.createIndex( { name : -1 }, function(err, result) {</text></term>
+            <paragraph><text>console.log</text></paragraph>
+        </definitionListItem>
+    </definitionList>
+</root>
+""",
+    )
+
 
 def test_required_option() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
