@@ -359,7 +359,10 @@ class JSONVisitor:
             self.diagnostics.append(node["diagnostic"])
             return
         else:
-            raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
+            lineno = util.get_line(node)
+            raise NotImplementedError(
+                f"Unknown node type: {node.__class__.__name__} at {self.docpath}:{lineno}"
+            )
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         if len(self.state) == 1 or isinstance(node, docutils.nodes.definition):
