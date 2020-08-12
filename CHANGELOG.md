@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for directive fields (DOP-1295).
+- Validation of required directive options (DOP-1306).
+- Additional performance logging, and the `SNOOTY_PERF_SUMMARY` environment variable (DOP-1349).
+- Various roles and directives.
+
 ### Fixed
-- The list-table directive no longer generates incorrect warnings
+
+- The list-table directive no longer generates incorrect warnings (DOP-1269).
+- Substitutions may now be used in directive arguments (DOP-1230).
 
 ## [v0.5.3] - 2020-07-29
 
