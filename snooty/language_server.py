@@ -232,6 +232,7 @@ class WorkspaceEntry:
                 "severity": DiagnosticSeverity.from_diagnostic(diagnostic.severity),
                 "message": diagnostic.message,
                 "code": type(diagnostic).__name__,
+                "source": "snooty",
             }
             for diagnostic in self.diagnostics
         ]
