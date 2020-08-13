@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Language Server Protocol Diagnostics now include a `source` field of "snooty", so that users can
+  quickly filter for snooty-related diagnostics in vscode.
+
+### Fixed
+
+- Upgraded PyInstaller to fix broken binaries.
+
 ## [v0.5.4] - 2020-08-12
 
 ### Added
