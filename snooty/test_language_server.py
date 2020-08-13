@@ -33,6 +33,7 @@ class LSPDiagnostic:
     severity: int
     range: LSPRange
     code: str
+    source: str
 
 
 def test_debounce() -> None:
@@ -73,6 +74,7 @@ def test_workspace_entry() -> None:
         1,
         LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000)),
         "InvalidTableStructure",
+        "snooty",
     )
 
     assert parsed[1] == LSPDiagnostic(
@@ -80,6 +82,7 @@ def test_workspace_entry() -> None:
         2,
         LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000)),
         "DocUtilsParseError",
+        "snooty",
     )
 
 
