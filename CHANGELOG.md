@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.5] - 2020-08-13
+
 ### Added
 
 - Language Server Protocol Diagnostics now include a `source` field of "snooty", so that users can
