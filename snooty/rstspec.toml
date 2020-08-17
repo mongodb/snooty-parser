@@ -1214,6 +1214,10 @@ type = {link = "https://docs.mongodb.com/charts/v0.10%s"}
 help = """Link to a page in v0.9 of the Charts docs."""
 type = {link = "https://docs.mongodb.com/charts/v0.9%s"}
 
+[role."charts-onprem"]
+help = """Link to a page in the newest edition of Charts onprem docs."""
+type = {link = "https://docs.mongodb.com/charts/onprem%s"}
+
 [role."v0.10"]
 deprecated = true
 inherit = "charts-v0.10"
