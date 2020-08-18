@@ -3,8 +3,7 @@ import logging
 import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
-from docutils.nodes import make_id
-from typing import Dict, DefaultDict, NamedTuple, Sequence, List, Optional
+from typing import Dict, DefaultDict, NamedTuple, Sequence, List, Tuple, Optional, Union
 from typing_extensions import Protocol
 from .types import normalize_target, FileId, ProjectConfig
 from .cache import Cache
@@ -21,16 +20,23 @@ TargetType = enum.Enum("TargetType", ("fileid", "url"))
 class TargetDatabase:
     """A database of targets known to this project."""
 
-    class Result(NamedTuple):
-        type: TargetType
-        result: str
+    class ExternalResult(NamedTuple):
+        url: str
         canonical_target_name: str
         title: Sequence[n.InlineNode]
+
+    class InternalResult(NamedTuple):
+        result: Tuple[str, str]
+        canonical_target_name: str
+        title: Sequence[n.InlineNode]
+
+    Result = Union[ExternalResult, InternalResult]
 
     class LocalDefinition(NamedTuple):
         canonical_name: str
         fileid: FileId
         title: Sequence[n.InlineNode]
+        html5_id: str
 
     intersphinx_inventories: Dict[str, intersphinx.Inventory] = field(
         default_factory=dict
@@ -57,13 +63,14 @@ class TargetDatabase:
         # Check to see if the target is defined locally
         try:
             results.extend(
-                TargetDatabase.Result(
-                    TargetType.fileid,
-                    fileid.without_known_suffix,
+                TargetDatabase.InternalResult(
+                    (fileid.without_known_suffix, html5_id),
                     canonical_target_name,
                     title,
                 )
-                for canonical_target_name, fileid, title in self.local_definitions[key]
+                for canonical_target_name, fileid, title, html5_id in self.local_definitions[
+                    key
+                ]
             )
         except KeyError:
             pass
@@ -84,9 +91,7 @@ class TargetDatabase:
                     )
 
                 title: List[n.InlineNode] = [n.Text((-1,), display_name)]
-                results.append(
-                    TargetDatabase.Result(TargetType.url, url, entry.name, title)
-                )
+                results.append(TargetDatabase.ExternalResult(url, entry.name, title))
 
         return results
 
@@ -97,6 +102,7 @@ class TargetDatabase:
         targets: Sequence[str],
         pageid: FileId,
         title: Sequence[n.InlineNode],
+        html5_id: str,
     ) -> None:
         # If multiple target names are given, prefer placing the one with the most periods
         # into referring RefRole nodes. This is an odd heuristic, but should work for now.
@@ -108,7 +114,9 @@ class TargetDatabase:
             target = normalize_target(target)
             key = f"{domain}:{name}:{target}"
             self.local_definitions[key].append(
-                TargetDatabase.LocalDefinition(canonical_target_name, pageid, title)
+                TargetDatabase.LocalDefinition(
+                    canonical_target_name, pageid, title, html5_id
+                )
             )
 
     def reset(self, config: "ProjectConfig") -> None:
@@ -140,7 +148,7 @@ class TargetDatabase:
             base_uri = uri
             if (domain, role_name) != ("std", "doc"):
                 base_uri += "#$"
-                uri = uri + "#" + make_id(name)
+                uri = uri + "#" + definition.html5_id
 
             targets[key] = intersphinx.TargetDefinition(
                 definition.canonical_name,

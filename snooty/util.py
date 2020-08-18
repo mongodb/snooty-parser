@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import re
 import sys
 import time
 import docutils.nodes
@@ -32,6 +33,7 @@ from . import n
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
+PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
 
@@ -246,6 +248,14 @@ def fast_deep_copy(d: Dict[_K, _T]) -> Dict[_K, _T]:
     """Time-efficiently create deep copy of a dictionary containing trusted data.
        This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
     return {k: pickle.loads(pickle.dumps(v)) for k, v in d.items()}
+
+
+def make_html5_id(orig: str) -> str:
+    """Turn an ID into a valid HTML5 element ID."""
+    clean_id = PAT_INVALID_ID_CHARACTERS.sub("-", orig)
+    if not clean_id:
+        clean_id = "unnamed"
+    return clean_id
 
 
 class PerformanceLogger:

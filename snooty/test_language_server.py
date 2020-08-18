@@ -146,7 +146,7 @@ def test_text_doc_get_page_ast() -> None:
         # Change image path to be full path
         index_ast_string = (
             """<root>
-            <target domain="std" name="label">
+            <target domain="std" name="label" html_id="std-label-guides">
             <target_identifier ids="['guides']"><text>Guides</text></target_identifier>
             </target>
             <section>

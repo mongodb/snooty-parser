@@ -23,7 +23,6 @@ from typing import (
     List,
     Iterable,
 )
-from docutils.nodes import make_id
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
@@ -218,7 +217,9 @@ class JSONVisitor:
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
-            self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
+            self.state.append(
+                n.Target((line,), [], node["domain"], node["name"], None, None)
+            )
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
             if directive:
@@ -276,7 +277,7 @@ class JSONVisitor:
             node_id = node["names"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
             refuri = node["refuri"] if "refuri" in node else None
-            self.state.append(n.Target((line,), children, "std", "label", refuri))
+            self.state.append(n.Target((line,), children, "std", "label", refuri, None))
         elif isinstance(node, rstparser.target_identifier):
             self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
         elif isinstance(node, docutils.nodes.definition_list):
@@ -416,10 +417,9 @@ class JSONVisitor:
 
             for item in definition_list.get_child_of_type(n.DefinitionListItem):
                 term_text = "".join(term.get_text() for term in item.term)
-                term_identifier = make_id(f"term-{term_text}")
-                identifier = n.TargetIdentifier(item.start, [], [term_identifier])
+                identifier = n.TargetIdentifier(item.start, [], [term_text])
                 identifier.children = item.term[:]
-                target = n.InlineTarget(item.start, [], "std", "term", None)
+                target = n.InlineTarget(item.start, [], "std", "term", None, None)
                 target.children = [identifier]
                 item.term.append(target)
 

@@ -876,7 +876,7 @@ def test_glossary_node() -> None:
         <term>
           <text>$cmd</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-cmd']">
+            <target_identifier ids="['$cmd']">
               <text>$cmd</text></target_identifier>
           </inline_target>
         </term>
@@ -887,7 +887,7 @@ def test_glossary_node() -> None:
         <term>
           <text>_id</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-id']">
+            <target_identifier ids="['_id']">
               <text>_id</text>
             </target_identifier>
           </inline_target>
@@ -899,7 +899,7 @@ def test_glossary_node() -> None:
         <term>
           <text>aggregate</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-aggregate']">
+            <target_identifier ids="['aggregate']">
               <text>aggregate</text></target_identifier>
           </inline_target>
         </term>
@@ -910,7 +910,7 @@ def test_glossary_node() -> None:
         <term>
           <text>index</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-index']">
+            <target_identifier ids="['index']">
               <text>index</text></target_identifier>
           </inline_target>
         </term>

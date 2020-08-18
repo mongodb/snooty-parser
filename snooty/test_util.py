@@ -154,3 +154,8 @@ def test_file_watcher() -> None:
             os.unlink("test_data/__test2")
         except FileNotFoundError:
             pass
+
+
+def test_make_id() -> None:
+    assert util.make_html5_id("bin.weird_example-1") == "bin.weird_example-1"
+    assert util.make_html5_id("a test#") == "a-test-"

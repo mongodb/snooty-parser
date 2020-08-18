@@ -296,11 +296,12 @@ class DirectiveArgument(Parent[InlineNode]):
 
 @dataclass
 class Target(Parent[Node]):
-    __slots__ = ("domain", "name", "refuri")
+    __slots__ = ("domain", "name", "refuri", "html_id")
     type = "target"
     domain: str
     name: str
     refuri: Optional[str]
+    html_id: Optional[str]
 
 
 @dataclass
@@ -338,7 +339,7 @@ class Role(InlineParent):
 class RefRole(Role):
     __slots__ = ("fileid", "url")
     type = "ref_role"
-    fileid: Optional[str]
+    fileid: Optional[Tuple[str, Optional[str]]]
     url: Optional[str]
 
     def verify(self) -> None:

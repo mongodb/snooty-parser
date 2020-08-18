@@ -59,7 +59,7 @@ def test_expand_includes(backend: Backend) -> None:
         include_node,
         """<directive name="include">
             <text>/includes/test.rst</text>
-            <target domain="std" name="label">
+            <target domain="std" name="label" html_id="std-label-connection-limits">
                 <target_identifier ids="['connection-limits']">
                     <text>Skip includes</text>
                 </target_identifier>
@@ -95,7 +95,8 @@ def test_validate_ref_targets(backend: Backend) -> None:
         </ref_role>""",
     )
 
-    # Assert that local targets are correctly resolved
+    # Assert that local targets are correctly resolved, and that appropriate
+    # element ID disambiguation is added.
     paragraph = ast.children[3]
     assert isinstance(paragraph, n.Parent)
     ref_role = paragraph.children[1]
@@ -106,7 +107,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="method"
         target="amethod"
-        fileid="index">
+        fileid="['index', 'mongodb-method-amethod-1']">
         <literal><text>amethod()</text></literal>
         </ref_role>""",
     )
@@ -122,7 +123,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="std"
         name="label"
         target="global-writes-zones"
-        fileid="index"><emphasis><text>Global</text></emphasis><text> Writes Zones</text></ref_role>""",
+        fileid="['index', 'std-label-global-writes-zones']"><emphasis><text>Global</text></emphasis><text> Writes Zones</text></ref_role>""",
     )
 
     # Assert that local targets with a prefix correctly resolved
@@ -150,7 +151,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="std"
         name="label"
         target="100_stacked_example"
-        fileid="index">
+        fileid="['index', 'std-label-100_stacked_example']">
         <text>100 Stacked Examples</text>
         </ref_role>""",
     )
@@ -164,7 +165,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="std"
         name="label"
         target="z100_stacked_example"
-        fileid="index">
+        fileid="['index', 'std-label-z100_stacked_example']">
         <text>Z100 Stacked Examples</text>
         </ref_role>""",
     )
@@ -190,7 +191,7 @@ def test_role_explicit_title(backend: Backend) -> None:
         domain="std"
         name="label"
         target="global-writes-zones"
-        fileid="index">
+        fileid="['index', 'std-label-global-writes-zones']">
         <text>explicit title</text>
         </ref_role>""",
     )
@@ -273,11 +274,11 @@ def test_target_titles(backend: Backend) -> None:
     target2 = section.children[-1]
     check_ast_testing_string(
         target1,
-        """<target domain="std" name="label"><target_identifier ids="['a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
+        """<target domain="std" name="label" html_id="std-label-a-sibling-node"><target_identifier ids="['a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
     )
     check_ast_testing_string(
         target2,
-        """<target domain="std" name="label"><target_identifier ids="['another-target-for-a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
+        """<target domain="std" name="label" html_id="std-label-another-target-for-a-sibling-node"><target_identifier ids="['another-target-for-a-sibling-node']"><text>Testing Sibling Nodes</text></target_identifier></target>""",
     )
 
 
@@ -298,7 +299,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         program1,
         """
-        <target domain="std" name="program">
+        <target domain="std" name="program" html_id="std-program-a-program">
         <directive_argument><literal><text>a-program</text></literal></directive_argument>
         <target_identifier ids="['a-program']"><text>a-program</text></target_identifier>
         </target>
@@ -308,7 +309,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         option1_1,
         """
-        <target domain="std" name="option">
+        <target domain="std" name="option" html_id="std-option-a-program.--version">
         <directive_argument><literal><text>--version, -v</text></literal></directive_argument>
         <target_identifier ids="['--version', 'a-program.--version']"><text>a-program --version</text></target_identifier>
         <target_identifier ids="['-v', 'a-program.-v']"><text>a-program -v</text></target_identifier>
@@ -320,7 +321,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         option1_2,
         """
-        <target domain="std" name="option">
+        <target domain="std" name="option" html_id="std-option-a-program.--config">
         <directive_argument><literal><text>--config &lt;filename&gt;, -f &lt;filename&gt;</text></literal></directive_argument>
         <target_identifier ids="['--config', 'a-program.--config']"><text>a-program --config</text></target_identifier>
         <target_identifier ids="['-f', 'a-program.-f']"><text>a-program -f</text></target_identifier>
@@ -332,7 +333,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         program2,
         """
-        <target domain="std" name="program">
+        <target domain="std" name="program" html_id="std-program-a-second-program">
         <directive_argument><literal><text>a-second-program</text></literal></directive_argument>
         <target_identifier ids="['a-second-program']"><text>a-second-program</text></target_identifier>
         </target>
@@ -342,7 +343,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         option2_1,
         """
-        <target domain="std" name="option">
+        <target domain="std" name="option" html_id="std-option-a-second-program.--version">
         <directive_argument><literal><text>--version, -v</text></literal></directive_argument>
         <target_identifier ids="['--version', 'a-second-program.--version']"><text>a-second-program --version</text></target_identifier>
         <target_identifier ids="['-v', 'a-second-program.-v']"><text>a-second-program -v</text></target_identifier>
@@ -360,7 +361,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[0].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="a-program.-f" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', 'std-option-a-program.--config']">
         <literal><text>a-program -f</text></literal>
         </ref_role>
     """,
@@ -368,7 +369,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[1].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="a-program.-f" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', 'std-option-a-program.--config']">
         <literal><text>a-program -f</text></literal>
         </ref_role>
     """,
@@ -376,7 +377,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[2].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="a-program.--config" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.--config" fileid="['a-program', 'std-option-a-program.--config']">
         <literal><text>a-program --config</text></literal>
         </ref_role>
     """,
@@ -384,7 +385,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[3].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="a-second-program.-v" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-second-program.-v" fileid="['a-program', 'std-option-a-second-program.--version']">
         <literal><text>a-second-program -v</text></literal>
         </ref_role>
     """,
@@ -392,7 +393,7 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         roles[4].children[0].children[0],
         """
-        <ref_role domain="std" name="option" target="a-program.-v" fileid="a-program">
+        <ref_role domain="std" name="option" target="a-program.-v" fileid="['a-program', 'std-option-a-program.--version']">
         <literal><text>a-program -v</text></literal>
         </ref_role>
     """,
