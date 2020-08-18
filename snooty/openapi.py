@@ -113,16 +113,18 @@ PARAMETER_TEMPLATE = fett.Template(
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 10 65
+   :widths: 20 15 15 50
 
    * - Name
      - Type
+     - Necessity
      - Description
 
 {{ for parameter in parameters }}
 
-   * - ``{{ parameter.name }}`` :required:`{{ parameter.required }}`
+   * - ``{{ parameter.name }}``
      - {{ parameter.data_type }}
+     - {{ if parameter.required }}required{{ else }}optional{{ end }}
      - {{ parameter.description }}{{ if parameter.enum }}
 
        Possible Values:
@@ -193,16 +195,18 @@ Base URL
 
    .. list-table::
       :header-rows: 1
-      :widths: 40 10 50
+      :widths: 20 15 15 50
 
       * - Field
         - Type
+        - Necessity
         - Description
 
    {{ for field in operation.requestBody.jsonFields }}
 
-      * - ``{{ field.name }}`` :required:`{{ field.required }}`
+      * - ``{{ field.name }}``
         - {{ field.data_type }}
+        - {{ if field.required }}required{{ else }}optional{{ end }}
         - {{ field.description }}{{ if field.enum }}
 
           Possible Values:
@@ -231,7 +235,7 @@ Base URL
    {{ if response.jsonFields }}
    .. list-table::
       :header-rows: 1
-      :widths: 40 10 50
+      :widths: 35 15 50
 
       * - Field
         - Type
