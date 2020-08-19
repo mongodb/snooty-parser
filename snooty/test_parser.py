@@ -1342,6 +1342,18 @@ def test_list_table() -> None:
     )
     assert len(diagnostics) == 0
 
+    # Empty list-table
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 38 72
+   :header-rows: 1
+""",
+    )
+    assert len(diagnostics) == 0
+
 
 def test_footnote() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

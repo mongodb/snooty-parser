@@ -488,13 +488,16 @@ class JSONVisitor:
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
+            if not node.children:
+                return doc
+
             expected_num_columns = 0
             if "widths" in options:
                 widths = re.split(r"[,\s][\s]?", options["widths"])
                 expected_num_columns = len(widths)
             bullet_list = node.children[0]
             for list_item in bullet_list.children:
-                if expected_num_columns == 0:
+                if expected_num_columns == 0 and list_item.children:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
