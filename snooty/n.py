@@ -339,7 +339,7 @@ class Role(InlineParent):
 class RefRole(Role):
     __slots__ = ("fileid", "url")
     type = "ref_role"
-    fileid: Optional[Tuple[str, Optional[str]]]
+    fileid: Optional[Tuple[str, str]]
     url: Optional[str]
 
     def verify(self) -> None:
