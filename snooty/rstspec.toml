@@ -606,17 +606,17 @@ inherit = "_guides-base"
 #    - second related page}
 # """
 
-[directive.openapi]
+[directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
 
-[directive.operation]
+[directive."mongodb:operation"]
 content_type = "block"
 options.hash = "string"
 options.method = "string"
 options.path = "string"
 
-[role.required]
+[role."mongodb:required"]
 type = "explicit_title"
 
 ###### DevHub
