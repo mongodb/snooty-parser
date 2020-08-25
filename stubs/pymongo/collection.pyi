@@ -1,5 +1,5 @@
-from typing import Any, Dict, Optional
-from . import cursor
+from typing import Any, Dict, Sequence, Optional, Union
+from . import cursor, operations
 
 
 class Collection:
@@ -11,3 +11,8 @@ class Collection:
     def insert_one(self, doc: Dict[str, Any]) -> Any: ...
     def replace_one(self, filter: Dict[str, Any], doc: Dict[str, Any], upsert: bool=False) -> Any: ...
     def update_one(self, filter: Dict[str, Any], doc: Dict[str, Any], upsert: bool=False) -> Any: ...
+    def bulk_write(
+        self,
+        requests: Sequence[Union[operations.UpdateOne, operations.ReplaceOne]],
+        ordered: bool = ...,
+        bypass_document_validation: bool = ...) -> Any: ...
