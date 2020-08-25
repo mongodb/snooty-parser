@@ -357,27 +357,30 @@ def test_program_option(backend: Backend) -> None:
     assert len(diagnostics) == 1, diagnostics
     assert isinstance(diagnostics[0], AmbiguousTarget)
 
+    # The following three roles all link to the same ".. option:: --config <filename>, -f <filename>" target
+    # As such, they should have the SAME fileid, matching the html_id defined in that Target (option1_2).
+    assert option1_2.html_id == "std-option-a-program.--config"
     roles = section.children[6].children
     check_ast_testing_string(
         roles[0].children[0].children[0],
-        """
-        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', 'std-option-a-program.--config']">
+        f"""
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', '{option1_2.html_id}']">
         <literal><text>a-program -f</text></literal>
         </ref_role>
     """,
     )
     check_ast_testing_string(
         roles[1].children[0].children[0],
-        """
-        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', 'std-option-a-program.--config']">
+        f"""
+        <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', '{option1_2.html_id}']">
         <literal><text>a-program -f</text></literal>
         </ref_role>
     """,
     )
     check_ast_testing_string(
         roles[2].children[0].children[0],
-        """
-        <ref_role domain="std" name="option" target="a-program.--config" fileid="['a-program', 'std-option-a-program.--config']">
+        f"""
+        <ref_role domain="std" name="option" target="a-program.--config" fileid="['a-program', '{option1_2.html_id}']">
         <literal><text>a-program --config</text></literal>
         </ref_role>
     """,
