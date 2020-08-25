@@ -192,6 +192,9 @@ class Backend:
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
+    def flush(self) -> None:
+        pass
+
 
 class DiagnosticSeverity(enum.IntEnum):
     """The Language Server Protocol's DiagnosticSeverity namespace enumeration.

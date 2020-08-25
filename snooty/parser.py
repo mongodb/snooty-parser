@@ -901,6 +901,9 @@ class ProjectBackend(Protocol):
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         ...
 
+    def flush(self) -> None:
+        ...
+
 
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline
@@ -1125,6 +1128,7 @@ class _Project:
             self._page_updated(page, diagnostic_list)
             fileid = self.get_fileid(page.fake_full_path())
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
+        self.backend.flush()
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
@@ -1209,6 +1213,7 @@ class _Project:
                     self.backend.on_update(
                         self.prefix, self.build_identifiers, fileid, page
                     )
+                self.backend.flush()
 
             for fileid, diagnostics in post_diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)

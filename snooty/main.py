@@ -127,6 +127,9 @@ class Backend:
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
+    def flush(self) -> None:
+        pass
+
 
 def construct_build_identifiers_filter(
     build_identifiers: BuildIdentifierSet,
@@ -145,6 +148,8 @@ class MongoBackend(Backend):
         super(MongoBackend, self).__init__()
         self.client = connection
         self.db = self._config_db()
+
+        self.pending_writes: List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]] = []
 
     def _config_db(self) -> str:
         with PACKAGE_ROOT.joinpath("config.toml").open(encoding="utf-8") as f:
@@ -190,32 +195,23 @@ class MongoBackend(Backend):
         if page.query_fields:
             document.update({"query_fields": page.query_fields})
 
-        self.client[self.db][COLL_DOCUMENTS].replace_one(
-            document_filter, document, upsert=True
+        self.pending_writes.append(
+            pymongo.ReplaceOne(document_filter, document, upsert=True)
         )
 
-        remote_assets = set(
-            doc["_id"]
-            for doc in self.client[self.db][COLL_ASSETS].find(
-                {"_id": {"$in": checksums}},
-                {"_id": True},
-                cursor_type=pymongo.cursor.CursorType.EXHAUST,
-            )
-        )
-        missing_assets = page.static_assets.difference(remote_assets)
-
-        for static_asset in missing_assets:
-            if not static_asset.can_upload():
-                continue
-
-            self.client[self.db][COLL_ASSETS].replace_one(
-                {"_id": static_asset.get_checksum()},
-                {
-                    "_id": static_asset.get_checksum(),
-                    "filename": str(static_asset.fileid),
-                    "data": static_asset.data,
-                },
-                upsert=True,
+        for static_asset in page.static_assets:
+            self.pending_writes.append(
+                pymongo.UpdateOne(
+                    {"_id": static_asset.get_checksum()},
+                    {
+                        "$setOnInsert": {
+                            "_id": static_asset.get_checksum(),
+                            "filename": str(static_asset.fileid),
+                            "data": static_asset.data,
+                        }
+                    },
+                    upsert=True,
+                )
             )
 
     def on_update_metadata(
@@ -238,8 +234,11 @@ class MongoBackend(Backend):
                 document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        pass
+    def flush(self) -> None:
+        self.client[self.db][COLL_DOCUMENTS].bulk_write(
+            self.pending_writes, ordered=False
+        )
+        self.pending_writes = []
 
 
 def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
