@@ -1,5 +1,9 @@
+from . import operations
 from .database import Database
 from typing import Optional
+
+UpdateOne = operations.UpdateOne
+ReplaceOne = operations.ReplaceOne
 
 
 class MongoClient:
