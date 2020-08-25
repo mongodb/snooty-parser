@@ -166,9 +166,11 @@ class MongoBackend(Backend):
         page: Page,
     ) -> None:
         super().on_update(prefix, build_identifiers, page_id, page)
-        checksums = list(
-            asset.get_checksum() for asset in page.static_assets if asset.can_upload()
-        )
+
+        uploadable_assets = [
+            asset for asset in page.static_assets if asset.can_upload()
+        ]
+        checksums = list(asset.get_checksum() for asset in uploadable_assets)
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
@@ -199,7 +201,7 @@ class MongoBackend(Backend):
             pymongo.ReplaceOne(document_filter, document, upsert=True)
         )
 
-        for static_asset in page.static_assets:
+        for static_asset in uploadable_assets:
             self.pending_writes.append(
                 pymongo.UpdateOne(
                     {"_id": static_asset.get_checksum()},
