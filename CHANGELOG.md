@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.6] - 2020-08-26
+
 ### Added
 
 - OpenAPI support (DOP-1356).
