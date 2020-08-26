@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- OpenAPI support (DOP-1356).
+- A `charts-onprem` role (DOP-1342).
+
+### Changed
+
+- Internal error messages are now a little more helpful (DOP-1354).
+- Several directive options are no longer required (DEVHUB-206).
+
+### Fixed
+
+- Fixed crashes with empty list-tables, and with some obscure markup (DOP-1354, DOP-1394).
+
 ## [v0.5.5] - 2020-08-13
 
 ### Added
