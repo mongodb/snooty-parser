@@ -836,7 +836,7 @@ example = """.. twitter::
    Max 200 characters.}
 """
 content_type = "block"
-options.site = {type = "string", required = true}
+options.site = "string"
 options.creator = {type = "string", required = true}
 options.title = {type = "string", required = true}
 options.image = {type = ["path", "uri"], required = true}
@@ -855,10 +855,10 @@ example= """.. og::
    Facebook.}
 """
 content_type = "block"
-options.url = {required = true, type = "uri"}
+options.url = "string"
 options.title = {required = true, type = "string"}
 options.image = {required = true, type = ["path", "uri"]}
-options.type = {required = true, type = "string"}
+options.type = "string"
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
