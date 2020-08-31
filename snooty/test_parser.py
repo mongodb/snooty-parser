@@ -589,6 +589,7 @@ def test_roles() -> None:
 * :binary:`~bin.mongod`
 * :binary:`mongod <~bin.mongod>`
 * :guilabel:`Test <foo>`
+* :term:`<foo>`
 """,
     )
     page.finish(diagnostics)
@@ -637,11 +638,18 @@ def test_roles() -> None:
                   target="bin.mongod"><literal><text>mongod</text></literal></ref_role>
             </paragraph>
             </listItem>
+
             <listItem>
             <paragraph>
             <role name="guilabel">
             <text>Test &lt;foo&gt;</text>
             </role>
+            </paragraph>
+            </listItem>
+
+            <listItem>
+            <paragraph>
+            <ref_role domain="std" name="term" target="foo"></ref_role>
             </paragraph>
             </listItem>
             </list>

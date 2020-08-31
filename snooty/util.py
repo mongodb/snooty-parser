@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
 PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
+PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
 

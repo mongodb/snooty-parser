@@ -51,7 +51,7 @@ RoleHandlerType = Callable[
     Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]],
 ]
 PAT_EXPLICIT_TITLE = re.compile(
-    r"^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
+    r"^(?P<label>.*?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
@@ -826,13 +826,14 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         slug: Optional[str] = None
         if match:
             title, target = match["label"], match["target"]
-        elif child.startswith("<") and child.endswith(">"):
+        else:
+            target = child
+
+        if not title and util.PAT_URI.match(target):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
             err = "toctree nodes with URLs must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)
             return None, [error_node]
-        else:
-            target = child
 
         parsed = urllib.parse.urlparse(target)
         if parsed.scheme:
