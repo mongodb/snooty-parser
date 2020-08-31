@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import re
 import sys
 import time
 import docutils.nodes
@@ -32,6 +33,7 @@ from . import n
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
+PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
 
