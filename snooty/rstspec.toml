@@ -1072,7 +1072,7 @@ inherit = "ref"
 
 [role.term]
 help = """Link to a term in the glossary."""
-type = {domain = "std", name = "term"}
+type = {domain = "std", name = "term", format = []}
 
 [role.issue]
 help = """Link to a JIRA ticket."""
