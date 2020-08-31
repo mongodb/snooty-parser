@@ -256,7 +256,7 @@ class JSONVisitor:
             if role_name == "doc":
                 self.validate_doc_role(node)
                 role = n.RefRole(
-                    (line,), [], node["domain"], role_name, "", flag, target, None
+                    (line,), [], node["domain"], role_name, "", flag, (target, ""), None
                 )
                 self.state.append(role)
                 return

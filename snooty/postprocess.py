@@ -258,20 +258,21 @@ class Postprocessor:
         )
 
     def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
-        if not isinstance(node.fileid, str):
+        target_fileid = None if node.fileid is None else node.fileid[0]
+        if not target_fileid:
             line = node.span[0]
             self.diagnostics[filename].append(ExpectedPathArg(node.name, line))
             return
 
         relative, _ = util.reroot_path(
-            FileId(node.fileid), filename, self.project_config.source_path
+            FileId(target_fileid), filename, self.project_config.source_path
         )
         slug = clean_slug(relative.as_posix())
         title = self.slug_title_mapping.get(slug)
 
         if not title:
             line = node.span[0]
-            self.diagnostics[filename].append(UnnamedPage(node.fileid, line))
+            self.diagnostics[filename].append(UnnamedPage(target_fileid, line))
             return
 
         node.children = [deepcopy(node) for node in title]
