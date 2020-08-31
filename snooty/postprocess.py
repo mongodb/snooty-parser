@@ -24,6 +24,7 @@ from .diagnostics import (
     SubstitutionRefError,
     ExpectedPathArg,
     UnnamedPage,
+    MissingTocTreeEntry,
 )
 from . import n, util
 from .page import Page
@@ -491,7 +492,14 @@ class Postprocessor:
                     # Ensure that the user-specified slug is an existing page. We want to add this error
                     # handling to the initial parse layer, but this works for now.
                     # https://jira.mongodb.org/browse/DOCSP-7941
-                    slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
+                    try:
+                        slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
+                    except KeyError:
+                        self.diagnostics[fileid].append(
+                            MissingTocTreeEntry(slug_cleaned, ast.span[0])
+                        )
+                        continue
+
                     slug: str = slug_fileid.without_known_suffix
 
                     if entry.title:
@@ -513,7 +521,9 @@ class Postprocessor:
 
                     new_ast = self.pages[slug_fileid].ast
                     self.find_toctree_nodes(slug_fileid, new_ast, toctree_node)
-                node["children"].append(toctree_node)
+
+                if toctree_node:
+                    node["children"].append(toctree_node)
 
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:

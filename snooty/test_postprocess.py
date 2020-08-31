@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, cast, Any
 from .types import BuildIdentifierSet, FileId
-from .diagnostics import TargetNotFound, AmbiguousTarget
+from .diagnostics import TargetNotFound, AmbiguousTarget, MissingTocTreeEntry
 from .parser import Project
 from .test_project import Backend
 from .util_test import ast_to_testing_string, check_ast_testing_string
@@ -239,6 +239,11 @@ def test_toctree(backend: Backend) -> None:
         "title": "MongoDB title",
         "slug": "/",
     }
+
+    assert any(
+        isinstance(x, MissingTocTreeEntry)
+        for x in backend.diagnostics[FileId("page1.txt")]
+    )
 
 
 def test_breadcrumbs(backend: Backend) -> None:
