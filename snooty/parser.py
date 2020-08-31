@@ -676,9 +676,6 @@ class JSONVisitor:
                     fileid.match("steps/*.rst")
                     or fileid.match("extracts/*.rst")
                     or fileid.match("release/*.rst")
-                    or fileid.match("option/*.rst")
-                    or fileid.match("toc/*.rst")
-                    or fileid.match("apiargs/*.rst")
                     or fileid == FileId("includes/hash.rst")
                 ):
                     pass
