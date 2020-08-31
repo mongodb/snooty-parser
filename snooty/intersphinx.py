@@ -49,6 +49,9 @@ class Inventory:
     def __contains__(self, target: str) -> bool:
         return target in self.targets
 
+    def get(self, target: str) -> Optional[TargetDefinition]:
+        return self.targets.get(target)
+
     def __getitem__(self, target: str) -> TargetDefinition:
         return self.targets[target]
 
@@ -134,7 +137,7 @@ class Inventory:
             target_definition = TargetDefinition(
                 name, (domain, role), priority, uri_base, uri, dispname
             )
-            inventory.targets[f"{domain_and_role}:{name}".lower()] = target_definition
+            inventory.targets[f"{domain_and_role}:{name}"] = target_definition
 
         return inventory
 
