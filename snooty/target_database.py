@@ -45,17 +45,6 @@ class TargetDatabase:
         default_factory=lambda: defaultdict(list)
     )
 
-    def __contains__(self, key: str) -> bool:
-        key = normalize_target(key)
-        if key in self.local_definitions:
-            return True
-
-        for inventory in self.intersphinx_inventories.values():
-            if key in inventory:
-                return True
-
-        return False
-
     def __getitem__(self, key: str) -> Sequence["TargetDatabase.Result"]:
         key = normalize_target(key)
         results: List[TargetDatabase.Result] = []
@@ -77,9 +66,15 @@ class TargetDatabase:
 
         # Get URL from intersphinx inventories
         for inventory in self.intersphinx_inventories.values():
-            if key in inventory:
+            entry = inventory.get(key)
+
+            # Sphinx, at least older versions, have a habit of lower-casing its intersphinx
+            # inventory sections. Try that.
+            if not entry:
+                entry = inventory.get(key.lower())
+
+            if entry:
                 base_url = inventory.base_url
-                entry = inventory[key]
                 url = urllib.parse.urljoin(base_url, entry.uri)
 
                 display_name = entry.display_name

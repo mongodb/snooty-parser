@@ -34,8 +34,8 @@ class EmbeddedRstParser(Protocol):
 
 def normalize_target(target: str) -> str:
     """Normalize targets to allow easy matching against the target
-       database: normalize whitespace and convert to lowercase."""
-    return re.sub(r"\s+", " ", target).lower()
+       database: normalize whitespace."""
+    return re.sub(r"\s+", " ", target)
 
 
 class SnootyError(Exception):
