@@ -701,36 +701,36 @@ def test_doc_role() -> None:
         <list enumtype="unordered">
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index">
+        <ref_role domain="std" name="doc" fileid="['/index', '']">
         <text>Testing this</text>
         </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="./../source/index">
+        <ref_role domain="std" name="doc" fileid="['./../source/index', '']">
         <text>Testing that</text>
         </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['/index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="./../source/index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['./../source/index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index/"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['/index/', '']"></ref_role>
         </paragraph>
         </listItem>
         </list>

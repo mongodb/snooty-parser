@@ -80,7 +80,7 @@ def test_queryable_fields(backend: Backend) -> None:
     )
     check_ast_testing_string(
         related[1],
-        """<ref_role domain="std" name="doc" fileid="/path/to/article"></ref_role>""",
+        """<ref_role domain="std" name="doc" fileid="['/path/to/article', '']"></ref_role>""",
     )
     check_ast_testing_string(
         related[2], """<literal><text>:doc:`/path/to/other/article`</text></literal>"""
