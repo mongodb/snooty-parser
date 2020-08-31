@@ -312,3 +312,16 @@ class CannotRenderOpenAPI(Diagnostic):
         )
         self.path = path
         self.reason = reason
+
+
+class MissingTocTreeEntry(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        entry: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Could not locate toctree entry {entry}", start, end)
+        self.entry = entry
