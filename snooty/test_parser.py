@@ -855,6 +855,9 @@ def test_glossary_node() -> None:
   index
     foofoofoofoobarbarbarbar
 
+  Upper Case
+    This should not be first
+
   $cmd
     foobar
 
@@ -916,6 +919,18 @@ def test_glossary_node() -> None:
         </term>
         <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>
       </definitionListItem>
+
+      <definitionListItem>
+        <term>
+          <text>Upper Case</text>
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['term-upper-case']">
+              <text>Upper Case</text></target_identifier>
+          </inline_target>
+        </term>
+        <paragraph><text>This should not be first</text></paragraph>
+      </definitionListItem>
+
     </definitionList>
   </directive>
 </root>

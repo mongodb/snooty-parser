@@ -411,7 +411,7 @@ class JSONVisitor:
                 definition_list.children = sorted(
                     definition_list.children,
                     key=lambda DefinitionListItem: "".join(
-                        term.get_text() for term in DefinitionListItem.term
+                        term.get_text().casefold() for term in DefinitionListItem.term
                     ),
                 )
 
