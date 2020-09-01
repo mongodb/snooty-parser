@@ -28,4 +28,4 @@ Heading is not at the top for some reason
    .. toctree::
     :titlesonly: 
 
-    /page3
+    Page Three </page3>

@@ -225,19 +225,37 @@ def test_toctree(backend: Backend) -> None:
                 "children": [
                     {
                         "children": [],
-                        "title": "MongoDB Connector for Business Intelligence",
+                        "title": [
+                            {
+                                "position": {"start": {"line": 0}},
+                                "type": "text",
+                                "value": "MongoDB Connector for Business Intelligence",
+                            }
+                        ],
                         "url": "https://docs.mongodb.com/bi-connector/current/",
                     },
                     {
                         "children": [],
                         "options": {"drawer": False},
                         "slug": "page3",
-                        "title": None,
+                        "title": [
+                            {
+                                "position": {"start": {"line": 0}},
+                                "type": "text",
+                                "value": "Page Three",
+                            }
+                        ],
                     },
                 ],
             },
         ],
-        "title": "MongoDB title",
+        "title": [
+            {
+                "position": {"start": {"line": 0}},
+                "type": "text",
+                "value": "MongoDB title",
+            }
+        ],
         "slug": "/",
     }
 
