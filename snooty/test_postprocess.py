@@ -238,11 +238,17 @@ def test_toctree(backend: Backend) -> None:
                         "children": [],
                         "options": {"drawer": False},
                         "slug": "page3",
+                        "title": None,
+                    },
+                    {
+                        "children": [],
+                        "options": {"drawer": True},
+                        "slug": "page4",
                         "title": [
                             {
                                 "position": {"start": {"line": 0}},
                                 "type": "text",
-                                "value": "Page Three",
+                                "value": "Page Four",
                             }
                         ],
                     },
@@ -264,7 +270,7 @@ def test_breadcrumbs(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for breadcrumbs
     pages: Dict[str, Any] = cast(Dict[str, Any], backend.metadata["parentPaths"])
 
-    assert len(pages) == 3
+    assert len(pages) == 4
     assert len(pages["page1"]) == 0
 
     assert len(pages["page2"]) == 0
@@ -276,7 +282,7 @@ def test_breadcrumbs(backend: Backend) -> None:
 def test_toctree_order(backend: Backend) -> None:
     # Ensure that the correct pages and assets exist for toctree order
     order: List[str] = cast(List[str], backend.metadata["toctreeOrder"])
-    assert order == ["/", "page1", "page2", "page3"]
+    assert order == ["/", "page1", "page2", "page3", "page4"]
 
 
 def test_target_titles(backend: Backend) -> None:
