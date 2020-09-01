@@ -177,7 +177,11 @@ def test_validate_ref_targets(backend: Backend) -> None:
         and diagnostic.target == "global-writes-collections"
         for diagnostic in diagnostics
     )
-    assert any(isinstance(diagnostic, AmbiguousTarget) for diagnostic in diagnostics)
+    assert any(
+        isinstance(diagnostic, AmbiguousTarget)
+        and diagnostic.candidates == ["index", "index", "index"]
+        for diagnostic in diagnostics
+    )
 
     # Check that targets are matched case-sensitive
     assert any(
