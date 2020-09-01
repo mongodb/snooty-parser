@@ -256,8 +256,12 @@ class Postprocessor:
 
         if len(target_candidates) > 1:
             line = node.span[0]
+            candidate_descriptions = []
+            for candidate in target_candidates:
+                candidate_descriptions.append(candidate.result)
+
             self.diagnostics[filename].append(
-                AmbiguousTarget(node.name, node.target, line)
+                AmbiguousTarget(node.name, node.target, candidate_descriptions, line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
