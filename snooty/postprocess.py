@@ -506,7 +506,7 @@ class Postprocessor:
 
         # Build the toctree
         root: Dict[str, SerializableType] = {
-            "title": self.project_config.title,
+            "title": [n.Text((0,), self.project_config.title).serialize()],
             "slug": "/",
             "children": [],
         }
@@ -532,7 +532,9 @@ class Postprocessor:
                 toctree_node: Dict[str, object] = {}
                 if entry.url:
                     toctree_node = {
-                        "title": entry.title,
+                        "title": [n.Text((0,), entry.title).serialize()]
+                        if entry.title
+                        else None,
                         "url": entry.url,
                         "children": [],
                     }
@@ -554,7 +556,9 @@ class Postprocessor:
                     slug: str = slug_fileid.without_known_suffix
 
                     if entry.title:
-                        title: SerializableType = entry.title
+                        title: SerializableType = [
+                            n.Text((0,), entry.title).serialize()
+                        ]
                     else:
                         title_nodes = self.slug_title_mapping.get(slug)
                         title = (
