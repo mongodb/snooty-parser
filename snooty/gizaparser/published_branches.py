@@ -64,6 +64,7 @@ class PublishedBranchesGit:
 @checked
 @dataclass
 class PublishedBranches:
+    prefix: Optional[str]
     version: PublishedBranchesVersion
     git: PublishedBranchesGit
 
