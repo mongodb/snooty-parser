@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.7] - 2020-09-08
+
 ### Added
 
 - Support for the `prefix` field in `published-branches.yaml`.
