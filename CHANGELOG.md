@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.8] - 2020-09-09
+
+### Added
+
+- add bic-v2.10 role to link to v2.10 bi-connector docs (DOP-1458).
+- Ambiguous target candidates are now listed.
+
+### Changed
+
+- Batch writes to the database, significantly improving commit performance (DOP-1359).
+
+### Fixed
+
+- Support alternative no-title ref_role syntax (DOP-1429).
+- Don't suppress missing option/toc include file messages.
+- Sort glossary entires case-insensitively (DOP-1428).
+
 ## [v0.5.7] - 2020-09-08
 
 ### Added
