@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.8] - 2020-09-09
+
 ### Added
 
 - add bic-v2.10 role to link to v2.10 bi-connector docs (DOP-1458).
