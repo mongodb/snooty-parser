@@ -25,6 +25,7 @@ import toml
 import json
 import watchdog.events
 import watchdog.observers
+from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
@@ -149,7 +150,9 @@ class MongoBackend(Backend):
         self.client = connection
         self.db = self._config_db()
 
-        self.pending_writes: List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]] = []
+        self.pending_writes: Dict[
+            str, List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]]
+        ] = defaultdict(list)
 
     def _config_db(self) -> str:
         with PACKAGE_ROOT.joinpath("config.toml").open(encoding="utf-8") as f:
@@ -197,12 +200,12 @@ class MongoBackend(Backend):
         if page.query_fields:
             document.update({"query_fields": page.query_fields})
 
-        self.pending_writes.append(
+        self.pending_writes[COLL_DOCUMENTS].append(
             pymongo.ReplaceOne(document_filter, document, upsert=True)
         )
 
         for static_asset in uploadable_assets:
-            self.pending_writes.append(
+            self.pending_writes[COLL_ASSETS].append(
                 pymongo.UpdateOne(
                     {"_id": static_asset.get_checksum()},
                     {
@@ -237,10 +240,11 @@ class MongoBackend(Backend):
             )
 
     def flush(self) -> None:
-        self.client[self.db][COLL_DOCUMENTS].bulk_write(
-            self.pending_writes, ordered=False
-        )
-        self.pending_writes = []
+        for collection_name, pending_writes in self.pending_writes.items():
+            self.client[self.db][collection_name].bulk_write(
+                pending_writes, ordered=False
+            )
+        self.pending_writes.clear()
 
 
 def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
