@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Assets are now saved to the correct collection.
+
 ## [v0.5.8] - 2020-09-09
 
 ### Added
