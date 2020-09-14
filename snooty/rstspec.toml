@@ -947,9 +947,7 @@ type = "text"
 deprecated = true
 type = "text"
 
-# This is defined with .. role:: in the manual, which for architectural reasons we don't support.
 [role.red]
-deprecated = true
 type = "text"
 
 [role.icon-fa5]
