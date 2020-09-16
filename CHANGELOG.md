@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- HTML IDs are now explicit in the AST (DOP-1279).
+- Target matching is now case-sensitive (DOP-1277).
+- Internal changes to TOC metadata (DOP-981).
+- Un-deprecate the `red` role (DOP-1489).
+
 ## [v0.5.9] - 2020-09-14
 
 ### Fixed
