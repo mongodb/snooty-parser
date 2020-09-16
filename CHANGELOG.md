@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2020-09-16
+
 ### Changed
 
 - HTML IDs are now explicit in the AST (DOP-1279).
