@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple, Union, Dict, Optional, List
+from typing import Tuple, Union, Dict, Optional, List, Set
 from pathlib import Path
 from .n import SerializableType
 from . import n
@@ -331,3 +331,20 @@ class MissingTocTreeEntry(Diagnostic):
     ) -> None:
         super().__init__(f"Could not locate toctree entry {entry}", start, end)
         self.entry = entry
+
+
+class MissingLanguage(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        languages: Set[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"The following language(s) did not appear in every tabset: {languages}",
+            start,
+            end,
+        )
+        self.languages = languages

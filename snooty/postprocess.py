@@ -27,6 +27,7 @@ from .diagnostics import (
     ExpectedPathArg,
     UnnamedPage,
     MissingTocTreeEntry,
+    MissingLanguage,
 )
 from . import n, util
 from .page import Page
@@ -119,6 +120,51 @@ class ProgramOptionHandler:
             node.children.extend(new_identifiers)
 
 
+class LanguageSelectorHandler:
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.has_language_selector = False
+        self.languages: List[Set[str]] = []
+        self.diagnostics = diagnostics
+
+    def reset(self, filename: FileId, page: Page) -> None:
+        self.has_language_selector = False
+        self.languages = []
+
+    def finalize_languages(self, filename: FileId, page: Page) -> None:
+        if self.has_language_selector:
+            union = set.union(*self.languages)
+            intersection = set.intersection(*self.languages)
+            error_langs = union - intersection
+            if len(error_langs) > 0:
+                self.diagnostics[filename].append(MissingLanguage(error_langs, 0))
+            if isinstance(page.ast, n.Root):
+                page.ast.options["languages"] = list(union)
+
+    def __call__(self, filename: FileId, node: n.Node) -> None:
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name != "tabs":
+            return
+
+        if node.options.get("tabset") == "pillstrip":
+            self.has_language_selector = True
+            return
+
+        if not self.has_language_selector:
+            return
+
+        if node.options.get("tabset") == "drivers":
+            tabids: Set[str] = set(
+                [
+                    tab.options["tabid"]
+                    for tab in node.children
+                    if isinstance(tab, n.Directive)
+                ]
+            )
+            self.languages.append(tabids)
+
+
 class TargetHandler:
     def __init__(self, targets: TargetDatabase) -> None:
         self.target_counter: typing.Counter[str] = collections.Counter()
@@ -203,13 +249,22 @@ class Postprocessor:
         self.handle_substitutions()
 
         option_handler = ProgramOptionHandler(self.diagnostics)
+        language_selector_handler = LanguageSelectorHandler(self.diagnostics)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
+                (EventParser.OBJECT_START_EVENT, language_selector_handler),
             ],
-            [(EventParser.PAGE_START_EVENT, option_handler.reset)],
+            [
+                (EventParser.PAGE_START_EVENT, option_handler.reset),
+                (EventParser.PAGE_START_EVENT, language_selector_handler.reset),
+                (
+                    EventParser.PAGE_END_EVENT,
+                    language_selector_handler.finalize_languages,
+                ),
+            ],
         )
 
         target_handler = TargetHandler(self.targets)

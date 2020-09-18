@@ -312,9 +312,12 @@ options.reversed = "flag"
 options.numbered = "flag"
 options.glob = "flag"
 
+[directive.language-selector]
+argument_type = "string"
+
 [directive.tabs-pillstrip]
 deprecated = true
-argument_type = "string"
+inherit = "language-selector"
 
 [directive.tabs-top]
 deprecated = true
