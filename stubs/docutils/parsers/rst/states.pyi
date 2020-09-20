@@ -6,6 +6,9 @@ import docutils
 from typing import Dict, List, Tuple, Iterable, Sequence, Pattern, Union
 
 
+def normalize_name(name: str) -> str: ...
+
+
 class MarkupError(docutils.DataError): ...
 
 
