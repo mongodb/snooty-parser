@@ -1,9 +1,19 @@
+import contextlib
+import inspect
+import os
 import sys
+import tempfile
 import textwrap
 import xml.etree.ElementTree as ET
+from collections import defaultdict
+from pathlib import Path
 from xml.sax.saxutils import escape
-from typing import Any
+from typing import Any, Dict, List, Iterator
 from . import n
+from .diagnostics import Diagnostic
+from .page import Page
+from .parser import Project
+from .types import FileId, SerializableType, BuildIdentifierSet
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
 
@@ -108,3 +118,68 @@ def check_ast_testing_string(ast: Any, testing_string: str) -> None:
     correct_tree = ET.fromstring(testing_string)
     evaluating_tree = ET.fromstring(ast_to_testing_string(ast))
     assert_etree_equals(evaluating_tree, correct_tree)
+
+
+class BackendTestResults:
+    """A utility class for tracking the output of a build in tests."""
+
+    def __init__(self) -> None:
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        self.pages: Dict[FileId, Page] = {}
+
+    def on_progress(self, progress: int, total: int, message: str) -> None:
+        pass
+
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.diagnostics[path].extend(diagnostics)
+
+    def on_update(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
+        page: Page,
+    ) -> None:
+        self.pages[page_id] = page
+
+    def on_update_metadata(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
+    ) -> None:
+        pass
+
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
+        pass
+
+    def flush(self) -> None:
+        pass
+
+
+@contextlib.contextmanager
+def make_test(files: Dict[Path, str], name: str = "") -> Iterator[BackendTestResults]:
+    """Create a temporary test project with the given files."""
+    need_to_make_snooty_toml = Path("snooty.toml") not in files
+    if need_to_make_snooty_toml:
+        # Create a reasonable name for this project: go with the caller name
+        name = inspect.stack()[2].function
+
+    with tempfile.TemporaryDirectory(prefix=f"{name}-") as tempdir:
+        root = Path(tempdir)
+        if need_to_make_snooty_toml:
+            root.joinpath("snooty.toml").write_text(f'name = "{name}"\n')
+
+        for filename, file_text in files.items():
+            assert not filename.is_absolute()
+            file_path = root.joinpath(filename)
+            if file_path.parent != root:
+                os.makedirs(file_path.parent, exist_ok=True)
+            file_path.write_text(file_text)
+
+        backend = BackendTestResults()
+
+        project = Project(root, backend, {})
+        project.build()
+
+    yield backend
