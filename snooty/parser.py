@@ -1005,9 +1005,17 @@ class _Project:
         self.config.substitution_nodes = substitution_nodes
 
         username = pwd.getpwuid(os.getuid()).pw_name
-        branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, encoding="utf-8"
-        ).strip()
+        try:
+            branch = subprocess.check_output(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=root,
+                encoding="utf-8",
+                stderr=subprocess.PIPE,
+            ).strip()
+        except subprocess.CalledProcessError as err:
+            logger.info("git error getting branch name: %s", err.stderr)
+            branch = "current"
+
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
