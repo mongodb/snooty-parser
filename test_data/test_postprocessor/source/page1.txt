@@ -10,3 +10,8 @@ Print this heading
 ================
 Not this heading
 ================
+
+.. toctree::
+   :titlesonly
+
+   /bad-page

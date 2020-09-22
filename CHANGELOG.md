@@ -7,9 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2020-09-16
+
+### Changed
+
+- HTML IDs are now explicit in the AST (DOP-1279).
+- Target matching is now case-sensitive (DOP-1277).
+- Internal changes to TOC metadata (DOP-981).
+- Un-deprecate the `red` role (DOP-1489).
+
+## [v0.5.9] - 2020-09-14
+
+### Fixed
+
+- Assets are now saved to the correct collection.
+
+## [v0.5.8] - 2020-09-09
+
+### Added
+
+- add bic-v2.10 role to link to v2.10 bi-connector docs (DOP-1458).
+- Ambiguous target candidates are now listed.
+
+### Changed
+
+- Batch writes to the database, significantly improving commit performance (DOP-1359).
+
+### Fixed
+
+- Support alternative no-title ref_role syntax (DOP-1429).
+- Don't suppress missing option/toc include file messages.
+- Sort glossary entires case-insensitively (DOP-1428).
+
+## [v0.5.7] - 2020-09-08
+
+### Added
+
+- Support for the `prefix` field in `published-branches.yaml`.
+
+## [v0.5.6] - 2020-08-26
+
+### Added
+
+- OpenAPI support (DOP-1356).
+- A `charts-onprem` role (DOP-1342).
+
+### Changed
+
+- Internal error messages are now a little more helpful (DOP-1354).
+- Several directive options are no longer required (DEVHUB-206).
+
+### Fixed
+
+- Fixed crashes with empty list-tables, and with some obscure markup (DOP-1354, DOP-1394).
+
+## [v0.5.5] - 2020-08-13
+
+### Added
+
+- Language Server Protocol Diagnostics now include a `source` field of "snooty", so that users can
+  quickly filter for snooty-related diagnostics in vscode.
+
+### Fixed
+
+- Upgraded PyInstaller to fix broken binaries.
+
+## [v0.5.4] - 2020-08-12
+
+### Added
+
+- Support for directive fields (DOP-1295).
+- Validation of required directive options (DOP-1306).
+- Additional performance logging, and the `SNOOTY_PERF_SUMMARY` environment variable (DOP-1349).
+- Various roles and directives.
+
+### Fixed
+
+- The list-table directive no longer generates incorrect warnings (DOP-1269).
+- Substitutions may now be used in directive arguments (DOP-1230).
+
+## [v0.5.3] - 2020-07-29
+
+### Changed
+
+- To prepare for updating the version of the parser used by the VSCode extension,
+  the postprocessor has been temporarily disabled in the language server.
+
+### Deprecated
+
+- The following directives are deprecated: `admonition`, `danger`, `caution`, and `topic` (DOP-1243).
+
+## [v0.5.2] - 2020-07-15
+
+### Fixed
+
+- Directive arguments were not being properly migrated in the AST.
+
+## [v0.5.1] - 2020-07-15
+
 ### Added
 
 - Support labels beginning with numbers that contain underscores (DOP-1188)
+- Support for extlinks used by Atlas docs (DOP-1233)
 
 ## [v0.5.0] - 2020-07-08
 

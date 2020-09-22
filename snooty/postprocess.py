@@ -1,5 +1,7 @@
-import os.path
+import collections
 import logging
+import os.path
+import typing
 from collections import defaultdict
 from copy import deepcopy
 from typing import (
@@ -24,6 +26,7 @@ from .diagnostics import (
     SubstitutionRefError,
     ExpectedPathArg,
     UnnamedPage,
+    MissingTocTreeEntry,
 )
 from . import n, util
 from .page import Page
@@ -80,6 +83,9 @@ class ProgramOptionHandler:
         self.pending_program: Optional[n.Target] = None
         self.diagnostics = diagnostics
 
+    def reset(self, filename: FileId, page: Page) -> None:
+        self.pending_program = None
+
     def __call__(self, filename: FileId, node: n.Node) -> None:
         if not isinstance(node, n.Target):
             return
@@ -111,6 +117,51 @@ class ProgramOptionHandler:
                 text_node.value = f"{program_name} {value}"
 
             node.children.extend(new_identifiers)
+
+
+class TargetHandler:
+    def __init__(self, targets: TargetDatabase) -> None:
+        self.target_counter: typing.Counter[str] = collections.Counter()
+        self.targets = targets
+
+    def reset(self, filename: FileId, page: Page) -> None:
+        self.target_counter.clear()
+
+    def __call__(self, filename: FileId, node: n.Node) -> None:
+        if not isinstance(node, n.Target):
+            return
+
+        # Frankly, this is silly. We just pick the longest identifier. This is arbitrary,
+        # and we can consider this behavior implementation-defined to be changed later if needed.
+        # It just needs to be something consistent.
+        identifiers = list(node.get_child_of_type(n.TargetIdentifier))
+        candidates = [
+            max(identifier.ids, key=len) for identifier in identifiers if identifier.ids
+        ]
+
+        if not candidates:
+            return
+
+        chosen_id = max(candidates, key=len)
+        chosen_html_id = f"{node.domain}-{node.name}-{util.make_html5_id(chosen_id)}"
+
+        # Disambiguate duplicate IDs, should they occur.
+        counter = self.target_counter[chosen_html_id]
+        if counter > 0:
+            chosen_html_id += f"-{counter}"
+        self.target_counter[chosen_html_id] += 1
+        node.html_id = chosen_html_id
+
+        for target_node in identifiers:
+            if not target_node.children:
+                title: List[n.InlineNode] = []
+            else:
+                title = list(target_node.children)
+
+            target_ids = target_node.ids
+            self.targets.define_local_target(
+                node.domain, node.name, target_ids, filename, title, chosen_html_id
+            )
 
 
 class Postprocessor:
@@ -151,19 +202,21 @@ class Postprocessor:
 
         self.handle_substitutions()
 
+        option_handler = ProgramOptionHandler(self.diagnostics)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (
-                    EventParser.OBJECT_START_EVENT,
-                    ProgramOptionHandler(self.diagnostics),
-                ),
+                (EventParser.OBJECT_START_EVENT, option_handler,),
             ],
-            [(EventParser.PAGE_START_EVENT, self.reset_program)],
+            [(EventParser.PAGE_START_EVENT, option_handler.reset)],
         )
 
-        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
+        target_handler = TargetHandler(self.targets)
+        self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, target_handler)],
+            [(EventParser.PAGE_START_EVENT, target_handler.reset)],
+        )
         self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
         document = self.generate_metadata()
 
@@ -205,24 +258,22 @@ class Postprocessor:
             (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
         )
 
-    def reset_program(self, filename: FileId, page: Page) -> None:
-        self.pending_program = None
-
     def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
-        if not isinstance(node.fileid, str):
+        target_fileid = None if node.fileid is None else node.fileid[0]
+        if not target_fileid:
             line = node.span[0]
             self.diagnostics[filename].append(ExpectedPathArg(node.name, line))
             return
 
         relative, _ = util.reroot_path(
-            FileId(node.fileid), filename, self.project_config.source_path
+            FileId(target_fileid), filename, self.project_config.source_path
         )
         slug = clean_slug(relative.as_posix())
         title = self.slug_title_mapping.get(slug)
 
         if not title:
             line = node.span[0]
-            self.diagnostics[filename].append(UnnamedPage(node.fileid, line))
+            self.diagnostics[filename].append(UnnamedPage(target_fileid, line))
             return
 
         node.children = [deepcopy(node) for node in title]
@@ -255,19 +306,29 @@ class Postprocessor:
 
         if len(target_candidates) > 1:
             line = node.span[0]
+            candidate_descriptions = []
+            for candidate in target_candidates:
+                if isinstance(candidate, TargetDatabase.InternalResult):
+                    candidate_descriptions.append(candidate.result[0])
+                else:
+                    candidate_descriptions.append(candidate.url)
+
             self.diagnostics[filename].append(
-                AmbiguousTarget(node.name, node.target, line)
+                AmbiguousTarget(node.name, node.target, candidate_descriptions, line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
-        target_type, target, canonical_target_name, title_nodes = target_candidates[-1]
-        node.target = canonical_target_name
-        setattr(node, target_type.name, target)
+        result = target_candidates[-1]
+        node.target = result.canonical_target_name
+        if isinstance(result, TargetDatabase.InternalResult):
+            node.fileid = result.result
+        else:
+            node.url = result.url
         injection_candidate = get_title_injection_candidate(node)
         # If there is no explicit title given, use the target's title
         if injection_candidate is not None:
             cloned_title_nodes: MutableSequence[n.Node] = list(
-                deepcopy(node) for node in title_nodes
+                deepcopy(node) for node in result.title
             )
             for title_node in cloned_title_nodes:
                 deep_copy_position(node, title_node)
@@ -365,21 +426,6 @@ class Postprocessor:
                     target.children = heading.children
             self.pending_targets = []
 
-    def handle_target(self, filename: FileId, node: n.Node) -> None:
-        if not isinstance(node, n.Target):
-            return
-
-        for target_node in node.get_child_of_type(n.TargetIdentifier):
-            if not target_node.children:
-                title: List[n.InlineNode] = []
-            else:
-                title = target_node.children  # type: ignore
-
-            target_ids = target_node.ids
-            self.targets.define_local_target(
-                node.domain, node.name, target_ids, filename, title
-            )
-
     def populate_include_nodes(self, filename: FileId, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
@@ -417,16 +463,29 @@ class Postprocessor:
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""
+        if not isinstance(node, n.Heading):
+            return
+
         slug = filename.without_known_suffix
 
         # Save the first heading we encounter to the slug title mapping
-        if slug not in self.slug_title_mapping and isinstance(node, n.Heading):
+        if slug not in self.slug_title_mapping:
             self.targets.define_local_target(
-                "std", "doc", (slug,), filename, node.children
+                "std",
+                "doc",
+                (slug,),
+                filename,
+                node.children,
+                util.make_html5_id(node.id),
             )
             self.slug_title_mapping[slug] = node.children
             self.targets.define_local_target(
-                "std", "doc", (filename.without_known_suffix,), filename, node.children
+                "std",
+                "doc",
+                (filename.without_known_suffix,),
+                filename,
+                node.children,
+                util.make_html5_id(node.id),
             )
 
     def build_slug_fileid_mapping(self) -> None:
@@ -454,7 +513,7 @@ class Postprocessor:
 
         # Build the toctree
         root: Dict[str, SerializableType] = {
-            "title": self.project_config.title,
+            "title": [n.Text((0,), self.project_config.title).serialize()],
             "slug": "/",
             "children": [],
         }
@@ -480,7 +539,9 @@ class Postprocessor:
                 toctree_node: Dict[str, object] = {}
                 if entry.url:
                     toctree_node = {
-                        "title": entry.title,
+                        "title": [n.Text((0,), entry.title).serialize()]
+                        if entry.title
+                        else None,
                         "url": entry.url,
                         "children": [],
                     }
@@ -491,11 +552,20 @@ class Postprocessor:
                     # Ensure that the user-specified slug is an existing page. We want to add this error
                     # handling to the initial parse layer, but this works for now.
                     # https://jira.mongodb.org/browse/DOCSP-7941
-                    slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
+                    try:
+                        slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
+                    except KeyError:
+                        self.diagnostics[fileid].append(
+                            MissingTocTreeEntry(slug_cleaned, ast.span[0])
+                        )
+                        continue
+
                     slug: str = slug_fileid.without_known_suffix
 
                     if entry.title:
-                        title: SerializableType = entry.title
+                        title: SerializableType = [
+                            n.Text((0,), entry.title).serialize()
+                        ]
                     else:
                         title_nodes = self.slug_title_mapping.get(slug)
                         title = (
@@ -513,7 +583,9 @@ class Postprocessor:
 
                     new_ast = self.pages[slug_fileid].ast
                     self.find_toctree_nodes(slug_fileid, new_ast, toctree_node)
-                node["children"].append(toctree_node)
+
+                if toctree_node:
+                    node["children"].append(toctree_node)
 
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
@@ -617,19 +689,21 @@ class DevhubPostprocessor(Postprocessor):
 
         self.handle_substitutions()
 
+        option_handler = ProgramOptionHandler(self.diagnostics)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (
-                    EventParser.OBJECT_START_EVENT,
-                    ProgramOptionHandler(self.diagnostics),
-                ),
+                (EventParser.OBJECT_START_EVENT, option_handler,),
             ],
-            [(EventParser.PAGE_START_EVENT, self.reset_program)],
+            [(EventParser.PAGE_START_EVENT, option_handler.reset)],
         )
 
-        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_target)])
+        target_handler = TargetHandler(self.targets)
+        self.run_event_parser(
+            [(EventParser.OBJECT_START_EVENT, target_handler)],
+            [(EventParser.PAGE_START_EVENT, target_handler.reset)],
+        )
 
         def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
             """Clean a slug and validate that it is a known page. If it is not, return None."""

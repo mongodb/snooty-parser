@@ -67,6 +67,10 @@ class EventParser(EventListeners):
                 for child in d.term:
                     self._iterate(child, filename)
 
+            if isinstance(d, n.Directive):
+                for arg in d.argument:
+                    self._iterate(arg, filename)
+
             for child in d.children:
                 self._iterate(child, filename)
         self._on_object_exit_event(d, filename)

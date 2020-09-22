@@ -38,6 +38,9 @@ class Backend:
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
+    def flush(self) -> None:
+        pass
+
 
 def main() -> None:
     backend = Backend()
@@ -53,8 +56,7 @@ def main() -> None:
                 for page in project._project.pages.values():
                     page.ast.serialize()
 
-    for name, time in PerformanceLogger.singleton().times().items():
-        print(f"{name}:{time:10.4}")
+    PerformanceLogger.singleton().print()
 
 
 if __name__ == "__main__":

@@ -90,6 +90,16 @@ def test_dump_target_database() -> None:
         if not reference_definition.uri:
             continue
 
+        # We don't follow Sphinx's element ID convention, so patch our element ID's
+        # for the following comparison
+        if "#" in generated_definition.uri:
+            new_uri = (
+                generated_definition.uri.split("#", 1)[0]
+                + "#"
+                + reference_definition.uri.rsplit("#", 1)[1]
+            )
+            generated_definition = generated_definition._replace(uri=new_uri)
+
         assert reference_definition == generated_definition
 
 
@@ -97,7 +107,7 @@ def test_target_strange_fields() -> None:
     db = TargetDatabase()
 
     # Ensure that a weird target with a colon does not crash inventory generation
-    db.define_local_target("std", "label", ["foo:bar"], FileId("foo"), [])
+    db.define_local_target("std", "label", ["foo:bar"], FileId("foo"), [], "bar")
     inventory = db.generate_inventory("")
 
     # Now corrupt the domain:role name pair to ensure we don't crash

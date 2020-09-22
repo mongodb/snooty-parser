@@ -11,6 +11,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     CannotOpenFile,
     ErrorParsingYAMLFile,
+    InvalidField,
 )
 from .parser import parse_rst, JSONVisitor
 
@@ -588,6 +589,7 @@ def test_roles() -> None:
 * :binary:`~bin.mongod`
 * :binary:`mongod <~bin.mongod>`
 * :guilabel:`Test <foo>`
+* :term:`<foo>`
 """,
     )
     page.finish(diagnostics)
@@ -636,11 +638,18 @@ def test_roles() -> None:
                   target="bin.mongod"><literal><text>mongod</text></literal></ref_role>
             </paragraph>
             </listItem>
+
             <listItem>
             <paragraph>
             <role name="guilabel">
             <text>Test &lt;foo&gt;</text>
             </role>
+            </paragraph>
+            </listItem>
+
+            <listItem>
+            <paragraph>
+            <ref_role domain="std" name="term" target="foo"></ref_role>
             </paragraph>
             </listItem>
             </list>
@@ -692,36 +701,36 @@ def test_doc_role() -> None:
         <list enumtype="unordered">
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index">
+        <ref_role domain="std" name="doc" fileid="['/index', '']">
         <text>Testing this</text>
         </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="./../source/index">
+        <ref_role domain="std" name="doc" fileid="['./../source/index', '']">
         <text>Testing that</text>
         </ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['/index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="./../source/index"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['./../source/index', '']"></ref_role>
         </paragraph>
         </listItem>
         <listItem>
         <paragraph>
-        <ref_role domain="std" name="doc" fileid="/index/"></ref_role>
+        <ref_role domain="std" name="doc" fileid="['/index/', '']"></ref_role>
         </paragraph>
         </listItem>
         </list>
@@ -854,6 +863,9 @@ def test_glossary_node() -> None:
   index
     foofoofoofoobarbarbarbar
 
+  Upper Case
+    This should not be first
+
   $cmd
     foobar
 
@@ -875,7 +887,7 @@ def test_glossary_node() -> None:
         <term>
           <text>$cmd</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-cmd']">
+            <target_identifier ids="['$cmd']">
               <text>$cmd</text></target_identifier>
           </inline_target>
         </term>
@@ -886,7 +898,7 @@ def test_glossary_node() -> None:
         <term>
           <text>_id</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-id']">
+            <target_identifier ids="['_id']">
               <text>_id</text>
             </target_identifier>
           </inline_target>
@@ -898,7 +910,7 @@ def test_glossary_node() -> None:
         <term>
           <text>aggregate</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-aggregate']">
+            <target_identifier ids="['aggregate']">
               <text>aggregate</text></target_identifier>
           </inline_target>
         </term>
@@ -909,12 +921,24 @@ def test_glossary_node() -> None:
         <term>
           <text>index</text>
           <inline_target domain="std" name="term">
-            <target_identifier ids="['term-index']">
+            <target_identifier ids="['index']">
               <text>index</text></target_identifier>
           </inline_target>
         </term>
         <paragraph><text>foofoofoofoobarbarbarbar</text></paragraph>
       </definitionListItem>
+
+      <definitionListItem>
+        <term>
+          <text>Upper Case</text>
+          <inline_target domain="std" name="term">
+            <target_identifier ids="['Upper Case']">
+              <text>Upper Case</text></target_identifier>
+          </inline_target>
+        </term>
+        <paragraph><text>This should not be first</text></paragraph>
+      </definitionListItem>
+
     </definitionList>
   </directive>
 </root>
@@ -1150,6 +1174,7 @@ def test_list_table() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
+    # Correct list-table
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1169,6 +1194,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Excess rows
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1188,6 +1214,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
 
+    # No width option variant
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1206,6 +1233,88 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Comma-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38,72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # ", "-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38, 72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # "  "-separated width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38  72
+
+   * - Stage
+     - Description
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+       .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Incorrectly delimited width option should not fail
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :header-rows: 1
+   :widths: 38,,72
+
+   * - Stage
+     - Description
+     - Description 2
+
+   * - :pipeline:`$geoNear`
+     - .. include:: /includes/extracts/geoNear-stage-toc-description.rst
+     - .. include:: /includes/extracts/geoNear-stage-index-requirement.rst
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Nesting
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1227,6 +1336,7 @@ def test_list_table() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 0
 
+    # Nested list-tables
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -1251,6 +1361,18 @@ def test_list_table() -> None:
           * - :pipeline:`$geoNear`
             - Table cell
             - Testing Table cell
+""",
+    )
+    assert len(diagnostics) == 0
+
+    # Empty list-table
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+   :widths: 38 72
+   :header-rows: 1
 """,
     )
     assert len(diagnostics) == 0
@@ -1595,7 +1717,7 @@ def test_deprecated() -> None:
     assert len(diagnostics) == 1
     check_ast_testing_string(
         page.ast,
-        """<root><directive name="raw"><directive_argument><text>html</text></directive_argument><FixedTextElement /></directive></root>""",
+        """<root><directive name="raw"><text>html</text><FixedTextElement /></directive></root>""",
     )
 
 
@@ -1633,4 +1755,121 @@ A term
     </definitionList>
 </root>
 """,
+    )
+
+    # Test a bizarre case
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+collection.createIndex( { name : -1 }, function(err, result) {
+    console.log
+""",
+    )
+
+    assert not diagnostics
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <definitionList>
+        <definitionListItem>
+            <term><text>collection.createIndex( { name : -1 }, function(err, result) {</text></term>
+            <paragraph><text>console.log</text></paragraph>
+        </definitionListItem>
+    </definitionList>
+</root>
+""",
+    )
+
+
+def test_required_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. figure:: compass-create-database.png""",
+    )
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. figure:: compass-create-database.png
+    :alt: alt text""",
+    )
+    assert [type(d) for d in diagnostics] == []
+
+
+def test_fields() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. method:: utils.jwt.encode()
+
+   Generates an encoded JSON Web Token string for the ``payload`` based
+   on the specified ``signingMethod`` and ``secret``.
+
+   :returns:
+       A JSON Web Token string encoded for the provided ``payload``.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <target domain="mongodb" name="method">
+    <directive_argument><literal><text>utils.jwt.encode()</text></literal></directive_argument>
+    <target_identifier ids="['utils.jwt.encode']"><text>utils.jwt.encode()</text></target_identifier>
+    <paragraph>
+    <text>Generates an encoded JSON Web Token string for the </text><literal><text>payload</text></literal><text> based
+on the specified </text><literal><text>signingMethod</text></literal><text> and </text><literal><text>secret</text></literal><text>.</text>
+    </paragraph>
+    <field_list><field name="returns" label="Returns"><paragraph><text>A JSON Web Token string encoded for the provided </text><literal><text>payload</text></literal><text>.</text></paragraph></field></field_list>
+    </target>
+</root>""",
+    )
+
+    # Test invalid field
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. method:: utils.crypto.encrypt()
+
+   Generates an encrypted text string from the provided text using the
+   specified encryption method and key.
+
+   :invalid:
+""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], InvalidField)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root>
+    <target domain="mongodb" name="method">
+    <directive_argument><literal><text>utils.crypto.encrypt()</text></literal></directive_argument>
+    <target_identifier ids="['utils.crypto.encrypt']"><text>utils.crypto.encrypt()</text></target_identifier>
+    <paragraph>
+    <text>Generates an encrypted text string from the provided text using the
+specified encryption method and key.</text>
+    </paragraph>
+    <field_list></field_list>
+    </target>
+</root>""",
     )

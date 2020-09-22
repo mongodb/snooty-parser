@@ -1,19 +1,28 @@
 import collections
-import dataclasses
 import docutils.nodes
 import logging
 import multiprocessing
 import os
 import errno
 import pwd
+import re
 import subprocess
 import threading
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path, PurePath
-from typing import Any, Dict, MutableSequence, Tuple, Optional, Set, List, Iterable
-from docutils.nodes import make_id
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    MutableSequence,
+    Tuple,
+    Optional,
+    Set,
+    List,
+    Iterable,
+)
 from typing_extensions import Protocol
 import docutils.utils
 import watchdog.events
@@ -23,6 +32,7 @@ from . import n, gizaparser, rstparser, util
 from .cache import Cache
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
+from .openapi import OpenAPI
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
@@ -36,7 +46,6 @@ from .types import (
 )
 from .diagnostics import (
     Diagnostic,
-    OptionsNotSupported,
     UnexpectedIndentation,
     ExpectedPathArg,
     ExpectedImageArg,
@@ -48,6 +57,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     InvalidTableStructure,
     MalformedGlossary,
+    InvalidField,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -127,24 +137,64 @@ class JSONVisitor:
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
 
-        if isinstance(node, (docutils.nodes.definition, docutils.nodes.field_list)):
+        if isinstance(node, docutils.nodes.definition):
+            return
+        if isinstance(node, docutils.nodes.field_list):
+            top = self.state[-1]
+            if isinstance(top, n.Root):
+                for field in node.children:
+                    key = field.children[0].astext()
+                    value = field.children[1].astext()
+                    top.options[key] = value
+                raise docutils.nodes.SkipNode()
+
+            self.state.append(n.FieldList((line,), []))
             return
         elif isinstance(node, docutils.nodes.document):
             self.state.append(n.Root((0,), [], {}))
             return
         elif isinstance(node, docutils.nodes.field):
-            key = node.children[0].astext()
-            value = node.children[1].astext()
-            top = self.state[-1]
-            if isinstance(top, n.Root):
-                top.options[key] = value
+            field_name = node.children[0].astext()
+            field_list = node.parent
+            assert isinstance(field_list, docutils.nodes.field_list)
+            rstobject = field_list.parent
+            if isinstance(rstobject, rstparser.directive):
+                try:
+                    # Convert list of mixed strings and tuples into a key: value map
+                    supported_fields = {
+                        (f if isinstance(f, str) else f[0]): (
+                            None if isinstance(f, str) else f[1]
+                        )
+                        for f in rstobject["fields"]
+                    }
+
+                    self.state.append(
+                        n.Field((line,), [], field_name, supported_fields[field_name])
+                    )
+                    return
+                except KeyError:
+                    # Handle case where field is not included in directive's rstspec entry
+                    assert isinstance(rstobject, rstparser.directive)
+                    self.diagnostics.append(
+                        InvalidField(
+                            f"""Field {field_name} not supported by directive {rstobject["name"]}""",
+                            util.get_line(node.children[0]),
+                        )
+                    )
+                    raise docutils.nodes.SkipNode()
             else:
+                # Handle case where :field: does not appear in a directive
                 self.diagnostics.append(
-                    OptionsNotSupported(
-                        "Options not supported here", util.get_line(node.children[0])
+                    InvalidField(
+                        f"""Field {field_name} must be used in a valid directive""",
+                        util.get_line(node.children[0]),
                     )
                 )
+        elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.field_body):
+            # Omit the field_body wrapper, but parse its children
+            raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.code):
             doc = n.Code(
                 (line,),
@@ -168,7 +218,9 @@ class JSONVisitor:
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
-            self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
+            self.state.append(
+                n.Target((line,), [], node["domain"], node["name"], None, None)
+            )
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
             if directive:
@@ -204,7 +256,7 @@ class JSONVisitor:
             if role_name == "doc":
                 self.validate_doc_role(node)
                 role = n.RefRole(
-                    (line,), [], node["domain"], role_name, "", flag, target, None
+                    (line,), [], node["domain"], role_name, "", flag, (target, ""), None
                 )
                 self.state.append(role)
                 return
@@ -226,7 +278,7 @@ class JSONVisitor:
             node_id = node["names"][0]
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
             refuri = node["refuri"] if "refuri" in node else None
-            self.state.append(n.Target((line,), children, "std", "label", refuri))
+            self.state.append(n.Target((line,), children, "std", "label", refuri, None))
         elif isinstance(node, rstparser.target_identifier):
             self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
         elif isinstance(node, docutils.nodes.definition_list):
@@ -309,7 +361,10 @@ class JSONVisitor:
             self.diagnostics.append(node["diagnostic"])
             return
         else:
-            raise NotImplementedError(f"Unknown node type: {node.__class__.__name__}")
+            lineno = util.get_line(node)
+            raise NotImplementedError(
+                f"Unknown node type: {node.__class__.__name__} at {self.docpath}:{lineno}"
+            )
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         if len(self.state) == 1 or isinstance(node, docutils.nodes.definition):
@@ -357,16 +412,15 @@ class JSONVisitor:
                 definition_list.children = sorted(
                     definition_list.children,
                     key=lambda DefinitionListItem: "".join(
-                        term.get_text() for term in DefinitionListItem.term
+                        term.get_text().casefold() for term in DefinitionListItem.term
                     ),
                 )
 
             for item in definition_list.get_child_of_type(n.DefinitionListItem):
                 term_text = "".join(term.get_text() for term in item.term)
-                term_identifier = make_id(f"term-{term_text}")
-                identifier = n.TargetIdentifier(item.start, [], [term_identifier])
+                identifier = n.TargetIdentifier(item.start, [], [term_text])
                 identifier.children = item.term[:]
-                target = n.InlineTarget(item.start, [], "std", "term", None)
+                target = n.InlineTarget(item.start, [], "std", "term", None, None)
                 target.children = [identifier]
                 item.term.append(target)
 
@@ -385,20 +439,26 @@ class JSONVisitor:
 
         doc = n.Directive((line,), [], domain, name, [], options)
 
-        if (
-            node.children
-            and node.children[0].__class__.__name__ == "directive_argument"
-        ):
-            visitor = self.__make_child_visitor()
-            node.children[0].walkabout(visitor)
-            top_of_visitor_state = visitor.state[-1]
-            assert isinstance(top_of_visitor_state, n.Parent)
-            argument = top_of_visitor_state.children
-            doc.argument = argument  # type: ignore
-            node.children = node.children[1:]
-        else:
-            argument = []
-            doc.argument = argument
+        # Find and move the argument from the children to the "argument" field.
+        argument: MutableSequence[Any] = []
+        if node.children:
+            index_of_argument = next(
+                (
+                    idx
+                    for idx, value in enumerate(node.children)
+                    if isinstance(value, rstparser.directive_argument)
+                ),
+                None,
+            )
+            if index_of_argument is not None:
+                visitor = self.__make_child_visitor()
+                node.children[index_of_argument].walkabout(visitor)
+                top_of_visitor_state = visitor.state[-1]
+                assert isinstance(top_of_visitor_state, n.Parent)
+                argument = top_of_visitor_state.children
+                del node.children[index_of_argument]
+
+        doc.argument = argument
 
         argument_text = None
         try:
@@ -429,15 +489,55 @@ class JSONVisitor:
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
+            if not node.children:
+                return doc
+
             expected_num_columns = 0
             if "widths" in options:
-                expected_num_columns = len(options["widths"].split(" "))
+                widths = re.split(r"[,\s][\s]?", options["widths"])
+                expected_num_columns = len(widths)
             bullet_list = node.children[0]
             for list_item in bullet_list.children:
-                if expected_num_columns == 0:
+                if expected_num_columns == 0 and list_item.children:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
                     self.validate_list_table(bullets, expected_num_columns)
+
+        elif name == "openapi":
+            if argument_text is None:
+                self.diagnostics.append(ExpectedPathArg(name, line))
+                return doc
+
+            _, filepath = util.reroot_path(
+                Path(argument_text), self.docpath, self.project_config.source_path
+            )
+
+            try:
+                with open(filepath) as f:
+                    openapi = OpenAPI.load(f)
+
+                def create_page() -> Tuple[Page, EmbeddedRstParser]:
+                    # Create dummy page in order to use EmbeddedRstParser
+                    page = Page.create(filepath, None, "", n.Root((-1,), [], {}))
+                    diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+                    return (
+                        page,
+                        EmbeddedRstParser(
+                            self.project_config,
+                            page,
+                            diagnostics.setdefault(filepath, []),
+                        ),
+                    )
+
+                openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
+                self.diagnostics.extend(diagnostics)
+                doc.children.extend(openapi_ast)
+
+            except OSError as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, line)
+                )
+                return doc
 
         elif name == "literalinclude":
             if argument_text is None:
@@ -576,9 +676,6 @@ class JSONVisitor:
                     fileid.match("steps/*.rst")
                     or fileid.match("extracts/*.rst")
                     or fileid.match("release/*.rst")
-                    or fileid.match("option/*.rst")
-                    or fileid.match("toc/*.rst")
-                    or fileid.match("apiargs/*.rst")
                     or fileid == FileId("includes/hash.rst")
                 ):
                     pass
@@ -673,7 +770,7 @@ class JSONVisitor:
             and len(node.children) != expected_num_columns
         ):
             msg = (
-                f'expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
+                f'Expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             self.diagnostics.append(
                 InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
@@ -801,6 +898,65 @@ class ProjectBackend(Protocol):
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         ...
 
+    def flush(self) -> None:
+        ...
+
+
+class PageDatabase:
+    """A database of FileId->Page mappings that ensures the postprocessing pipeline
+       is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
+       pages can be accessed."""
+
+    def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
+        self.postprocessor_factory = postprocessor_factory
+        self.parsed: Dict[FileId, Page] = {}
+        self.__postprocessed: Dict[FileId, Page] = {}
+        self.__changed_pages: Set[FileId] = set()
+
+    def __setitem__(self, key: FileId, value: Page) -> None:
+        """Set a raw parsed page."""
+        self.parsed[key] = value
+        self.__changed_pages.add(key)
+
+    def __getitem__(self, key: FileId) -> Page:
+        """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
+        assert not self.__changed_pages
+        return self.__postprocessed[key]
+
+    def __contains__(self, key: FileId) -> bool:
+        """Check if a given page exists in the parsed set."""
+        return key in self.parsed
+
+    def values(self) -> Iterable[Page]:
+        """Iterate over postprocessed pages."""
+        assert not self.__changed_pages
+        return self.__postprocessed.values()
+
+    def items(self) -> Iterable[Tuple[FileId, Page]]:
+        """Iterate over the postprocessed (FileId, Page) set."""
+        assert not self.__changed_pages
+        return self.__postprocessed.items()
+
+    def flush(
+        self,
+    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+        """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
+        if not self.__changed_pages:
+            return {}, {}
+
+        postprocessor = self.postprocessor_factory()
+
+        with util.PerformanceLogger.singleton().start("copy"):
+            copied_pages = util.fast_deep_copy(self.parsed)
+
+        with util.PerformanceLogger.singleton().start("postprocessing"):
+            post_metadata, post_diagnostics = postprocessor.run(copied_pages)
+
+        self.__postprocessed = postprocessor.pages
+        self.__changed_pages.clear()
+
+        return post_metadata, post_diagnostics
+
 
 class _Project:
     """Internal representation of a Snooty project with no data locking."""
@@ -826,12 +982,6 @@ class _Project:
         self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
 
-        self.postprocessor = (
-            DevhubPostprocessor(self.config, self.targets)
-            if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets)
-        )
-
         self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
             "steps": gizaparser.steps.GizaStepsCategory(self.config),
             "extracts": gizaparser.extracts.GizaExtractsCategory(self.config),
@@ -855,12 +1005,24 @@ class _Project:
         self.config.substitution_nodes = substitution_nodes
 
         username = pwd.getpwuid(os.getuid()).pw_name
-        branch = subprocess.check_output(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, encoding="utf-8"
-        ).strip()
+        try:
+            branch = subprocess.check_output(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=root,
+                encoding="utf-8",
+                stderr=subprocess.PIPE,
+            ).strip()
+        except subprocess.CalledProcessError as err:
+            logger.info("git error getting branch name: %s", err.stderr)
+            branch = "current"
+
         self.prefix = [self.config.name, username, branch]
 
-        self.pages: Dict[FileId, Page] = {}
+        self.pages = PageDatabase(
+            lambda: DevhubPostprocessor(self.config, self.targets)
+            if self.config.default_domain == "devhub"
+            else Postprocessor(self.config, self.targets)
+        )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
@@ -879,7 +1041,7 @@ class _Project:
             )
 
     def get_parsed_branches(
-        self
+        self,
     ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
         try:
             path = self.config.root
@@ -900,11 +1062,13 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.get_fileid(path)
+        post_metadata, post_diagnostics = self.pages.flush()
+        for fileid, diagnostics in post_diagnostics.items():
+            self.backend.on_diagnostics(fileid, diagnostics)
         page = self.pages[fileid]
 
-        # Fill in missing include nodes
         assert isinstance(page.ast, n.Parent)
-        return self._populate_include_nodes(page.ast)
+        return page.ast
 
     def get_project_name(self) -> str:
         return self.config.name
@@ -969,6 +1133,7 @@ class _Project:
             self._page_updated(page, diagnostic_list)
             fileid = self.get_fileid(page.fake_full_path())
             self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
+        self.backend.flush()
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
@@ -977,7 +1142,9 @@ class _Project:
 
         self.backend.on_delete(self.get_fileid(path), self.build_identifiers)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
@@ -1036,80 +1203,29 @@ class _Project:
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
-        with util.PerformanceLogger.singleton().start("postprocessing"):
-            post_metadata, post_diagnostics = self.postprocessor.run(self.pages)
+        if postprocess:
+            post_metadata, post_diagnostics = self.pages.flush()
 
-        static_files = {
-            "objects.inv": self.targets.generate_inventory("").dumps(
-                self.config.name, ""
+            static_files = {
+                "objects.inv": self.targets.generate_inventory("").dumps(
+                    self.config.name, ""
+                )
+            }
+            post_metadata["static_files"] = static_files
+
+            with util.PerformanceLogger.singleton().start("commit"):
+                for fileid, page in self.pages.items():
+                    self.backend.on_update(
+                        self.prefix, self.build_identifiers, fileid, page
+                    )
+                self.backend.flush()
+
+            for fileid, diagnostics in post_diagnostics.items():
+                self.backend.on_diagnostics(fileid, diagnostics)
+
+            self.backend.on_update_metadata(
+                self.prefix, self.build_identifiers, post_metadata
             )
-        }
-        post_metadata["static_files"] = static_files
-
-        for fileid, page in self.postprocessor.pages.items():
-            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        for fileid, diagnostics in post_diagnostics.items():
-            self.backend.on_diagnostics(fileid, diagnostics)
-
-        self.backend.on_update_metadata(
-            self.prefix, self.build_identifiers, post_metadata
-        )
-
-    def _populate_include_nodes(self, root: n.Parent[n.Node]) -> n.Node:
-        """
-        Add include nodes to page AST's children.
-
-        To render images on the Snooty extension's Snooty Preview,
-        we must use the full path of the image on the user's local machine. Note that this does change the
-        figure's value within the parser's dict. However, this should not change the value when using the parser
-        outside of Snooty Preview, since this function is currently only called by the language server.
-        """
-
-        def replace_nodes(node: n.Node) -> n.Node:
-            if isinstance(node, n.Directive):
-                if node.name == "include":
-                    # Get the name of the file
-                    argument = node.argument[0]
-                    include_filename = argument.value
-                    include_filename = include_filename[1:]
-
-                    # Get children of include file
-                    include_file_page_ast = self.pages[FileId(include_filename)].ast
-                    assert isinstance(include_file_page_ast, n.Parent)
-                    include_node_children = include_file_page_ast.children
-
-                    # Resolve includes within include node
-                    replaced_include = list(map(replace_nodes, include_node_children))
-                    node.children = replaced_include
-                # Replace instances of an image's name with its full path. This allows Snooty Preview to render an image by
-                # using the location of the image on the user's local machine
-                elif node.name == "figure":
-                    # Obtain subset of the image's path (name)
-                    argument = node.argument[0]
-                    image_value = argument.value
-
-                    # Prevents the image from having a redundant path if Snooty Preview already replaced
-                    # its original value.
-                    source_path_str = self.config.source_path.as_posix()
-                    index_match = image_value.find(source_path_str)
-                    if index_match != -1:
-                        repeated_offset = index_match + len(source_path_str)
-                        image_value = image_value[repeated_offset:]
-
-                    # Replace subset of path with full path of image
-                    if image_value[0] == "/":
-                        image_value = image_value[1:]
-                    full_path = self.get_full_path(FileId(image_value))
-                    argument.value = full_path.as_posix()
-            # Check for include nodes among current node's children
-            elif isinstance(node, n.Parent):
-                for child in node.children:
-                    replace_nodes(child)
-            return node
-
-        return dataclasses.replace(
-            root, children=list(map(replace_nodes, root.children))
-        )
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1124,7 +1240,7 @@ class _Project:
         logger.debug("Updated: %s", fileid)
 
         if fileid in self.pages:
-            old_page = self.pages[fileid]
+            old_page = self.pages.parsed[fileid]
             old_assets = old_page.static_assets
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
@@ -1219,10 +1335,12 @@ class Project:
         with self._lock:
             self._project.delete(path)
 
-    def build(self, max_workers: Optional[int] = None) -> None:
+    def build(
+        self, max_workers: Optional[int] = None, postprocess: bool = True
+    ) -> None:
         """Build the full project."""
         with self._lock:
-            self._project.build(max_workers)
+            self._project.build(max_workers, postprocess)
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""

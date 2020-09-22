@@ -33,6 +33,7 @@ class LSPDiagnostic:
     severity: int
     range: LSPRange
     code: str
+    source: str
 
 
 def test_debounce() -> None:
@@ -73,6 +74,7 @@ def test_workspace_entry() -> None:
         1,
         LSPRange(LSPPosition(10, 0), LSPPosition(10, 1000)),
         "InvalidTableStructure",
+        "snooty",
     )
 
     assert parsed[1] == LSPDiagnostic(
@@ -80,6 +82,7 @@ def test_workspace_entry() -> None:
         2,
         LSPRange(LSPPosition(10, 0), LSPPosition(12, 1000)),
         "DocUtilsParseError",
+        "snooty",
     )
 
 
@@ -140,20 +143,17 @@ def test_text_doc_get_page_ast() -> None:
 
         source_path = server.project.config.source_path
 
-        # Image found in test file
-        image_path = Path("images/compass-create-database.png")
-        full_image_path = source_path.joinpath(image_path)
         # Change image path to be full path
         index_ast_string = (
             """<root>
-            <target domain="std" name="label">
+            <target domain="std" name="label" html_id="std-label-guides">
             <target_identifier ids="['guides']"><text>Guides</text></target_identifier>
             </target>
             <section>
             <heading id="id1"><text>Guides</text></heading>
             <directive name="figure" alt="Sample images" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
             <text>"""
-            + full_image_path.as_posix()
+            + "/images/compass-create-database.png"
             + """</text></directive>
             <directive name="include"><text>/includes/test_rst.rst</text>
             <directive name="include"><text>/includes/include_child.rst</text>
@@ -161,7 +161,7 @@ def test_text_doc_get_page_ast() -> None:
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
             <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
-            <ref_role domain="std" name="doc" fileid="/cloud/atlas"><text>create one</text></ref_role>
+            <ref_role domain="std" name="doc" fileid="['/cloud/atlas', '']"><text>create one</text></ref_role>
             <text> now.</text></paragraph></section></directive>
             <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>

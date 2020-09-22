@@ -13,6 +13,7 @@ Options:
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
   DIAGNOSTICS_FORMAT        JSON, text where text is default
+  SNOOTY_PERF_SUMMARY       0, 1 where 0 is default
 
 """
 import getpass
@@ -24,13 +25,14 @@ import toml
 import json
 import watchdog.events
 import watchdog.observers
+from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
 
 from . import __version__, language_server
 from .parser import Project
-from .util import SOURCE_FILE_EXTENSIONS
+from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
 from .types import FileId, SerializableType, BuildIdentifierSet
 from .page import Page
 from .diagnostics import Diagnostic
@@ -126,9 +128,12 @@ class Backend:
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
+    def flush(self) -> None:
+        pass
+
 
 def construct_build_identifiers_filter(
-    build_identifiers: BuildIdentifierSet
+    build_identifiers: BuildIdentifierSet,
 ) -> Dict[str, Union[str, Dict[str, Any]]]:
     """Given a dictionary of build identifiers associated with build, construct
     a filter to properly query MongoDB for associated documents.
@@ -145,6 +150,10 @@ class MongoBackend(Backend):
         self.client = connection
         self.db = self._config_db()
 
+        self.pending_writes: Dict[
+            str, List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]]
+        ] = defaultdict(list)
+
     def _config_db(self) -> str:
         with PACKAGE_ROOT.joinpath("config.toml").open(encoding="utf-8") as f:
             config = toml.load(f)
@@ -160,9 +169,11 @@ class MongoBackend(Backend):
         page: Page,
     ) -> None:
         super().on_update(prefix, build_identifiers, page_id, page)
-        checksums = list(
-            asset.get_checksum() for asset in page.static_assets if asset.can_upload()
-        )
+
+        uploadable_assets = [
+            asset for asset in page.static_assets if asset.can_upload()
+        ]
+        checksums = list(asset.get_checksum() for asset in uploadable_assets)
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
@@ -189,32 +200,23 @@ class MongoBackend(Backend):
         if page.query_fields:
             document.update({"query_fields": page.query_fields})
 
-        self.client[self.db][COLL_DOCUMENTS].replace_one(
-            document_filter, document, upsert=True
+        self.pending_writes[COLL_DOCUMENTS].append(
+            pymongo.ReplaceOne(document_filter, document, upsert=True)
         )
 
-        remote_assets = set(
-            doc["_id"]
-            for doc in self.client[self.db][COLL_ASSETS].find(
-                {"_id": {"$in": checksums}},
-                {"_id": True},
-                cursor_type=pymongo.cursor.CursorType.EXHAUST,
-            )
-        )
-        missing_assets = page.static_assets.difference(remote_assets)
-
-        for static_asset in missing_assets:
-            if not static_asset.can_upload():
-                continue
-
-            self.client[self.db][COLL_ASSETS].replace_one(
-                {"_id": static_asset.get_checksum()},
-                {
-                    "_id": static_asset.get_checksum(),
-                    "filename": str(static_asset.fileid),
-                    "data": static_asset.data,
-                },
-                upsert=True,
+        for static_asset in uploadable_assets:
+            self.pending_writes[COLL_ASSETS].append(
+                pymongo.UpdateOne(
+                    {"_id": static_asset.get_checksum()},
+                    {
+                        "$setOnInsert": {
+                            "_id": static_asset.get_checksum(),
+                            "filename": str(static_asset.fileid),
+                            "data": static_asset.data,
+                        }
+                    },
+                    upsert=True,
+                )
             )
 
     def on_update_metadata(
@@ -237,8 +239,12 @@ class MongoBackend(Backend):
                 document_filter, {"$set": field}, upsert=True
             )
 
-    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        pass
+    def flush(self) -> None:
+        for collection_name, pending_writes in self.pending_writes.items():
+            self.client[self.db][collection_name].bulk_write(
+                pending_writes, ordered=False
+            )
+        self.pending_writes.clear()
 
 
 def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
@@ -276,6 +282,9 @@ def main() -> None:
 
     try:
         project.build()
+
+        if os.environ.get("SNOOTY_PERF_SUMMARY", "0") == "1":
+            PerformanceLogger.singleton().print(sys.stderr)
 
         if args["watch"]:
             observer = watchdog.observers.Observer()

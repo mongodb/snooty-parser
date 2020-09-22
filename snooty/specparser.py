@@ -24,6 +24,7 @@ from typing import (
     Union,
     TypeVar,
     Mapping,
+    FrozenSet,
 )
 from typing_extensions import Protocol
 
@@ -82,6 +83,7 @@ class RefRoleType:
 
 
 _T = TypeVar("_T", bound=_Inheritable)
+_V = TypeVar("_V")
 SPEC_VERSION = 0
 StringOrStringlist = Union[List[str], str, None]
 PrimitiveType = Enum(
@@ -122,7 +124,11 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
 ArgumentType = Union[List[Union[PrimitiveType, str]], PrimitiveType, str, None]
 
 
-class MissingDict(Dict[str, ArgumentType]):
+class MissingDict(Dict[str, _V]):
+    pass
+
+
+class MissingList(List[ArgumentType]):
     pass
 
 
@@ -132,6 +138,13 @@ class Meta:
     """Meta information about the file as a whole."""
 
     version: int
+
+
+@checked
+@dataclass
+class DirectiveOption:
+    type: ArgumentType
+    required: bool = field(default=False)
 
 
 @checked
@@ -147,9 +160,25 @@ class Directive:
     required_context: Optional[str]
     domain: Optional[str]
     deprecated: bool = field(default=False)
-    options: Dict[str, ArgumentType] = field(default_factory=MissingDict)
+    options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
+        default_factory=MissingDict
+    )
+    fields: List[ArgumentType] = field(default_factory=MissingList)
     name: str = field(default="")
     rstobject: "Optional[RstObject]" = field(default=None)
+
+    # Add a required_options attribute for quickly enumerating options that must exist
+    # This is a little hacky, but is the best we can do in Python 3.7 using dataclasses.
+    def __post_init__(self) -> None:
+        self.__required_options = frozenset(
+            k
+            for k, v in self.options.items()
+            if isinstance(v, DirectiveOption) and v.required
+        )
+
+    @property
+    def required_options(self) -> FrozenSet[str]:
+        return self.__required_options
 
 
 @checked
@@ -187,6 +216,7 @@ class RstObject:
     type: TargetType = field(default=TargetType.plain)
     deprecated: bool = field(default=False)
     name: str = field(default="")
+    fields: List[ArgumentType] = field(default_factory=MissingList)
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
@@ -202,6 +232,7 @@ class RstObject:
             domain=self.domain,
             deprecated=self.deprecated,
             options={},
+            fields=[],
             name=self.name,
             rstobject=self,
         )
@@ -264,9 +295,14 @@ class Spec:
 
         return title
 
-    def get_validator(self, option_spec: ArgumentType) -> Callable[[str], object]:
+    def get_validator(
+        self, option_spec: Union[DirectiveOption, ArgumentType]
+    ) -> Callable[[str], object]:
         """Return a validation function for a given argument type. This function will take in a
            string, and either throw an exception or return an output value."""
+        if isinstance(option_spec, DirectiveOption):
+            option_spec = option_spec.type
+
         if isinstance(option_spec, list):
             child_validators = [self.get_validator(spec) for spec in option_spec]
 
@@ -295,7 +331,11 @@ class Spec:
         raise ValueError(f'Unknown directive argument type "{option_spec}"')
 
     def _resolve_inheritance(self) -> None:
-        """Directives can inherit from other directives; resolve this."""
+        """Spec entries can inherit from other entries; resolve this.
+
+           Not all fields are implicitly inherited: only fields with a default value
+           of None or MissingDict are inherited. This means that, for example content_type
+           is inherited, but as of this writing, deprecated is not."""
         self._resolve_category(self.directive)
         self._resolve_category(self.role)
         self._resolve_category(self.rstobject)
@@ -329,7 +369,8 @@ class Spec:
                     **{
                         k: v
                         for k, v in dataclasses.asdict(inheritable).items()
-                        if v is not None and not isinstance(v, MissingDict)
+                        if v is not None
+                        and not isinstance(v, (MissingDict, MissingList))
                     },
                 )
                 inheritable_index[key] = inheritable

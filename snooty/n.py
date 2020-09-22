@@ -257,7 +257,7 @@ class Directive(Parent[Node]):
     type = "directive"
     domain: str
     name: str
-    argument: List["Text"]
+    argument: MutableSequence["Text"]
     options: Dict[str, str]
 
     def verify(self) -> None:
@@ -296,11 +296,12 @@ class DirectiveArgument(Parent[InlineNode]):
 
 @dataclass
 class Target(Parent[Node]):
-    __slots__ = ("domain", "name", "refuri")
+    __slots__ = ("domain", "name", "refuri", "html_id")
     type = "target"
     domain: str
     name: str
     refuri: Optional[str]
+    html_id: Optional[str]
 
 
 @dataclass
@@ -338,7 +339,7 @@ class Role(InlineParent):
 class RefRole(Role):
     __slots__ = ("fileid", "url")
     type = "ref_role"
-    fileid: Optional[str]
+    fileid: Optional[Tuple[str, str]]
     url: Optional[str]
 
     def verify(self) -> None:
@@ -373,6 +374,20 @@ class Literal(InlineParent):
 class Emphasis(InlineParent):
     __slots__ = ()
     type = "emphasis"
+
+
+@dataclass
+class Field(Parent[Node]):
+    __slots__ = ("name", "label")
+    type = "field"
+    name: str
+    label: Optional[str]
+
+
+@dataclass
+class FieldList(Parent[Field]):
+    __slots__ = ()
+    type = "field_list"
 
 
 @dataclass

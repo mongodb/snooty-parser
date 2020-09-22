@@ -192,6 +192,9 @@ class Backend:
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
 
+    def flush(self) -> None:
+        pass
+
 
 class DiagnosticSeverity(enum.IntEnum):
     """The Language Server Protocol's DiagnosticSeverity namespace enumeration.
@@ -232,6 +235,7 @@ class WorkspaceEntry:
                 "severity": DiagnosticSeverity.from_diagnostic(diagnostic.severity),
                 "message": diagnostic.message,
                 "code": type(diagnostic).__name__,
+                "source": "snooty",
             }
             for diagnostic in self.diagnostics
         ]
@@ -314,7 +318,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             root_path = Path(rootUri.replace("file://", "", 1))
             self.project = Project(root_path, self.backend, {})
             self.notify_diagnostics()
-            self.project.build()
+
+            # XXX: Disabling the postprocessor is temporary until we can test
+            # its usage in the language server more extensively
+            self.project.build(postprocess=False)
 
         if processId is not None:
 

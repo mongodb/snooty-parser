@@ -51,7 +51,7 @@ RoleHandlerType = Callable[
     Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]],
 ]
 PAT_EXPLICIT_TITLE = re.compile(
-    r"^(?P<label>.+?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
+    r"^(?P<label>.*?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
@@ -65,6 +65,19 @@ DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
 
 #: Handler function type for docutils roles
 RoleHandler = Callable[..., Any]
+
+
+# Monkey patch out the docutils "classifier" node
+class _ClassifierDelimiterPatch:
+    def split(self, text: str) -> List[str]:
+        return [text]
+
+
+docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatch()
+
+# Monkey patch out the docutils name mutatation. We handle this ourselves
+docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
+docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
 
 
 def strip_parameters(target: str) -> str:
@@ -255,7 +268,7 @@ def format_node(
 
 
 def layer_formatting(
-    formatting: AbstractSet[specparser.FormattingType]
+    formatting: AbstractSet[specparser.FormattingType],
 ) -> Optional[docutils.nodes.Node]:
     """Create a nested sequence of formatting nodes."""
     node = None
@@ -408,6 +421,19 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
         self.add_name(node)
 
+        # Check for required options
+        option_names = set(self.options.keys())
+        missing_options = self.directive_spec.required_options - option_names
+        if missing_options:
+            missing_option_names = ", ".join(missing_options)
+            pluralization = "s" if len(missing_option_names) > 1 else ""
+            node.append(
+                self.state.document.reporter.error(
+                    f'"{self.name}" requires the following option{pluralization}: {missing_option_names}',
+                    line=line,
+                )
+            )
+
         # If directive is deprecated, warn
         if self.directive_spec.deprecated == True:
             node.append(
@@ -450,6 +476,9 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                 identifier_node["ids"] = [target_id]
                 identifier_node.append(docutils.nodes.Text(target_title))
                 node.append(identifier_node)
+
+            # Append list of supported fields
+            node["fields"] = rstobject_spec.fields
         elif self.name in {"pubdate", "updated-date"}:
             date = self.parse_date(self.arguments[0])
             if isinstance(date, ValueError):
@@ -801,13 +830,14 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         slug: Optional[str] = None
         if match:
             title, target = match["label"], match["target"]
-        elif child.startswith("<") and child.endswith(">"):
+        else:
+            target = child
+
+        if not title and util.PAT_URI.match(target):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
             err = "toctree nodes with URLs must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)
             return None, [error_node]
-        else:
-            target = child
 
         parsed = urllib.parse.urlparse(target)
         if parsed.scheme:

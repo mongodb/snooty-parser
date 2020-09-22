@@ -6,6 +6,9 @@ import docutils
 from typing import Dict, List, Tuple, Iterable, Sequence, Pattern, Union
 
 
+def normalize_name(name: str) -> str: ...
+
+
 class MarkupError(docutils.DataError): ...
 
 
@@ -18,6 +21,10 @@ class RSTState(docutils.statemachine.State):
         node: docutils.nodes.Node,
         match_titles: bool=False) -> None: ...
     def inline_text(self, text: str, lineno: int) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]: ...
+
+
+class Text(RSTState):
+    classifier_delimiter: object
 
 
 class Struct:

@@ -1,10 +1,16 @@
 import docutils.nodes
 import docutils.utils
-from typing import Any, Optional, Sequence, Iterable, Union
+from typing import Any, Optional, List, Iterable, Union
 from typing_extensions import Protocol
 
 
 def make_id(input_value: str) -> str: ...
+
+
+def fully_normalize_name(name: str) -> str: ...
+
+
+def whitespace_normalize_name(name: str) -> str: ...
 
 
 class NodeVisitor(Protocol):
@@ -17,7 +23,7 @@ class Node:
     line: Optional[int]
     parent: Optional[Node]
     document: Optional[Node]
-    children: Sequence[Node]
+    children: List[Node]
 
     def walkabout(self, visitor: NodeVisitor) -> None: ...
     def astext(self) -> str: ...
@@ -183,6 +189,9 @@ class literal_block(General, FixedTextElement): ...
 class term(Part, TextElement): ...
 
 
+class classifier(Part, TextElement): ...
+
+
 class line_block(General, Element): ...
 
 
@@ -199,3 +208,7 @@ class problematic(Inline, TextElement): ...
 
 
 class label(Part, TextElement): ...
+
+class field_name(Part, TextElement): ...
+
+class field_body(Part, Element): ...

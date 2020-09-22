@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple, Union, Dict, Optional
+from typing import Tuple, Union, Dict, Optional, List
 from pathlib import Path
 from .n import SerializableType
 from . import n
@@ -114,7 +114,7 @@ class ImageSuggested(Diagnostic):
         self.name = name
 
 
-class OptionsNotSupported(Diagnostic):
+class InvalidField(Diagnostic):
     severity = Diagnostic.Level.error
 
 
@@ -217,7 +217,7 @@ class MalformedGlossary(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Malformed glossary: glossary must contain only a definition list",
+            "Malformed glossary: glossary must contain only a definition list",
             start,
             end,
         )
@@ -257,12 +257,18 @@ class AmbiguousTarget(Diagnostic):
         self,
         name: str,
         target: str,
+        candidates: List[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f'Ambiguous target: "{name}:{target}"', start, end)
+        super().__init__(
+            f'Ambiguous target: "{name}:{target}". Locations: {", ".join(candidates)}',
+            start,
+            end,
+        )
         self.name = name
         self.target = target
+        self.candidates = candidates
 
 
 class TodoInfo(Diagnostic):
@@ -295,3 +301,33 @@ class CannotOpenFile(Diagnostic):
         super().__init__(f"Error opening {str(path)}: {reason}", start, end)
         self.path = path
         self.reason = reason
+
+
+class CannotRenderOpenAPI(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        path: Path,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Failed to render OpenAPI template for {str(path)}: {reason}", start, end
+        )
+        self.path = path
+        self.reason = reason
+
+
+class MissingTocTreeEntry(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        entry: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Could not locate toctree entry {entry}", start, end)
+        self.entry = entry
