@@ -28,6 +28,7 @@ from .diagnostics import (
     UnnamedPage,
     MissingTocTreeEntry,
     MissingLanguage,
+    ExpectedTabs,
 )
 from . import n, util
 from .page import Page
@@ -123,7 +124,7 @@ class ProgramOptionHandler:
 class LanguageSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.has_language_selector = False
-        self.languages: List[Set[str]] = []
+        self.languages: List[List[str]] = []
         self.diagnostics = diagnostics
 
     def reset(self, filename: FileId, page: Page) -> None:
@@ -131,23 +132,29 @@ class LanguageSelectorHandler:
         self.languages = []
 
     def finalize_languages(self, filename: FileId, page: Page) -> None:
-        if self.has_language_selector:
-            union = set.union(*self.languages)
-            intersection = set.intersection(*self.languages)
+        if not self.has_language_selector:
+            return
+
+        if len(self.languages) == 0:
+            self.diagnostics[filename].append(ExpectedTabs(0))
+            return
+
+        if not all(len(x) == len(self.languages[0]) for x in self.languages):
+            # If all tabsets are not the same length, identify languages that do not appear in every tabset
+            language_sets = [set(l) for l in self.languages]
+            union = set.union(*language_sets)
+            intersection = set.intersection(*language_sets)
             error_langs = union - intersection
-            if len(error_langs) > 0:
-                self.diagnostics[filename].append(MissingLanguage(error_langs, 0))
-            if isinstance(page.ast, n.Root):
-                page.ast.options["languages"] = list(union)
+            self.diagnostics[filename].append(MissingLanguage(error_langs, 0))
+
+        if isinstance(page.ast, n.Root):
+            page.ast.options["languages"] = self.languages[0]
 
     def __call__(self, filename: FileId, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
 
-        if node.name != "tabs":
-            return
-
-        if node.options.get("tabset") == "pillstrip":
+        if node.name == "tabs-pillstrip" or node.name == "language-selector":
             self.has_language_selector = True
             return
 
@@ -155,13 +162,11 @@ class LanguageSelectorHandler:
             return
 
         if node.options.get("tabset") == "drivers":
-            tabids: Set[str] = set(
-                [
-                    tab.options["tabid"]
-                    for tab in node.children
-                    if isinstance(tab, n.Directive)
-                ]
-            )
+            tabids = [
+                tab.options["tabid"]
+                for tab in node.children
+                if isinstance(tab, n.Directive)
+            ]
             self.languages.append(tabids)
 
 

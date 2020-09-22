@@ -348,3 +348,16 @@ class MissingLanguage(Diagnostic):
             end,
         )
         self.languages = languages
+
+
+class ExpectedTabs(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "Expected tabs when language-selector directive in use", start, end,
+        )
