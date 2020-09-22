@@ -75,6 +75,10 @@ class _ClassifierDelimiterPatch:
 
 docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatch()
 
+# Monkey patch out the docutils name mutatation. We handle this ourselves
+docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
+docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
+
 
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
