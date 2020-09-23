@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.1] - 2020-09-23
+
 ### Added
 
 - Highlighting roles (`highlight-red`, `highlight-yellow`, `highlight-green`, `highlight-blue`).
