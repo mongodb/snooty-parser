@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Highlighting roles (`highlight-red`, `highlight-yellow`, `highlight-green`, `highlight-blue`).
+
+### Fixed
+
+- Linking to non-lowercase labels (DOP-1534).
+
 ## [v0.6.0] - 2020-09-16
 
 ### Changed
