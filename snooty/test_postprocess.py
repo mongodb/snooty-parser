@@ -83,7 +83,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root drivers="['shell', 'python']">
+<root selectors="{'drivers': {'shell': 'shell', 'python': 'python'}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="shell">
@@ -147,7 +147,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root drivers="['c', 'nodejs']">
+<root selectors="{'drivers': {'c': 'c', 'nodejs': 'nodejs'}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="c">
@@ -269,7 +269,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root platforms="['windows', 'macos', 'linux']">
+<root selectors="{'platforms': {'windows': 'windows', 'macos': 'macos', 'linux': 'linux'}}">
 <directive name="tabs-selector"><text>platforms</text></directive>
 <directive name="tabs" hidden="True" tabset="platforms">
 <directive name="tab" tabid="windows">

@@ -147,7 +147,13 @@ class TabsSelectorHandler:
                 self.diagnostics[filename].append(MissingTab(error_tabs, 0))
 
             if isinstance(page.ast, n.Root):
-                page.ast.options[tabset_name] = tabsets[0]
+                if not page.ast.options.get("selectors"):
+                    page.ast.options["selectors"] = {}
+
+                # TODO: This mapping should represent {tabid: title} when DOP-1450 has been completed
+                page.ast.options["selectors"][tabset_name] = {
+                    tab: tab for tab in tabsets[0]
+                }
 
     def __call__(self, filename: FileId, node: n.Node) -> None:
         if not isinstance(node, n.Directive):

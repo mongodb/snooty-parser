@@ -197,7 +197,7 @@ class SubstitutionReference(InlineParent):
 class Root(Parent[Node]):
     __slots__ = ("options",)
     type = "root"
-    options: Dict[str, Union[str, List[str]]]
+    options: Dict[str, Any]
 
 
 @dataclass
