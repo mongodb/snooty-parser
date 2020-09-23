@@ -313,6 +313,7 @@ options.numbered = "flag"
 options.glob = "flag"
 
 [directive.language-selector]
+help = """Add dropdown language selector used to select drivers tabsets."""
 argument_type = "string"
 
 [directive.tabs-pillstrip]
