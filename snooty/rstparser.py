@@ -687,8 +687,8 @@ class BaseTabsDirective(BaseDocutilsDirective):
 
             return [node]
 
-        # tabs-pillset should not be treated like a tabs directive
-        if self.name == "tabs-pillstrip":
+        # these directives should not be treated like a tabs directive
+        if self.name == "tabs-pillstrip" or self.name == "tabs-selector":
             return super().run()
 
         # The new syntax needs no special handling beyond a little fixing up

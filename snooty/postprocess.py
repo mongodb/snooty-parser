@@ -27,7 +27,7 @@ from .diagnostics import (
     ExpectedPathArg,
     UnnamedPage,
     MissingTocTreeEntry,
-    MissingLanguage,
+    MissingTab,
     ExpectedTabs,
 )
 from . import n, util
@@ -121,53 +121,60 @@ class ProgramOptionHandler:
             node.children.extend(new_identifiers)
 
 
-class LanguageSelectorHandler:
+class TabsSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
-        self.has_language_selector = False
-        self.languages: List[List[str]] = []
+        self.selectors: Dict[str, List[List[str]]] = {}
         self.diagnostics = diagnostics
 
     def reset(self, filename: FileId, page: Page) -> None:
-        self.has_language_selector = False
-        self.languages = []
+        self.selectors = {}
 
-    def finalize_languages(self, filename: FileId, page: Page) -> None:
-        if not self.has_language_selector:
+    def finalize_tabsets(self, filename: FileId, page: Page) -> None:
+        if len(self.selectors) == 0:
             return
 
-        if len(self.languages) == 0:
-            self.diagnostics[filename].append(ExpectedTabs(0))
-            return
+        for tabset_name, tabsets in self.selectors.items():
+            if len(tabsets) == 0:
+                # Warn if tabs-selector is used without corresponding tabset
+                self.diagnostics[filename].append(ExpectedTabs(0))
+                return
+            if not all(len(t) == len(tabsets[0]) for t in tabsets):
+                # If all tabsets are not the same length, identify tabs that do not appear in every tabset
+                tabset_sets = [set(t) for t in tabsets]
+                union = set.union(*tabset_sets)
+                intersection = set.intersection(*tabset_sets)
+                error_tabs = union - intersection
+                self.diagnostics[filename].append(MissingTab(error_tabs, 0))
 
-        if not all(len(x) == len(self.languages[0]) for x in self.languages):
-            # If all tabsets are not the same length, identify languages that do not appear in every tabset
-            language_sets = [set(l) for l in self.languages]
-            union = set.union(*language_sets)
-            intersection = set.intersection(*language_sets)
-            error_langs = union - intersection
-            self.diagnostics[filename].append(MissingLanguage(error_langs, 0))
-
-        if isinstance(page.ast, n.Root):
-            page.ast.options["languages"] = self.languages[0]
+            if isinstance(page.ast, n.Root):
+                page.ast.options[tabset_name] = tabsets[0]
 
     def __call__(self, filename: FileId, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
 
-        if node.name == "tabs-pillstrip" or node.name == "language-selector":
-            self.has_language_selector = True
+        if node.name == "tabs-pillstrip" or node.name == "tabs-selector":
+            if len(node.argument) == 0:
+                return
+
+            tabset_name: str = node.argument[0].get_text()
+            # Handle naming discrepancy between .. tabs-pillstrip:: languages and .. tabs-drivers::
+            if tabset_name == "languages":
+                tabset_name = "drivers"
+            self.selectors[tabset_name] = []
             return
 
-        if not self.has_language_selector:
+        if len(self.selectors) == 0 or node.name != "tabs":
             return
 
-        if node.options.get("tabset") == "drivers":
+        tabset_name = node.options.get("tabset", "")
+        if tabset_name in self.selectors.keys():
             tabids = [
                 tab.options["tabid"]
                 for tab in node.children
                 if isinstance(tab, n.Directive)
             ]
-            self.languages.append(tabids)
+            self.selectors[tabset_name].append(tabids)
 
 
 class TargetHandler:
@@ -254,21 +261,18 @@ class Postprocessor:
         self.handle_substitutions()
 
         option_handler = ProgramOptionHandler(self.diagnostics)
-        language_selector_handler = LanguageSelectorHandler(self.diagnostics)
+        tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
-                (EventParser.OBJECT_START_EVENT, language_selector_handler),
+                (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
             ],
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
-                (EventParser.PAGE_START_EVENT, language_selector_handler.reset),
-                (
-                    EventParser.PAGE_END_EVENT,
-                    language_selector_handler.finalize_languages,
-                ),
+                (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
+                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets,),
             ],
         )
 

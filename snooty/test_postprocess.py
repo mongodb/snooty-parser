@@ -57,7 +57,7 @@ def test_language_selector() -> None:
             Path(
                 "source/tabs.txt"
             ): """
-.. language-selector::
+.. tabs-pillstrip:: languages
 
 .. tabs-drivers::
    :hidden:
@@ -74,14 +74,17 @@ def test_language_selector() -> None:
 """
         }
     ) as result:
-        assert len(result.diagnostics[FileId("tabs.txt")]) == 0
+        assert [
+            "deprecated" in diagnostic.message
+            for diagnostic in result.diagnostics[FileId("tabs.txt")]
+        ] == [True], "Incorrect diagnostics raised"
         page = result.pages[FileId("tabs.txt")]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
-<root languages="['shell', 'python']">
-<directive name="language-selector" />
+<root drivers="['shell', 'python']">
+<directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="shell">
 <paragraph><text>Shell</text></paragraph>
@@ -100,7 +103,7 @@ def test_language_selector() -> None:
             Path(
                 "source/tabs-two.txt"
             ): """
-.. language-selector::
+.. tabs-selector:: drivers
 
 .. tabs-drivers::
    :hidden:
@@ -144,8 +147,8 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root languages="['c', 'nodejs']">
-<directive name="language-selector" />
+<root drivers="['c', 'nodejs']">
+<directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="c">
 <paragraph><text>C</text></paragraph>
@@ -174,7 +177,7 @@ def test_language_selector() -> None:
             Path(
                 "source/tabs-three.txt"
             ): """
-.. language-selector::
+.. tabs-selector:: drivers
 """
         }
     ) as result:
@@ -188,7 +191,97 @@ def test_language_selector() -> None:
             page.ast,
             """
 <root>
-<directive name="language-selector" />
+<directive name="tabs-selector"><text>drivers</text></directive>
+</root>
+            """,
+        )
+
+    # Ensure postprocessor doesn't fail when no argument is specified
+    with make_test(
+        {
+            Path(
+                "source/tabs-four.txt"
+            ): """
+.. tabs-selector::
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+"""
+        }
+    ) as result:
+        assert (
+            len(result.diagnostics[FileId("tabs.txt")]) == 0
+        ), "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs-four.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root>
+<directive name="tabs-selector" />
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="java-sync">
+<paragraph><text>Java (sync)</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
+
+    # Ensure non-drivers tabset works properly
+    with make_test(
+        {
+            Path(
+                "source/tabs-five.txt"
+            ): """
+.. tabs-selector:: platforms
+
+.. tabs-platforms::
+   :hidden:
+
+   .. tab::
+      :tabid: windows
+
+      Windows
+
+   .. tab::
+      :tabid: macos
+
+      macOS
+
+   .. tab::
+      :tabid: linux
+
+      Linux
+"""
+        }
+    ) as result:
+        assert (
+            len(result.diagnostics[FileId("tabs-five.txt")]) == 0
+        ), "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs-five.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root platforms="['windows', 'macos', 'linux']">
+<directive name="tabs-selector"><text>platforms</text></directive>
+<directive name="tabs" hidden="True" tabset="platforms">
+<directive name="tab" tabid="windows">
+<paragraph><text>Windows</text></paragraph>
+</directive>
+<directive name="tab" tabid="macos">
+<paragraph><text>macOS</text></paragraph>
+</directive>
+<directive name="tab" tabid="linux">
+<paragraph><text>Linux</text></paragraph>
+</directive>
+</directive>
 </root>
             """,
         )

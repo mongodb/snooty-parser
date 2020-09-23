@@ -312,13 +312,13 @@ options.reversed = "flag"
 options.numbered = "flag"
 options.glob = "flag"
 
-[directive.language-selector]
-help = """Add dropdown language selector used to select drivers tabsets."""
+[directive.tabs-selector]
+help = """Add dropdown selector used to select the specified tabset."""
 argument_type = "string"
 
 [directive.tabs-pillstrip]
 deprecated = true
-inherit = "language-selector"
+inherit = "tabs-selector"
 
 [directive.tabs-top]
 deprecated = true

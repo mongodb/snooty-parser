@@ -333,21 +333,19 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
-class MissingLanguage(Diagnostic):
+class MissingTab(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
-        languages: Set[str],
+        tabs: Set[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"The following language(s) did not appear in every tabset: {languages}",
-            start,
-            end,
+            f"The following tab(s) did not appear in every tabset: {tabs}", start, end,
         )
-        self.languages = languages
+        self.tabs = tabs
 
 
 class ExpectedTabs(Diagnostic):
@@ -359,5 +357,5 @@ class ExpectedTabs(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            "Expected tabs when language-selector directive in use", start, end,
+            "Expected tabs when tabs-selector directive in use", start, end,
         )
