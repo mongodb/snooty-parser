@@ -12,8 +12,9 @@ from .diagnostics import (
     CannotOpenFile,
     ErrorParsingYAMLFile,
     InvalidField,
+    IncorrectMonospaceSyntax,
 )
-from .parser import parse_rst, JSONVisitor
+from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
 ROOT_PATH = Path("test_data")
 
@@ -1872,4 +1873,21 @@ specified encryption method and key.</text>
     <field_list></field_list>
     </target>
 </root>""",
+    )
+
+
+def test_malformed_monospace() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, InlineJSONVisitor)
+
+    page, diagnostics = parse_rst(parser, path, """`malformed syntax`""",)
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [IncorrectMonospaceSyntax]
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+<root><literal><text>malformed syntax</text></literal></root>
+""",
     )

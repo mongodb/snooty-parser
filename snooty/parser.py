@@ -801,7 +801,7 @@ class InlineJSONVisitor(JSONVisitor):
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, docutils.nodes.Inline
+            node, (docutils.nodes.Inline, docutils.nodes.system_message)
         ):
             return
 
@@ -809,7 +809,7 @@ class InlineJSONVisitor(JSONVisitor):
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, docutils.nodes.Inline
+            node, (docutils.nodes.Inline, docutils.nodes.system_message)
         ):
             return
 

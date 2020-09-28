@@ -32,7 +32,7 @@ from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import ProjectConfig
-from .diagnostics import Diagnostic
+from .diagnostics import Diagnostic, IncorrectMonospaceSyntax
 from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
@@ -198,8 +198,13 @@ def handle_role_null(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle unnamed roles by raising a warning."""
-    msg = inliner.reporter.error("Monospace text uses two backticks (``)", line=lineno)
-    return [], [msg]
+    return (
+        [
+            docutils.nodes.literal(rawtext, text),
+            snooty_diagnostic(IncorrectMonospaceSyntax(lineno)),
+        ],
+        [],
+    )
 
 
 class TextRoleHandler:
