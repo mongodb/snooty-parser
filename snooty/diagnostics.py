@@ -331,3 +331,14 @@ class MissingTocTreeEntry(Diagnostic):
     ) -> None:
         super().__init__(f"Could not locate toctree entry {entry}", start, end)
         self.entry = entry
+
+
+class IncorrectMonospaceSyntax(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Monospace text uses two backticks (``)", start, end)
