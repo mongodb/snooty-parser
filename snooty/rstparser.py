@@ -32,7 +32,7 @@ from typing_extensions import Protocol
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import ProjectConfig
-from .diagnostics import Diagnostic, IncorrectMonospaceSyntax
+from .diagnostics import Diagnostic, IncorrectMonospaceSyntax, IncorrectLinkSyntax
 from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
@@ -198,11 +198,14 @@ def handle_role_null(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle unnamed roles by raising a warning."""
+    match = PAT_EXPLICIT_TITLE.match(text)
+    if match:
+        diagnostic: Diagnostic = IncorrectLinkSyntax(lineno)
+    else:
+        diagnostic = IncorrectMonospaceSyntax(lineno)
+
     return (
-        [
-            docutils.nodes.literal(rawtext, text),
-            snooty_diagnostic(IncorrectMonospaceSyntax(lineno)),
-        ],
+        [docutils.nodes.literal(rawtext, text), snooty_diagnostic(diagnostic),],
         [],
     )
 

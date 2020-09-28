@@ -3,16 +3,17 @@ from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
 from .diagnostics import (
-    Diagnostic,
-    InvalidURL,
-    DocUtilsParseError,
-    MalformedGlossary,
-    ExpectedPathArg,
-    InvalidLiteralInclude,
     CannotOpenFile,
+    Diagnostic,
+    DocUtilsParseError,
     ErrorParsingYAMLFile,
-    InvalidField,
+    ExpectedPathArg,
+    IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
+    InvalidField,
+    InvalidLiteralInclude,
+    InvalidURL,
+    MalformedGlossary,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -1963,5 +1964,24 @@ def test_malformed_monospace() -> None:
         page.ast,
         """
 <root><literal><text>malformed syntax</text></literal></root>
+""",
+    )
+
+
+def test_malformed_external_link() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, InlineJSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser, path, """`Atlas Data Lake <https://docs.mongodb.com/datalake/>`"""
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [IncorrectLinkSyntax]
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+<root><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
 """,
     )

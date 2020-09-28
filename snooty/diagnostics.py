@@ -342,3 +342,14 @@ class IncorrectMonospaceSyntax(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__("Monospace text uses two backticks (``)", start, end)
+
+
+class IncorrectLinkSyntax(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Malformed external link", start, end)
