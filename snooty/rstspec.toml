@@ -1298,25 +1298,16 @@ type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/js/4/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s"}
 
-[role."android-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/java/4/%s"}
-
-[role."ios-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/swift/6/%s"}
-
-[role."fb-dev-docs"]
-type = {link = "https://developers.facebook.com/docs/%s"}
+[role."facebook"]
+type = {link = "https://developers.facebook.com/%s"}
 
 [role."fcm"]
 type = {link = "https://firebase.google.com/docs/%s"}
 
-[role."google-dev"]
+[role."google"]
 type = {link = "https://developers.google.com/%s"}
-
-[role."google-android-ref"]
-type = {link = "https://developers.google.com/android/reference/com/google/android/gms/%s"}
 
 [role."github"]
 type = {link = "https://github.com/%s"}
@@ -1324,17 +1315,14 @@ type = {link = "https://github.com/%s"}
 [role."github-dev"]
 type = {link = "https://developer.github.com/%s"}
 
-[role."electricimp"]
-type = {link = "https://electricimp.com/%s"}
-
 [role."twilio"]
 type = {link = "https://www.twilio.com/%s"}
 
 [role."mdn"]
 type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
 
-[role."apollo-docs"]
-type = {link = "https://www.apollographql.com/docs%s"}
+[role."apollo"]
+type = {link = "https://www.apollographql.com/%s"}
 
 [role."aws-docs"]
 type = {link = "https://docs.aws.amazon.com/%s"}
@@ -1346,7 +1334,7 @@ type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
 type = {link = "https://docs.aws.amazon.com/IAM/latest/%s"}
 
 [role."aws-reference"]
-type = {link = "https://docs.aws.amazon.com/general/latest/gr/%s"}
+type = {link = "https://docs.aws.amazon.com/general/latest/%s"}
 
 [role."reactjs"]
 type = {link = "https://reactjs.org/%s"}
@@ -1354,11 +1342,11 @@ type = {link = "https://reactjs.org/%s"}
 [role."jwt-io"]
 type = {link = "https://jwt.io/%s"}
 
-[role."android-dev"]
+[role."android"]
 type = {link = "https://developer.android.com/%s"}
 
-[role."apple-dev"]
-type = {link = "https://developer.apple.com/documentation/%s"}
+[role."apple"]
+type = {link = "https://developer.apple.com/%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
