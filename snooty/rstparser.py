@@ -769,7 +769,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
     subsequent indented directives are included as children of the node.
     """
 
-    required_arguments = 1
+    required_arguments = 0
     optional_arguments = 1
 
     def run(self) -> List[docutils.nodes.Node]:
@@ -779,9 +779,10 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
         node.source, node.line = source, line
         node["options"] = self.options
 
-        if self.arguments is not None:
+        if self.arguments:
+            arguments = self.arguments[0].split(None, 1)
             textnodes = []
-            for argument_text in self.arguments:
+            for argument_text in arguments:
                 text, messages = self.state.inline_text(argument_text, self.lineno)
                 textnodes.extend(text)
             argument = directive_argument("", "", *textnodes)
