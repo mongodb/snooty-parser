@@ -947,7 +947,7 @@ class PageDatabase:
         postprocessor = self.postprocessor_factory()
 
         with util.PerformanceLogger.singleton().start("copy"):
-            copied_pages = util.fast_deep_copy(self.parsed)
+            copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
 
         with util.PerformanceLogger.singleton().start("postprocessing"):
             post_metadata, post_diagnostics = postprocessor.run(copied_pages)
