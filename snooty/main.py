@@ -35,7 +35,7 @@ from .parser import Project
 from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
 from .types import FileId, SerializableType, BuildIdentifierSet
 from .page import Page
-from .diagnostics import Diagnostic
+from .diagnostics import Diagnostic, MakeCorrectionMixin
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
@@ -95,14 +95,21 @@ class Backend:
         output = os.environ.get("DIAGNOSTICS_FORMAT", "text")
 
         for diagnostic in diagnostics:
+            did_you_mean: List[str] = []
             info = diagnostic.serialize()
             info["path"] = path.as_posix()
 
+            if isinstance(diagnostic, MakeCorrectionMixin):
+                did_you_mean = diagnostic.did_you_mean()
+                info["did_you_mean"] = did_you_mean
+
             if output == "JSON":
-                document = {"diagnostic": info}
+                document: Dict[str, object] = {"diagnostic": info}
                 print(json.dumps(document))
             else:
                 print("{severity}({path}:{start}ish): {message}".format(**info))
+                for candidate in did_you_mean:
+                    print("    Did you mean: " + candidate)
 
             if diagnostic.severity >= Diagnostic.Level.error:
                 self.total_errors += 1
