@@ -1279,6 +1279,9 @@ type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
 [role."bic-v2.10"]
 type = {link = "https://docs.mongodb.com/bi-connector/v2.10%s"}
 
+[role.dbtools]
+type = {link = "https://docs.mongodb.com/database-tools%s"}
+
 [role.k8s]
 type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s"}
 
