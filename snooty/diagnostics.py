@@ -5,6 +5,13 @@ from .n import SerializableType
 from . import n
 
 
+class MakeCorrectionMixin:
+    def did_you_mean(self) -> List[str]:
+        """Suggest one or more possible corrections to the reStructuredText that this
+           diagnostic is about."""
+        raise NotImplementedError()
+
+
 class Diagnostic:
     def __init__(
         self,
@@ -333,23 +340,33 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
-class IncorrectMonospaceSyntax(Diagnostic):
+class IncorrectMonospaceSyntax(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.warning
 
     def __init__(
         self,
+        text: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__("Monospace text uses two backticks (``)", start, end)
+        self.text = text
+
+    def did_you_mean(self) -> List[str]:
+        return [f"``{self.text}``"]
 
 
-class IncorrectLinkSyntax(Diagnostic):
+class IncorrectLinkSyntax(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
+        parts: Tuple[str, str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__("Malformed external link", start, end)
+        self.parts = parts
+
+    def did_you_mean(self) -> List[str]:
+        return [f"`{self.parts[0]} <{self.parts[1]}>`__"]

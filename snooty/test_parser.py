@@ -13,6 +13,7 @@ from .diagnostics import (
     InvalidField,
     InvalidLiteralInclude,
     InvalidURL,
+    MakeCorrectionMixin,
     MalformedGlossary,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
@@ -1958,8 +1959,10 @@ def test_malformed_monospace() -> None:
 
     page, diagnostics = parse_rst(parser, path, """`malformed syntax`""",)
     page.finish(diagnostics)
-    assert [type(d) for d in diagnostics] == [IncorrectMonospaceSyntax]
-    print(ast_to_testing_string(page.ast))
+    assert [
+        (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
+        for d in diagnostics
+    ] == [(IncorrectMonospaceSyntax, ["``malformed syntax``"])]
     check_ast_testing_string(
         page.ast,
         """
@@ -1977,8 +1980,15 @@ def test_malformed_external_link() -> None:
         parser, path, """`Atlas Data Lake <https://docs.mongodb.com/datalake/>`"""
     )
     page.finish(diagnostics)
-    assert [type(d) for d in diagnostics] == [IncorrectLinkSyntax]
-    print(ast_to_testing_string(page.ast))
+    assert [
+        (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
+        for d in diagnostics
+    ] == [
+        (
+            IncorrectLinkSyntax,
+            ["`Atlas Data Lake <https://docs.mongodb.com/datalake/>`__"],
+        )
+    ]
     check_ast_testing_string(
         page.ast,
         """

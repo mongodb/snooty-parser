@@ -200,9 +200,11 @@ def handle_role_null(
     """Handle unnamed roles by raising a warning."""
     match = PAT_EXPLICIT_TITLE.match(text)
     if match:
-        diagnostic: Diagnostic = IncorrectLinkSyntax(lineno)
+        diagnostic: Diagnostic = IncorrectLinkSyntax(
+            (match.group(1), match.group(2)), lineno
+        )
     else:
-        diagnostic = IncorrectMonospaceSyntax(lineno)
+        diagnostic = IncorrectMonospaceSyntax(text, lineno)
 
     return (
         [docutils.nodes.literal(rawtext, text), snooty_diagnostic(diagnostic),],
