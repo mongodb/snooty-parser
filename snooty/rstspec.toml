@@ -1348,6 +1348,42 @@ type = {link = "https://developer.android.com/%s"}
 [role."apple"]
 type = {link = "https://developer.apple.com/%s"}
 
+[role."admin-api-endpoint"]
+type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s"}
+
+[role."java-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/java/10.0.0-BETA.8/%s"}
+
+[role."kotlin-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/10.0.0-BETA.8/%s"}
+
+[role."swift-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/swift/10.0.0-beta.5/%s"}
+
+[role."objc-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/objc/10.0.0-beta.5/%s"}
+
+[role."codesandbox"]
+type = {link = "https://codesandbox.io/%s"}
+
+[role."graphql"]
+type = {link = "https://graphql.org/%s"}
+
+[role."nodejs"]
+type = {link = "https://nodejs.org/%s"}
+
+[role."npm"]
+type = {link = "https://www.npmjs.com/%s"}
+
+[role."rubygems"]
+type = {link = "https://rubygems.org/%s"}
+
+[role."typescript"]
+type = {link = "https://www.typescriptlang.org/%s"}
+
+[role."node-driver"]
+type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
