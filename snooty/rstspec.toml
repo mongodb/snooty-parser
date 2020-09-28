@@ -1538,6 +1538,12 @@ help = """JSON Expression Expansion"""
 [rstobject."mongodb:json-operator"]
 help = """JSON Expression Operator"""
 
+[rstobject."mongodb:sync-client-message"]
+help = """Realm Sync Protocol Client->Server Request"""
+
+[rstobject."mongodb:sync-server-message"]
+help = """Realm Sync Protocol Server->Client Request"""
+
 [rstobject."mongodb:action"]
 help = """Service Actions"""
 prefix = "action"
