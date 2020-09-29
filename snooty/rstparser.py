@@ -762,14 +762,14 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
 
 
 class BaseVersionDirective(docutils.parsers.rst.Directive):
-    """Special handling for versionadded, versionchanged, and deprecated directives.
+    """Special handling for version change directives.
 
     These directives include one required argument and an optional argument on the next line.
     We need to ensure that these are both included in the `argument` field of the AST, and that
     subsequent indented directives are included as children of the node.
     """
 
-    required_arguments = 0
+    required_arguments = 1
     optional_arguments = 1
 
     def run(self) -> List[docutils.nodes.Node]:
@@ -780,7 +780,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
 
         if self.arguments:
-            arguments = self.arguments[0].split(None, 1)
+            arguments = " ".join(self.arguments).split(None, 1)
             textnodes = []
             for argument_text in arguments:
                 text, messages = self.state.inline_text(argument_text, self.lineno)
@@ -796,6 +796,14 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
             )
 
         return [node]
+
+
+class DeprecatedVersionDirective(BaseVersionDirective):
+    """Variant of BaseVersionDirective for the deprecated directive, which does not
+       require an argument."""
+
+    required_arguments = 0
+    optional_arguments = 1
 
 
 class BaseTocTreeDirective(docutils.parsers.rst.Directive):
@@ -975,9 +983,9 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
     "code-block": BaseCodeDirective,
     "code": BaseCodeDirective,
     "sourcecode": BaseCodeDirective,
-    "deprecated": BaseVersionDirective,
     "versionadded": BaseVersionDirective,
     "versionchanged": BaseVersionDirective,
+    "deprecated": DeprecatedVersionDirective,
     "card-group": BaseCardGroupDirective,
     "toctree": BaseTocTreeDirective,
 }
