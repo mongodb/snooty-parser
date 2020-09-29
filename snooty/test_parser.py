@@ -466,6 +466,80 @@ def test_admonition() -> None:
     )
 
 
+def test_admonition_versionchanged() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. versionchanged:: v3.2
+
+   Content
+
+.. versionchanged:: v3.2
+   Content
+
+.. versionchanged:: v3.2
+
+.. versionchanged::
+
+   Content
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(diag) for diag in diagnostics] == [DocUtilsParseError]
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="versionchanged"><text>v3.2</text>
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+
+        <directive name="versionchanged"><text>v3.2</text>
+            <text>Content</text>
+        </directive>
+
+        <directive name="versionchanged"><text>v3.2</text></directive>
+        </root>""",
+    )
+
+
+def test_admonition_deprecated() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. deprecated:: v3.2
+
+   Content
+
+.. deprecated::
+
+   Content
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="deprecated"><text>v3.2</text>
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        <directive name="deprecated">
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        </root>""",
+    )
+
+
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
