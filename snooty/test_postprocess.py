@@ -4,6 +4,7 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
+from .diagnostics import ExpectedTabs, MissingTab
 
 
 def test_case_sensitive_labels() -> None:
@@ -137,10 +138,11 @@ def test_language_selector() -> None:
         }
     ) as result:
         assert [
-            "nodejs" in diagnostic.message
-            and "c" in diagnostic.message
-            and "python" in diagnostic.message
-            for diagnostic in result.diagnostics[FileId("tabs-two.txt")]
+            "nodejs" in d.message
+            and "c" in d.message
+            and "python" in d.message
+            and type(d) == MissingTab
+            for d in result.diagnostics[FileId("tabs-two.txt")]
         ] == [True], "Incorrect diagnostics raised"
         page = result.pages[FileId("tabs-two.txt")]
         print(ast_to_testing_string(page.ast))
@@ -182,7 +184,7 @@ def test_language_selector() -> None:
         }
     ) as result:
         assert [
-            "Expected tabs" in diagnostic.message
+            type(diagnostic) == ExpectedTabs
             for diagnostic in result.diagnostics[FileId("tabs-three.txt")]
         ] == [True], "Incorrect diagnostics raised"
         page = result.pages[FileId("tabs-three.txt")]
@@ -214,9 +216,9 @@ def test_language_selector() -> None:
 """
         }
     ) as result:
-        assert (
-            len(result.diagnostics[FileId("tabs.txt")]) == 0
-        ), "Incorrect diagnostics raised"
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
         page = result.pages[FileId("tabs-four.txt")]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
@@ -261,9 +263,9 @@ def test_language_selector() -> None:
 """
         }
     ) as result:
-        assert (
-            len(result.diagnostics[FileId("tabs-five.txt")]) == 0
-        ), "Incorrect diagnostics raised"
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
         page = result.pages[FileId("tabs-five.txt")]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(

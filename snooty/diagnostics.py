@@ -357,5 +357,5 @@ class ExpectedTabs(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            "Expected tabs when tabs-selector directive in use", start, end,
+            "Expected tabs directive when tabs-selector directive in use", start, end,
         )
