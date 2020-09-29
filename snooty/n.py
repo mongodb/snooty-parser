@@ -197,7 +197,7 @@ class SubstitutionReference(InlineParent):
 class Root(Parent[Node]):
     __slots__ = ("options",)
     type = "root"
-    options: Dict[str, Any]
+    options: Dict[str, SerializableType]
 
 
 @dataclass

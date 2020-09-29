@@ -150,6 +150,7 @@ class TabsSelectorHandler:
                 if not page.ast.options.get("selectors"):
                     page.ast.options["selectors"] = {}
 
+                assert isinstance(page.ast.options["selectors"], Dict)
                 # TODO: This mapping should represent {tabid: title} when DOP-1450 has been completed
                 page.ast.options["selectors"][tabset_name] = {
                     tab: tab for tab in tabsets[0]

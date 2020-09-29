@@ -343,7 +343,9 @@ class MissingTab(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"The following tab(s) did not appear in every tabset: {tabs}", start, end,
+            f"One or more set of tabs on this page was missing the following tab(s): {tabs}",
+            start,
+            end,
         )
         self.tabs = tabs
 
