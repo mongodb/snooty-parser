@@ -29,6 +29,7 @@ from typing import (
     Union,
 )
 from typing_extensions import Protocol
+from docutils.nodes import unescape
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import ProjectConfig
@@ -78,6 +79,14 @@ docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatc
 # Monkey patch out the docutils name mutatation. We handle this ourselves
 docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
 docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
+
+
+def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
+    match = PAT_EXPLICIT_TITLE.match(text)
+    if match:
+        return unescape(match["target"]), unescape(match["label"])
+
+    return (unescape(text), None)
 
 
 def strip_parameters(target: str) -> str:
@@ -198,13 +207,11 @@ def handle_role_null(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle unnamed roles by raising a warning."""
-    match = PAT_EXPLICIT_TITLE.match(text)
-    if match:
-        diagnostic: Diagnostic = IncorrectLinkSyntax(
-            (match.group(1), match.group(2)), lineno
-        )
+    target, label = parse_explicit_title(text)
+    if label is not None:
+        diagnostic: Diagnostic = IncorrectLinkSyntax((label, target), lineno)
     else:
-        diagnostic = IncorrectMonospaceSyntax(text, lineno)
+        diagnostic = IncorrectMonospaceSyntax(target, lineno)
 
     return (
         [docutils.nodes.literal(rawtext, text), snooty_diagnostic(diagnostic),],
@@ -249,12 +256,12 @@ class ExplicitTitleRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        if match:
-            node = role(self.domain, typ, lineno, match["target"])
-            node.append(docutils.nodes.Text(match["label"]))
+        target, label = parse_explicit_title(text)
+        if label is not None:
+            node = role(self.domain, typ, lineno, target)
+            node.append(docutils.nodes.Text(label))
         else:
-            node = role(self.domain, typ, lineno, text)
+            node = role(self.domain, typ, lineno, target)
 
         return [node], []
 
@@ -306,13 +313,7 @@ class RefRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        if match:
-            label: Optional[str] = match["label"]
-            target = match["target"]
-        else:
-            label = None
-            target = text
+        target, label = parse_explicit_title(text)
 
         flag = ""
         if target.startswith("~") or target.startswith("!"):
@@ -369,12 +370,7 @@ class LinkRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        label: Optional[str] = None
-        if match:
-            label, target = match["label"], match["target"]
-        else:
-            target = text
+        target, label = parse_explicit_title(text)
 
         url = self.url_template % target
         if not label:
