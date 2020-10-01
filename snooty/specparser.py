@@ -156,7 +156,7 @@ class Directive:
     help: Optional[str]
     example: Optional[str]
     content_type: Optional[StringOrStringlist]
-    argument_type: ArgumentType
+    argument_type: Union[DirectiveOption, ArgumentType]
     required_context: Optional[str]
     domain: Optional[str]
     deprecated: bool = field(default=False)
@@ -227,7 +227,7 @@ class RstObject:
             help=self.help,
             example=None,
             content_type="block",
-            argument_type="string",
+            argument_type=DirectiveOption(type="string", required=True),
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
