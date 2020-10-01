@@ -1995,3 +1995,39 @@ def test_malformed_external_link() -> None:
 <root><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
 """,
     )
+
+
+def test_explicit_title_parsing() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+.. writeconcern:: <custom write concern name>
+
+:writeconcern:`w:1 <\<custom write concern name\>>`""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        r"""
+<root>
+    <target domain="mongodb" name="writeconcern">
+        <directive_argument>
+            <literal><text>&lt;custom write concern name&gt;</text></literal>
+        </directive_argument>
+        <target_identifier ids="['writeconcern.&lt;custom write concern name&gt;']"><text>&lt;custom write concern name&gt;</text></target_identifier>
+    </target>
+    
+    <paragraph>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&lt;custom write concern name&gt;">
+            <literal><text>w:1</text></literal>
+        </ref_role>
+    </paragraph>
+</root>
+""",
+    )
