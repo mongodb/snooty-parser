@@ -127,7 +127,7 @@ example = """.. versionadded:: ${1:v1.0}
 [directive.deprecated]
 argument_type = {type = "string", required = false}
 content_type = "block"
-example = """.. deprecated:: ${1:v1.0}
+example = """.. deprecated:: ${1:v1.0 (Optional)}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
 """
 
