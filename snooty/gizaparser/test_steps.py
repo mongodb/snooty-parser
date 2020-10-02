@@ -15,25 +15,16 @@ def test_step() -> None:
     category = GizaStepsCategory(project_config)
     path = Path("test_data/steps-test.yaml")
     child_path = Path("test_data/steps-test-child.yaml")
-
-    def add_main_file() -> List[Diagnostic]:
-        steps, text, parse_diagnostics = category.parse(path)
-        category.add(path, text, steps)
-        assert len(parse_diagnostics) == 0
-        assert len(steps) == 4
-        return parse_diagnostics
-
-    def add_child_file() -> List[Diagnostic]:
-        steps, text, parse_diagnostics = category.parse(child_path)
-        category.add(child_path, text, steps)
-        assert len(parse_diagnostics) == 0
-        return parse_diagnostics
+    grandchild_path = Path("test_data/steps-test-grandchild.yaml")
 
     all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-    all_diagnostics[path] = add_main_file()
-    all_diagnostics[child_path] = add_child_file()
+    for current_path in [path, child_path, grandchild_path]:
+        steps, text, parse_diagnostics = category.parse(current_path)
+        category.add(current_path, text, steps)
+        if parse_diagnostics:
+            all_diagnostics[path] = parse_diagnostics
 
-    assert len(category) == 2
+    assert len(category) == 3
     file_id, giza_node = next(category.reify_all_files(all_diagnostics))
 
     def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
@@ -44,6 +35,9 @@ def test_step() -> None:
     assert [str(page.fake_full_path()) for page in pages] == [
         "test_data/steps/test.rst"
     ]
+    # Ensure that no diagnostics were raised
+    all_diagnostics = {k: v for k, v in all_diagnostics.items() if v}
+    assert not all_diagnostics
     print(repr(ast_to_testing_string(pages[0].ast)))
     check_ast_testing_string(
         pages[0].ast,

@@ -1,11 +1,11 @@
 from pathlib import Path, PurePath
 from typing import Dict, Tuple, List, Optional
 from .extracts import GizaExtractsCategory
-from ..types import ProjectConfig
+from ..types import ProjectConfig, FileId
 from ..page import Page
-from ..diagnostics import Diagnostic
+from ..diagnostics import Diagnostic, FailedToInheritRef
 from ..parser import EmbeddedRstParser
-from ..util_test import ast_to_testing_string
+from ..util_test import make_test, ast_to_testing_string
 
 
 def test_extract() -> None:
@@ -66,3 +66,66 @@ def test_extract() -> None:
     # XXX: We need to track source file information for each property.
     # Line number 1 here should correspond to parent_path, not path.
     assert set(d.start[0] for d in all_diagnostics[path]) == set((21, 13, 1))
+
+
+def test_inheritance() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/extracts-test.yaml"
+            ): """
+ref: create-resource-lock
+content: |
+
+  {{operation}} obtains an exclusive lock on the
+  specified collection or view for the duration of the operation.
+
+replacement:
+  operation: "``create``"
+---
+ref: createCollection-resource-lock
+source:
+  file: extracts-test.yaml
+  ref: create-resource-lock
+replacement:
+  operation: "``db.createCollection()``"
+---
+ref: createView-resource-lock
+source:
+  file: extracts-test.yaml
+  ref: create-resource-lock
+replacement:
+  operation: "``db.createView()``"
+"""
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("includes/extracts-test.yaml")]
+
+
+def test_external_cycle() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/extracts-test1.yaml"
+            ): """
+ref: test1
+inherit:
+  file: extracts-test2.yaml
+  ref: test2
+...
+""",
+            Path(
+                "source/includes/extracts-test2.yaml"
+            ): """
+ref: test2
+inherit:
+  file: extracts-test1.yaml
+  ref: test1
+...
+""",
+        }
+    ) as result:
+        assert {k: [type(d) for d in v] for k, v in result.diagnostics.items()} == {
+            FileId("includes/extracts-test2.yaml"): [FailedToInheritRef],
+            FileId("includes/extracts-test1.yaml"): [FailedToInheritRef],
+        }
