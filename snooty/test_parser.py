@@ -1673,7 +1673,7 @@ def test_callable_target() -> None:
         parser,
         path,
         """
-.. method:: db.collection.ensureIndex(keys, options)
+.. method:: db.collection.ensureIndex (keys, options)
 
    Creates an index on the specified field if the index does not already exist.
 
@@ -1688,7 +1688,7 @@ def test_callable_target() -> None:
         """
 <root>
     <target domain="mongodb" name="method">
-    <directive_argument><literal><text>db.collection.ensureIndex(keys, options)</text></literal></directive_argument>
+    <directive_argument><literal><text>db.collection.ensureIndex (keys, options)</text></literal></directive_argument>
     <target_identifier ids="['db.collection.ensureIndex']"><text>db.collection.ensureIndex()</text></target_identifier>
     <paragraph>
     <text>Creates an index on the specified field if the index does not already exist.</text>

@@ -58,6 +58,7 @@ PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
 PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
+PAT_PARAMETERS = re.compile(r"\s*\(.*?\)\s*$")
 
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
@@ -92,10 +93,11 @@ def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
        e.g. foo(bar, baz) -> foo."""
-    if not target.endswith(")"):
+    match = PAT_PARAMETERS.search(target)
+    if not match:
         return target
 
-    starting_index = target.rfind("(")
+    starting_index = match.start()
     if starting_index == -1:
         return target
 
