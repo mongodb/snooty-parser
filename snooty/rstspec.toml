@@ -109,23 +109,25 @@ example = """.. tip:: ${1:Title}
    ${2:Tip content}
 """
 
-[directive.versionchanged]
-argument_type = "string"
+[directive._baseversiondirective]
+argument_type = {type = "string", required = true}
 content_type = "block"
+
+[directive.versionchanged]
+inherit = "_baseversiondirective"
 example = """.. versionchanged:: ${1:v1.0}
    ${2:Describe what changed in that version. Description is optional.}
 """
 
 [directive.versionadded]
-argument_type = "string"
-content_type = "block"
+inherit = "_baseversiondirective"
 example = """.. versionadded:: ${1:v1.0}
    ${2:Describe what was added in that version. Description is optional.}
 """
 [directive.deprecated]
-argument_type = "string"
+argument_type = {type = "string", required = false}
 content_type = "block"
-example = """.. deprecated:: ${1:v1.0}
+example = """.. deprecated:: ${1:v1.0 (Optional)}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
 """
 

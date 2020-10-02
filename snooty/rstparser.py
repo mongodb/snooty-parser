@@ -998,10 +998,24 @@ def make_docutils_directive_handler(
     name: str,
     options: Dict[str, object],
 ) -> Type[docutils.parsers.rst.Directive]:
+    optional_args = 0
+    required_args = 0
+
+    argument_type = directive.argument_type
+    if argument_type:
+        if (
+            isinstance(argument_type, specparser.DirectiveOption)
+            and argument_type.required
+        ):
+            required_args = 1
+        else:
+            optional_args = 1
+
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
-        optional_arguments = 1 if directive.argument_type else 0
+        optional_arguments = optional_args
+        required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
 
