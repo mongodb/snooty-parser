@@ -115,6 +115,22 @@ class Inheritable(Node):
     source: Optional[Inherit]
     inherit: Optional[Inherit]
 
+    def get_ref(self) -> Optional[str]:
+        """Try to find this node's ref name, looking at the inheritance stanza if needed."""
+        if self.ref:
+            return self.ref
+
+        parent = self.parent_information
+        if not parent:
+            return None
+
+        return parent.ref
+
+    @property
+    def parent_information(self) -> Optional[Inherit]:
+        """If this node has a parent identifier, return it."""
+        return self.source or self.inherit
+
 
 _I = TypeVar("_I", bound=Inheritable)
 
@@ -206,20 +222,22 @@ class GizaCategory(Generic[_I]):
         self.nodes[file_id] = GizaFile(path, text, elements)
 
         for element in elements:
-            inherit = None
-            if element.source:
-                inherit = element.source
-            elif element.inherit:
-                inherit = element.inherit
+            inherit = element.parent_information
 
             if not inherit:
                 continue
 
             self.dg.add_edge(file_id, inherit.file)
 
-    def reify(self, obj: _I, diagnostics: List[Diagnostic], refs_set: Set[str]) -> _I:
+    def reify(
+        self,
+        obj: _I,
+        diagnostics: List[Diagnostic],
+        refs_set: Optional[Set[str]],
+        cycle_set: Set[Tuple[str, str]],
+    ) -> _I:
         """Resolve inheritance and substitution in a single Giza node."""
-        parent_identifier = obj.source if obj.source is not None else obj.inherit
+        parent_identifier = obj.parent_information
         parent: Optional[_I] = None
         if parent_identifier is not None:
             try:
@@ -235,21 +253,36 @@ class GizaCategory(Generic[_I]):
                 return obj
             try:
                 _parent: _I = next(
-                    x for x in parent_sequence if x.ref == parent_identifier.ref
+                    x for x in parent_sequence if x.get_ref() == parent_identifier.ref
                 )
                 if _parent.ref is None:
                     _parent.ref = ""
 
                 # If the child does not have a ref, inherit it from the parent
                 if not obj.ref:
-                    obj.ref = _parent.ref
+                    obj.ref = _parent.get_ref()
+
                 parent = _parent
             except StopIteration:
                 diagnostics.append(
                     FailedToInheritRef(f"Failed to inherit {obj.ref}", obj.line)
                 )
-                logger.debug("Inheritance failed: %s", obj.ref)
                 return obj
+
+        if parent:
+            assert parent_identifier
+            # Reify our parent. Don't do any kind of ref duplication checking because
+            # we expect to see the same refs, but we DO want to check for cycles.
+            key = (parent_identifier.file, parent_identifier.ref)
+            if key in cycle_set:
+                diagnostics.append(
+                    FailedToInheritRef(
+                        f"Inheritance cycle while trying to resolve {obj.ref}", obj.line
+                    )
+                )
+                return obj
+            cycle_set.add(key)
+            parent = self.reify(parent, diagnostics, None, cycle_set)
 
         if obj.ref is None:
             obj.ref = ""
@@ -257,11 +290,12 @@ class GizaCategory(Generic[_I]):
         obj = inherit(self.project_config, obj, parent, diagnostics)
 
         # Check if ref already exists within the same file
-        if obj.ref in refs_set:
-            msg = f"ref {obj.ref} already exists"
-            diagnostics.append(RefAlreadyExists(msg, obj.line))
-        elif obj.ref is not None:
-            refs_set.add(obj.ref)
+        if refs_set is not None:
+            if obj.ref in refs_set:
+                msg = f"ref {obj.ref} already exists"
+                diagnostics.append(RefAlreadyExists(msg, obj.line))
+            elif obj.ref is not None:
+                refs_set.add(obj.ref)
 
         return obj
 
@@ -272,7 +306,7 @@ class GizaCategory(Generic[_I]):
         node = self.nodes[file_id]
         refs: Set[str] = set()
         data = [
-            self.reify(el, diagnostics.setdefault(node.path, []), refs)
+            self.reify(el, diagnostics.setdefault(node.path, []), refs, set())
             for el in node.data
         ]
 
@@ -291,7 +325,7 @@ class GizaCategory(Generic[_I]):
 
             data = [
                 self.reify(
-                    el, diagnostics.setdefault(node.path, []), refs_dict[file_id]
+                    el, diagnostics.setdefault(node.path, []), refs_dict[file_id], set()
                 )
                 for el in node.data
             ]
