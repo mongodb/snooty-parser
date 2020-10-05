@@ -1565,12 +1565,12 @@ help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
 prefix = "autoencryptkeyword"
 
 [tabs]
-cloudproviders = [
+cloud-providers = [
   {id = "aws", title = "AWS"},
   {id = "azure", title = "Azure"},
   {id = "gcp", title = "GCP"},
 ]
-k8sorchestrator = [
+k8s-orchestrator = [
   {id = "k8s", title = "Kubernetes"},
   {id = "openshift", title = "OpenShift"},
 ]
