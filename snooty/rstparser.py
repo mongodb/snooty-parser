@@ -1012,7 +1012,7 @@ def make_docutils_directive_handler(
             required_args = 1
         else:
             optional_args = 1
- 
+
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
