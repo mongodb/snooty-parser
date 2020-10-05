@@ -999,7 +999,8 @@ def make_docutils_directive_handler(
     base_class: Type[docutils.parsers.rst.Directive],
     name: str,
     options: Dict[str, object],
-) -> Type[docutils.parsers.rst.Directive]:    optional_args = 0
+) -> Type[docutils.parsers.rst.Directive]:
+    optional_args = 0
     required_args = 0
 
     argument_type = directive.argument_type
@@ -1011,7 +1012,7 @@ def make_docutils_directive_handler(
             required_args = 1
         else:
             optional_args = 1
-            
+ 
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
