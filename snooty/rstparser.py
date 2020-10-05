@@ -92,10 +92,11 @@ def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
        e.g. foo(bar, baz) -> foo."""
-    if not target.endswith(")"):
+    match = PAT_PARAMETERS.search(target)
+    if not match:
         return target
 
-    starting_index = target.rfind("(")
+    starting_index = match.start()
     if starting_index == -1:
         return target
 
@@ -1003,7 +1004,6 @@ def make_docutils_directive_handler(
         has_content = bool(directive.content_type)
         optional_arguments = optional_args
         required_arguments = required_args
-        required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
 
@@ -1046,6 +1046,7 @@ def register_spec_with_docutils(
         }
 
         base_class: Any = BaseDocutilsDirective
+        
         # Tabs have special handling because of the need to support legacy syntax
         if name == "tabs" or name.startswith("tabs-"):
             base_class = BaseTabsDirective
