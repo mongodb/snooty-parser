@@ -97,7 +97,7 @@ def strip_parameters(target: str) -> str:
     if not match:
         return target
 
-    starting_index = match.start()
+    starting_index = target.rfind("(")
     if starting_index == -1:
         return target
 
@@ -1017,6 +1017,7 @@ def make_docutils_directive_handler(
         directive_spec = directive
         has_content = bool(directive.content_type)
         optional_arguments = optional_args
+        required_arguments = required_args
         required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
