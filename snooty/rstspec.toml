@@ -1665,4 +1665,8 @@ realm-auth-providers = [
   {id = "aws", title = "AWS"},
   {id = "azure", title = "Azure"},
   {id = "gcp", title = "GCP"},
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> ad75cb9a812eb37d65cced2eb73e51507b3f18fb

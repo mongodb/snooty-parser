@@ -1001,7 +1001,9 @@ def make_docutils_directive_handler(
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
-        optional_arguments = 1 if directive.argument_type else 0
+        optional_arguments = optional_args
+        required_arguments = required_args
+        required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
 
@@ -1044,7 +1046,7 @@ def register_spec_with_docutils(
         }
 
         base_class: Any = BaseDocutilsDirective
-
+        # Tabs have special handling because of the need to support legacy syntax
         if name == "tabs" or name.startswith("tabs-"):
             base_class = BaseTabsDirective
         elif name in SPECIAL_DIRECTIVE_HANDLERS:

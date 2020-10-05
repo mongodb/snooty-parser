@@ -20,7 +20,6 @@
 
            Trusty content
 
-
 .. tabs-platforms::
 
    tabs:
@@ -29,7 +28,6 @@
 
            Windows content
            
-
 .. tabs::
    :tabset: platforms
 
