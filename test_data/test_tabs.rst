@@ -20,6 +20,7 @@
 
            Trusty content
 
+
 .. tabs-platforms::
 
    tabs:
@@ -27,6 +28,7 @@
         content: |
 
            Windows content
+           
 
 .. tabs::
    :tabset: platforms
@@ -34,14 +36,27 @@
    .. tab::
       :tabid: windows
 
-      Windows content
-
-.. tabs-platforms::
+      Windows Content
 
    .. tab::
-      :tabid: windows
+      :tabid: linux
 
-      Windows content
+      Linux Content 
+
+   .. tab::
+      :tabid: macos
+
+      macOS Content 
+
+
+.. tabs::
+   :tabset: platforms
+
+   .. tab::
+      :tabid: bobs_your_uncle
+
+      Windows Content
+
 
 .. tabs::
    :hidden: true

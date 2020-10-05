@@ -36,6 +36,7 @@ from .openapi import OpenAPI
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
+from . import specparser
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     SerializableType,
@@ -58,6 +59,8 @@ from .diagnostics import (
     InvalidTableStructure,
     MalformedGlossary,
     InvalidField,
+    UnknownTabID,
+    TabMustBeDirective,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -396,6 +399,15 @@ class JSONVisitor:
 
         if (
             isinstance(popped, n.Directive)
+            and popped.options
+            and "tabset" in popped.options
+            and popped.options["tabset"] != "tab"
+        ):
+            line = util.get_line(node)
+            self.handle_tabset(popped, line)
+
+        if (
+            isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
         ):
 
@@ -423,6 +435,54 @@ class JSONVisitor:
                 target = n.InlineTarget(item.start, [], "std", "term", None, None)
                 target.children = [identifier]
                 item.term.append(target)
+
+    def handle_tabset(self, node: n.Directive, line: int) -> None:
+        tabset = node.options["tabset"]
+        # retrieve dictionary associated with this specific tabset
+        tab_definitions_list = specparser.SPEC.tabs[tabset]
+        tabid_list: List[str] = []
+
+        for idx, child in enumerate(node.children):
+            if not isinstance(child, n.Directive):
+                self.diagnostics.append(
+                    TabMustBeDirective(str(type(child).__class__.__name__), line)
+                )
+                return
+
+            tabid = child.options["tabid"]
+            if not isinstance(tabid, str):
+                self.diagnostics.append(
+                    UnknownTabID(
+                        tabid,
+                        tabset,
+                        f"{tabid} is of type {str(type(tabid).__class__)}. Tab ids must be strings ",
+                        line,
+                    )
+                )
+                return
+
+            unknown_tabid = True
+            # find matching title given id and insert direcitve_argument
+            for t_idx, entry in enumerate(tab_definitions_list):
+                if entry.id == tabid:
+                    child.argument = [n.Text((line,), entry.title)]
+                    unknown_tabid = False
+                    tabid_list.insert(t_idx, tabid)
+
+            if unknown_tabid:
+                self.diagnostics.append(
+                    UnknownTabID(
+                        tabid,
+                        tabset,
+                        f"{tabid} is not defined in rst.toml for this tabset",
+                        line,
+                    )
+                )
+                print("its unknown we are returning!")
+                return
+
+        if isinstance(node.children, List):
+            node.children.sort(key=lambda x: tabid_list.index(x.options["tabid"]))
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int

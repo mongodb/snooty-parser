@@ -340,6 +340,42 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
+class UnknownTabID(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tabid: str,
+        tabset: str,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"tab id {tabid} given in {tabset} tabset is unrecognized: {reason}",
+            start,
+            end,
+        )
+        self.tabid = tabid
+        self.tabset = tabset
+        self.reason = reason
+
+
+class TabMustBeDirective(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tab_type: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Tabs must be directives. This tab is of type {tab_type}", start, end
+        )
+        self.tab_type = tab_type
+
+
 class IncorrectMonospaceSyntax(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.warning
 

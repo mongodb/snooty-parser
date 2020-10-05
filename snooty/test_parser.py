@@ -15,6 +15,7 @@ from .diagnostics import (
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
+    UnknownTabID,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -41,14 +42,29 @@ def test_tabs() -> None:
         <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive></directive>
 
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="windows"><text>Windows</text>
+                <paragraph><text>Windows content</text></paragraph>
+            </directive>
+        </directive>
 
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
-
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="windows"><text>Windows</text>
+                <paragraph><text>Windows Content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="macos"><text>macOS</text>
+                <paragraph><text>macOS Content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="linux"><text>Linux</text>
+                <paragraph><text>Linux Content</text></paragraph>
+            </directive>
+        </directive>
+        
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="bobs_your_uncle">
+            <paragraph><text>Windows Content</text></paragraph>
+            </directive>
+        </directive>
 
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
@@ -58,7 +74,8 @@ def test_tabs() -> None:
         </root>""",
     )
 
-    assert isinstance(diagnostics[0], DocUtilsParseError)
+    assert isinstance(diagnostics[0], UnknownTabID)
+    assert isinstance(diagnostics[1], DocUtilsParseError)
 
 
 def test_tabs_invalid_yaml() -> None:
@@ -1673,7 +1690,7 @@ def test_callable_target() -> None:
         parser,
         path,
         """
-.. method:: db.collection.ensureIndex (keys, options)
+.. method:: db.collection.ensureIndex(keys, options)
 
    Creates an index on the specified field if the index does not already exist.
 
@@ -1688,7 +1705,7 @@ def test_callable_target() -> None:
         """
 <root>
     <target domain="mongodb" name="method">
-    <directive_argument><literal><text>db.collection.ensureIndex (keys, options)</text></literal></directive_argument>
+    <directive_argument><literal><text>db.collection.ensureIndex(keys, options)</text></literal></directive_argument>
     <target_identifier ids="['db.collection.ensureIndex']"><text>db.collection.ensureIndex()</text></target_identifier>
     <paragraph>
     <text>Creates an index on the specified field if the index does not already exist.</text>
@@ -1703,24 +1720,6 @@ def test_callable_target() -> None:
     </paragraph></listItem>
     </list>
 </root>""",
-    )
-
-    # Ensure that a missing argument doesn't crash
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. method::
-
-   Creates an index.
-""",
-    )
-    page.finish(diagnostics)
-    assert [type(diag) for diag in diagnostics] == [DocUtilsParseError]
-    check_ast_testing_string(
-        page.ast,
-        """
-<root></root>""",
     )
 
 

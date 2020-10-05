@@ -109,25 +109,23 @@ example = """.. tip:: ${1:Title}
    ${2:Tip content}
 """
 
-[directive._baseversiondirective]
-argument_type = {type = "string", required = true}
-content_type = "block"
-
 [directive.versionchanged]
-inherit = "_baseversiondirective"
+argument_type = "string"
+content_type = "block"
 example = """.. versionchanged:: ${1:v1.0}
    ${2:Describe what changed in that version. Description is optional.}
 """
 
 [directive.versionadded]
-inherit = "_baseversiondirective"
+argument_type = "string"
+content_type = "block"
 example = """.. versionadded:: ${1:v1.0}
    ${2:Describe what was added in that version. Description is optional.}
 """
 [directive.deprecated]
-argument_type = {type = "string", required = false}
+argument_type = "string"
 content_type = "block"
-example = """.. deprecated:: ${1:v1.0 (Optional)}
+example = """.. deprecated:: ${1:v1.0}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
 """
 
@@ -371,6 +369,7 @@ inherit = "tabs"
 
 [directive.tabs-realm-auth-providers]
 inherit = "tabs"
+
 
 [directive.tab]
 argument_type = "string"
@@ -1564,3 +1563,106 @@ prefix = "opsmgrkube"
 [rstobject."mongodb:autoencryptkeyword"]
 help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
 prefix = "autoencryptkeyword"
+
+[tabs]
+cloudproviders = [
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
+]
+k8sorchestrator = [
+  {id = "k8s", title = "Kubernetes"},
+  {id = "openshift", title = "OpenShift"},
+]
+cloud = [
+  {id = "cloud", title = "Cloud (Atlas)"},
+  {id = "local", title = "Local Instance"},
+]
+platforms = [
+  {id = "windows", title = "Windows"},
+  {id = "macos", title = "macOS"},
+  {id = "debian", title = "Ubuntu/Debian"},
+  {id = "rhel", title = "RHEL/CentOS/SLES/AMZ"},
+  {id = "linux", title = "Linux"},
+]
+drivers = [
+  {id = "shell", title = "Mongo Shell"},
+  {id = "compass", title = "Compass"},
+  {id = "python", title = "Python"},
+  {id = "java-sync", title = "Java (Sync)"},
+  {id = "nodejs", title = "Node.js"},
+  {id = "php", title = "PHP"},
+  {id = "motor", title = "Motor"},
+  {id = "java-async", title = "Java (Async)"},
+  {id = "c", title = "C"},
+  {id = "cpp", title = "C++11"},
+  {id = "csharp", title = "C#"},
+  {id = "perl", title = "Perl"},
+  {id = "ruby", title = "Ruby"},
+  {id = "scala", title = "Scala"},
+  {id = "go", title = "Go"},
+  {id = "swift-sync", title = "Swift (Sync)"},
+  {id = "swift-async", title = "Swift (Async)"},
+]
+auth = [
+  {id = "uidpwd", title = "Username and Password"},
+  {id = "ldap", title = "LDAP"},
+  {id = "kerberos", title = "Kerberos"},
+]
+stitch-auth-providers = [
+  {id = "anon-user", title = "Anonymous"},
+  {id = "local-userpass", title = "Email/Password"},
+  {id = "oauth2-google", title = "Google"},
+  {id = "oauth2-facebook", title = "Facebook"},
+  {id = "api-key", title = "API Key Authentication"},
+  {id = "custom-token", title = "Custom"},
+]
+deployments = [
+  {id = "standalone", title = "Standalone"},
+  {id = "repl", title = "Replica Set"},
+  {id = "shard", title = "Sharded Cluster"},
+]
+stitch-sdks = [
+  {id = "functions", title = "afaunctions"},
+  {id = "json-expressions", title = "Json Expressions"},
+  {id = "javascript", title = "JavaScript SDK"},
+  {id = "android", title = "Android SDK"},
+  {id = "ios", title = "iOS SDK"},
+]
+stitch-interfaces = [
+  {id = "stitch-ui", title = "Stitch UI"},
+  {id = "import-export", title = "Import/Export"},
+]
+realm-languages = [
+  {id = "swift", title = "Swift"},
+  {id = "kotlin", title = "Kotlin"},
+  {id = "typescript", title = "TypeScript"},
+  {id = "java", title = "Java"},
+  {id = "objective-c", title = "Objective C"},
+  {id = "javascript", title = "JavaScript"},
+  {id = "c-sharp", title = "C#"},
+]
+realm-sdks = [
+  {id = "functions", title = "Functions"},
+  {id = "json-expressions", title = "JSON Expressions"},
+  {id = "graphql", title = "GraphQL"},
+  {id = "ios", title = "iOS SDK"},
+  {id = "android", title = "Android SDK"},
+  {id = "dotnet", title = ".NET SDK"},
+  {id = "xamarin", title = "Xamarin SDK"},
+  {id = "javascript", title = "JavaScript SDKs"},
+  {id = "node", title = "Node.js SDK"},
+  {id = "react-native", title = "React Native SDK"},
+]
+realm-admin-interfaces = [
+  {id = "ui", title = "Realm UI"},
+  {id = "cli", title = "Realm CLI"},
+  {id = "api", title = "Admin API"},
+  {id = "github", title = "GitHub Deploy"},
+  {id = "code-deploy", title = "Code Deploy"},
+]
+realm-auth-providers = [
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
+]
