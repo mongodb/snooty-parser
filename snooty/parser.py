@@ -478,7 +478,6 @@ class JSONVisitor:
                         line,
                     )
                 )
-                print("its unknown we are returning!")
                 return
 
         if isinstance(node.children, List):
