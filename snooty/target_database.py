@@ -142,8 +142,8 @@ class TargetDatabase:
 
             base_uri = uri
             if (domain, role_name) != ("std", "doc"):
-                base_uri += "#$"
-                uri = uri + "#" + definition.html5_id
+                base_uri += "#" + definition.html5_id
+                uri += "#" + definition.html5_id
 
             targets[key] = intersphinx.TargetDefinition(
                 definition.canonical_name,

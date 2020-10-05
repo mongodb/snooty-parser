@@ -3,17 +3,20 @@ from . import rstparser
 from .util_test import check_ast_testing_string, ast_to_testing_string
 from .types import ProjectConfig
 from .diagnostics import (
-    Diagnostic,
-    InvalidURL,
-    DocUtilsParseError,
-    MalformedGlossary,
-    ExpectedPathArg,
-    InvalidLiteralInclude,
     CannotOpenFile,
+    Diagnostic,
+    DocUtilsParseError,
     ErrorParsingYAMLFile,
+    ExpectedPathArg,
+    IncorrectLinkSyntax,
+    IncorrectMonospaceSyntax,
     InvalidField,
+    InvalidLiteralInclude,
+    InvalidURL,
+    MakeCorrectionMixin,
+    MalformedGlossary,
 )
-from .parser import parse_rst, JSONVisitor
+from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
 ROOT_PATH = Path("test_data")
 
@@ -460,6 +463,80 @@ def test_admonition() -> None:
         <directive name="note">
         <list enumtype="unordered"><listItem><paragraph><text>foo</text></paragraph></listItem>
         <listItem><paragraph><text>bar</text></paragraph></listItem></list>
+        </directive>
+        </root>""",
+    )
+
+
+def test_admonition_versionchanged() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. versionchanged:: v3.2
+
+   Content
+
+.. versionchanged:: v3.2
+   Content
+
+.. versionchanged:: v3.2
+
+.. versionchanged::
+
+   Content
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(diag) for diag in diagnostics] == [DocUtilsParseError]
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="versionchanged"><text>v3.2</text>
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+
+        <directive name="versionchanged"><text>v3.2</text>
+            <text>Content</text>
+        </directive>
+
+        <directive name="versionchanged"><text>v3.2</text></directive>
+        </root>""",
+    )
+
+
+def test_admonition_deprecated() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. deprecated:: v3.2
+
+   Content
+
+.. deprecated::
+
+   Content
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="deprecated"><text>v3.2</text>
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        <directive name="deprecated">
+            <paragraph><text>Content</text></paragraph>
         </directive>
         </root>""",
     )
@@ -1596,7 +1673,7 @@ def test_callable_target() -> None:
         parser,
         path,
         """
-.. method:: db.collection.ensureIndex(keys, options)
+.. method:: db.collection.ensureIndex (keys, options)
 
    Creates an index on the specified field if the index does not already exist.
 
@@ -1611,7 +1688,7 @@ def test_callable_target() -> None:
         """
 <root>
     <target domain="mongodb" name="method">
-    <directive_argument><literal><text>db.collection.ensureIndex(keys, options)</text></literal></directive_argument>
+    <directive_argument><literal><text>db.collection.ensureIndex (keys, options)</text></literal></directive_argument>
     <target_identifier ids="['db.collection.ensureIndex']"><text>db.collection.ensureIndex()</text></target_identifier>
     <paragraph>
     <text>Creates an index on the specified field if the index does not already exist.</text>
@@ -1626,6 +1703,24 @@ def test_callable_target() -> None:
     </paragraph></listItem>
     </list>
 </root>""",
+    )
+
+    # Ensure that a missing argument doesn't crash
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. method::
+
+   Creates an index.
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(diag) for diag in diagnostics] == [DocUtilsParseError]
+    check_ast_testing_string(
+        page.ast,
+        """
+<root></root>""",
     )
 
 
@@ -1872,4 +1967,85 @@ specified encryption method and key.</text>
     <field_list></field_list>
     </target>
 </root>""",
+    )
+
+
+def test_malformed_monospace() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, InlineJSONVisitor)
+
+    page, diagnostics = parse_rst(parser, path, """`malformed syntax`""",)
+    page.finish(diagnostics)
+    assert [
+        (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
+        for d in diagnostics
+    ] == [(IncorrectMonospaceSyntax, ["``malformed syntax``"])]
+    check_ast_testing_string(
+        page.ast,
+        """
+<root><literal><text>malformed syntax</text></literal></root>
+""",
+    )
+
+
+def test_malformed_external_link() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, InlineJSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser, path, """`Atlas Data Lake <https://docs.mongodb.com/datalake/>`"""
+    )
+    page.finish(diagnostics)
+    assert [
+        (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
+        for d in diagnostics
+    ] == [
+        (
+            IncorrectLinkSyntax,
+            ["`Atlas Data Lake <https://docs.mongodb.com/datalake/>`__"],
+        )
+    ]
+    check_ast_testing_string(
+        page.ast,
+        """
+<root><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
+""",
+    )
+
+
+def test_explicit_title_parsing() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+.. writeconcern:: <custom write concern name>
+
+:writeconcern:`w:1 <\<custom write concern name\>>`""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        r"""
+<root>
+    <target domain="mongodb" name="writeconcern">
+        <directive_argument>
+            <literal><text>&lt;custom write concern name&gt;</text></literal>
+        </directive_argument>
+        <target_identifier ids="['writeconcern.&lt;custom write concern name&gt;']"><text>&lt;custom write concern name&gt;</text></target_identifier>
+    </target>
+    
+    <paragraph>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&lt;custom write concern name&gt;">
+            <literal><text>w:1</text></literal>
+        </ref_role>
+    </paragraph>
+</root>
+""",
     )

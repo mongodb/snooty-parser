@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.2] - 2020-09-30
+
+### Added
+
+- A `dbtools` role for linking to database tools docs.
+- New Realm rstobjects and extlinks (DOCSP-12508).
+- A simple "did you mean" feature for some kinds of typos (DOP-1570).
+
+### Changed
+
+- Ambiguous references are now automatically resolved when it is reasonable to do so (DOP-1434).
+- Permit version admonitions to have no argument (DOP-1523).
+- Incorrect external link syntax now yields an error (DOP-1569).
+
+### Fixed
+
+- Incorrectly monospaced text no longer inserts the warning text into the document (DOP-1511).
+- Intersphinx inventory entries now have the correct fragment identifiers (DOP-1574).
+
+## [v0.6.1] - 2020-09-23
+
+### Added
+
+- Highlighting roles (`highlight-red`, `highlight-yellow`, `highlight-green`, `highlight-blue`).
+
+### Fixed
+
+- Linking to non-lowercase labels (DOP-1534).
+
 ## [v0.6.0] - 2020-09-16
 
 ### Changed
