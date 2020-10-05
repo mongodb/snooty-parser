@@ -58,6 +58,7 @@ PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
 PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
+PAT_PARAMETERS = re.compile(r"\s*\(.*?\)\s*$")
 
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
@@ -998,7 +999,19 @@ def make_docutils_directive_handler(
     base_class: Type[docutils.parsers.rst.Directive],
     name: str,
     options: Dict[str, object],
-) -> Type[docutils.parsers.rst.Directive]:
+) -> Type[docutils.parsers.rst.Directive]:    optional_args = 0
+    required_args = 0
+
+    argument_type = directive.argument_type
+    if argument_type:
+        if (
+            isinstance(argument_type, specparser.DirectiveOption)
+            and argument_type.required
+        ):
+            required_args = 1
+        else:
+            optional_args = 1
+            
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
@@ -1046,7 +1059,7 @@ def register_spec_with_docutils(
         }
 
         base_class: Any = BaseDocutilsDirective
-        
+
         # Tabs have special handling because of the need to support legacy syntax
         if name == "tabs" or name.startswith("tabs-"):
             base_class = BaseTabsDirective
