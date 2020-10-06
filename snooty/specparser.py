@@ -252,7 +252,7 @@ class RstObject:
             help=self.help,
             example=None,
             content_type="block",
-            argument_type="string",
+            argument_type=DirectiveOption(type="string", required=True),
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
@@ -326,7 +326,6 @@ class Spec:
     ) -> Callable[[str], object]:
         """Return a validation function for a given argument type. This function will take in a
            string, and either throw an exception or return an output value."""
-
         if isinstance(option_spec, DirectiveOption):
             option_spec = option_spec.type
 
