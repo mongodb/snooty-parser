@@ -20,6 +20,7 @@
 
            Trusty content
 
+
 .. tabs-platforms::
 
    tabs:
@@ -54,6 +55,14 @@
       :tabid: bobs_your_uncle
 
       Windows Content
+
+.. tabs::
+   :tabset: platfors
+
+   .. tab::
+      :tabid: linux
+
+      Linux Content
 
 
 .. tabs::
