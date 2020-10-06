@@ -340,6 +340,21 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
+class UnknownTabset(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tabset: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"tabset {tabset} is not defined in rstspec.toml", start, end,
+        )
+        self.tabset = tabset
+
+
 class UnknownTabID(Diagnostic):
     severity = Diagnostic.Level.error
 

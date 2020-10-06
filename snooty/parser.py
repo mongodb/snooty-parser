@@ -60,6 +60,7 @@ from .diagnostics import (
     InvalidTableStructure,
     MalformedGlossary,
     InvalidField,
+    UnknownTabset,
     UnknownTabID,
     TabMustBeDirective,
 )
@@ -440,11 +441,16 @@ class JSONVisitor:
     def handle_tabset(self, node: n.Directive, line: int) -> None:
         tabset = node.options["tabset"]
         # retrieve dictionary associated with this specific tabset
+        if tabset not in specparser.SPEC.tabs:
+            self.diagnostics.append(UnknownTabset(tabset, line))
+            print("unknown tabset!! ")
+            return
+
         tab_definitions_list = specparser.SPEC.tabs[tabset]
         tabid_list: List[str] = []
 
         for idx, child in enumerate(node.children):
-            if not isinstance(child, n.Directive):
+            if not isinstance(child, n.Directive) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
                 )

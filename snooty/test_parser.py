@@ -16,6 +16,7 @@ from .diagnostics import (
     MakeCorrectionMixin,
     MalformedGlossary,
     UnknownTabID,
+    UnknownTabset,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -65,6 +66,12 @@ def test_tabs() -> None:
             <paragraph><text>Windows Content</text></paragraph>
             </directive>
         </directive>
+    
+        <directive name="tabs" tabset="platfors">
+            <directive name="tab" tabid="linux">
+            <paragraph><text>Linux Content</text></paragraph>
+            </directive>
+        </directive>
 
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
@@ -75,7 +82,8 @@ def test_tabs() -> None:
     )
 
     assert isinstance(diagnostics[0], UnknownTabID)
-    assert isinstance(diagnostics[1], DocUtilsParseError)
+    assert isinstance(diagnostics[1], UnknownTabset)
+    assert isinstance(diagnostics[2], DocUtilsParseError)
 
 
 def test_tabs_invalid_yaml() -> None:
