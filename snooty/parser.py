@@ -22,6 +22,7 @@ from typing import (
     Set,
     List,
     Iterable,
+    cast,
 )
 from typing_extensions import Protocol
 import docutils.utils
@@ -480,8 +481,10 @@ class JSONVisitor:
                 )
                 return
 
-        if isinstance(node.children, List):
-            node.children.sort(key=lambda x: tabid_list.index(x.options["tabid"]))
+        node.children = sorted(
+            node.children,
+            key=lambda x: tabid_list.index(cast(n.Directive, x).options["tabid"]),
+        )
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int

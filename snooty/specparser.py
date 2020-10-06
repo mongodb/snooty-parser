@@ -165,7 +165,7 @@ class Directive:
     help: Optional[str]
     example: Optional[str]
     content_type: Optional[StringOrStringlist]
-    argument_type: ArgumentType
+    argument_type: Union[DirectiveOption, ArgumentType]
     required_context: Optional[str]
     domain: Optional[str]
     deprecated: bool = field(default=False)
