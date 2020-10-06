@@ -1728,6 +1728,7 @@ def test_callable_target() -> None:
         path,
         """
 .. method::
+
    Creates an index.
 """,
     )
@@ -1738,6 +1739,7 @@ def test_callable_target() -> None:
         """
 <root></root>""",
     )
+
 
 def test_no_weird_targets() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
