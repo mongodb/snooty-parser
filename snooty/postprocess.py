@@ -296,15 +296,14 @@ class Postprocessor:
         key += f":{node.target}"
 
         # Add title and link target to AST
-        print(node.name, node.target, type(node.target))
         target_candidates = self.targets[key]
         if not target_candidates:
             line = node.span[0]
             title = node.target.split(".")[1]
             title_node = n.Text((line,), title)
-            the_deep_node = deepcopy(title_node)
+            deep_copied_title_node = deepcopy(title_node)
             injection_candidate = get_title_injection_candidate(node)
-            injection_candidate.children = [the_deep_node]
+            injection_candidate.children = [deep_copied_title_node]
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
             )
@@ -330,15 +329,11 @@ class Postprocessor:
         # Choose the most recently-defined target candidate if it is ambiguous
         result = target_candidates[-1]
         node.target = result.canonical_target_name
-
         if isinstance(result, TargetDatabase.InternalResult):
             node.fileid = result.result
         else:
             node.url = result.url
         injection_candidate = get_title_injection_candidate(node)
-
-        for node in result.title: 
-            print("this is the type:  ", node, type(node))
         # If there is no explicit title given, use the target's title
         if injection_candidate is not None:
             cloned_title_nodes: MutableSequence[n.Node] = list(
@@ -347,7 +342,6 @@ class Postprocessor:
             for title_node in cloned_title_nodes:
                 deep_copy_position(node, title_node)
             injection_candidate.children = cloned_title_nodes
-            print("cloned title nodes   ", cloned_title_nodes, type(cloned_title_nodes))
 
 
     def attempt_disambugation(
