@@ -343,7 +343,6 @@ class Postprocessor:
                 deep_copy_position(node, title_node)
             injection_candidate.children = cloned_title_nodes
 
-
     def attempt_disambugation(
         self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]
     ) -> Sequence[TargetDatabase.Result]:
