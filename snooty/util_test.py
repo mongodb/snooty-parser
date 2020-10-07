@@ -67,6 +67,7 @@ def ast_to_testing_string(ast: Any) -> str:
             + "</term>"
             + contents
         )
+
     return "<{}{}>{}</{}>".format(
         ast["type"], " " + attrs if attrs else "", contents, ast["type"]
     )
