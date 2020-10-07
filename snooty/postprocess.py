@@ -283,6 +283,9 @@ class Postprocessor:
 
         If so, append the full URL to the AST node. If not, throw an error.
         """
+
+        if isinstance(node, n.Target):
+            print("its  target ", node)
         if not isinstance(node, n.RefRole):
             return
         key = f"{node.domain}:{node.name}"
@@ -296,6 +299,7 @@ class Postprocessor:
         key += f":{node.target}"
 
         # Add title and link target to AST
+        print(type(node), node.name, node.target)
         target_candidates = self.targets[key]
         if not target_candidates:
             line = node.span[0]
@@ -337,6 +341,7 @@ class Postprocessor:
             for title_node in cloned_title_nodes:
                 deep_copy_position(node, title_node)
             injection_candidate.children = cloned_title_nodes
+            print(cloned_title_nodes)
 
     def attempt_disambugation(
         self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]
