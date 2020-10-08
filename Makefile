@@ -29,7 +29,7 @@ format: .venv/.EXISTS ## Format source code with black
 	. .venv/bin/activate && python3 -m black snooty tools
 
 test: lint ## Run unit tests
-	. .venv/bin/activate && python3 -m pytest --cov=snooty
+	. .venv/bin/activate && python3 -X dev -m pytest --cov=snooty
 
 dist/snooty/.EXISTS: .venv/.EXISTS pyproject.toml snooty/*.py snooty/gizaparser/*.py
 	-rm -rf snooty.dist dist
