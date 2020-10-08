@@ -405,10 +405,9 @@ class JSONVisitor:
             and "tabset" in popped.options
             and popped.options["tabset"] != "tab"
         ):
-            line = util.get_line(node)
-            self.handle_tabset(popped, line)
+            self.handle_tabset(popped)
 
-        if (
+        elif (
             isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
         ):
@@ -438,19 +437,19 @@ class JSONVisitor:
                 target.children = [identifier]
                 item.term.append(target)
 
-    def handle_tabset(self, node: n.Directive, line: int) -> None:
+    def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
+        line = node.start[0]
         # retrieve dictionary associated with this specific tabset
-        if tabset not in specparser.SPEC.tabs:
+        try:
+            tab_definitions_list = specparser.SPEC.tabs[tabset]
+        except KeyError:
             self.diagnostics.append(UnknownTabset(tabset, line))
-            print("unknown tabset!! ")
             return
-
-        tab_definitions_list = specparser.SPEC.tabs[tabset]
         tabid_list: List[str] = []
 
         for idx, child in enumerate(node.children):
-            if not isinstance(child, n.Directive) or child.name != "tab":
+            if (not isinstance(child, n.Directive)) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
                 )
@@ -469,7 +468,7 @@ class JSONVisitor:
                 return
 
             unknown_tabid = True
-            # find matching title given id and insert direcitve_argument
+            # find matching title given id and insert directive_argument
             for t_idx, entry in enumerate(tab_definitions_list):
                 if entry.id == tabid:
                     child.argument = [n.Text((line,), entry.title)]
@@ -481,7 +480,7 @@ class JSONVisitor:
                     UnknownTabID(
                         tabid,
                         tabset,
-                        f"{tabid} is not defined in rst.toml for this tabset",
+                        f"{tabid} is not defined in rstspec.toml for this tabset",
                         line,
                     )
                 )
