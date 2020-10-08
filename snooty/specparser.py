@@ -149,6 +149,13 @@ class DirectiveOption:
 
 @checked
 @dataclass
+class TabDefinition:
+    id: str
+    title: str
+
+
+@checked
+@dataclass
 class Directive:
     """Declaration of a reStructuredText directive (block content)."""
 
@@ -156,7 +163,7 @@ class Directive:
     help: Optional[str]
     example: Optional[str]
     content_type: Optional[StringOrStringlist]
-    argument_type: ArgumentType
+    argument_type: Union[DirectiveOption, ArgumentType]
     required_context: Optional[str]
     domain: Optional[str]
     deprecated: bool = field(default=False)
@@ -221,13 +228,29 @@ class RstObject:
         default_factory=lambda: {FormattingType.monospace}
     )
 
-    def create_directive(self) -> Directive:
+    def directive(self) -> Directive:
         return Directive(
             inherit=None,
             help=self.help,
             example=None,
             content_type="block",
             argument_type="string",
+            required_context=None,
+            domain=self.domain,
+            deprecated=self.deprecated,
+            options={},
+            fields=[],
+            name=self.name,
+            rstobject=self,
+        )
+
+    def create_directive(self) -> Directive:
+        return Directive(
+            inherit=None,
+            help=self.help,
+            example=None,
+            content_type="block",
+            argument_type=DirectiveOption(type="string", required=True),
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
@@ -260,6 +283,7 @@ class Spec:
     directive: Dict[str, Directive] = field(default_factory=dict)
     role: Dict[str, Role] = field(default_factory=dict)
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
+    tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
 
     @classmethod
     def loads(cls, data: str) -> "Spec":

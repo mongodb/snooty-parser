@@ -376,6 +376,10 @@ class Postprocessor:
             return
 
         if len(target_candidates) > 1:
+            # Try to prune down the options
+            target_candidates = self.attempt_disambugation(filename, target_candidates)
+
+        if len(target_candidates) > 1:
             line = node.span[0]
             candidate_descriptions = []
             for candidate in target_candidates:
@@ -404,6 +408,32 @@ class Postprocessor:
             for title_node in cloned_title_nodes:
                 deep_copy_position(node, title_node)
             injection_candidate.children = cloned_title_nodes
+
+    def attempt_disambugation(
+        self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]
+    ) -> Sequence[TargetDatabase.Result]:
+        """Given multiple possible targets we can link to, attempt to narrow down the
+           list to one probably-intended target under a set of narrow circumstances."""
+
+        # If there is a single local candidate, choose that.
+        local_candidates: List[TargetDatabase.InternalResult] = [
+            candidate
+            for candidate in candidates
+            if isinstance(candidate, TargetDatabase.InternalResult)
+        ]
+        if len(local_candidates) == 1:
+            return [local_candidates[0]]
+
+        # If there is a target defined in the current context, use that.
+        current_fileid_candidates = [
+            candidate
+            for candidate in local_candidates
+            if candidate.result[0] == fileid.without_known_suffix
+        ]
+        if len(current_fileid_candidates) == 1:
+            return [current_fileid_candidates[0]]
+
+        return candidates
 
     def handle_substitutions(self) -> None:
         """Find and replace substitutions throughout project"""
@@ -530,7 +560,7 @@ class Postprocessor:
             assert include_page is not None
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
-            node.children = ast.children
+            node.children = [util.fast_deep_copy(child) for child in ast.children]
 
     def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""

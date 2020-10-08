@@ -1,11 +1,12 @@
 import shutil
 from pathlib import Path
 from pytest import raises
-from .intersphinx import fetch_inventory, Inventory
+from .intersphinx import fetch_inventory, Inventory, TargetDefinition
 from .parser import Project
 from .types import FileId
 from .target_database import TargetDatabase
 from .test_project import Backend
+from . import n
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")
 INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"
@@ -98,7 +99,14 @@ def test_dump_target_database() -> None:
                 + "#"
                 + reference_definition.uri.rsplit("#", 1)[1]
             )
-            generated_definition = generated_definition._replace(uri=new_uri)
+            new_uri_base = (
+                generated_definition.uri_base.split("#", 1)[0]
+                + "#"
+                + reference_definition.uri_base.rsplit("#", 1)[1]
+            )
+            generated_definition = generated_definition._replace(
+                uri=new_uri, uri_base=new_uri_base
+            )
 
         assert reference_definition == generated_definition
 
@@ -119,3 +127,29 @@ def test_target_strange_fields() -> None:
     del inventory.targets[good_role_name]
     inventory_bytes = inventory.dumps("", "")
     Inventory.parse("", inventory_bytes)
+
+
+def test_targets() -> None:
+    db = TargetDatabase()
+
+    db.define_local_target(
+        "std",
+        "option",
+        ["--maxVarcharLength", "mongosqld.--maxVarcharLength"],
+        FileId("reference/mongosqld.txt"),
+        [n.Text(span=(7,), value="mongosqld --maxVarcharLength")],
+        "std-option-mongosqld.--maxVarcharLength",
+    )
+
+    inventory = db.generate_inventory("")
+    inventory = Inventory.parse("", inventory.dumps("", ""))
+    assert inventory.targets == {
+        "std:option:mongosqld.--maxVarcharLength": TargetDefinition(
+            name="mongosqld.--maxVarcharLength",
+            role=("std", "option"),
+            priority=-1,
+            uri_base="reference/mongosqld/#std-option-mongosqld.--maxVarcharLength",
+            uri="reference/mongosqld/#std-option-mongosqld.--maxVarcharLength",
+            display_name="mongosqld --maxVarcharLength",
+        )
+    }

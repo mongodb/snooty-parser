@@ -22,6 +22,7 @@ from typing import (
     Set,
     List,
     Iterable,
+    cast,
 )
 from typing_extensions import Protocol
 import docutils.utils
@@ -36,6 +37,7 @@ from .openapi import OpenAPI
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
+from . import specparser
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     SerializableType,
@@ -58,6 +60,9 @@ from .diagnostics import (
     InvalidTableStructure,
     MalformedGlossary,
     InvalidField,
+    UnknownTabset,
+    UnknownTabID,
+    TabMustBeDirective,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -396,6 +401,14 @@ class JSONVisitor:
 
         if (
             isinstance(popped, n.Directive)
+            and popped.options
+            and "tabset" in popped.options
+            and popped.options["tabset"] != "tab"
+        ):
+            self.handle_tabset(popped)
+
+        elif (
+            isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
         ):
 
@@ -423,6 +436,60 @@ class JSONVisitor:
                 target = n.InlineTarget(item.start, [], "std", "term", None, None)
                 target.children = [identifier]
                 item.term.append(target)
+
+    def handle_tabset(self, node: n.Directive) -> None:
+        tabset = node.options["tabset"]
+        line = node.start[0]
+        # retrieve dictionary associated with this specific tabset
+        try:
+            tab_definitions_list = specparser.SPEC.tabs[tabset]
+        except KeyError:
+            self.diagnostics.append(UnknownTabset(tabset, line))
+            return
+        tabid_list: List[str] = []
+
+        for idx, child in enumerate(node.children):
+            if (not isinstance(child, n.Directive)) or child.name != "tab":
+                self.diagnostics.append(
+                    TabMustBeDirective(str(type(child).__class__.__name__), line)
+                )
+                return
+
+            tabid = child.options["tabid"]
+            if not isinstance(tabid, str):
+                self.diagnostics.append(
+                    UnknownTabID(
+                        tabid,
+                        tabset,
+                        f"{tabid} is of type {str(type(tabid).__class__)}. Tab ids must be strings ",
+                        line,
+                    )
+                )
+                return
+
+            unknown_tabid = True
+            # find matching title given id and insert directive_argument
+            for t_idx, entry in enumerate(tab_definitions_list):
+                if entry.id == tabid:
+                    child.argument = [n.Text((line,), entry.title)]
+                    unknown_tabid = False
+                    tabid_list.insert(t_idx, tabid)
+
+            if unknown_tabid:
+                self.diagnostics.append(
+                    UnknownTabID(
+                        tabid,
+                        tabset,
+                        f"{tabid} is not defined in rstspec.toml for this tabset",
+                        line,
+                    )
+                )
+                return
+
+        node.children = sorted(
+            node.children,
+            key=lambda x: tabid_list.index(cast(n.Directive, x).options["tabid"]),
+        )
 
     def handle_directive(
         self, node: docutils.nodes.Node, line: int
@@ -801,7 +868,7 @@ class InlineJSONVisitor(JSONVisitor):
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, docutils.nodes.Inline
+            node, (docutils.nodes.Inline, docutils.nodes.system_message)
         ):
             return
 
@@ -809,7 +876,7 @@ class InlineJSONVisitor(JSONVisitor):
 
     def dispatch_departure(self, node: docutils.nodes.Node) -> None:
         if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, docutils.nodes.Inline
+            node, (docutils.nodes.Inline, docutils.nodes.system_message)
         ):
             return
 
@@ -947,7 +1014,7 @@ class PageDatabase:
         postprocessor = self.postprocessor_factory()
 
         with util.PerformanceLogger.singleton().start("copy"):
-            copied_pages = util.fast_deep_copy(self.parsed)
+            copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
 
         with util.PerformanceLogger.singleton().start("postprocessing"):
             post_metadata, post_diagnostics = postprocessor.run(copied_pages)

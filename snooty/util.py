@@ -245,10 +245,10 @@ def split_domain(name: str) -> Tuple[str, str]:
     return parts[0], parts[1]
 
 
-def fast_deep_copy(d: Dict[_K, _T]) -> Dict[_K, _T]:
-    """Time-efficiently create deep copy of a dictionary containing trusted data.
+def fast_deep_copy(v: _T) -> _T:
+    """Time-efficiently create deep copy of trusted data.
        This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
-    return {k: pickle.loads(pickle.dumps(v)) for k, v in d.items()}
+    return cast(_T, pickle.loads(pickle.dumps(v)))
 
 
 def make_html5_id(orig: str) -> str:

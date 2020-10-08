@@ -5,6 +5,13 @@ from .n import SerializableType
 from . import n
 
 
+class MakeCorrectionMixin:
+    def did_you_mean(self) -> List[str]:
+        """Suggest one or more possible corrections to the reStructuredText that this
+           diagnostic is about."""
+        raise NotImplementedError()
+
+
 class Diagnostic:
     def __init__(
         self,
@@ -331,6 +338,91 @@ class MissingTocTreeEntry(Diagnostic):
     ) -> None:
         super().__init__(f"Could not locate toctree entry {entry}", start, end)
         self.entry = entry
+
+
+class UnknownTabset(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tabset: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Tabset "{tabset}" is not defined in rstspec.toml""", start, end
+        )
+        self.tabset = tabset
+
+
+class UnknownTabID(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tabid: str,
+        tabset: str,
+        reason: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""tab id "{tabid}" given in "{tabset}" tabset is unrecognized: {reason}""",
+            start,
+            end,
+        )
+        self.tabid = tabid
+        self.tabset = tabset
+        self.reason = reason
+
+
+class TabMustBeDirective(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tab_type: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Tab sets may only contain tab directives, but found {tab_type}",
+            start,
+            end,
+        )
+        self.tab_type = tab_type
+
+
+class IncorrectMonospaceSyntax(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        text: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Monospace text uses two backticks (``)", start, end)
+        self.text = text
+
+    def did_you_mean(self) -> List[str]:
+        return [f"``{self.text}``"]
+
+
+class IncorrectLinkSyntax(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        parts: Tuple[str, str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Malformed external link", start, end)
+        self.parts = parts
+
+    def did_you_mean(self) -> List[str]:
+        return [f"`{self.parts[0]} <{self.parts[1]}>`__"]
 
 
 class MissingTab(Diagnostic):

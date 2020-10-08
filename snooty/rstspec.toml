@@ -109,23 +109,25 @@ example = """.. tip:: ${1:Title}
    ${2:Tip content}
 """
 
-[directive.versionchanged]
-argument_type = "string"
+[directive._baseversiondirective]
+argument_type = {type = "string", required = true}
 content_type = "block"
+
+[directive.versionchanged]
+inherit = "_baseversiondirective"
 example = """.. versionchanged:: ${1:v1.0}
    ${2:Describe what changed in that version. Description is optional.}
 """
 
 [directive.versionadded]
-argument_type = "string"
-content_type = "block"
+inherit = "_baseversiondirective"
 example = """.. versionadded:: ${1:v1.0}
    ${2:Describe what was added in that version. Description is optional.}
 """
 [directive.deprecated]
-argument_type = "string"
+argument_type = {type = "string", required = false}
 content_type = "block"
-example = """.. deprecated:: ${1:v1.0}
+example = """.. deprecated:: ${1:v1.0 (Optional)}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
 """
 
@@ -920,6 +922,10 @@ example = """.. topic:: ${1:Title of block}
 help = """Shows search results from browser query params (no arguments)."""
 
 ###### Roles
+[role.kbd]
+help = """Mark a sequence of keystrokes."""
+type = "text"
+
 [role."highlight-red"]
 help = """Highlight text with a red background"""
 type = "text"
@@ -1279,6 +1285,9 @@ type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
 [role."bic-v2.10"]
 type = {link = "https://docs.mongodb.com/bi-connector/v2.10%s"}
 
+[role.dbtools]
+type = {link = "https://docs.mongodb.com/database-tools%s"}
+
 [role.k8s]
 type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s"}
 
@@ -1295,25 +1304,16 @@ type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/js/4/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s"}
 
-[role."android-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/java/4/%s"}
-
-[role."ios-sdk"]
-type = {link = "https://docs.mongodb.com/stitch-sdks/swift/6/%s"}
-
-[role."fb-dev-docs"]
-type = {link = "https://developers.facebook.com/docs/%s"}
+[role."facebook"]
+type = {link = "https://developers.facebook.com/%s"}
 
 [role."fcm"]
 type = {link = "https://firebase.google.com/docs/%s"}
 
-[role."google-dev"]
+[role."google"]
 type = {link = "https://developers.google.com/%s"}
-
-[role."google-android-ref"]
-type = {link = "https://developers.google.com/android/reference/com/google/android/gms/%s"}
 
 [role."github"]
 type = {link = "https://github.com/%s"}
@@ -1321,17 +1321,14 @@ type = {link = "https://github.com/%s"}
 [role."github-dev"]
 type = {link = "https://developer.github.com/%s"}
 
-[role."electricimp"]
-type = {link = "https://electricimp.com/%s"}
-
 [role."twilio"]
 type = {link = "https://www.twilio.com/%s"}
 
 [role."mdn"]
 type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
 
-[role."apollo-docs"]
-type = {link = "https://www.apollographql.com/docs%s"}
+[role."apollo"]
+type = {link = "https://www.apollographql.com/%s"}
 
 [role."aws-docs"]
 type = {link = "https://docs.aws.amazon.com/%s"}
@@ -1343,7 +1340,7 @@ type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
 type = {link = "https://docs.aws.amazon.com/IAM/latest/%s"}
 
 [role."aws-reference"]
-type = {link = "https://docs.aws.amazon.com/general/latest/gr/%s"}
+type = {link = "https://docs.aws.amazon.com/general/latest/%s"}
 
 [role."reactjs"]
 type = {link = "https://reactjs.org/%s"}
@@ -1351,11 +1348,47 @@ type = {link = "https://reactjs.org/%s"}
 [role."jwt-io"]
 type = {link = "https://jwt.io/%s"}
 
-[role."android-dev"]
+[role."android"]
 type = {link = "https://developer.android.com/%s"}
 
-[role."apple-dev"]
-type = {link = "https://developer.apple.com/documentation/%s"}
+[role."apple"]
+type = {link = "https://developer.apple.com/%s"}
+
+[role."admin-api-endpoint"]
+type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s"}
+
+[role."java-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/java/10.0.0-BETA.8/%s"}
+
+[role."kotlin-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/10.0.0-BETA.8/%s"}
+
+[role."swift-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/swift/10.0.0-beta.5/%s"}
+
+[role."objc-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/objc/10.0.0-beta.5/%s"}
+
+[role."codesandbox"]
+type = {link = "https://codesandbox.io/%s"}
+
+[role."graphql"]
+type = {link = "https://graphql.org/%s"}
+
+[role."nodejs"]
+type = {link = "https://nodejs.org/%s"}
+
+[role."npm"]
+type = {link = "https://www.npmjs.com/%s"}
+
+[role."rubygems"]
+type = {link = "https://rubygems.org/%s"}
+
+[role."typescript"]
+type = {link = "https://www.typescriptlang.org/%s"}
+
+[role."node-driver"]
+type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
@@ -1511,6 +1544,12 @@ help = """JSON Expression Expansion"""
 [rstobject."mongodb:json-operator"]
 help = """JSON Expression Operator"""
 
+[rstobject."mongodb:sync-client-message"]
+help = """Realm Sync Protocol Client->Server Request"""
+
+[rstobject."mongodb:sync-server-message"]
+help = """Realm Sync Protocol Server->Client Request"""
+
 [rstobject."mongodb:action"]
 help = """Service Actions"""
 prefix = "action"
@@ -1529,3 +1568,106 @@ prefix = "opsmgrkube"
 [rstobject."mongodb:autoencryptkeyword"]
 help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
 prefix = "autoencryptkeyword"
+
+[tabs]
+cloud-providers = [
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
+]
+k8s-orchestrator = [
+  {id = "k8s", title = "Kubernetes"},
+  {id = "openshift", title = "OpenShift"},
+]
+cloud = [
+  {id = "cloud", title = "Cloud (Atlas)"},
+  {id = "local", title = "Local Instance"},
+]
+platforms = [
+  {id = "windows", title = "Windows"},
+  {id = "macos", title = "macOS"},
+  {id = "debian", title = "Ubuntu/Debian"},
+  {id = "rhel", title = "RHEL/CentOS/SLES/AMZ"},
+  {id = "linux", title = "Linux"},
+]
+drivers = [
+  {id = "shell", title = "Mongo Shell"},
+  {id = "compass", title = "Compass"},
+  {id = "python", title = "Python"},
+  {id = "java-sync", title = "Java (Sync)"},
+  {id = "nodejs", title = "Node.js"},
+  {id = "php", title = "PHP"},
+  {id = "motor", title = "Motor"},
+  {id = "java-async", title = "Java (Async)"},
+  {id = "c", title = "C"},
+  {id = "cpp", title = "C++11"},
+  {id = "csharp", title = "C#"},
+  {id = "perl", title = "Perl"},
+  {id = "ruby", title = "Ruby"},
+  {id = "scala", title = "Scala"},
+  {id = "go", title = "Go"},
+  {id = "swift-sync", title = "Swift (Sync)"},
+  {id = "swift-async", title = "Swift (Async)"},
+]
+auth = [
+  {id = "uidpwd", title = "Username and Password"},
+  {id = "ldap", title = "LDAP"},
+  {id = "kerberos", title = "Kerberos"},
+]
+stitch-auth-providers = [
+  {id = "anon-user", title = "Anonymous"},
+  {id = "local-userpass", title = "Email/Password"},
+  {id = "oauth2-google", title = "Google"},
+  {id = "oauth2-facebook", title = "Facebook"},
+  {id = "api-key", title = "API Key Authentication"},
+  {id = "custom-token", title = "Custom"},
+]
+deployments = [
+  {id = "standalone", title = "Standalone"},
+  {id = "repl", title = "Replica Set"},
+  {id = "shard", title = "Sharded Cluster"},
+]
+stitch-sdks = [
+  {id = "functions", title = "afaunctions"},
+  {id = "json-expressions", title = "Json Expressions"},
+  {id = "javascript", title = "JavaScript SDK"},
+  {id = "android", title = "Android SDK"},
+  {id = "ios", title = "iOS SDK"},
+]
+stitch-interfaces = [
+  {id = "stitch-ui", title = "Stitch UI"},
+  {id = "import-export", title = "Import/Export"},
+]
+realm-languages = [
+  {id = "swift", title = "Swift"},
+  {id = "kotlin", title = "Kotlin"},
+  {id = "typescript", title = "TypeScript"},
+  {id = "java", title = "Java"},
+  {id = "objective-c", title = "Objective C"},
+  {id = "javascript", title = "JavaScript"},
+  {id = "c-sharp", title = "C#"},
+]
+realm-sdks = [
+  {id = "functions", title = "Functions"},
+  {id = "json-expressions", title = "JSON Expressions"},
+  {id = "graphql", title = "GraphQL"},
+  {id = "ios", title = "iOS SDK"},
+  {id = "android", title = "Android SDK"},
+  {id = "dotnet", title = ".NET SDK"},
+  {id = "xamarin", title = "Xamarin SDK"},
+  {id = "javascript", title = "JavaScript SDKs"},
+  {id = "node", title = "Node.js SDK"},
+  {id = "react-native", title = "React Native SDK"},
+]
+realm-admin-interfaces = [
+  {id = "ui", title = "Realm UI"},
+  {id = "cli", title = "Realm CLI"},
+  {id = "api", title = "Admin API"},
+  {id = "github", title = "GitHub Deploy"},
+  {id = "code-deploy", title = "Code Deploy"},
+]
+realm-auth-providers = [
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
+]

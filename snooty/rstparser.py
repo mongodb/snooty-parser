@@ -29,10 +29,11 @@ from typing import (
     Union,
 )
 from typing_extensions import Protocol
+from docutils.nodes import unescape
 from .gizaparser.parse import load_yaml
 from .gizaparser import nodes
 from .types import ProjectConfig
-from .diagnostics import Diagnostic
+from .diagnostics import Diagnostic, IncorrectMonospaceSyntax, IncorrectLinkSyntax
 from .flutter import checked, check_type, LoadError
 from . import util
 from . import specparser
@@ -57,6 +58,7 @@ PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
 PAT_ISO_8601 = re.compile(r"^([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])$")
+PAT_PARAMETERS = re.compile(r"\s*\(.*?\)\s*$")
 
 #: Hard-coded sequence of domains in which to search for a directives
 #: and roles if no domain is explicitly provided.. Eventually this should
@@ -80,13 +82,22 @@ docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
 docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
 
 
+def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
+    match = PAT_EXPLICIT_TITLE.match(text)
+    if match:
+        return unescape(match["target"]), unescape(match["label"])
+
+    return (unescape(text), None)
+
+
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
        e.g. foo(bar, baz) -> foo."""
-    if not target.endswith(")"):
+    match = PAT_PARAMETERS.search(target)
+    if not match:
         return target
 
-    starting_index = target.rfind("(")
+    starting_index = match.start()
     if starting_index == -1:
         return target
 
@@ -198,8 +209,16 @@ def handle_role_null(
     content: List[object] = [],
 ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
     """Handle unnamed roles by raising a warning."""
-    msg = inliner.reporter.error("Monospace text uses two backticks (``)", line=lineno)
-    return [], [msg]
+    target, label = parse_explicit_title(text)
+    if label is not None:
+        diagnostic: Diagnostic = IncorrectLinkSyntax((label, target), lineno)
+    else:
+        diagnostic = IncorrectMonospaceSyntax(target, lineno)
+
+    return (
+        [docutils.nodes.literal(rawtext, text), snooty_diagnostic(diagnostic),],
+        [],
+    )
 
 
 class TextRoleHandler:
@@ -239,12 +258,12 @@ class ExplicitTitleRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        if match:
-            node = role(self.domain, typ, lineno, match["target"])
-            node.append(docutils.nodes.Text(match["label"]))
+        target, label = parse_explicit_title(text)
+        if label is not None:
+            node = role(self.domain, typ, lineno, target)
+            node.append(docutils.nodes.Text(label))
         else:
-            node = role(self.domain, typ, lineno, text)
+            node = role(self.domain, typ, lineno, target)
 
         return [node], []
 
@@ -296,13 +315,7 @@ class RefRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        if match:
-            label: Optional[str] = match["label"]
-            target = match["target"]
-        else:
-            label = None
-            target = text
+        target, label = parse_explicit_title(text)
 
         flag = ""
         if target.startswith("~") or target.startswith("!"):
@@ -359,12 +372,7 @@ class LinkRoleHandler:
         options: Dict[str, object] = {},
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
-        match = PAT_EXPLICIT_TITLE.match(text)
-        label: Optional[str] = None
-        if match:
-            label, target = match["label"], match["target"]
-        else:
-            target = text
+        target, label = parse_explicit_title(text)
 
         url = self.url_template % target
         if not label:
@@ -761,7 +769,7 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
 
 
 class BaseVersionDirective(docutils.parsers.rst.Directive):
-    """Special handling for versionadded, versionchanged, and deprecated directives.
+    """Special handling for version change directives.
 
     These directives include one required argument and an optional argument on the next line.
     We need to ensure that these are both included in the `argument` field of the AST, and that
@@ -778,9 +786,10 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
         node.source, node.line = source, line
         node["options"] = self.options
 
-        if self.arguments is not None:
+        if self.arguments:
+            arguments = " ".join(self.arguments).split(None, 1)
             textnodes = []
-            for argument_text in self.arguments:
+            for argument_text in arguments:
                 text, messages = self.state.inline_text(argument_text, self.lineno)
                 textnodes.extend(text)
             argument = directive_argument("", "", *textnodes)
@@ -794,6 +803,14 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
             )
 
         return [node]
+
+
+class DeprecatedVersionDirective(BaseVersionDirective):
+    """Variant of BaseVersionDirective for the deprecated directive, which does not
+       require an argument."""
+
+    required_arguments = 0
+    optional_arguments = 1
 
 
 class BaseTocTreeDirective(docutils.parsers.rst.Directive):
@@ -973,9 +990,9 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
     "code-block": BaseCodeDirective,
     "code": BaseCodeDirective,
     "sourcecode": BaseCodeDirective,
-    "deprecated": BaseVersionDirective,
     "versionadded": BaseVersionDirective,
     "versionchanged": BaseVersionDirective,
+    "deprecated": DeprecatedVersionDirective,
     "card-group": BaseCardGroupDirective,
     "toctree": BaseTocTreeDirective,
 }
@@ -987,10 +1004,24 @@ def make_docutils_directive_handler(
     name: str,
     options: Dict[str, object],
 ) -> Type[docutils.parsers.rst.Directive]:
+    optional_args = 0
+    required_args = 0
+
+    argument_type = directive.argument_type
+    if argument_type:
+        if (
+            isinstance(argument_type, specparser.DirectiveOption)
+            and argument_type.required
+        ):
+            required_args = 1
+        else:
+            optional_args = 1
+
     class DocutilsDirective(base_class):  # type: ignore
         directive_spec = directive
         has_content = bool(directive.content_type)
-        optional_arguments = 1 if directive.argument_type else 0
+        optional_arguments = optional_args
+        required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
 
@@ -1035,7 +1066,7 @@ def register_spec_with_docutils(
         base_class: Any = BaseDocutilsDirective
 
         # Tabs have special handling because of the need to support legacy syntax
-        if name == "tabs" or name.startswith("tabs-"):
+        if name == "tabs":
             base_class = BaseTabsDirective
         elif name in SPECIAL_DIRECTIVE_HANDLERS:
             base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
@@ -1044,6 +1075,33 @@ def register_spec_with_docutils(
             directive, base_class, name, options
         )
         builder.add_directive(name, DocutilsDirective)
+
+    # Define tabsets
+    for name in spec.tabs:
+        tabs_name = "tabs-" + name
+        tabs_base_class: Any = BaseTabsDirective
+        directive = specparser.Directive(
+            inherit=None,
+            help=None,
+            example=None,
+            content_type="block",
+            argument_type=None,
+            required_context=None,
+            domain=None,
+            name=tabs_name,
+            options={"tabid": specparser.PrimitiveType.string},
+        )
+
+        tabs_options: Dict[str, object] = {
+            option_name: spec.get_validator(option)
+            for option_name, option in directive.options.items()
+        }
+
+        DocutilsDirective = make_docutils_directive_handler(
+            directive, tabs_base_class, "tabs", tabs_options
+        )
+
+        builder.add_directive(tabs_name, DocutilsDirective)
 
     # Docutils builtins
     builder.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
