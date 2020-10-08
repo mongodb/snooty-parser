@@ -1565,9 +1565,8 @@ prefix = "opsmgrkube"
 help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
 prefix = "autoencryptkeyword"
 
-
 [tabs]
-cloudp-roviders = [
+cloud-providers = [
   {id = "aws", title = "AWS"},
   {id = "azure", title = "Azure"},
   {id = "gcp", title = "GCP"},
