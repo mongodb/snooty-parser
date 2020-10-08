@@ -97,7 +97,7 @@ def strip_parameters(target: str) -> str:
     if not match:
         return target
 
-    starting_index = target.rfind("(")
+    starting_index = match.start()
     if starting_index == -1:
         return target
 
@@ -1018,7 +1018,6 @@ def make_docutils_directive_handler(
         has_content = bool(directive.content_type)
         optional_arguments = optional_args
         required_arguments = required_args
-        required_arguments = required_args
         final_argument_whitespace = True
         option_spec = options
 
@@ -1067,7 +1066,7 @@ def register_spec_with_docutils(
             base_class = BaseTabsDirective
         elif name in SPECIAL_DIRECTIVE_HANDLERS:
             base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
-            print("name and base class: ", name, base_class)
+
         DocutilsDirective = make_docutils_directive_handler(
             directive, base_class, name, options
         )

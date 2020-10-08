@@ -25,6 +25,7 @@ ROOT_PATH = Path("test_data")
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
 
+
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
@@ -59,13 +60,13 @@ def test_tabs() -> None:
                 <paragraph><text>Linux Content</text></paragraph>
             </directive>
         </directive>
-
+        
         <directive name="tabs" tabset="platforms">
             <directive name="tab" tabid="bobs_your_uncle">
             <paragraph><text>Windows Content</text></paragraph>
             </directive>
         </directive>
-
+    
         <directive name="tabs" tabset="platfors">
             <directive name="tab" tabid="linux">
             <paragraph><text>Linux Content</text></paragraph>
@@ -2085,7 +2086,7 @@ def test_explicit_title_parsing() -> None:
         </directive_argument>
         <target_identifier ids="['writeconcern.&lt;custom write concern name&gt;']"><text>&lt;custom write concern name&gt;</text></target_identifier>
     </target>
-
+    
     <paragraph>
         <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&lt;custom write concern name&gt;">
             <literal><text>w:1</text></literal>
