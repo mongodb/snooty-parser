@@ -314,6 +314,7 @@ class Postprocessor:
                 TargetNotFound(node.name, node.target, line)
             )
             return
+
         if len(target_candidates) > 1:
             # Try to prune down the options
             target_candidates = self.attempt_disambugation(filename, target_candidates)
