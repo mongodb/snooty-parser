@@ -54,7 +54,6 @@ RoleHandlerType = Callable[
 PAT_EXPLICIT_TITLE = re.compile(
     r"^(?P<label>.*?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
 )
-PAT_ROLE_NAME = re.compile(r"^:[a-zA-Z]*:")
 PAT_WHITESPACE = re.compile(r"^\x20*")
 PAT_BLOCK_HAS_ARGUMENT = re.compile(r"^\x20*\.\.\x20[^\s]+::\s*\S+")
 PAT_OPTION = re.compile(r"((?:/|--|-|\+)?[^\s=]+)(=?\s*.*)")
@@ -89,16 +88,6 @@ def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
         return unescape(match["target"]), unescape(match["label"])
 
     return (unescape(text), None)
-
-
-def parse_role(rawtext: str) -> str:
-
-    match = PAT_ROLE_NAME.match(rawtext)
-
-    if match:
-        return match.group()
-
-    return ""
 
 
 def strip_parameters(target: str) -> str:
@@ -384,9 +373,8 @@ class LinkRoleHandler:
         content: List[object] = [],
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
         target, label = parse_explicit_title(text)
-        role = parse_role(rawtext)
 
-        if role == ":rfc:" and not label:
+        if typ == "rfc" and not label:
             label = "".join(["RFC-", target])
 
         url = self.url_template % target
