@@ -663,6 +663,8 @@ def test_roles() -> None:
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
 * :rfc:`RFC-1149 <1149>`
+* :issue:`TOOLS-2456`
+* :issue:`this jira issue <TOOLS-2456>`
 * :binary:`~bin.mongod`
 * :binary:`mongod <~bin.mongod>`
 * :guilabel:`Test <foo>`
@@ -682,7 +684,7 @@ def test_roles() -> None:
             <listItem>
             <paragraph>
             <reference refuri="https://docs.mongodb.com/manual/introduction/">
-            <text>https://docs.mongodb.com/manual/introduction/</text>
+            <text>/introduction/</text>
             </reference>
             </paragraph>
             </listItem>
@@ -693,12 +695,22 @@ def test_roles() -> None:
             </listItem>
             <listItem>
             <paragraph>
-            <reference refuri="https://tools.ietf.org/html/1149"><text>https://tools.ietf.org/html/1149</text></reference>
+            <reference refuri="https://tools.ietf.org/html/1149"><text>RFC-1149</text></reference>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <reference refuri="https://tools.ietf.org/html/1149"><text>RFC-1149</text></reference>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://jira.mongodb.org/browse/TOOLS-2456"><text>TOOLS-2456</text></reference>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://jira.mongodb.org/browse/TOOLS-2456"><text>this jira issue</text></reference>
             </paragraph>
             </listItem>
             <listItem>
