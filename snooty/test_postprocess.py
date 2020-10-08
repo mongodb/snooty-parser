@@ -4,6 +4,7 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
+from .diagnostics import TargetNotFound
 
 # ensure that broken links still generate titles
 def test_broken_link() -> None:
@@ -22,6 +23,10 @@ The :parameter:`title` stuff works
 """
         }
     ) as result:
+        diagnostics = result.diagnostics[FileId("param.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], TargetNotFound)
+
         page = result.pages[FileId("param.txt")]
         check_ast_testing_string(
                     page.ast,
@@ -74,7 +79,6 @@ Main Heading
             for diagnostic in result.diagnostics[FileId("index.txt")]
         ] == [True], "Incorrect diagnostics raised"
         page = result.pages[FileId("index.txt")]
-        print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """

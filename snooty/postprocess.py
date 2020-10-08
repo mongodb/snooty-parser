@@ -28,6 +28,7 @@ from .diagnostics import (
     UnnamedPage,
     MissingTocTreeEntry,
 )
+from . import specparser
 from . import n, util
 from .page import Page
 from .target_database import TargetDatabase
@@ -298,8 +299,13 @@ class Postprocessor:
         # Add title and link target to AST
         target_candidates = self.targets[key]
         if not target_candidates:
+            # insert title and raise diagnostic
             line = node.span[0]
-            title = node.target.split(".")[1]
+            target_dict = specparser.SPEC.rstobject
+            target_key = f"{node.domain}:{node.name}"
+            title = node.target
+            if target_key in target_dict and target_dict[target_key].prefix:
+                title = title.replace(f"{target_dict[target_key].prefix}.", "")
             title_node = n.Text((line,), title)
             deep_copied_title_node = deepcopy(title_node)
             injection_candidate = get_title_injection_candidate(node)
@@ -308,7 +314,6 @@ class Postprocessor:
                 TargetNotFound(node.name, node.target, line)
             )
             return
-
         if len(target_candidates) > 1:
             # Try to prune down the options
             target_candidates = self.attempt_disambugation(filename, target_candidates)
