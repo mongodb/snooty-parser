@@ -93,8 +93,9 @@ def test_tabsets_with_options() -> None:
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
 
-    check_ast_testing_string(page.ast, 
-    """<root>
+    check_ast_testing_string(
+        page.ast,
+        """<root>
     <directive name="tabs" hidden="True" tabset="drivers">
         <directive name="tab" tabid="java-sync">
             <text>Java (Sync)</text><paragraph><text>Text</text></paragraph>
@@ -103,7 +104,8 @@ def test_tabsets_with_options() -> None:
             <text>Node.js</text><paragraph><text>More text</text></paragraph>
         </directive>
     </directive>
-    </root>""")
+    </root>""",
+    )
     assert len(diagnostics) == 0
 
 
