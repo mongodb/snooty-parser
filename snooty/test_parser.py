@@ -25,7 +25,6 @@ ROOT_PATH = Path("test_data")
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
 
-
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
@@ -60,13 +59,13 @@ def test_tabs() -> None:
                 <paragraph><text>Linux Content</text></paragraph>
             </directive>
         </directive>
-        
+
         <directive name="tabs" tabset="platforms">
             <directive name="tab" tabid="bobs_your_uncle">
             <paragraph><text>Windows Content</text></paragraph>
             </directive>
         </directive>
-    
+
         <directive name="tabs" tabset="platfors">
             <directive name="tab" tabid="linux">
             <paragraph><text>Linux Content</text></paragraph>
@@ -84,6 +83,27 @@ def test_tabs() -> None:
     assert isinstance(diagnostics[0], UnknownTabID)
     assert isinstance(diagnostics[1], UnknownTabset)
     assert isinstance(diagnostics[2], DocUtilsParseError)
+
+
+def test_tabsets_with_options() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("bug_test_tabs.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+
+    check_ast_testing_string(page.ast, 
+    """<root>
+    <directive name="tabs" hidden="True" tabset="drivers">
+        <directive name="tab" tabid="java-sync">
+            <text>Java (Sync)</text><paragraph><text>Text</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="nodejs">
+            <text>Node.js</text><paragraph><text>More text</text></paragraph>
+        </directive>
+    </directive>
+    </root>""")
+    assert len(diagnostics) == 0
 
 
 def test_tabs_invalid_yaml() -> None:
@@ -2065,7 +2085,7 @@ def test_explicit_title_parsing() -> None:
         </directive_argument>
         <target_identifier ids="['writeconcern.&lt;custom write concern name&gt;']"><text>&lt;custom write concern name&gt;</text></target_identifier>
     </target>
-    
+
     <paragraph>
         <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&lt;custom write concern name&gt;">
             <literal><text>w:1</text></literal>

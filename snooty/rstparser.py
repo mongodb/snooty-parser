@@ -1067,35 +1067,29 @@ def register_spec_with_docutils(
             base_class = BaseTabsDirective
         elif name in SPECIAL_DIRECTIVE_HANDLERS:
             base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
-
+            print("name and base class: ", name, base_class)
         DocutilsDirective = make_docutils_directive_handler(
             directive, base_class, name, options
         )
         builder.add_directive(name, DocutilsDirective)
 
+    # copy tabs directive declaration
+    tabs_directive = spec.directive["tabs"]
+    tabs_directive.options["tabid"] = specparser.PrimitiveType.string
+
     # Define tabsets
     for name in spec.tabs:
-        tabs_name = "tabs-" + name
         tabs_base_class: Any = BaseTabsDirective
-        directive = specparser.Directive(
-            inherit=None,
-            help=None,
-            example=None,
-            content_type="block",
-            argument_type=None,
-            required_context=None,
-            domain=None,
-            name=tabs_name,
-            options={"tabid": specparser.PrimitiveType.string},
-        )
+        tabs_name = "tabs-" + name
+        tabs_directive.name = tabs_name
 
         tabs_options: Dict[str, object] = {
             option_name: spec.get_validator(option)
-            for option_name, option in directive.options.items()
+            for option_name, option in tabs_directive.options.items()
         }
 
         DocutilsDirective = make_docutils_directive_handler(
-            directive, tabs_base_class, "tabs", tabs_options
+            tabs_directive, tabs_base_class, "tabs", tabs_options
         )
 
         builder.add_directive(tabs_name, DocutilsDirective)

@@ -228,22 +228,6 @@ class RstObject:
         default_factory=lambda: {FormattingType.monospace}
     )
 
-    def directive(self) -> Directive:
-        return Directive(
-            inherit=None,
-            help=self.help,
-            example=None,
-            content_type="block",
-            argument_type="string",
-            required_context=None,
-            domain=self.domain,
-            deprecated=self.deprecated,
-            options={},
-            fields=[],
-            name=self.name,
-            rstobject=self,
-        )
-
     def create_directive(self) -> Directive:
         return Directive(
             inherit=None,

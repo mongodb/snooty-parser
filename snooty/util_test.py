@@ -116,6 +116,7 @@ def check_ast_testing_string(ast: Any, testing_string: str) -> None:
     """Ensure that an AST node matches the given testing XML string, using ast_to_testing_string()."""
     correct_tree = ET.fromstring(testing_string)
     evaluating_tree = ET.fromstring(ast_to_testing_string(ast))
+    print(ast_to_testing_string(ast))
     assert_etree_equals(evaluating_tree, correct_tree)
 
 
