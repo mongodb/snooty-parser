@@ -1077,7 +1077,7 @@ def register_spec_with_docutils(
         tabs_base_class: Any = BaseTabsDirective
         directive = specparser.Directive(
             inherit=None,
-            help="help with tabset",
+            help=None,
             example=None,
             content_type="block",
             argument_type=None,

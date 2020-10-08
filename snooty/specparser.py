@@ -150,8 +150,6 @@ class DirectiveOption:
 @checked
 @dataclass
 class TabDefinition:
-    """a docstring"""
-
     id: str
     title: str
 
