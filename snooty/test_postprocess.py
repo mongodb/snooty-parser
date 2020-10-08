@@ -222,13 +222,13 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'shell': 'shell', 'python': 'python'}}">
+<root selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="shell">
+<directive name="tab" tabid="shell"><text>Mongo Shell</text>
 <paragraph><text>Shell</text></paragraph>
 </directive>
-<directive name="tab" tabid="python">
+<directive name="tab" tabid="python"><text>Python</text>
 <paragraph><text>Python</text></paragraph>
 </directive>
 </directive>
@@ -287,23 +287,23 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'c': 'c', 'nodejs': 'nodejs'}}">
+<root selectors="{'drivers': {'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}], 'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="c">
+<directive name="tab" tabid="c"><text>C</text>
 <paragraph><text>C</text></paragraph>
 </directive>
-<directive name="tab" tabid="nodejs">
+<directive name="tab" tabid="nodejs"><text>Node.js</text>
 <paragraph><text>Node.js</text></paragraph>
 </directive>
 </directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="c">
+<directive name="tab" tabid="c"><text>C</text>
 <paragraph><text>C</text></paragraph>
 </directive>
 </directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="python">
+<directive name="tab" tabid="python"><text>Python</text>
 <paragraph><text>Python</text></paragraph>
 </directive>
 </directive>
@@ -365,7 +365,7 @@ def test_language_selector() -> None:
 <root>
 <directive name="tabs-selector" />
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="java-sync">
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
 <paragraph><text>Java (sync)</text></paragraph>
 </directive>
 </directive>
@@ -409,16 +409,16 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'platforms': {'windows': 'windows', 'macos': 'macos', 'linux': 'linux'}}">
+<root selectors="{'platforms': {'windows': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Windows'}], 'macos': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'macOS'}], 'linux': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Linux'}]}}">
 <directive name="tabs-selector"><text>platforms</text></directive>
 <directive name="tabs" hidden="True" tabset="platforms">
-<directive name="tab" tabid="windows">
+<directive name="tab" tabid="windows"><text>Windows</text>
 <paragraph><text>Windows</text></paragraph>
 </directive>
-<directive name="tab" tabid="macos">
+<directive name="tab" tabid="macos"><text>macOS</text>
 <paragraph><text>macOS</text></paragraph>
 </directive>
-<directive name="tab" tabid="linux">
+<directive name="tab" tabid="linux"><text>Linux</text>
 <paragraph><text>Linux</text></paragraph>
 </directive>
 </directive>

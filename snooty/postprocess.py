@@ -123,7 +123,7 @@ class ProgramOptionHandler:
 
 class TabsSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
-        self.selectors: Dict[str, List[List[str]]] = {}
+        self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.diagnostics = diagnostics
 
     def reset(self, filename: FileId, page: Page) -> None:
@@ -140,7 +140,7 @@ class TabsSelectorHandler:
                 return
             if not all(len(t) == len(tabsets[0]) for t in tabsets):
                 # If all tabsets are not the same length, identify tabs that do not appear in every tabset
-                tabset_sets = [set(t) for t in tabsets]
+                tabset_sets = [set(t.keys()) for t in tabsets]
                 union = set.union(*tabset_sets)
                 intersection = set.intersection(*tabset_sets)
                 error_tabs = union - intersection
@@ -151,9 +151,9 @@ class TabsSelectorHandler:
                     page.ast.options["selectors"] = {}
 
                 assert isinstance(page.ast.options["selectors"], Dict)
-                # TODO: This mapping should represent {tabid: title} when DOP-1450 has been completed
                 page.ast.options["selectors"][tabset_name] = {
-                    tab: tab for tab in tabsets[0]
+                    tabid: [node.serialize() for node in title]
+                    for tabid, title in tabsets[0].items()
                 }
 
     def __call__(self, filename: FileId, node: n.Node) -> None:
@@ -176,12 +176,12 @@ class TabsSelectorHandler:
 
         tabset_name = node.options.get("tabset", "")
         if tabset_name in self.selectors.keys():
-            tabids = [
-                tab.options["tabid"]
+            tabs = {
+                tab.options["tabid"]: tab.argument
                 for tab in node.children
                 if isinstance(tab, n.Directive)
-            ]
-            self.selectors[tabset_name].append(tabids)
+            }
+            self.selectors[tabset_name].append(tabs)
 
 
 class TargetHandler:
