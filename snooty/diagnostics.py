@@ -350,7 +350,7 @@ class UnknownTabset(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Tabset "{tabset} is not defined in rstspec.toml", start, end,"""
+            f"""Tabset "{tabset}"" is not defined in rstspec.toml""", start, end
         )
         self.tabset = tabset
 
