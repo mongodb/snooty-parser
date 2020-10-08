@@ -15,6 +15,8 @@ from .diagnostics import (
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
+    UnknownTabID,
+    UnknownTabset,
 )
 from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
 
@@ -41,14 +43,35 @@ def test_tabs() -> None:
         <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
         Trusty content</text></paragraph></directive></directive>
 
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="windows"><text>Windows</text>
+                <paragraph><text>Windows content</text></paragraph>
+            </directive>
+        </directive>
 
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
-
-        <directive name="tabs" tabset="platforms"><directive name="tab" tabid="windows">
-        <paragraph><text>Windows content</text></paragraph></directive></directive>
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="windows"><text>Windows</text>
+                <paragraph><text>Windows Content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="macos"><text>macOS</text>
+                <paragraph><text>macOS Content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="linux"><text>Linux</text>
+                <paragraph><text>Linux Content</text></paragraph>
+            </directive>
+        </directive>
+        
+        <directive name="tabs" tabset="platforms">
+            <directive name="tab" tabid="bobs_your_uncle">
+            <paragraph><text>Windows Content</text></paragraph>
+            </directive>
+        </directive>
+    
+        <directive name="tabs" tabset="platfors">
+            <directive name="tab" tabid="linux">
+            <paragraph><text>Linux Content</text></paragraph>
+            </directive>
+        </directive>
 
         <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
         <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
@@ -58,7 +81,9 @@ def test_tabs() -> None:
         </root>""",
     )
 
-    assert isinstance(diagnostics[0], DocUtilsParseError)
+    assert isinstance(diagnostics[0], UnknownTabID)
+    assert isinstance(diagnostics[1], UnknownTabset)
+    assert isinstance(diagnostics[2], DocUtilsParseError)
 
 
 def test_tabs_invalid_yaml() -> None:
