@@ -1062,7 +1062,7 @@ def register_spec_with_docutils(
         base_class: Any = BaseDocutilsDirective
 
         # Tabs have special handling because of the need to support legacy syntax
-        if name == "tabs" or name.startswith("tabs-"):
+        if name == "tabs":
             base_class = BaseTabsDirective
         elif name in SPECIAL_DIRECTIVE_HANDLERS:
             base_class = SPECIAL_DIRECTIVE_HANDLERS[name]
@@ -1074,6 +1074,7 @@ def register_spec_with_docutils(
 
     # Define tabsets
     for name in spec.tabs:
+        tabs_name = "tabs-" + name
         tabs_base_class: Any = BaseTabsDirective
         directive = specparser.Directive(
             inherit=None,
@@ -1083,7 +1084,7 @@ def register_spec_with_docutils(
             argument_type=None,
             required_context=None,
             domain=None,
-            name=name,
+            name=tabs_name,
             options={"tabid": specparser.PrimitiveType.string},
         )
 
@@ -1096,7 +1097,7 @@ def register_spec_with_docutils(
             directive, tabs_base_class, "tabs", tabs_options
         )
 
-        builder.add_directive(name, DocutilsDirective)
+        builder.add_directive(tabs_name, DocutilsDirective)
 
     # Docutils builtins
     builder.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
