@@ -1,4 +1,5 @@
 import re
+import dataclasses
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -1072,15 +1073,16 @@ def register_spec_with_docutils(
         )
         builder.add_directive(name, DocutilsDirective)
 
-    # copy tabs directive declaration
+    # reference tabs directive declaration as first step in registering tabs- with docutils
     tabs_directive = spec.directive["tabs"]
-    tabs_directive.options["tabid"] = specparser.PrimitiveType.string
 
     # Define tabsets
     for name in spec.tabs:
         tabs_base_class: Any = BaseTabsDirective
         tabs_name = "tabs-" + name
-        tabs_directive.name = tabs_name
+
+        # copy and modify the tabs directive to update its name to match tabs- naming convention
+        modified_tabs_directive = dataclasses.replace(tabs_directive, name=tabs_name)
 
         tabs_options: Dict[str, object] = {
             option_name: spec.get_validator(option)
@@ -1088,7 +1090,7 @@ def register_spec_with_docutils(
         }
 
         DocutilsDirective = make_docutils_directive_handler(
-            tabs_directive, tabs_base_class, "tabs", tabs_options
+            modified_tabs_directive, tabs_base_class, "tabs", tabs_options
         )
 
         builder.add_directive(tabs_name, DocutilsDirective)
