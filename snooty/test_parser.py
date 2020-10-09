@@ -86,6 +86,29 @@ def test_tabs() -> None:
     assert isinstance(diagnostics[2], DocUtilsParseError)
 
 
+def test_tabsets_with_options() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test_tabs_options.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+    <directive name="tabs" hidden="True" tabset="drivers">
+        <directive name="tab" tabid="java-sync">
+            <text>Java (Sync)</text><paragraph><text>Text</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="nodejs">
+            <text>Node.js</text><paragraph><text>More text</text></paragraph>
+        </directive>
+    </directive>
+    </root>""",
+    )
+    assert len(diagnostics) == 0
+
+
 def test_tabs_invalid_yaml() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
@@ -688,6 +711,8 @@ def test_roles() -> None:
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
 * :rfc:`RFC-1149 <1149>`
+* :issue:`TOOLS-2456`
+* :issue:`this jira issue <TOOLS-2456>`
 * :binary:`~bin.mongod`
 * :binary:`mongod <~bin.mongod>`
 * :guilabel:`Test <foo>`
@@ -707,7 +732,7 @@ def test_roles() -> None:
             <listItem>
             <paragraph>
             <reference refuri="https://docs.mongodb.com/manual/introduction/">
-            <text>https://docs.mongodb.com/manual/introduction/</text>
+            <text>/introduction/</text>
             </reference>
             </paragraph>
             </listItem>
@@ -718,12 +743,22 @@ def test_roles() -> None:
             </listItem>
             <listItem>
             <paragraph>
-            <reference refuri="https://tools.ietf.org/html/1149"><text>https://tools.ietf.org/html/1149</text></reference>
+            <reference refuri="https://tools.ietf.org/html/1149"><text>RFC-1149</text></reference>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
             <reference refuri="https://tools.ietf.org/html/1149"><text>RFC-1149</text></reference>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://jira.mongodb.org/browse/TOOLS-2456"><text>TOOLS-2456</text></reference>
+            </paragraph>
+            </listItem>
+            <listItem>
+            <paragraph>
+            <reference refuri="https://jira.mongodb.org/browse/TOOLS-2456"><text>this jira issue</text></reference>
             </paragraph>
             </listItem>
             <listItem>

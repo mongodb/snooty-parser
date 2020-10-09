@@ -1,0 +1,9 @@
+title: Import the *public key* used by the `package management system <https://en.wikipedia.org/wiki/Package_manager>`_
+stepnum: 1
+level: 4
+ref: import-key
+action:
+  pre: |
+    Issue the following command to import the
+    `MongoDB public GPG Key <https://www.mongodb.org/static/pgp/server-{+pgp-version+}.asc>`_
+...
