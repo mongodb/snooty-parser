@@ -86,6 +86,29 @@ def test_tabs() -> None:
     assert isinstance(diagnostics[2], DocUtilsParseError)
 
 
+def test_tabsets_with_options() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test_tabs_options.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+    <directive name="tabs" hidden="True" tabset="drivers">
+        <directive name="tab" tabid="java-sync">
+            <text>Java (Sync)</text><paragraph><text>Text</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="nodejs">
+            <text>Node.js</text><paragraph><text>More text</text></paragraph>
+        </directive>
+    </directive>
+    </root>""",
+    )
+    assert len(diagnostics) == 0
+
+
 def test_tabs_invalid_yaml() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
