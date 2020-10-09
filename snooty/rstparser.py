@@ -1073,7 +1073,7 @@ def register_spec_with_docutils(
         )
         builder.add_directive(name, DocutilsDirective)
 
-    # reference tabs directive declaration as first step in registering tabs- with docutils
+    # reference tabs directive declaration as first step in registering tabs-* with docutils
     tabs_directive = spec.directive["tabs"]
 
     # Define tabsets
@@ -1081,7 +1081,7 @@ def register_spec_with_docutils(
         tabs_base_class: Any = BaseTabsDirective
         tabs_name = "tabs-" + name
 
-        # copy and modify the tabs directive to update its name to match tabs- naming convention
+        # copy and modify the tabs directive to update its name to match the deprecated tabs-* naming convention
         modified_tabs_directive = dataclasses.replace(tabs_directive, name=tabs_name)
 
         tabs_options: Dict[str, object] = {
