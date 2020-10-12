@@ -307,11 +307,10 @@ class Postprocessor:
             if target_key in target_dict and target_dict[target_key].prefix:
                 title = title.replace(f"{target_dict[target_key].prefix}.", "")
             text_node = n.Text((line,), title)
-            deep_copied_text_node = deepcopy(text_node)
             injection_candidate = get_title_injection_candidate(node)
 
             if injection_candidate is not None:
-                injection_candidate.children = [deep_copied_text_node]
+                injection_candidate.children = [text_node]
 
             self.diagnostics[filename].append(
                 TargetNotFound(node.name, node.target, line)
