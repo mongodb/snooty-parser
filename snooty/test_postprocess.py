@@ -82,6 +82,7 @@ Main Heading
             for diagnostic in result.diagnostics[FileId("index.txt")]
         ] == [True], "Incorrect diagnostics raised"
         page = result.pages[FileId("index.txt")]
+        print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
