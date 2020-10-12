@@ -287,14 +287,14 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}], 'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}]}}">
+<root selectors="{'drivers': {'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}], 'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="c"><text>C</text>
-<paragraph><text>C</text></paragraph>
-</directive>
 <directive name="tab" tabid="nodejs"><text>Node.js</text>
 <paragraph><text>Node.js</text></paragraph>
+</directive>
+<directive name="tab" tabid="c"><text>C</text>
+<paragraph><text>C</text></paragraph>
 </directive>
 </directive>
 <directive name="tabs" hidden="True" tabset="drivers">
