@@ -299,9 +299,6 @@ class Postprocessor:
         # Add title and link target to AST
         target_candidates = self.targets[key]
         if not target_candidates:
-            print(type(node))
-            print()
-            print(node)
             # insert title and raise diagnostic
             line = node.span[0]
             target_dict = specparser.SPEC.rstobject
