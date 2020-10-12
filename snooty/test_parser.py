@@ -135,6 +135,46 @@ def test_tabs_invalid_yaml() -> None:
     assert diagnostics[0].start[0] == 6
 
 
+def test_tabs_reorder() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: nodejs
+
+      This tab should be second
+
+   .. tab::
+      :tabid: python
+
+      This tab should be first
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        r"""
+<root>
+<directive name="tabs" tabset="drivers">
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>This tab should be first</text></paragraph>
+</directive>
+<directive name="tab" tabid="nodejs"><text>Node.js</text>
+<paragraph><text>This tab should be second</text></paragraph>
+</directive>
+</directive>
+</root>
+""",
+    )
+
+
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
