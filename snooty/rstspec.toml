@@ -314,9 +314,13 @@ options.reversed = "flag"
 options.numbered = "flag"
 options.glob = "flag"
 
+[directive.tabs-selector]
+help = """Add dropdown selector used to select the specified tabset."""
+argument_type = "string"
+
 [directive.tabs-pillstrip]
 deprecated = true
-argument_type = "string"
+inherit = "tabs-selector"
 
 [directive.tabs-top]
 deprecated = true
@@ -1120,11 +1124,11 @@ type = {link = "https://metacpan.org/pod/MongoDB::%s"}
 
 [role.node-docs]
 help = """Link to a page in the Node.js driver's documentation."""
-type = {link = "http://mongodb.github.io/node-mongodb-native/3.5/%s"}
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/%s"}
 
 [role.node-api]
 help = """Link to a page in the Node.js driver's API reference."""
-type = {link = "http://mongodb.github.io/node-mongodb-native/3.5/api/%s"}
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""

@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple, Union, Dict, Optional, List
+from typing import Tuple, Union, Dict, Optional, List, Set
 from pathlib import Path
 from .n import SerializableType
 from . import n
@@ -423,3 +423,33 @@ class IncorrectLinkSyntax(Diagnostic, MakeCorrectionMixin):
 
     def did_you_mean(self) -> List[str]:
         return [f"`{self.parts[0]} <{self.parts[1]}>`__"]
+
+
+class MissingTab(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        tabs: Set[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"One or more set of tabs on this page was missing the following tab(s): {tabs}",
+            start,
+            end,
+        )
+        self.tabs = tabs
+
+
+class ExpectedTabs(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "Expected tabs directive when tabs-selector directive in use", start, end,
+        )

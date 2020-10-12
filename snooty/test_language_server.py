@@ -1,5 +1,7 @@
+import os
 import sys
 import time
+import pytest
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
@@ -36,6 +38,10 @@ class LSPDiagnostic:
     source: str
 
 
+@pytest.mark.skipif(
+    "GITHUB_RUN_ID" in os.environ,
+    reason="this test is timing-sensitive and doesn't work well in CI",
+)
 def test_debounce() -> None:
     bounces = [0]
 

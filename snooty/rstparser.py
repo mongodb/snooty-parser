@@ -1,4 +1,5 @@
 import re
+import dataclasses
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -374,9 +375,12 @@ class LinkRoleHandler:
     ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
         target, label = parse_explicit_title(text)
 
+        if typ == "rfc" and not label:
+            label = "".join(["RFC-", target])
+
         url = self.url_template % target
         if not label:
-            label = url
+            label = target
         node: docutils.nodes.Node = docutils.nodes.reference(
             label, label, internal=False, refuri=url
         )
@@ -694,6 +698,10 @@ class BaseTabsDirective(BaseDocutilsDirective):
                 node.append(self.make_tab_node(child.id, child.name, source, child))
 
             return [node]
+
+        # these directives should not be treated like a tabs directive
+        if self.name in {"tabs-pillstrip", "tabs-selector"}:
+            return super().run()
 
         # The new syntax needs no special handling beyond a little fixing up
         # the legacy tabset system.
@@ -1072,29 +1080,24 @@ def register_spec_with_docutils(
         )
         builder.add_directive(name, DocutilsDirective)
 
+    # reference tabs directive declaration as first step in registering tabs-* with docutils
+    tabs_directive = spec.directive["tabs"]
+
     # Define tabsets
     for name in spec.tabs:
-        tabs_name = "tabs-" + name
         tabs_base_class: Any = BaseTabsDirective
-        directive = specparser.Directive(
-            inherit=None,
-            help=None,
-            example=None,
-            content_type="block",
-            argument_type=None,
-            required_context=None,
-            domain=None,
-            name=tabs_name,
-            options={"tabid": specparser.PrimitiveType.string},
-        )
+        tabs_name = "tabs-" + name
+
+        # copy and modify the tabs directive to update its name to match the deprecated tabs-* naming convention
+        modified_tabs_directive = dataclasses.replace(tabs_directive, name=tabs_name)
 
         tabs_options: Dict[str, object] = {
             option_name: spec.get_validator(option)
-            for option_name, option in directive.options.items()
+            for option_name, option in tabs_directive.options.items()
         }
 
         DocutilsDirective = make_docutils_directive_handler(
-            directive, tabs_base_class, "tabs", tabs_options
+            modified_tabs_directive, tabs_base_class, "tabs", tabs_options
         )
 
         builder.add_directive(tabs_name, DocutilsDirective)
