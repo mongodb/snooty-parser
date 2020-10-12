@@ -314,9 +314,13 @@ options.reversed = "flag"
 options.numbered = "flag"
 options.glob = "flag"
 
+[directive.tabs-selector]
+help = """Add dropdown selector used to select the specified tabset."""
+argument_type = "string"
+
 [directive.tabs-pillstrip]
 deprecated = true
-argument_type = "string"
+inherit = "tabs-selector"
 
 [directive.tabs-top]
 deprecated = true

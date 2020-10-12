@@ -27,6 +27,8 @@ from .diagnostics import (
     ExpectedPathArg,
     UnnamedPage,
     MissingTocTreeEntry,
+    MissingTab,
+    ExpectedTabs,
 )
 from . import n, util
 from .page import Page
@@ -119,6 +121,69 @@ class ProgramOptionHandler:
             node.children.extend(new_identifiers)
 
 
+class TabsSelectorHandler:
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
+        self.diagnostics = diagnostics
+
+    def reset(self, filename: FileId, page: Page) -> None:
+        self.selectors = {}
+
+    def finalize_tabsets(self, filename: FileId, page: Page) -> None:
+        if len(self.selectors) == 0:
+            return
+
+        for tabset_name, tabsets in self.selectors.items():
+            if len(tabsets) == 0:
+                # Warn if tabs-selector is used without corresponding tabset
+                self.diagnostics[filename].append(ExpectedTabs(0))
+                return
+            if not all(len(t) == len(tabsets[0]) for t in tabsets):
+                # If all tabsets are not the same length, identify tabs that do not appear in every tabset
+                tabset_sets = [set(t.keys()) for t in tabsets]
+                union = set.union(*tabset_sets)
+                intersection = set.intersection(*tabset_sets)
+                error_tabs = union - intersection
+                self.diagnostics[filename].append(MissingTab(error_tabs, 0))
+
+            if isinstance(page.ast, n.Root):
+                if not page.ast.options.get("selectors"):
+                    page.ast.options["selectors"] = {}
+
+                assert isinstance(page.ast.options["selectors"], Dict)
+                page.ast.options["selectors"][tabset_name] = {
+                    tabid: [node.serialize() for node in title]
+                    for tabid, title in tabsets[0].items()
+                }
+
+    def __call__(self, filename: FileId, node: n.Node) -> None:
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name == "tabs-pillstrip" or node.name == "tabs-selector":
+            if len(node.argument) == 0:
+                return
+
+            tabset_name: str = node.argument[0].get_text()
+            # Handle naming discrepancy between .. tabs-pillstrip:: languages and .. tabs-drivers::
+            if tabset_name == "languages":
+                tabset_name = "drivers"
+            self.selectors[tabset_name] = []
+            return
+
+        if len(self.selectors) == 0 or node.name != "tabs":
+            return
+
+        tabset_name = node.options.get("tabset", "")
+        if tabset_name in self.selectors.keys():
+            tabs = {
+                tab.options["tabid"]: tab.argument
+                for tab in node.children
+                if isinstance(tab, n.Directive)
+            }
+            self.selectors[tabset_name].append(tabs)
+
+
 class TargetHandler:
     def __init__(self, targets: TargetDatabase) -> None:
         self.target_counter: typing.Counter[str] = collections.Counter()
@@ -203,13 +268,19 @@ class Postprocessor:
         self.handle_substitutions()
 
         option_handler = ProgramOptionHandler(self.diagnostics)
+        tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
+                (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
             ],
-            [(EventParser.PAGE_START_EVENT, option_handler.reset)],
+            [
+                (EventParser.PAGE_START_EVENT, option_handler.reset),
+                (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
+                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets,),
+            ],
         )
 
         target_handler = TargetHandler(self.targets)

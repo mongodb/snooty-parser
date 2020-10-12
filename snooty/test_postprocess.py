@@ -4,6 +4,7 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
+from .diagnostics import ExpectedTabs, MissingTab
 
 
 def test_case_sensitive_labels() -> None:
@@ -184,4 +185,243 @@ Program 2
     </directive>
 </section></root>
         """,
+        )
+
+
+def test_language_selector() -> None:
+    with make_test(
+        {
+            Path(
+                "source/tabs.txt"
+            ): """
+.. tabs-pillstrip:: languages
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: shell
+
+      Shell
+
+   .. tab::
+      :tabid: python
+
+      Python
+"""
+        }
+    ) as result:
+        for d in result.diagnostics[FileId("tabs.txt")]:
+            print(d.message)
+        assert [
+            "deprecated" in diagnostic.message
+            for diagnostic in result.diagnostics[FileId("tabs.txt")]
+        ] == [True], "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<directive name="tabs-pillstrip"><text>languages</text></directive>
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="shell"><text>Mongo Shell</text>
+<paragraph><text>Shell</text></paragraph>
+</directive>
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>Python</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
+
+    # Ensure that diagnostic is output when some languages don't appear in every tabset
+    with make_test(
+        {
+            Path(
+                "source/tabs-two.txt"
+            ): """
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: c
+
+      C
+
+   .. tab::
+      :tabid: nodejs
+
+      Node.js
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: c
+
+      C
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: python
+
+      Python
+"""
+        }
+    ) as result:
+        assert [
+            "nodejs" in d.message
+            and "c" in d.message
+            and "python" in d.message
+            and type(d) == MissingTab
+            for d in result.diagnostics[FileId("tabs-two.txt")]
+        ] == [True], "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs-two.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root selectors="{'drivers': {'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}], 'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}]}}">
+<directive name="tabs-selector"><text>drivers</text></directive>
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="nodejs"><text>Node.js</text>
+<paragraph><text>Node.js</text></paragraph>
+</directive>
+<directive name="tab" tabid="c"><text>C</text>
+<paragraph><text>C</text></paragraph>
+</directive>
+</directive>
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="c"><text>C</text>
+<paragraph><text>C</text></paragraph>
+</directive>
+</directive>
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>Python</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
+
+    # Ensure that diagnostic is output when tabs are missing from page with language selector
+    with make_test(
+        {
+            Path(
+                "source/tabs-three.txt"
+            ): """
+.. tabs-selector:: drivers
+"""
+        }
+    ) as result:
+        assert [
+            type(diagnostic) == ExpectedTabs
+            for diagnostic in result.diagnostics[FileId("tabs-three.txt")]
+        ] == [True], "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs-three.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root>
+<directive name="tabs-selector"><text>drivers</text></directive>
+</root>
+            """,
+        )
+
+    # Ensure postprocessor doesn't fail when no argument is specified
+    with make_test(
+        {
+            Path(
+                "source/tabs-four.txt"
+            ): """
+.. tabs-selector::
+
+.. tabs-drivers::
+   :hidden:
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+"""
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        page = result.pages[FileId("tabs-four.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root>
+<directive name="tabs-selector" />
+<directive name="tabs" hidden="True" tabset="drivers">
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
+<paragraph><text>Java (sync)</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
+
+    # Ensure non-drivers tabset works properly
+    with make_test(
+        {
+            Path(
+                "source/tabs-five.txt"
+            ): """
+.. tabs-selector:: platforms
+
+.. tabs-platforms::
+   :hidden:
+
+   .. tab::
+      :tabid: windows
+
+      Windows
+
+   .. tab::
+      :tabid: macos
+
+      macOS
+
+   .. tab::
+      :tabid: linux
+
+      Linux
+"""
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        page = result.pages[FileId("tabs-five.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root selectors="{'platforms': {'windows': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Windows'}], 'macos': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'macOS'}], 'linux': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Linux'}]}}">
+<directive name="tabs-selector"><text>platforms</text></directive>
+<directive name="tabs" hidden="True" tabset="platforms">
+<directive name="tab" tabid="windows"><text>Windows</text>
+<paragraph><text>Windows</text></paragraph>
+</directive>
+<directive name="tab" tabid="macos"><text>macOS</text>
+<paragraph><text>macOS</text></paragraph>
+</directive>
+<directive name="tab" tabid="linux"><text>Linux</text>
+<paragraph><text>Linux</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
         )
