@@ -375,6 +375,7 @@ class Postprocessor:
             target_dict = specparser.SPEC.rstobject
             target_key = f"{node.domain}:{node.name}"
             title = node.target
+            # abstract title from node's target to insert into new text node
             if target_key in target_dict and target_dict[target_key].prefix:
                 title = title.replace(f"{target_dict[target_key].prefix}.", "")
             text_node = n.Text((line,), title)
