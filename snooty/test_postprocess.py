@@ -4,6 +4,59 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
+from .diagnostics import TargetNotFound
+
+# ensure that broken links still generate titles
+def test_broken_link() -> None:
+    with make_test(
+        {
+            Path(
+                "source/param.txt"
+            ): """
+======
+$title
+======
+
+.. parameter:: $title
+
+The :parameter:`title` stuff works
+
+
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("param.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], TargetNotFound)
+
+        page = result.pages[FileId("param.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root>
+    <section>
+        <heading id="title">
+            <text>$title</text>
+        </heading>
+        <target domain="mongodb" name="parameter" html_id="mongodb-parameter-param.-title">
+            <directive_argument>
+                <literal><text>$title</text></literal>
+            </directive_argument>
+            <target_identifier ids="['param.$title']">
+                <text>$title</text>
+            </target_identifier>
+        </target>
+        <paragraph>
+            <text>The </text>
+            <ref_role domain="mongodb" name="parameter" target="param.title">
+                <literal><text>title</text></literal>
+            </ref_role>
+            <text> stuff works</text>
+        </paragraph>
+    </section>
+</root>
+                """,
+        )
 
 
 def test_case_sensitive_labels() -> None:
@@ -39,7 +92,7 @@ Main Heading
     </target>
     <section>
         <heading id="main-heading"><text>Main Heading</text></heading>
-        <paragraph><ref_role domain="std" name="label" target="a-mixedcase-label"></ref_role></paragraph>
+        <paragraph><ref_role domain="std" name="label" target="a-mixedcase-label"><text>a-mixedcase-label</text></ref_role></paragraph>
         <paragraph>
             <ref_role domain="std" name="label" target="a-MixedCase-Label" fileid="['index', 'std-label-a-MixedCase-Label']">
                 <text>Main Heading</text>
