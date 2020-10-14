@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.3] - 2020-10-14
+
 ### Changed
 
 - Extlinks should use the target name for label if no label set, *not* the raw uri (DOP-1581).
