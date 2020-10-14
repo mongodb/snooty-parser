@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Extlinks should use the target name for label if no label set, *not* the raw uri (DOP-1581).
+- RFC link labels now match legacy (DOP-1581).
+- Render role content when target is not found (DOP-1601).
+- Bump `node` extlink version (DOCSP-12335).
+
+### Fixed
+
+- Correctly inherit YAML ref names (DOP-1595).
+- Improve callable target handling.
+- Support required arguments, and apply to rstobjects (DOP-1589).
+- Support targets with escaped angle brackets (DOP-1586).
+
 ## [v0.6.2] - 2020-09-30
 
 ### Added
