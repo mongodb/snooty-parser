@@ -169,6 +169,11 @@ class TabsSelectorHandler:
             # Handle naming discrepancy between .. tabs-pillstrip:: languages and .. tabs-drivers::
             if tabset_name == "languages":
                 tabset_name = "drivers"
+
+            # Avoid overwriting previously seen tabsets if another tabs-pillstrip directive is encountered
+            if tabset_name in self.selectors:
+                return
+
             self.selectors[tabset_name] = []
             return
 

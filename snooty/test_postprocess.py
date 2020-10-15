@@ -477,3 +477,63 @@ def test_language_selector() -> None:
 </root>
             """,
         )
+
+    # Ensure a second tabs-selector directive doesnt' overwrite the first tabset
+    with make_test(
+        {
+            Path(
+                "source/tabs-six.txt"
+            ): """
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+
+   .. tab::
+      :tabid: python
+
+      Python tab
+
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+"""
+        }
+    ) as result:
+        assert [
+            "python" in d.message and type(d) == MissingTab
+            for d in result.diagnostics[FileId("tabs-six.txt")]
+        ] == [True], "Incorrect diagnostics raised"
+        page = result.pages[FileId("tabs-six.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root selectors="{'drivers': {'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}], 'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}]}}">
+<directive name="tabs-selector"><text>drivers</text></directive>
+<directive name="tabs" tabset="drivers">
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>Python tab</text></paragraph>
+</directive>
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
+<paragraph><text>Java (sync)</text></paragraph>
+</directive>
+</directive>
+<directive name="tabs-selector"><text>drivers</text></directive>
+<directive name="tabs" tabset="drivers">
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
+<paragraph><text>Java (sync)</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
