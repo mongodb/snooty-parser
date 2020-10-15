@@ -16,6 +16,7 @@ class Action(HeadingMixin):
     """An action that a user must take."""
 
     code: Optional[str]
+    caption: Optional[str]
     copyable: Optional[bool]
     content: Optional[str]
     language: Optional[str]
@@ -45,6 +46,7 @@ class Action(HeadingMixin):
                 n.Code(
                     (self.line,),
                     self.language,
+                    self.caption,
                     True if self.copyable is None else self.copyable,
                     None,
                     self.code,

@@ -760,6 +760,8 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         node["name"] = "code"
         if self.arguments:
             node["lang"] = self.arguments[0]
+        if "caption" in self.options:
+            node["caption"] = self.options["caption"]
         node["copyable"] = copyable
         node["emphasize_lines"] = emphasize_lines
         node["linenos"] = linenos

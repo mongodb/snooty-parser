@@ -14,6 +14,7 @@ from .nodes import Inheritable, GizaCategory
 @dataclass
 class ReleaseSpecification(Inheritable):
     pre: Optional[str]
+    caption: Optional[str]
     copyable: Optional[bool]
     language: Optional[str]
     code: Optional[str]
@@ -29,6 +30,7 @@ class ReleaseSpecification(Inheritable):
                 n.Code(
                     (self.line,),
                     self.language,
+                    self.caption,
                     True if self.copyable is None else self.copyable,
                     None,
                     self.code,
