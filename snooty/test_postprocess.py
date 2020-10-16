@@ -4,7 +4,7 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
-from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab
+from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab, DuplicateDirective
 
 # ensure that broken links still generate titles
 def test_broken_link() -> None:
@@ -509,10 +509,9 @@ def test_language_selector() -> None:
 """
         }
     ) as result:
-        assert [
-            "python" in d.message and type(d) == MissingTab
-            for d in result.diagnostics[FileId("tabs-six.txt")]
-        ] == [True], "Incorrect diagnostics raised"
+        diagnostics = result.diagnostics[FileId("tabs-six.txt")]
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        assert isinstance(diagnostics[1], MissingTab)
         page = result.pages[FileId("tabs-six.txt")]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(

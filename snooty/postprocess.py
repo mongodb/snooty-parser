@@ -29,6 +29,7 @@ from .diagnostics import (
     MissingTocTreeEntry,
     MissingTab,
     ExpectedTabs,
+    DuplicateDirective,
 )
 from . import specparser
 from . import n, util
@@ -172,6 +173,7 @@ class TabsSelectorHandler:
 
             # Avoid overwriting previously seen tabsets if another tabs-pillstrip directive is encountered
             if tabset_name in self.selectors:
+                self.diagnostics[filename].append(DuplicateDirective(node.name, 0))
                 return
 
             self.selectors[tabset_name] = []
