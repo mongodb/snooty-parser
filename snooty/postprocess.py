@@ -87,7 +87,7 @@ class ProgramOptionHandler:
         self.pending_program: Optional[n.Target] = None
         self.diagnostics = diagnostics
 
-    def reset(self, fileid: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.pending_program = None
 
     def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -128,17 +128,17 @@ class TabsSelectorHandler:
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.diagnostics = diagnostics
 
-    def reset(self, filename: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
 
-    def finalize_tabsets(self, filename: FileId, page: Page) -> None:
+    def finalize_tabsets(self, fileid_stack: FileIdStack, page: Page) -> None:
         if len(self.selectors) == 0:
             return
 
         for tabset_name, tabsets in self.selectors.items():
             if len(tabsets) == 0:
                 # Warn if tabs-selector is used without corresponding tabset
-                self.diagnostics[filename].append(ExpectedTabs(0))
+                self.diagnostics[fileid_stack.current].append(ExpectedTabs(0))
                 return
             if not all(len(t) == len(tabsets[0]) for t in tabsets):
                 # If all tabsets are not the same length, identify tabs that do not appear in every tabset
@@ -146,7 +146,7 @@ class TabsSelectorHandler:
                 union = set.union(*tabset_sets)
                 intersection = set.intersection(*tabset_sets)
                 error_tabs = union - intersection
-                self.diagnostics[filename].append(MissingTab(error_tabs, 0))
+                self.diagnostics[fileid_stack.current].append(MissingTab(error_tabs, 0))
 
             if isinstance(page.ast, n.Root):
                 if not page.ast.options.get("selectors"):
@@ -199,7 +199,7 @@ class TargetHandler:
         self.target_counter: typing.Counter[str] = collections.Counter()
         self.targets = targets
 
-    def reset(self, fileid: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.target_counter.clear()
 
     def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -294,7 +294,7 @@ class Postprocessor:
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
-                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets,),
+                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
             ],
         )
 
@@ -331,7 +331,7 @@ class Postprocessor:
     def run_event_parser(
         self,
         node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
-        page_listeners: Iterable[Tuple[str, Callable[[FileId, Page], None]]] = (),
+        page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
         event_parser = EventParser()
         for event, node_listener in node_listeners:
@@ -523,7 +523,7 @@ class Postprocessor:
             # An error has already been thrown for this on parse, so pass.
             pass
 
-    def finalize_substitutions(self, fileid: FileId, page: Page) -> None:
+    def finalize_substitutions(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
 
         Clear definitions and unreplaced nodes for the next page.
@@ -533,7 +533,7 @@ class Postprocessor:
             if substitution is not None:
                 node.children = substitution
             else:
-                self.diagnostics[fileid].append(
+                self.diagnostics[fileid_stack.current].append(
                     SubstitutionRefError(
                         f'Substitution reference could not be replaced: "|{node.name}|"',
                         line,
@@ -880,16 +880,16 @@ class DevhubPostprocessor(Postprocessor):
 
         return document, self.diagnostics
 
-    def reset_query_fields(self, fileid: FileId, page: Page) -> None:
+    def reset_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the start of each page: reset the query field dictionary"""
         self.query_fields: Dict[str, Any] = {}
 
-    def append_query_fields(self, fileid: FileId, page: Page) -> None:
+    def append_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the end of each page: append the query field dictionary to the
         top level of the page's class instance.
         """
         # Save page title to query_fields, if it exists
-        slug = clean_slug(fileid.as_posix())
+        slug = clean_slug(fileid_stack.current.as_posix())
         self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
         title = self.slug_title_mapping.get(slug)
         if title is not None:

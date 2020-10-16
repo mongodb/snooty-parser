@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union, List
+from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union, List, Optional
 from .types import FileId
 from .page import Page
 from . import n
@@ -11,8 +11,8 @@ class FileIdStack:
 
     __slots__ = ("_stack",)
 
-    def __init__(self) -> None:
-        self._stack: List[FileId] = []
+    def __init__(self, initial_stack: Optional[List[FileId]] = None) -> None:
+        self._stack: List[FileId] = initial_stack if initial_stack is not None else []
 
     def pop(self) -> None:
         self._stack.pop()
@@ -58,7 +58,7 @@ class EventListeners:
     def fire(
         self,
         event: str,
-        fileid: Union[FileId, FileIdStack],
+        fileid: FileIdStack,
         *args: Union[n.Node, Page],
         **kwargs: Union[n.Node, Page],
     ) -> None:
@@ -116,11 +116,11 @@ class EventParser(EventListeners):
 
     def _on_page_enter_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_START_EVENT, filename, page=page)
+        self.fire(self.PAGE_START_EVENT, FileIdStack([filename]), page=page)
 
     def _on_page_exit_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_END_EVENT, filename, page=page)
+        self.fire(self.PAGE_END_EVENT, FileIdStack([filename]), page=page)
 
     def _on_object_enter_event(self, node: n.Node, filename: FileId) -> None:
         """Called when an object is first encountered in tree"""

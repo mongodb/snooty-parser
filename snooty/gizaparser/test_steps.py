@@ -20,19 +20,6 @@ def test_step() -> None:
         Path("source/includes/steps-test-grandchild.yaml")
     )
 
-    # def add_main_file() -> List[Diagnostic]:
-    #     steps, text, parse_diagnostics = category.parse(path)
-    #     category.add(path, text, steps)
-    #     assert len(parse_diagnostics) == 0
-    #     assert len(steps) == 4
-    #     return parse_diagnostics
-
-    # def add_child_file() -> List[Diagnostic]:
-    #     steps, text, parse_diagnostics = category.parse(child_path)
-    #     category.add(child_path, text, steps)
-    #     assert len(parse_diagnostics) == 0
-    #     return parse_diagnostics
-
     all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
     for current_path in [path, child_path, grandchild_path]:
         steps, text, parse_diagnostics = category.parse(current_path)
