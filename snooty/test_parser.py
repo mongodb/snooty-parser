@@ -221,18 +221,16 @@ def test_codeblock() -> None:
         """
 .. code-block:: java
    :copyable: false
-   :caption: Test ``caption()``
+   :caption: Test caption
 
    foo""",
     )
     page.finish(diagnostics)
     assert diagnostics == []
-    # For now, rst within a caption option will be handled as a string. In the future,
-    # we might have it so that "Test ``caption()``" is parsed into appropriate nodes (DOP-1639)
     check_ast_testing_string(
         page.ast,
         """<root>
-        <code lang="java" caption="Test ``caption()``">foo</code>
+        <code lang="java" caption="Test caption">foo</code>
         </root>""",
     )
 
