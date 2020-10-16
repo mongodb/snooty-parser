@@ -16,7 +16,7 @@ from typing import (
     Sequence,
     MutableSequence,
 )
-from .eventparser import EventParser
+from .eventparser import EventParser, FileIdStack
 from .types import FileId, ProjectConfig, SerializableType
 from .diagnostics import (
     Diagnostic,
@@ -87,10 +87,10 @@ class ProgramOptionHandler:
         self.pending_program: Optional[n.Target] = None
         self.diagnostics = diagnostics
 
-    def reset(self, filename: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.pending_program = None
 
-    def __call__(self, filename: FileId, node: n.Node) -> None:
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Target):
             return
 
@@ -100,7 +100,7 @@ class ProgramOptionHandler:
         elif identifier == "std:option":
             if not self.pending_program:
                 line = node.start[0]
-                self.diagnostics[filename].append(MissingOption(line))
+                self.diagnostics[fileid_stack.current].append(MissingOption(line))
                 return
             program_target = next(
                 self.pending_program.get_child_of_type(n.TargetIdentifier)
@@ -128,17 +128,17 @@ class TabsSelectorHandler:
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.diagnostics = diagnostics
 
-    def reset(self, filename: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
 
-    def finalize_tabsets(self, filename: FileId, page: Page) -> None:
+    def finalize_tabsets(self, fileid_stack: FileIdStack, page: Page) -> None:
         if len(self.selectors) == 0:
             return
 
         for tabset_name, tabsets in self.selectors.items():
             if len(tabsets) == 0:
                 # Warn if tabs-selector is used without corresponding tabset
-                self.diagnostics[filename].append(ExpectedTabs(0))
+                self.diagnostics[fileid_stack.current].append(ExpectedTabs(0))
                 return
             if not all(len(t) == len(tabsets[0]) for t in tabsets):
                 # If all tabsets are not the same length, identify tabs that do not appear in every tabset
@@ -146,7 +146,7 @@ class TabsSelectorHandler:
                 union = set.union(*tabset_sets)
                 intersection = set.intersection(*tabset_sets)
                 error_tabs = union - intersection
-                self.diagnostics[filename].append(MissingTab(error_tabs, 0))
+                self.diagnostics[fileid_stack.current].append(MissingTab(error_tabs, 0))
 
             if isinstance(page.ast, n.Root):
                 if not page.ast.options.get("selectors"):
@@ -158,7 +158,7 @@ class TabsSelectorHandler:
                     for tabid, title in tabsets[0].items()
                 }
 
-    def __call__(self, filename: FileId, node: n.Node) -> None:
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
 
@@ -173,7 +173,7 @@ class TabsSelectorHandler:
 
             # Avoid overwriting previously seen tabsets if another tabs-pillstrip directive is encountered
             if tabset_name in self.selectors:
-                self.diagnostics[filename].append(
+                self.diagnostics[fileid_stack.current].append(
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
@@ -199,10 +199,10 @@ class TargetHandler:
         self.target_counter: typing.Counter[str] = collections.Counter()
         self.targets = targets
 
-    def reset(self, filename: FileId, page: Page) -> None:
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.target_counter.clear()
 
-    def __call__(self, filename: FileId, node: n.Node) -> None:
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Target):
             return
 
@@ -235,7 +235,12 @@ class TargetHandler:
 
             target_ids = target_node.ids
             self.targets.define_local_target(
-                node.domain, node.name, target_ids, filename, title, chosen_html_id
+                node.domain,
+                node.name,
+                target_ids,
+                fileid_stack.root,
+                title,
+                chosen_html_id,
             )
 
 
@@ -289,7 +294,7 @@ class Postprocessor:
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
-                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets,),
+                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
             ],
         )
 
@@ -325,8 +330,8 @@ class Postprocessor:
 
     def run_event_parser(
         self,
-        node_listeners: Iterable[Tuple[str, Callable[[FileId, n.Node], None]]],
-        page_listeners: Iterable[Tuple[str, Callable[[FileId, Page], None]]] = (),
+        node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
+        page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
         event_parser = EventParser()
         for event, node_listener in node_listeners:
@@ -339,27 +344,31 @@ class Postprocessor:
             (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
         )
 
-    def _attach_doc_title(self, filename: FileId, node: n.RefRole) -> None:
+    def _attach_doc_title(self, fileid_stack: FileIdStack, node: n.RefRole) -> None:
         target_fileid = None if node.fileid is None else node.fileid[0]
         if not target_fileid:
             line = node.span[0]
-            self.diagnostics[filename].append(ExpectedPathArg(node.name, line))
+            self.diagnostics[fileid_stack.current].append(
+                ExpectedPathArg(node.name, line)
+            )
             return
 
         relative, _ = util.reroot_path(
-            FileId(target_fileid), filename, self.project_config.source_path
+            FileId(target_fileid), fileid_stack.root, self.project_config.source_path
         )
         slug = clean_slug(relative.as_posix())
         title = self.slug_title_mapping.get(slug)
 
         if not title:
             line = node.span[0]
-            self.diagnostics[filename].append(UnnamedPage(target_fileid, line))
+            self.diagnostics[fileid_stack.current].append(
+                UnnamedPage(target_fileid, line)
+            )
             return
 
         node.children = [deepcopy(node) for node in title]
 
-    def handle_refs(self, filename: FileId, node: n.Node) -> None:
+    def handle_refs(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
 
         If so, append the full URL to the AST node. If not, throw an error.
@@ -371,7 +380,7 @@ class Postprocessor:
         if key == "std:doc":
             if not node.children:
                 # If title is not explicitly given, search slug-title mapping for the page's title
-                self._attach_doc_title(filename, node)
+                self._attach_doc_title(fileid_stack, node)
             return
 
         key += f":{node.target}"
@@ -393,14 +402,16 @@ class Postprocessor:
             if injection_candidate is not None:
                 injection_candidate.children = [text_node]
 
-            self.diagnostics[filename].append(
+            self.diagnostics[fileid_stack.current].append(
                 TargetNotFound(node.name, node.target, line)
             )
             return
 
         if len(target_candidates) > 1:
             # Try to prune down the options
-            target_candidates = self.attempt_disambugation(filename, target_candidates)
+            target_candidates = self.attempt_disambugation(
+                fileid_stack.root, target_candidates
+            )
 
         if len(target_candidates) > 1:
             line = node.span[0]
@@ -411,7 +422,7 @@ class Postprocessor:
                 else:
                     candidate_descriptions.append(candidate.url)
 
-            self.diagnostics[filename].append(
+            self.diagnostics[fileid_stack.current].append(
                 AmbiguousTarget(node.name, node.target, candidate_descriptions, line)
             )
 
@@ -468,7 +479,7 @@ class Postprocessor:
             [(EventParser.PAGE_END_EVENT, self.finalize_substitutions)],
         )
 
-    def replace_substitutions(self, filename: FileId, node: n.Node) -> None:
+    def replace_substitutions(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """When a substitution is defined, add it to the page's index.
 
         When a substitution is referenced, populate its children if possible.
@@ -493,7 +504,7 @@ class Postprocessor:
                     # Catch circular substitution
                     del self.substitution_definitions[node.name]
                     node.children = []
-                    self.diagnostics[filename].append(
+                    self.diagnostics[fileid_stack.current].append(
                         SubstitutionRefError(
                             f'Circular substitution definition referenced: "{node.name}"',
                             line,
@@ -512,7 +523,7 @@ class Postprocessor:
             # An error has already been thrown for this on parse, so pass.
             pass
 
-    def finalize_substitutions(self, filename: FileId, page: Page) -> None:
+    def finalize_substitutions(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
 
         Clear definitions and unreplaced nodes for the next page.
@@ -522,7 +533,7 @@ class Postprocessor:
             if substitution is not None:
                 node.children = substitution
             else:
-                self.diagnostics[filename].append(
+                self.diagnostics[fileid_stack.current].append(
                     SubstitutionRefError(
                         f'Substitution reference could not be replaced: "|{node.name}|"',
                         line,
@@ -532,11 +543,13 @@ class Postprocessor:
         self.substitution_definitions = {}
         self.unreplaced_nodes = []
 
-    def reset_seen_definitions(self, filename: FileId, node: n.Node) -> None:
+    def reset_seen_definitions(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.SubstitutionDefinition):
             self.seen_definitions = None
 
-    def add_titles_to_label_targets(self, filename: FileId, node: n.Node) -> None:
+    def add_titles_to_label_targets(
+        self, fileid_stack: FileIdStack, node: n.Node
+    ) -> None:
         if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)):
             self.pending_targets = []
 
@@ -550,7 +563,7 @@ class Postprocessor:
                     target.children = heading.children
             self.pending_targets = []
 
-    def populate_include_nodes(self, filename: FileId, node: n.Node) -> None:
+    def populate_include_nodes(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
         Because the include contents are added to the tree on which the event parser is
@@ -583,14 +596,14 @@ class Postprocessor:
             assert include_page is not None
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
-            node.children = [util.fast_deep_copy(child) for child in ast.children]
+            node.children = [util.fast_deep_copy(ast)]
 
-    def build_slug_title_mapping(self, filename: FileId, node: n.Node) -> None:
+    def build_slug_title_mapping(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Construct a slug-title mapping of all pages in property"""
         if not isinstance(node, n.Heading):
             return
 
-        slug = filename.without_known_suffix
+        slug = fileid_stack.root.without_known_suffix
 
         # Save the first heading we encounter to the slug title mapping
         if slug not in self.slug_title_mapping:
@@ -598,7 +611,7 @@ class Postprocessor:
                 "std",
                 "doc",
                 (slug,),
-                filename,
+                fileid_stack.root,
                 node.children,
                 util.make_html5_id(node.id),
             )
@@ -606,8 +619,8 @@ class Postprocessor:
             self.targets.define_local_target(
                 "std",
                 "doc",
-                (filename.without_known_suffix,),
-                filename,
+                (fileid_stack.root.without_known_suffix,),
+                fileid_stack.root,
                 node.children,
                 util.make_html5_id(node.id),
             )
@@ -867,16 +880,16 @@ class DevhubPostprocessor(Postprocessor):
 
         return document, self.diagnostics
 
-    def reset_query_fields(self, filename: FileId, page: Page) -> None:
+    def reset_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the start of each page: reset the query field dictionary"""
         self.query_fields: Dict[str, Any] = {}
 
-    def append_query_fields(self, filename: FileId, page: Page) -> None:
+    def append_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the end of each page: append the query field dictionary to the
         top level of the page's class instance.
         """
         # Save page title to query_fields, if it exists
-        slug = clean_slug(filename.as_posix())
+        slug = clean_slug(fileid_stack.current.as_posix())
         self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
         title = self.slug_title_mapping.get(slug)
         if title is not None:
@@ -884,7 +897,7 @@ class DevhubPostprocessor(Postprocessor):
 
         page.query_fields = self.query_fields
 
-    def flatten_devhub_article(self, filename: FileId, node: n.Node) -> None:
+    def flatten_devhub_article(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Extract fields from a page's AST and expose them as a queryable nested document in the page document."""
         if not isinstance(node, n.Directive):
             return

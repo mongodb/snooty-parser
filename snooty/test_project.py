@@ -177,22 +177,32 @@ def test_get_ast() -> None:
     )
     check_ast_testing_string(
         ast,
-        """<root>
+        """<root fileid="index.txt">
         <section>
         <heading id="index"><text>Index</text></heading>
         <paragraph><text>Test.</text></paragraph>
         <directive name="include"><text>/includes/steps/test.rst</text>
-            <directive name="step"><section><heading id="identify-the-privileges-granted-by-a-role">
+            <root fileid="includes/steps-test.yaml">
+            <directive name="steps"><directive name="step"><section><heading id="identify-the-privileges-granted-by-a-role">
             <text>Identify the privileges granted by a role.</text></heading>
-            <paragraph><text>this is a test step.</text></paragraph></section></directive>
+            <paragraph><text>this is a test step.</text></paragraph></section></directive></directive>
+            </root>
         </directive>
         <directive name="include"><text>/includes/extracts/test.rst</text>
-            <paragraph><text>test extract</text></paragraph>
+            <root fileid="includes/extracts-test.yaml">
+                <directive name="extract">
+                    <paragraph><text>test extract</text></paragraph>
+                </directive>
+            </root>
         </directive>
         <directive name="include">
             <text>/includes/release/pin-version-intro.rst</text>
-            <paragraph><text>To install a specific release, you must specify each component package
+            <root fileid="includes/release-pinning.yaml">
+                <directive name="release_specification">
+                    <paragraph><text>To install a specific release, you must specify each component package
 individually along with the version number, as in the
 following example:</text></paragraph>
+                </directive>
+            </root>
         </directive></section></root>""",
     )

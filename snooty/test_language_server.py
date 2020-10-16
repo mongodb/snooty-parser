@@ -151,7 +151,7 @@ def test_text_doc_get_page_ast() -> None:
 
         # Change image path to be full path
         index_ast_string = (
-            """<root>
+            """<root fileid="index.txt">
             <target domain="std" name="label" html_id="std-label-guides">
             <target_identifier ids="['guides']"><text>Guides</text></target_identifier>
             </target>
@@ -162,22 +162,33 @@ def test_text_doc_get_page_ast() -> None:
             + "/images/compass-create-database.png"
             + """</text></directive>
             <directive name="include"><text>/includes/test_rst.rst</text>
+            <root fileid="includes/test_rst.rst">
             <directive name="include"><text>/includes/include_child.rst</text>
-            <paragraph><text>This is an include in an include</text></paragraph></directive></directive>
+            <root fileid="includes/include_child.rst">
+            <paragraph><text>This is an include in an include</text></paragraph>
+            </root></directive>
+            </root></directive>
+
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
+            <root fileid="includes/steps-migrate-compose-pr.yaml">
+            <directive name="steps">
             <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
             <ref_role domain="std" name="doc" fileid="['/cloud/atlas', '']"><text>create one</text></ref_role>
             <text> now.</text></paragraph></section></directive>
             <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>
-            </section></directive></directive></section></root>"""
+            </section></directive></directive>
+            </root></directive></section></root>"""
         )
 
         # ast string for included rst file
-        include_child_ast_string = """<root><directive name="include"><text>includes/include_child.rst</text>
+        include_child_ast_string = """
+            <root fileid="includes/include_child.rst">
+            <directive name="include"><text>includes/include_child.rst</text>
             <paragraph><text>This is an include in an include</text></paragraph>
-            </directive></root>"""
+            </directive>
+            </root>"""
 
         # Test it such that for each test file, we get the file's respective ast string
         test_files = ["index.txt", "includes/include_child.rst"]

@@ -2,6 +2,7 @@
    Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path
+from . import diagnostics
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
 from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab, DuplicateDirective
@@ -17,9 +18,9 @@ def test_broken_link() -> None:
 $title
 ======
 
-.. parameter:: $title 
+.. parameter:: $title
 
-The :parameter:`title` stuff works 
+The :parameter:`title` stuff works
 
 
 """
@@ -33,7 +34,7 @@ The :parameter:`title` stuff works
         check_ast_testing_string(
             page.ast,
             """
-<root>
+<root fileid="param.txt">
     <section>
         <heading id="title">
             <text>$title</text>
@@ -86,7 +87,7 @@ Main Heading
         check_ast_testing_string(
             page.ast,
             """
-<root>
+<root fileid="index.txt">
     <target domain="std" name="label" html_id="std-label-a-MixedCase-Label">
         <target_identifier ids="['a-MixedCase-Label']"><text>Main Heading</text></target_identifier>
     </target>
@@ -155,7 +156,7 @@ Program 2
         check_ast_testing_string(
             page.ast,
             """
-<root><section>
+<root fileid="program1.txt"><section>
     <heading id="program-1"><text>Program 1</text></heading>
 
     <target domain="std" name="program" html_id="std-program-program1">
@@ -173,23 +174,25 @@ Program 2
 
     <directive name="include">
         <text>/includes/fact.rst</text>
-        <paragraph>
-            <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
-                <literal><text>program1 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+        <root fileid="includes/fact.rst">
+            <paragraph>
+                <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
+                    <literal><text>program1 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
 
-        <paragraph>
-            <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
-                <literal><text>program1 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+            <paragraph>
+                <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
+                    <literal><text>program1 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
 
-        <paragraph>
-            <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
-                <literal><text>program2 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+            <paragraph>
+                <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
+                    <literal><text>program2 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
+        </root>
     </directive>
 </section></root>
         """,
@@ -199,7 +202,7 @@ Program 2
         check_ast_testing_string(
             page.ast,
             """
-<root><section>
+<root fileid="program2.txt"><section>
     <heading id="program-2"><text>Program 2</text></heading>
 
     <target domain="std" name="program" html_id="std-program-program2">
@@ -217,23 +220,25 @@ Program 2
 
     <directive name="include">
         <text>/includes/fact.rst</text>
-        <paragraph>
-            <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
-                <literal><text>program2 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+        <root fileid="includes/fact.rst">
+            <paragraph>
+                <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
+                    <literal><text>program2 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
 
-        <paragraph>
-            <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
-                <literal><text>program1 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+            <paragraph>
+                <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
+                    <literal><text>program1 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
 
-        <paragraph>
-            <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
-                <literal><text>program2 --verbose</text></literal>
-            </ref_role>
-        </paragraph>
+            <paragraph>
+                <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
+                    <literal><text>program2 --verbose</text></literal>
+                </ref_role>
+            </paragraph>
+        </root>
     </directive>
 </section></root>
         """,
@@ -274,7 +279,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="shell"><text>Mongo Shell</text>
@@ -339,7 +344,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}], 'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}]}}">
+<root fileid="tabs-two.txt" selectors="{'drivers': {'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}], 'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="nodejs"><text>Node.js</text>
@@ -382,7 +387,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root>
+<root fileid="tabs-three.txt">
 <directive name="tabs-selector"><text>drivers</text></directive>
 </root>
             """,
@@ -414,7 +419,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root>
+<root fileid="tabs-four.txt">
 <directive name="tabs-selector" />
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
@@ -461,7 +466,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'platforms': {'windows': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Windows'}], 'macos': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'macOS'}], 'linux': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Linux'}]}}">
+<root fileid="tabs-five.txt" selectors="{'platforms': {'windows': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Windows'}], 'macos': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'macOS'}], 'linux': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Linux'}]}}">
 <directive name="tabs-selector"><text>platforms</text></directive>
 <directive name="tabs" hidden="True" tabset="platforms">
 <directive name="tab" tabid="windows"><text>Windows</text>
@@ -517,7 +522,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root selectors="{'drivers': {'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}], 'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}]}}">
+<root fileid="tabs-six.txt" selectors="{'drivers': {'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}], 'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" tabset="drivers">
 <directive name="tab" tabid="python"><text>Python</text>
@@ -536,3 +541,31 @@ def test_language_selector() -> None:
 </root>
             """,
         )
+
+
+def test_correct_diagnostic_path() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. _a-MixedCase-Label:
+
+============
+Main Heading
+============
+
+.. include:: /includes/fact.rst
+""",
+            Path(
+                "source/includes/fact.rst"
+            ): """
+:ref:`missing-ref`
+""",
+        }
+    ) as result:
+        assert {
+            k: [type(diag) for diag in v] for k, v in result.diagnostics.items() if v
+        } == {
+            FileId("includes/fact.rst"): [diagnostics.TargetNotFound]
+        }, "Incorrect diagnostics raised"

@@ -1,5 +1,7 @@
 import dataclasses
+import re
 from enum import Enum
+from pathlib import PurePosixPath
 from typing import (
     Any,
     ClassVar,
@@ -45,6 +47,18 @@ ListEnumType = Enum(
 _T = TypeVar("_T")
 
 
+class FileId(PurePosixPath):
+    """An unambiguous file path relative to the local project's root."""
+
+    PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
+
+    @property
+    def without_known_suffix(self) -> str:
+        """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
+        fileid = self.with_name(self.PAT_FILE_EXTENSIONS.sub("", self.name))
+        return fileid.as_posix()
+
+
 @dataclass
 class Node:
     __slots__ = ("span",)
@@ -79,6 +93,8 @@ class Node:
                     child.serialize() if hasattr(child, "serialize") else child
                     for child in value
                 ]
+            elif isinstance(value, FileId):
+                result[field.name] = value.as_posix()
             elif value is None:
                 # Fields with None values are excluded
                 continue
@@ -196,8 +212,9 @@ class SubstitutionReference(InlineParent):
 
 @dataclass
 class Root(Parent[Node]):
-    __slots__ = ("options",)
+    __slots__ = ("fileid", "options")
     type = "root"
+    fileid: FileId
     options: Dict[str, SerializableType]
 
 

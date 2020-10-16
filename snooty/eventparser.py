@@ -1,7 +1,35 @@
-from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union
+from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union, List, Optional
 from .types import FileId
 from .page import Page
 from . import n
+
+
+class FileIdStack:
+    """A stack which tracks file inclusion history, allowing a postprocessor
+       pass to know at any point both the page where processing started, as well
+       as what file is currently being processed."""
+
+    __slots__ = ("_stack",)
+
+    def __init__(self, initial_stack: Optional[List[FileId]] = None) -> None:
+        self._stack: List[FileId] = initial_stack if initial_stack is not None else []
+
+    def pop(self) -> None:
+        self._stack.pop()
+
+    def append(self, fileid: FileId) -> None:
+        self._stack.append(fileid)
+
+    def clear(self) -> None:
+        self._stack.clear()
+
+    @property
+    def root(self) -> FileId:
+        return self._stack[0]
+
+    @property
+    def current(self) -> FileId:
+        return self._stack[-1]
 
 
 class EventListeners:
@@ -30,16 +58,16 @@ class EventListeners:
     def fire(
         self,
         event: str,
-        filename: FileId,
+        fileid: FileIdStack,
         *args: Union[n.Node, Page],
         **kwargs: Union[n.Node, Page],
     ) -> None:
         """Iterate through all universal listeners and all listeners of the specified type and call them"""
         for listener in self.get_event_listeners(event):
-            listener(filename, *args, **kwargs)
+            listener(fileid, *args, **kwargs)
 
         for listener in self._universal_listeners:
-            listener(filename, *args, **kwargs)
+            listener(fileid, *args, **kwargs)
 
 
 class EventParser(EventListeners):
@@ -52,6 +80,7 @@ class EventParser(EventListeners):
 
     def __init__(self) -> None:
         super(EventParser, self).__init__()
+        self.fileid_stack = FileIdStack()
 
     def consume(self, d: Iterable[Tuple[FileId, Page]]) -> None:
         """Initializes a parse on the provided key-value map of pages"""
@@ -60,8 +89,14 @@ class EventParser(EventListeners):
             self._iterate(page.ast, filename)
             self._on_page_exit_event(page, filename)
 
+            self.fileid_stack.clear()
+
     def _iterate(self, d: n.Node, filename: FileId) -> None:
+        if isinstance(d, n.Root):
+            self.fileid_stack.append(d.fileid)
+
         self._on_object_enter_event(d, filename)
+
         if isinstance(d, n.Parent):
             if isinstance(d, n.DefinitionListItem):
                 for child in d.term:
@@ -73,20 +108,24 @@ class EventParser(EventListeners):
 
             for child in d.children:
                 self._iterate(child, filename)
+
         self._on_object_exit_event(d, filename)
+
+        if isinstance(d, n.Root):
+            self.fileid_stack.pop()
 
     def _on_page_enter_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_START_EVENT, filename, page=page)
+        self.fire(self.PAGE_START_EVENT, FileIdStack([filename]), page=page)
 
     def _on_page_exit_event(self, page: Page, filename: FileId) -> None:
         """Called when an array is first encountered in tree"""
-        self.fire(self.PAGE_END_EVENT, filename, page=page)
+        self.fire(self.PAGE_END_EVENT, FileIdStack([filename]), page=page)
 
     def _on_object_enter_event(self, node: n.Node, filename: FileId) -> None:
         """Called when an object is first encountered in tree"""
-        self.fire(self.OBJECT_START_EVENT, filename, node=node)
+        self.fire(self.OBJECT_START_EVENT, self.fileid_stack, node=node)
 
     def _on_object_exit_event(self, node: n.Node, filename: FileId) -> None:
         """Called when an object is first encountered in tree"""
-        self.fire(self.OBJECT_END_EVENT, filename, node=node)
+        self.fire(self.OBJECT_END_EVENT, self.fileid_stack, node=node)

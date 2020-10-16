@@ -5,14 +5,15 @@ from ..types import ProjectConfig, FileId
 from ..page import Page
 from ..diagnostics import Diagnostic, FailedToInheritRef
 from ..parser import EmbeddedRstParser
-from ..util_test import make_test, ast_to_testing_string
+from ..util_test import make_test, check_ast_testing_string
 
 
 def test_extract() -> None:
-    project_config = ProjectConfig(Path("test_data"), "")
+    root_path = Path("test_data/test_gizaparser")
+    project_config = ProjectConfig(root_path, "")
     category = GizaExtractsCategory(project_config)
-    path = Path("test_data/extracts-test.yaml")
-    parent_path = Path("test_data/extracts-test-parent.yaml")
+    path = root_path.joinpath(Path("source/includes/extracts-test.yaml"))
+    parent_path = root_path.joinpath(Path("source/includes/extracts-test-parent.yaml"))
 
     def add_main_file() -> List[Diagnostic]:
         extracts, text, parse_diagnostics = category.parse(path)
@@ -43,24 +44,33 @@ def test_extract() -> None:
 
     pages = category.to_pages(path, create_page, giza_node.data)
     assert [str(page.fake_full_path()) for page in pages] == [
-        "test_data/extracts/installation-directory-rhel.rst",
-        "test_data/extracts/broken-inherit.rst",
-        "test_data/extracts/another-file.rst",
-        "test_data/extracts/missing-substitution.rst",
+        "test_data/test_gizaparser/source/includes/extracts/installation-directory-rhel.rst",
+        "test_data/test_gizaparser/source/includes/extracts/broken-inherit.rst",
+        "test_data/test_gizaparser/source/includes/extracts/another-file.rst",
+        "test_data/test_gizaparser/source/includes/extracts/missing-substitution.rst",
     ]
 
-    assert ast_to_testing_string(pages[0].ast) == "".join(
-        (
-            '<directive name="extract"><paragraph><text>By default, MongoDB stores its data files in ',
-            "</text><literal><text>/var/lib/mongo</text></literal><text> and its\nlog files in </text>",
-            "<literal><text>/var/log/mongodb</text></literal><text>.</text></paragraph></directive>",
-        )
+    check_ast_testing_string(
+        pages[0].ast,
+        """<root fileid="includes/extracts-test.yaml">
+    <directive name="extract">
+        <paragraph>
+            <text>By default, MongoDB stores its data files in</text>
+            <literal><text>/var/lib/mongo</text></literal>
+            <text> and its\nlog files in </text>
+            <literal><text>/var/log/mongodb</text></literal><text>.</text>
+        </paragraph>
+    </directive>
+</root>""",
     )
 
-    assert ast_to_testing_string(pages[3].ast) == "".join(
-        (
-            '<directive name="extract"><paragraph><text>Substitute</text></paragraph></directive>'
-        )
+    check_ast_testing_string(
+        pages[3].ast,
+        """
+<root fileid="includes/extracts-test.yaml">
+    <directive name="extract"><paragraph><text>Substitute</text></paragraph></directive>
+</root>
+""",
     )
 
     # XXX: We need to track source file information for each property.

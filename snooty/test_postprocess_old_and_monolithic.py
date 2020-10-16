@@ -53,24 +53,25 @@ def test_expand_includes(backend: Backend) -> None:
     include_node = ast.children[0]
     assert isinstance(include_node, n.Directive)
     assert include_node.name == "include"
-    assert len(include_node.children) > 1
 
     check_ast_testing_string(
         include_node,
-        """<directive name="include">
+        """
+        <directive name="include">
             <text>/includes/test.rst</text>
-            <target domain="std" name="label" html_id="std-label-connection-limits">
-                <target_identifier ids="['connection-limits']">
-                    <text>Skip includes</text>
-                </target_identifier>
-            </target>
-            <section>
-                <heading id="skip-includes">
-                    <text>Skip includes</text>
-                </heading>
-                <directive name="meta" keywords="connect">
-                </directive>
-            </section>
+            <root fileid="includes/test.rst">
+                <target domain="std" name="label" html_id="std-label-connection-limits">
+                    <target_identifier ids="['connection-limits']">
+                        <text>Skip includes</text>
+                    </target_identifier>
+                </target>
+                <section>
+                    <heading id="skip-includes">
+                        <text>Skip includes</text>
+                    </heading>
+                    <directive name="meta" keywords="connect"></directive>
+                </section>
+            </root>
         </directive>""",
     )
 
@@ -354,12 +355,14 @@ def test_program_option(backend: Backend) -> None:
     check_ast_testing_string(
         option1_1,
         """
+        <root fileid="includes/option-version.rst">
         <target domain="std" name="option" html_id="std-option-a-program.--version">
         <directive_argument><literal><text>--version, -v</text></literal></directive_argument>
         <target_identifier ids="['--version', 'a-program.--version']"><text>a-program --version</text></target_identifier>
         <target_identifier ids="['-v', 'a-program.-v']"><text>a-program -v</text></target_identifier>
         <paragraph><text>Displays the program version.</text></paragraph>
         </target>
+        </root>
     """,
     )
 
@@ -572,7 +575,9 @@ def test_substitutions(backend: Backend) -> None:
 
     include = ast.children[2]
     assert isinstance(include, n.Directive)
-    paragraph = include.children[1]
+    root = include.children[0]
+    assert isinstance(root, n.Root)
+    paragraph = root.children[1]
     assert isinstance(paragraph, n.Paragraph)
     substitution_reference = paragraph.children[1]
     check_ast_testing_string(

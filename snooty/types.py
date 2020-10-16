@@ -1,8 +1,9 @@
 import hashlib
 import logging
+import os.path
 import re
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath
 from typing import Dict, List, MutableSequence, Tuple, Optional, Match
 from .diagnostics import (
     Diagnostic,
@@ -14,12 +15,12 @@ from typing_extensions import Protocol
 import toml
 from .flutter import checked, check_type, LoadError
 from . import n
-from .n import SerializableType as ST
+from .n import SerializableType as ST, FileId as FD
 
 SerializableType = ST
+FileId = FD
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
-PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
 
@@ -40,16 +41,6 @@ def normalize_target(target: str) -> str:
 
 class SnootyError(Exception):
     pass
-
-
-class FileId(PurePosixPath):
-    """An unambiguous file path relative to the local project's root."""
-
-    @property
-    def without_known_suffix(self) -> str:
-        """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
-        fileid = self.with_name(PAT_FILE_EXTENSIONS.sub("", self.name))
-        return fileid.as_posix()
 
 
 @dataclass
@@ -122,6 +113,9 @@ class ProjectConfig:
     @property
     def config_path(self) -> Path:
         return self.root.joinpath("snooty.toml")
+
+    def get_fileid(self, path: PurePath) -> FileId:
+        return FileId(os.path.relpath(path, self.source_path))
 
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:

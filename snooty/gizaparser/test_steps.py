@@ -9,13 +9,16 @@ from ..util_test import ast_to_testing_string, check_ast_testing_string
 
 
 def test_step() -> None:
-    project_config, project_diagnostics = ProjectConfig.open(Path("test_data"))
+    root_path = Path("test_data/test_gizaparser")
+    project_config, project_diagnostics = ProjectConfig.open(root_path)
     assert project_diagnostics == []
 
     category = GizaStepsCategory(project_config)
-    path = Path("test_data/steps-test.yaml")
-    child_path = Path("test_data/steps-test-child.yaml")
-    grandchild_path = Path("test_data/steps-test-grandchild.yaml")
+    path = root_path.joinpath(Path("source/includes/steps-test.yaml"))
+    child_path = root_path.joinpath(Path("source/includes/steps-test-child.yaml"))
+    grandchild_path = root_path.joinpath(
+        Path("source/includes/steps-test-grandchild.yaml")
+    )
 
     all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
     for current_path in [path, child_path, grandchild_path]:
@@ -33,7 +36,7 @@ def test_step() -> None:
 
     pages = category.to_pages(path, create_page, giza_node.data)
     assert [str(page.fake_full_path()) for page in pages] == [
-        "test_data/steps/test.rst"
+        "test_data/test_gizaparser/source/includes/steps/test.rst"
     ]
     # Ensure that no diagnostics were raised
     all_diagnostics = {k: v for k, v in all_diagnostics.items() if v}
@@ -42,6 +45,7 @@ def test_step() -> None:
     check_ast_testing_string(
         pages[0].ast,
         """
+<root fileid="includes/steps-test.yaml">
 <directive name="steps">
 <directive name="step">
     <section>
@@ -94,5 +98,5 @@ def test_step() -> None:
     <code lang="sh" copyable="True">
     echo "mongodb-org hold" | sudo dpkg --set-selections
     </code><paragraph><text>bye</text></paragraph></section></directive>
-</directive>""",
+</directive></root>""",
     )
