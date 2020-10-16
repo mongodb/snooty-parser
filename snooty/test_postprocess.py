@@ -4,7 +4,7 @@
 from pathlib import Path
 from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
 from .types import FileId
-from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab
+from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab, DuplicateDirective
 
 # ensure that broken links still generate titles
 def test_broken_link() -> None:
@@ -472,6 +472,65 @@ def test_language_selector() -> None:
 </directive>
 <directive name="tab" tabid="linux"><text>Linux</text>
 <paragraph><text>Linux</text></paragraph>
+</directive>
+</directive>
+</root>
+            """,
+        )
+
+    # Ensure a second tabs-selector directive doesnt' overwrite the first tabset
+    with make_test(
+        {
+            Path(
+                "source/tabs-six.txt"
+            ): """
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+
+   .. tab::
+      :tabid: python
+
+      Python tab
+
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("tabs-six.txt")]
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        assert isinstance(diagnostics[1], MissingTab)
+        page = result.pages[FileId("tabs-six.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root selectors="{'drivers': {'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}], 'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}]}}">
+<directive name="tabs-selector"><text>drivers</text></directive>
+<directive name="tabs" tabset="drivers">
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>Python tab</text></paragraph>
+</directive>
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
+<paragraph><text>Java (sync)</text></paragraph>
+</directive>
+</directive>
+<directive name="tabs-selector"><text>drivers</text></directive>
+<directive name="tabs" tabset="drivers">
+<directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
+<paragraph><text>Java (sync)</text></paragraph>
 </directive>
 </directive>
 </root>

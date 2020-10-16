@@ -453,3 +453,18 @@ class ExpectedTabs(Diagnostic):
         super().__init__(
             "Expected tabs directive when tabs-selector directive in use", start, end,
         )
+
+
+class DuplicateDirective(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Directive "{name}" should only appear once per page""", start, end,
+        )
+        self.name = name
