@@ -254,6 +254,40 @@ def test_codeblock() -> None:
         </root>""",
     )
 
+    # Test caption option
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code-block:: java
+   :copyable: false
+   :caption: Test caption
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <code lang="java" caption="Test caption">foo</code>
+        </root>""",
+    )
+
+    # Test empty caption
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code:: js
+   :caption:
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
 
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -288,6 +322,7 @@ for (i = 0; i &lt; 10; i++) {
         path,
         """
 .. literalinclude:: /test_parser/includes/sample_code.py
+   :caption: Sample Code
    :language: python
    :start-after: start example 1
    :end-before: end example 1
@@ -303,9 +338,9 @@ for (i = 0; i &lt; 10; i++) {
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="literalinclude" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
+        <directive name="literalinclude" caption="Sample Code" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
         <text>/test_parser/includes/sample_code.py</text>
-        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" linenos="True">print("test dedent")</code>
+        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True">print("test dedent")</code>
         </directive>
         </root>""",
     )
@@ -483,6 +518,19 @@ for (i = 0; i &lt; 10; i++) {
         """
 .. literalinclude:: /test_parser/includes/sample_code.py
    :start-after:
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
+    # Test empty caption
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :caption:
 """,
     )
     page.finish(diagnostics)

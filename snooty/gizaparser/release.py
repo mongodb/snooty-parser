@@ -29,6 +29,7 @@ class ReleaseSpecification(Inheritable):
                 n.Code(
                     (self.line,),
                     self.language,
+                    None,
                     True if self.copyable is None else self.copyable,
                     None,
                     self.code,

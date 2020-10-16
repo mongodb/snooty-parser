@@ -204,6 +204,7 @@ class JSONVisitor:
             doc = n.Code(
                 (line,),
                 node["lang"] if "lang" in node else None,
+                node["caption"] if "caption" in node else None,
                 node["copyable"],
                 node["emphasize_lines"] if "emphasize_lines" in node else None,
                 node.astext(),
@@ -717,12 +718,19 @@ class JSONVisitor:
 
             span = (line,)
             language = options["language"] if "language" in options else ""
+            caption = options["caption"] if "caption" in options else None
             copyable = "copyable" not in options or options["copyable"] == "True"
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
 
             code = n.Code(
-                span, language, copyable, emphasize_lines, selected_content, linenos
+                span,
+                language,
+                caption,
+                copyable,
+                emphasize_lines,
+                selected_content,
+                linenos,
             )
 
             doc.children.append(code)

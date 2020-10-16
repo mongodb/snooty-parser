@@ -180,6 +180,7 @@ inherit = "include"
 options.start-after = "string"
 options.end-before = "string"
 options.linenos = "flag"
+options.caption = "string"
 options.copyable = "boolean"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
@@ -190,6 +191,7 @@ example = """..literalinclude:: ${1:/path/to/file.js}
    :end-before: ${3:line number (Optional}}
    :language: ${4:language for syntax highlighting}
    ${5::copyable:
+   :caption:
    :dedent:
    :emphasize-lines:
    :lines:}
@@ -413,12 +415,14 @@ example = """.. rubric:: ${1:Paragraph heading that is not used to create a TOC 
 help = """A block of code to show the user."""
 argument_type = "string"
 content_type = "raw"
+options.caption = "string"
 options.copyable = "boolean"
 options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
 example = """.. code-block:: ${1:language}
    ${2::copyable: (bool)
+   :caption: (string)
    :emphasize-lines: (string)
    :class: (string)
    :linenos: (flag)}
@@ -431,6 +435,7 @@ help = """A block of code to show the user."""
 inherit = "code-block"
 example = """.. code:: ${1:language}
    ${2::copyable: (bool)
+   :caption: (string)
    :emphasize-lines: (string)
    :class: (string)
    :linenos: (flag)}
