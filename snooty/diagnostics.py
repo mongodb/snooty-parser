@@ -468,3 +468,17 @@ class DuplicateDirective(Diagnostic):
             f"""Directive "{name}" should only appear once per page""", start, end,
         )
         self.name = name
+
+
+class InvalidMWSVersion(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        version: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"No such version '{version}' for Mongo Web Shell", start, end,
+        )

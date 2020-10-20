@@ -464,6 +464,13 @@ example = """.. card-group::
    ${0:Card content}
 """
 
+[directive.mongo-web-shell]
+help = """An instance of the web version of a Mongo shell"""
+options.version = "string"
+example = """.. mongo-web-shell::
+   ${1::version: (string)}
+"""
+
 ###### Guides
 # Examples commented out to avoid confusion with similar devhub directives;
 # can be used for workspace-specific snippets in future.

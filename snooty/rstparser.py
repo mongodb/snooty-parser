@@ -874,6 +874,17 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         return n.TocTreeDirectiveEntry(title, url, slug), []
 
 
+class BaseMongoWebShellDirective(docutils.parsers.rst.Directive):
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        node = directive("", self.name)
+        node.document = self.state.document
+        node.source, node.line = source, line
+        node["options"] = self.options
+
+        return [node]
+
+
 class NoTransformRstParser(docutils.parsers.rst.Parser):
     def get_transforms(self) -> List[object]:
         return []
@@ -1001,6 +1012,7 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
     "deprecated": DeprecatedVersionDirective,
     "card-group": BaseCardGroupDirective,
     "toctree": BaseTocTreeDirective,
+    "mongo-web-shell": BaseMongoWebShellDirective,
 }
 
 

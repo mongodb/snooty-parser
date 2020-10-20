@@ -12,6 +12,7 @@ from .diagnostics import (
     IncorrectMonospaceSyntax,
     InvalidField,
     InvalidLiteralInclude,
+    InvalidMWSVersion,
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
@@ -1810,6 +1811,88 @@ def test_toctree() -> None:
         <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://docs.atlas.mongodb.com'}]" />
         </root>""",
     )
+
+
+def test_mongo_web_shell() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test simple use of mongo-web-shell directive
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. mongo-web-shell::
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="mongo-web-shell"/>
+        </root>""",
+    )
+
+    # Test with option
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. mongo-web-shell::
+   :version: 4.2
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root>
+        <directive name="mongo-web-shell" version="4.2"/>
+        </root>""",
+    )
+
+    # Test with invalid version
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. mongo-web-shell::
+   :version: 4.1
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], InvalidMWSVersion)
+
+    # Test unknown options
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. mongo-web-shell::
+   :width: 100%
+   :height: 300
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
+    # Test with unwanted content block
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. mongo-web-shell::
+   
+   Hello world. This is unwanted content.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
 
 def test_callable_target() -> None:
