@@ -1829,7 +1829,7 @@ def test_mongo_web_shell() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive domain="mongodb" name="mongo-web-shell"/>
         </root>""",
     )
@@ -1847,7 +1847,7 @@ def test_mongo_web_shell() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root>
+        """<root fileid="test.rst">
         <directive domain="mongodb" name="mongo-web-shell" version="4.2"/>
         </root>""",
     )
