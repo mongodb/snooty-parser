@@ -10,6 +10,7 @@ card_type = ["small", "large"]
 output_format = ["html"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 charts_theme = ["light", "dark"]
+mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "latest"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -464,13 +465,6 @@ example = """.. card-group::
    ${0:Card content}
 """
 
-[directive.mongo-web-shell]
-help = """An instance of the web version of a Mongo shell"""
-options.version = "string"
-example = """.. mongo-web-shell::
-   ${1::version: (string)}
-"""
-
 ###### Guides
 # Examples commented out to avoid confusion with similar devhub directives;
 # can be used for workspace-specific snippets in future.
@@ -623,6 +617,13 @@ inherit = "_guides-base"
 #    ${0:- first related page
 #    - second related page}
 # """
+
+[directive."mongodb:mongo-web-shell"]
+help = """An instance of the web version of a Mongo shell"""
+options.version = "mws_version"
+example = """.. mongo-web-shell::
+   ${1::version: (string)}
+"""
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""

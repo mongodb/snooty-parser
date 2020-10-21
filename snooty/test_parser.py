@@ -12,7 +12,6 @@ from .diagnostics import (
     IncorrectMonospaceSyntax,
     InvalidField,
     InvalidLiteralInclude,
-    InvalidMWSVersion,
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
@@ -1831,7 +1830,7 @@ def test_mongo_web_shell() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="mongo-web-shell"/>
+        <directive domain="mongodb" name="mongo-web-shell"/>
         </root>""",
     )
 
@@ -1849,7 +1848,7 @@ def test_mongo_web_shell() -> None:
     check_ast_testing_string(
         page.ast,
         """<root>
-        <directive name="mongo-web-shell" version="4.2"/>
+        <directive domain="mongodb" name="mongo-web-shell" version="4.2"/>
         </root>""",
     )
 
@@ -1864,7 +1863,7 @@ def test_mongo_web_shell() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], InvalidMWSVersion)
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
     # Test unknown options
     page, diagnostics = parse_rst(

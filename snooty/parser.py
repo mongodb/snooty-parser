@@ -63,7 +63,6 @@ from .diagnostics import (
     UnknownTabset,
     UnknownTabID,
     TabMustBeDirective,
-    InvalidMWSVersion,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -786,16 +785,6 @@ class JSONVisitor:
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
-
-        # Check to see if optional version of mws is valid
-        elif name == "mongo-web-shell":
-            if "version" in options:
-                version = options["version"]
-
-                if not version in {"3.4", "3.6", "4.0", "4.2", "4.4", "latest"}:
-                    self.diagnostics.append(
-                        InvalidMWSVersion(version, util.get_line(node))
-                    )
 
         elif key in {"devhub:author", ":og", ":twitter"}:
             # Grab image from options array and save as static asset
