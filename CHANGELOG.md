@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `caption` option for code blocks (DOP-1604).
+- `mws` directive (DOP-1575).
+- Tabs are now defined in rstspec.toml, and validated and sorted by the parser (DOP-1450).
+
+### Changed
+
+- Language pills are now provided in the document root node (DOP-1526).
+
+### Fixed
+
+- Double tabs-pillstrip bug (DOP-1526).
+- Preserve source fileid through includes (DOP-1018).
+
 ## [v0.6.3] - 2020-10-14
 
 ### Changed
