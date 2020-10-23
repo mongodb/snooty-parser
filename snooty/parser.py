@@ -63,6 +63,7 @@ from .diagnostics import (
     UnknownTabset,
     UnknownTabID,
     TabMustBeDirective,
+    RemovedLiteralBlockSyntax,
 )
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
@@ -237,8 +238,10 @@ class JSONVisitor:
             self.state.append(n.Text((line,), str(node)))
             return
         elif isinstance(node, docutils.nodes.literal_block):
-            self.state.append(n.LiteralBlock((line,), []))
-            return
+            self.diagnostics.append(
+                RemovedLiteralBlockSyntax(util.get_line(node.children[0]))
+            )
+            raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.literal):
             self.state.append(n.Literal((line,), []))
             return

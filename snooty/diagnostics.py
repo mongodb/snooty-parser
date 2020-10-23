@@ -468,3 +468,18 @@ class DuplicateDirective(Diagnostic):
             f"""Directive "{name}" should only appear once per page""", start, end,
         )
         self.name = name
+
+
+class RemovedLiteralBlockSyntax(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "Literal block syntax is unsupported; use a code-block directive instead",
+            start,
+            end,
+        )

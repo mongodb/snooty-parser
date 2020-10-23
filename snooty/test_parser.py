@@ -1885,7 +1885,7 @@ def test_mongo_web_shell() -> None:
         path,
         """
 .. mongo-web-shell::
-   
+
    Hello world. This is unwanted content.
 """,
     )
@@ -2043,8 +2043,7 @@ def test_deprecated() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     check_ast_testing_string(
-        page.ast,
-        """<root fileid="test.rst"><directive name="raw"><text>html</text><FixedTextElement /></directive></root>""",
+        page.ast, """<root fileid="test.rst"></root>""",
     )
 
 
