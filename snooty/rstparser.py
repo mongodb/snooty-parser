@@ -505,15 +505,9 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             self.parse_argument(node, source, line)
 
         # Parse the content
-        if self.name == "raw":
-            raw = docutils.nodes.literal_block()
-            raw.document = self.state.document
-            raw.source, raw.line = source, line
-            node.append(raw)
-        else:
-            self.state.nested_parse(
-                self.content, self.state_machine.line_offset, node, match_titles=True
-            )
+        self.state.nested_parse(
+            self.content, self.state_machine.line_offset, node, match_titles=True
+        )
 
         return [node]
 

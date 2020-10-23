@@ -377,12 +377,6 @@ class Text(InlineNode):
 
 
 @dataclass
-class LiteralBlock(Parent[InlineParent]):
-    __slots__ = ()
-    type = "FixedTextElement"
-
-
-@dataclass
 class Literal(InlineParent):
     __slots__ = ()
     type = "literal"
