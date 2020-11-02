@@ -29,6 +29,7 @@ from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 from docopt import docopt
+from datetime import datetime
 
 from . import __version__, language_server
 from .parser import Project
@@ -202,6 +203,7 @@ class MongoBackend(Backend):
             "ast": page.ast.serialize(),
             "source": page.source,
             "static_assets": checksums,
+            "created_at": datetime.utcnow(),
         }
 
         if page.query_fields:
