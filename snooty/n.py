@@ -19,6 +19,7 @@ from typing import (
     Generic,
 )
 from dataclasses import dataclass
+from datetime import datetime
 
 
 __all__ = (
@@ -38,7 +39,9 @@ __all__ = (
     "Text",
 )
 
-SerializableType = Union[None, bool, str, int, float, Dict[str, Any], List[Any]]
+SerializableType = Union[
+    None, bool, str, int, float, Dict[str, Any], List[Any], datetime
+]
 SerializedNode = Dict[str, SerializableType]
 ListEnumType = Enum(
     "ListEnumType",

@@ -244,6 +244,7 @@ class MongoBackend(Backend):
 
         # Write to Atlas if field is not an empty dictionary
         if field:
+            field["created_at"] = datetime.utcnow()
             self.client[self.db][COLL_METADATA].update_one(
                 document_filter, {"$set": field}, upsert=True
             )
