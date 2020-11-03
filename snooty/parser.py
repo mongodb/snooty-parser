@@ -221,9 +221,7 @@ class JSONVisitor:
             # We are uninterested in docutils blockquotes: they're too easy to accidentally
             # invoke. Treat them as an error.
             self.diagnostics.append(
-                UnexpectedIndentation(
-                    "Unexpected indentation", util.get_line(node.children[0])
-                )
+                UnexpectedIndentation(util.get_line(node.children[0]))
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):

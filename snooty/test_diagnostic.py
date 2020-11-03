@@ -5,7 +5,7 @@ import pytest
 
 
 def test_diagnostics() -> None:
-    diagnostic = UnexpectedIndentation("foo", (0, 0), 10)
+    diagnostic = UnexpectedIndentation((0, 0), 10)
     assert isinstance(diagnostic, UnexpectedIndentation)
     assert diagnostic.severity == Diagnostic.Level.error
     assert diagnostic.start == (0, 0)
