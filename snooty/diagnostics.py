@@ -63,8 +63,18 @@ class Diagnostic:
         return diag
 
 
-class UnexpectedIndentation(Diagnostic):
+class UnexpectedIndentation(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__("Unexpected indentation", start, end)
+
+    def did_you_mean(self) -> List[str]:
+        return [".. blockquote::"]
 
 
 class InvalidURL(Diagnostic):

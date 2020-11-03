@@ -15,6 +15,7 @@ from .diagnostics import (
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
+    UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
 )
@@ -2280,3 +2281,24 @@ def test_explicit_title_parsing() -> None:
 </root>
 """,
     )
+
+
+def test_invalid_blockquote() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+This is a paragraph.
+
+   This is a blockquote.
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert [
+        (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
+        for d in diagnostics
+    ] == [(UnexpectedIndentation, [".. blockquote::"],)]
