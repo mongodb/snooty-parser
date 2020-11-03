@@ -1274,6 +1274,9 @@ inherit = "charts-v0.9"
 help = """Link to a page in the Compass docs."""
 type = {link = "https://docs.mongodb.com/compass%s"}
 
+[role."dotnet-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s"}
+
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
 type = {link = "https://docs.mongodb.com/ecosystem%s"}
@@ -1318,6 +1321,9 @@ type = {link = "https://developers.facebook.com/%s"}
 
 [role."fcm"]
 type = {link = "https://firebase.google.com/docs/%s"}
+
+[role."git-scm"]
+type = {link = "https://git-scm.com/%s"}
 
 [role."google"]
 type = {link = "https://developers.google.com/%s"}
@@ -1396,6 +1402,9 @@ type = {link = "https://www.typescriptlang.org/%s"}
 
 [role."node-driver"]
 type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
+
+[role."xamarin"]
+type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
