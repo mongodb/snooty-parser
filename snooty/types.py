@@ -45,6 +45,9 @@ class SnootyError(Exception):
 
 @dataclass
 class StaticAsset:
+    # "key" must *exactly* match an identifier with which this asset is referred to in source text.
+    key: str
+
     fileid: FileId
     path: Path
     upload: bool
@@ -79,8 +82,10 @@ class StaticAsset:
         return self._data
 
     @classmethod
-    def load(cls, fileid: FileId, path: Path, upload: bool = False) -> "StaticAsset":
-        return cls(fileid, path, upload, None, None)
+    def load(
+        cls, key: str, fileid: FileId, path: Path, upload: bool = False
+    ) -> "StaticAsset":
+        return cls(key, fileid, path, upload, None, None)
 
     def __load(self) -> None:
         if self._data is None:

@@ -551,7 +551,7 @@ class JSONVisitor:
                 return doc
 
             try:
-                static_asset = self.add_static_asset(Path(argument_text), upload=True)
+                static_asset = self.add_static_asset(argument_text, upload=True)
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 self.diagnostics.append(
@@ -780,7 +780,7 @@ class JSONVisitor:
                 return doc
 
             try:
-                static_asset = self.add_static_asset(Path(image_argument), upload=True)
+                static_asset = self.add_static_asset(image_argument, upload=True)
                 self.pending.append(PendingFigure(doc, static_asset))
             except OSError as err:
                 self.diagnostics.append(
@@ -800,9 +800,7 @@ class JSONVisitor:
                 self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
             else:
                 try:
-                    static_asset = self.add_static_asset(
-                        Path(image_argument), upload=True
-                    )
+                    static_asset = self.add_static_asset(image_argument, upload=True)
                     self.pending.append(PendingFigure(doc, static_asset))
                 except OSError as err:
                     self.diagnostics.append(
@@ -815,9 +813,7 @@ class JSONVisitor:
 
             if image_argument:
                 try:
-                    static_asset = self.add_static_asset(
-                        Path(image_argument), upload=True
-                    )
+                    static_asset = self.add_static_asset(image_argument, upload=True)
                     self.pending.append(PendingFigure(doc, static_asset))
                 except OSError as err:
                     self.diagnostics.append(
@@ -857,11 +853,12 @@ class JSONVisitor:
             )
             return
 
-    def add_static_asset(self, path: Path, upload: bool) -> StaticAsset:
+    def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
+        path = Path(raw_path)
         fileid, path = util.reroot_path(
             path, self.docpath, self.project_config.source_path
         )
-        static_asset = StaticAsset.load(fileid, path, upload)
+        static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
         return static_asset
 
