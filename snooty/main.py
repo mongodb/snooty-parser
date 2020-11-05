@@ -222,7 +222,6 @@ class MongoBackend(Backend):
                     {
                         "$setOnInsert": {
                             "_id": static_asset.get_checksum(),
-                            "filename": str(static_asset.fileid),
                             "data": static_asset.data,
                         }
                     },
