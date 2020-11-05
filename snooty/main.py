@@ -181,7 +181,6 @@ class MongoBackend(Backend):
         uploadable_assets = [
             asset for asset in page.static_assets if asset.can_upload()
         ]
-        checksums = list(asset.get_checksum() for asset in uploadable_assets)
 
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
@@ -202,8 +201,11 @@ class MongoBackend(Backend):
             "filename": page_id.as_posix(),
             "ast": page.ast.serialize(),
             "source": page.source,
-            "static_assets": checksums,
             "created_at": datetime.utcnow(),
+            "static_assets": [
+                {"checksum": asset.get_checksum(), "key": asset.key}
+                for asset in uploadable_assets
+            ],
         }
 
         if page.query_fields:
@@ -220,7 +222,6 @@ class MongoBackend(Backend):
                     {
                         "$setOnInsert": {
                             "_id": static_asset.get_checksum(),
-                            "filename": str(static_asset.fileid),
                             "data": static_asset.data,
                         }
                     },
