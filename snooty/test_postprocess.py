@@ -177,7 +177,7 @@ Program 2
         <root fileid="includes/fact.rst">
             <paragraph>
                 <ref_role domain="std" name="option" target="program1.--verbose" fileid="['program1', 'std-option-program1.--verbose']">
-                    <literal><text>program1 --verbose</text></literal>
+                    <literal><text>--verbose</text></literal>
                 </ref_role>
             </paragraph>
 
@@ -223,7 +223,7 @@ Program 2
         <root fileid="includes/fact.rst">
             <paragraph>
                 <ref_role domain="std" name="option" target="program2.--verbose" fileid="['program2', 'std-option-program2.--verbose']">
-                    <literal><text>program2 --verbose</text></literal>
+                    <literal><text>--verbose</text></literal>
                 </ref_role>
             </paragraph>
 

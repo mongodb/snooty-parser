@@ -421,7 +421,7 @@ def test_program_option(backend: Backend) -> None:
         roles[1].children[0].children[0],
         f"""
         <ref_role domain="std" name="option" target="a-program.-f" fileid="['a-program', '{option1_2.html_id}']">
-        <literal><text>a-program -f</text></literal>
+        <literal><text>-f</text></literal>
         </ref_role>
     """,
     )
@@ -429,7 +429,7 @@ def test_program_option(backend: Backend) -> None:
         roles[2].children[0].children[0],
         f"""
         <ref_role domain="std" name="option" target="a-program.--config" fileid="['a-program', '{option1_2.html_id}']">
-        <literal><text>a-program --config</text></literal>
+        <literal><text>--config</text></literal>
         </ref_role>
     """,
     )
@@ -437,7 +437,7 @@ def test_program_option(backend: Backend) -> None:
         roles[3].children[0].children[0],
         """
         <ref_role domain="std" name="option" target="a-second-program.-v" fileid="['a-program', 'std-option-a-second-program.--version']">
-        <literal><text>a-second-program -v</text></literal>
+        <literal><text>-v</text></literal>
         </ref_role>
     """,
     )

@@ -330,6 +330,9 @@ class RefRoleHandler:
         if self.target_type == specparser.TargetType.callable:
             target = strip_parameters(target)
         elif self.target_type == specparser.TargetType.cmdline_option:
+            if not label:
+                label = target
+
             target = ".".join(target.split())
 
         node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
