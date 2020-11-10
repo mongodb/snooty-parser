@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `dotnet-sdk`, `xamarin`, and `git-scm` extlink roles (DOCSP-13010).
+- Blockquote suggestion when unexpected indentation is encountered.
+- `created_at` field in the database to facilitate document expiration (DOP-1318).
+
+### Changed
+
+- Remove LiteralBlock node.
+- Static assets are now stored in the database with both filename and hash identifier,
+  making it easier for the frontend to properly create all needed images (DOP-1643).
+
 ## [v0.7.0] - 2020-10-22
 
 ### Added
