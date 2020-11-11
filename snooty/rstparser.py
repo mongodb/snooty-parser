@@ -333,7 +333,7 @@ class RefRoleHandler:
             if not label:
                 label = target
 
-            target = ".".join(target.split())
+            target = ".".join(target.rsplit(None, 1))
 
         node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
 
