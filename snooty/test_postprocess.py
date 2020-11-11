@@ -569,3 +569,111 @@ Main Heading
         } == {
             FileId("includes/fact.rst"): [diagnostics.TargetNotFound]
         }, "Incorrect diagnostics raised"
+
+
+def test_subcommands() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+=========
+Program 1
+=========
+
+.. program:: realmcli
+
+.. option:: --verbose
+
+   Verbose
+
+.. option:: --version
+
+   Version
+
+.. program:: realmcli import
+
+.. option:: --verbose
+
+   Verbose
+
+.. program:: realmcli export
+
+.. option:: --verbose
+
+   Verbose
+
+.. program:: realmcli export just-silly-now
+
+.. option:: --verbose
+
+   Verbose
+
+.. program:: a-program
+
+.. option:: --verbose
+
+   Verbose
+
+""",
+            Path(
+                "source/links.txt"
+            ): """
+* :option:`realmcli export --verbose`
+* :option:`realmcli export just-silly-now --verbose`
+* :option:`realmcli import --verbose`
+* :option:`realmcli --verbose`
+""",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        check_ast_testing_string(
+            result.pages[FileId("links.txt")].ast,
+            """
+<root fileid="links.txt">
+<list enumtype="unordered">
+    <listItem>
+        <paragraph>
+            <ref_role domain="std" name="option" target="realmcli export.--verbose" fileid="['index', 'std-option-realmcli-export.--verbose']">
+                <literal><text>realmcli export --verbose</text></literal>
+            </ref_role>
+        </paragraph>
+    </listItem>
+    <listItem>
+        <paragraph>
+            <ref_role domain="std" name="option" target="realmcli export just-silly-now.--verbose" fileid="['index', 'std-option-realmcli-export-just-silly-now.--verbose']">
+                <literal><text>realmcli export just-silly-now --verbose</text></literal>
+            </ref_role>
+        </paragraph>
+    </listItem>
+    <listItem>
+        <paragraph>
+            <ref_role domain="std" name="option" target="realmcli import.--verbose" fileid="['index', 'std-option-realmcli-import.--verbose']">
+                <literal><text>realmcli import --verbose</text></literal>
+            </ref_role>
+        </paragraph>
+    </listItem>
+    <listItem>
+        <paragraph>
+            <ref_role domain="std" name="option" target="realmcli.--verbose" fileid="['index', 'std-option-realmcli.--verbose']">
+                <literal><text>realmcli --verbose</text></literal>
+            </ref_role>
+        </paragraph>
+    </listItem>
+</list>
+</root>
+    """,
+        )
+
+    # Ensure that the correct HTML IDs exist
+    index_page = result.pages[FileId("index.txt")]
+    index_page_ast = ast_to_testing_string(index_page.ast)
+    for html_id in (
+        "std-option-realmcli.--verbose",
+        "std-option-realmcli-export.--verbose",
+        "std-option-realmcli-export-just-silly-now.--verbose",
+        "std-option-realmcli-import.--verbose",
+    ):
+        assert f'"{html_id}"' in index_page_ast, f"missing {html_id}"
