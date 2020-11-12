@@ -1674,7 +1674,9 @@ realm-sdks = [
   {id = "javascript", title = "JavaScript SDKs"},
   {id = "node", title = "Node.js SDK"},
   {id = "react-native", title = "React Native SDK"},
+  {id = "web", title = "Web SDK"},
 ]
+
 realm-admin-interfaces = [
   {id = "ui", title = "Realm UI"},
   {id = "cli", title = "Realm CLI"},
@@ -1682,8 +1684,14 @@ realm-admin-interfaces = [
   {id = "github", title = "GitHub Deploy"},
   {id = "code-deploy", title = "Code Deploy"},
 ]
+
 realm-auth-providers = [
-  {id = "aws", title = "AWS"},
-  {id = "azure", title = "Azure"},
-  {id = "gcp", title = "GCP"},
+  {id = "anon-user", title = "Anonymous"},
+  {id = "local-userpass", title = "Email/Password"},
+  {id = "oauth2-apple", title = "Apple ID"},
+  {id = "oauth2-google", title = "Google"},
+  {id = "oauth2-facebook", title = "Facebook"},
+  {id = "api-key", title = "API Key"},
+  {id = "custom-token", title = "Custom JWT"},
+  {id = "custom-function", title = "Custom Function"},
 ]
