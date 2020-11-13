@@ -1397,6 +1397,9 @@ type = {link = "https://www.npmjs.com/%s"}
 [role."rubygems"]
 type = {link = "https://rubygems.org/%s"}
 
+[role."kafka-21-javadoc"]
+type = {link = "https://kafka.apache.org/21/javadoc/org/apache/kafka%s"}
+
 [role."typescript"]
 type = {link = "https://www.typescriptlang.org/%s"}
 
