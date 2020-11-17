@@ -36,7 +36,7 @@ The :parameter:`title` stuff works
             """
 <root fileid="param.txt">
     <section>
-        <heading id="title">
+        <heading id="-title">
             <text>$title</text>
         </heading>
         <target domain="mongodb" name="parameter" html_id="mongodb-parameter-param.-title">

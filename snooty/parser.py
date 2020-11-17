@@ -310,7 +310,8 @@ class JSONVisitor:
         elif isinstance(node, docutils.nodes.title):
             # Attach an anchor ID to this section
             assert node.parent
-            self.state.append(n.Heading((line,), [], node.parent["ids"][0]))
+            title_id = util.make_html5_id(node.astext().strip()).lower()
+            self.state.append(n.Heading((line,), [], title_id))
         elif isinstance(node, docutils.nodes.reference):
             self.state.append(
                 n.Reference(
