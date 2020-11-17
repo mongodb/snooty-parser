@@ -2302,3 +2302,34 @@ This is a paragraph.
         (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
         for d in diagnostics
     ] == [(UnexpectedIndentation, [".. blockquote::"],)]
+
+
+def test_label_matches_heading() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. _foobar-baz:
+
+Foobar Baz
+==========
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="../test.rst">
+    <target domain="std" name="label">
+        <target_identifier ids="['foobar-baz']"></target_identifier>
+    </target>
+    <section>
+        <heading id="foobar-baz"><text>Foobar Baz</text></heading>
+    </section>
+</root>""",
+    )
