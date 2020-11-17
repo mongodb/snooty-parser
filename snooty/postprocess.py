@@ -244,6 +244,56 @@ class TargetHandler:
             )
 
 
+class HeadingHandler:
+    """Construct a slug-title mapping of all pages in property, and rewrite
+       heading IDs so as to be unique."""
+
+    def __init__(self, targets: TargetDatabase) -> None:
+        self.heading_counter: typing.Counter[str] = collections.Counter()
+        self.targets = targets
+        self.slug_title_mapping: Dict[str, Sequence[n.InlineNode]] = {}
+
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.heading_counter.clear()
+
+    def get_title(self, slug: str) -> Optional[Sequence[n.InlineNode]]:
+        return self.slug_title_mapping.get(slug)
+
+    def __contains__(self, slug: str) -> bool:
+        return slug in self.slug_title_mapping
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Heading):
+            return
+
+        counter = self.heading_counter[node.id]
+        self.heading_counter[node.id] += 1
+        if counter > 0:
+            node.id += f"-{counter}"
+
+        slug = fileid_stack.root.without_known_suffix
+
+        # Save the first heading we encounter to the slug title mapping
+        if slug not in self.slug_title_mapping:
+            self.targets.define_local_target(
+                "std",
+                "doc",
+                (slug,),
+                fileid_stack.root,
+                node.children,
+                util.make_html5_id(node.id),
+            )
+            self.slug_title_mapping[slug] = node.children
+            self.targets.define_local_target(
+                "std",
+                "doc",
+                (fileid_stack.root.without_known_suffix,),
+                fileid_stack.root,
+                node.children,
+                util.make_html5_id(node.id),
+            )
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -252,7 +302,6 @@ class Postprocessor:
 
     def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
         self.project_config = project_config
-        self.slug_title_mapping: Dict[str, Sequence[n.InlineNode]] = {}
         self.toctree: Dict[str, SerializableType] = {}
         self.pages: Dict[FileId, Page] = {}
         self.pending_targets: List[n.Node] = []
@@ -284,9 +333,11 @@ class Postprocessor:
 
         option_handler = ProgramOptionHandler(self.diagnostics)
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
+        self.heading_handler = HeadingHandler(self.targets)
+
         self.run_event_parser(
             [
-                (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (EventParser.OBJECT_START_EVENT, self.heading_handler),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
                 (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
@@ -295,6 +346,7 @@ class Postprocessor:
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
                 (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
+                (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
             ],
         )
 
@@ -316,7 +368,7 @@ class Postprocessor:
         # Update metadata document with key-value pairs defined in event parser
         document["slugToTitle"] = {
             k: [node.serialize() for node in v]
-            for k, v in self.slug_title_mapping.items()
+            for k, v in self.heading_handler.slug_title_mapping.items()
         }
         # Run postprocessing operations related to toctree and append to metadata document
         document.update(
@@ -357,7 +409,7 @@ class Postprocessor:
             FileId(target_fileid), fileid_stack.root, self.project_config.source_path
         )
         slug = clean_slug(relative.as_posix())
-        title = self.slug_title_mapping.get(slug)
+        title = self.heading_handler.get_title(slug)
 
         if not title:
             line = node.span[0]
@@ -598,33 +650,6 @@ class Postprocessor:
             assert isinstance(ast, n.Parent)
             node.children = [util.fast_deep_copy(ast)]
 
-    def build_slug_title_mapping(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        """Construct a slug-title mapping of all pages in property"""
-        if not isinstance(node, n.Heading):
-            return
-
-        slug = fileid_stack.root.without_known_suffix
-
-        # Save the first heading we encounter to the slug title mapping
-        if slug not in self.slug_title_mapping:
-            self.targets.define_local_target(
-                "std",
-                "doc",
-                (slug,),
-                fileid_stack.root,
-                node.children,
-                util.make_html5_id(node.id),
-            )
-            self.slug_title_mapping[slug] = node.children
-            self.targets.define_local_target(
-                "std",
-                "doc",
-                (fileid_stack.root.without_known_suffix,),
-                fileid_stack.root,
-                node.children,
-                util.make_html5_id(node.id),
-            )
-
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name
         given a slug. We cannot use the with_suffix method since the type of the slug
@@ -704,7 +729,7 @@ class Postprocessor:
                             n.Text((0,), entry.title).serialize()
                         ]
                     else:
-                        title_nodes = self.slug_title_mapping.get(slug)
+                        title_nodes = self.heading_handler.get_title(slug)
                         title = (
                             [node.serialize() for node in title_nodes]
                             if title_nodes
@@ -827,13 +852,17 @@ class DevhubPostprocessor(Postprocessor):
         self.handle_substitutions()
 
         option_handler = ProgramOptionHandler(self.diagnostics)
+        self.heading_handler = HeadingHandler(self.targets)
         self.run_event_parser(
             [
-                (EventParser.OBJECT_START_EVENT, self.build_slug_title_mapping),
+                (EventParser.OBJECT_START_EVENT, self.heading_handler),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
             ],
-            [(EventParser.PAGE_START_EVENT, option_handler.reset)],
+            [
+                (EventParser.PAGE_START_EVENT, option_handler.reset),
+                (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
+            ],
         )
 
         target_handler = TargetHandler(self.targets)
@@ -845,7 +874,7 @@ class DevhubPostprocessor(Postprocessor):
         def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
             """Clean a slug and validate that it is a known page. If it is not, return None."""
             cleaned = clean_slug(slug)
-            if cleaned not in self.slug_title_mapping:
+            if cleaned not in self.heading_handler:
                 # XXX: Because reporting errors in config.toml properly is dodgy right now, just
                 # log to stderr.
                 logger.error(f"Cannot find slug '{cleaned}'")
@@ -891,7 +920,7 @@ class DevhubPostprocessor(Postprocessor):
         # Save page title to query_fields, if it exists
         slug = clean_slug(fileid_stack.current.as_posix())
         self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
-        title = self.slug_title_mapping.get(slug)
+        title = self.heading_handler.get_title(slug)
         if title is not None:
             self.query_fields["title"] = [node.serialize() for node in title]
 

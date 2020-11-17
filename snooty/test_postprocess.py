@@ -677,3 +677,59 @@ Program 1
         "std-option-realmcli-import.--verbose",
     ):
         assert f'"{html_id}"' in index_page_ast, f"missing {html_id}"
+
+
+def test_heading_id_unique() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+.. include:: /includes/fact.rst
+
+.. include:: /includes/fact.rst
+""",
+            Path(
+                "source/includes/fact.rst"
+            ): """
+A Heading
+~~~~~~~~~
+        """,
+        }
+    ) as result:
+        for d in result.diagnostics[FileId("index.txt")]:
+            print(d.message)
+        assert not result.diagnostics[FileId("index.txt")]
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+<section>
+    <heading id="index-page"><text>Index Page</text></heading>
+    <section>
+        <heading id="a-heading"><text>A Heading</text></heading>
+        <directive name="include"><text>/includes/fact.rst</text>
+            <root fileid="includes/fact.rst">
+                <section>
+                    <heading id="a-heading-1"><text>A Heading</text></heading>
+                </section>
+            </root>
+        </directive>
+        <directive name="include"><text>/includes/fact.rst</text>
+            <root fileid="includes/fact.rst">
+                <section>
+                    <heading id="a-heading-2"><text>A Heading</text></heading>
+                </section>
+            </root>
+        </directive>
+    </section>
+</section></root>""",
+        )
