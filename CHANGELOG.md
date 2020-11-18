@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.8.1] - 2020-11-18
+
 ### Added
 
 - Add `kafka-21-javadoc` role for kafka links.
