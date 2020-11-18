@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `kafka-21-javadoc` role for kafka links.
+
+### Changed
+
+- Add suffixes to heading IDs to ensure uniqueness (DOP-1734).
+- Don't rely on docutils header IDs, fixing e.g. headings with IDs like `id1` (DOP-1566).
+- Don't include binary name unless requested in `:option:` links (DOP-1675).
+- Update Realm tabsets (contributed by Nick Larew).
+
+### Fixed
+
+- Support for subcommands (DOP-1703).
+
 ## [v0.8.0] - 2020-11-10
 
 ### Added
