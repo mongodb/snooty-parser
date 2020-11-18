@@ -615,6 +615,54 @@ class Postprocessor:
                     target.children = heading.children
             self.pending_targets = []
 
+    def bound_included_AST(
+        self,
+        nodes: MutableSequence[n.Node],
+        start_after_text: str,
+        end_before_text: str,
+    ) -> Tuple[MutableSequence[n.Node], bool, bool]:
+        """Given an AST in the form of nodes, return a subset of that AST by removing nodes 'outside' of 
+        the bound formed by the nodes containing the start_after_text or end_before_text."""
+
+        def is_bound(node: n.Node, search_text: str) -> bool:
+            """Helper function to determine if the given node contains specified start-after or end-before text. 
+            
+            Note: For now, we are only splicing included files based on Text and TargetIdentifier nodes. 
+            Comments have Text nodes as children; Labels have TargetIdentifiers as children. 
+            So, writers can splice on these parent directives as well."""
+            if isinstance(node, n.Text) and node.value:
+                return search_text == node.value
+            elif isinstance(node, n.TargetIdentifier):
+                if node.ids and isinstance(node.ids[0], str):
+                    return search_text in node.ids
+            return False
+
+        start_index, end_index = 0, len(nodes)
+        any_start, any_end = False, False
+
+        # For any given node: if the start_after node is within this node's subtree, do not include any
+        # preceding siblings of this node in the resulting AST; if end_before is within this node's subtree,
+        # then do not include any succeeding siblings of this node.
+        for i, node in enumerate(nodes):
+            has_start, has_end = False, False
+            # Determine if this node itself (not a child node) contains a bound
+            is_start = is_bound(node, start_after_text)
+            is_end = is_bound(node, end_before_text)
+            # Recursively search the child nodes for bounds
+            if isinstance(node, n.Parent):
+                children, has_start, has_end = self.bound_included_AST(
+                    node.children, start_after_text, end_before_text
+                )
+                node.children = children
+            if is_start or has_start:
+                any_start = True
+                start_index = i
+            if is_end or has_end:
+                any_end = True
+                end_index = i
+        # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
+        return nodes[start_index : end_index + 1], any_start, any_end
+
     def populate_include_nodes(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
@@ -649,7 +697,10 @@ class Postprocessor:
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
 
-            # TODO: Move subsetting implementation into parse layer for cleaner implementation
+            deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
+
+            # TODO: Move subsetting implementation into parse layer, where we can
+            # ideally take subsets of the raw RST
             start_after_text = (
                 node.options["start-after"] if "start-after" in node.options else ""
             )
@@ -657,47 +708,11 @@ class Postprocessor:
                 node.options["end-before"] if "end-before" in node.options else ""
             )
 
-            deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
-
-            # This is computationally more complex than it should be - only operate if we must
             if start_after_text or end_before_text:
-                # Determine if the given node contains specified start-after or end-before text
-                def is_bound(node: n.Node, search_text: str) -> bool:
-                    # We are only splicing included files based on Text and TargetIdentifier nodes
-                    # Comments have Text nodes as children; Labels have TargetIdentifiers as children
-                    if isinstance(node, n.Text) and node.value:
-                        return search_text == node.value
-                    elif isinstance(node, n.TargetIdentifier):
-                        if node.ids and isinstance(node.ids[0], str):
-                            return search_text in node.ids
-                    return False
-
-                # If start_after is a child of any given node, then that node should not
-                # be included in the resulting AST. If end_before is a child of any
-                # given node, then that node should be included
-                def bound(
-                    nodes: MutableSequence[n.Node],
-                ) -> Tuple[MutableSequence[n.Node], bool, bool]:
-                    start_index, end_index = 0, len(nodes)
-                    any_start, any_end = False, False
-                    for i, node in enumerate(nodes):
-                        has_start, has_end = False, False
-                        is_start = is_bound(node, start_after_text)
-                        is_end = is_bound(node, end_before_text)
-                        if isinstance(node, n.Parent):
-                            children, has_start, has_end = bound(node.children)
-                            node.children = children
-                        if is_start or has_start:
-                            any_start = True
-                            start_index = i
-                        if is_end or has_end:
-                            any_end = True
-                            end_index = i
-                    # Don't include any node before the node containing the start_after_text
-                    # Likewise, don't any node after the node containing the end_before_text
-                    return nodes[start_index : end_index + 1], any_start, any_end
-
-                deep_copy_children, _, _ = bound(deep_copy_children)
+                # Returns a subset of the AST based on text bounds
+                deep_copy_children, _, _ = self.bound_included_AST(
+                    deep_copy_children, start_after_text, end_before_text
+                )
 
             node.children = deep_copy_children
 
