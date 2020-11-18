@@ -30,6 +30,7 @@ from .diagnostics import (
     MissingTab,
     ExpectedTabs,
     DuplicateDirective,
+    InvalidInclude,
 )
 from . import specparser
 from . import n, util
@@ -621,8 +622,10 @@ class Postprocessor:
         start_after_text: str,
         end_before_text: str,
     ) -> Tuple[MutableSequence[n.Node], bool, bool]:
-        """Given an AST in the form of nodes, return a subset of that AST by removing nodes 'outside' of 
-        the bound formed by the nodes containing the start_after_text or end_before_text."""
+        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of 
+        the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
+        a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
+        or if it succeeds and is not any ancestor of the end-before node."""
 
         def is_bound(node: n.Node, search_text: str) -> bool:
             """Helper function to determine if the given node contains specified start-after or end-before text. 
@@ -641,8 +644,8 @@ class Postprocessor:
         any_start, any_end = False, False
 
         # For any given node: if the start_after node is within this node's subtree, do not include any
-        # preceding siblings of this node in the resulting AST; if end_before is within this node's subtree,
-        # then do not include any succeeding siblings of this node.
+        # preceding siblings of this node in the resulting AST; if the end_before node is within this
+        # node's subtree, then do not include any succeeding siblings of this node.
         for i, node in enumerate(nodes):
             has_start, has_end = False, False
             # Determine if this node itself (not a child node) contains a bound
@@ -660,6 +663,9 @@ class Postprocessor:
             if is_end or has_end:
                 any_end = True
                 end_index = i
+        assert (
+            start_index <= end_index
+        ), "start-after text should precede end-before text"
         # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
         return nodes[start_index : end_index + 1], any_start, any_end
 
@@ -699,8 +705,8 @@ class Postprocessor:
 
             deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
 
-            # TODO: Move subsetting implementation into parse layer, where we can
-            # ideally take subsets of the raw RST
+            # TODO: Move subsgraphing implementation into parse layer, where we can
+            # ideally take subgraph of the raw RST
             start_after_text = (
                 node.options["start-after"] if "start-after" in node.options else ""
             )
@@ -709,10 +715,30 @@ class Postprocessor:
             )
 
             if start_after_text or end_before_text:
-                # Returns a subset of the AST based on text bounds
-                deep_copy_children, _, _ = self.bound_included_AST(
-                    deep_copy_children, start_after_text, end_before_text
-                )
+                try:
+                    # Returns a subgraph of the AST based on text bounds
+                    deep_copy_children, any_start, any_end = self.bound_included_AST(
+                        deep_copy_children, start_after_text, end_before_text
+                    )
+                    # Confirm that we found all specified text (with helpful diagnostic message if not)
+                    msg = (
+                        "If you are sure your text is within the included RST file, try using it in a comment or "
+                        "label. Search is case-sensitive."
+                    )
+                    if start_after_text:
+                        assert (
+                            any_start
+                        ), f"Could not find specified start-after text: {start_after_text}. {msg}"
+                    if end_before_text:
+                        assert (
+                            any_end
+                        ), f"Could not find specified end-before text: {end_before_text}. {msg}"
+
+                except AssertionError as e:
+                    line = node.span[0]
+                    self.diagnostics[fileid_stack.current].append(
+                        InvalidInclude(f"Invalid include options: {str(e)}", line)
+                    )
 
             node.children = deep_copy_children
 

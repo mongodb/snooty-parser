@@ -738,6 +738,7 @@ A Heading
 def test_include_subset() -> None:
     with make_test(
         {
+            # Splice on comments
             Path(
                 "source/program1.txt"
             ): """
@@ -745,12 +746,21 @@ def test_include_subset() -> None:
     :start-after: start-comment
     :end-before: end-comment
 """,
+            # Splice on labels
             Path(
                 "source/program2.txt"
             ): """
 .. include:: /includes/included.rst
     :start-after: start-label
     :end-before: end-label
+""",
+            # Splice on text
+            Path(
+                "source/program3.txt"
+            ): """
+.. include:: /includes/included.rst
+    :start-after: start-text
+    :end-before: end-text
 """,
             Path(
                 "source/includes/included.rst"
@@ -763,6 +773,10 @@ Section Heading
 Paragraph.
 
 .. end-comment
+
+start-text
+
+end-text
 
 .. _start-label:
 
@@ -835,3 +849,91 @@ Paragraph
 </root>
         """,
         )
+
+        page = result.pages[FileId("program3.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="program3.txt">
+    <directive name="include" start-after="start-text" end-before="end-text">
+        <text>/includes/included.rst</text>
+        <root fileid="includes/included.rst">
+            <section>
+                <paragraph>
+                    <text>start-text</text>
+                </paragraph>
+                <paragraph>
+                    <text>end-text</text>
+                </paragraph>
+            </section>
+        </root>
+    </directive>
+</root>
+        """,
+        )
+
+
+def test_include_subset_fails() -> None:
+    with make_test(
+        {
+            # Splice on text in reverse order
+            Path(
+                "source/program1.txt"
+            ): """
+.. include:: /includes/included.rst
+    :start-after: end-text
+    :end-before: start-text
+""",
+            # Can't find start text
+            Path(
+                "source/program2.txt"
+            ): """
+.. include:: /includes/included.rst
+    :start-after: fake-start-text
+    :end-before: end-text
+""",
+            # Can't find end text
+            Path(
+                "source/program3.txt"
+            ): """
+.. include:: /includes/included.rst
+    :start-after: start-text
+    :end-before: fake-end-text
+""",
+            Path(
+                "source/includes/included.rst"
+            ): """
+.. start-comment
+
+Section Heading
+---------------
+
+Paragraph.
+
+.. end-comment
+
+start-text
+
+end-text
+
+.. _start-label:
+
+Section Heading
+---------------
+
+Paragraph
+
+.. _end-label:
+""",
+        }
+    ) as result:
+        assert (
+            len(
+                [
+                    diagnostics
+                    for diagnostics in result.diagnostics.values()
+                    if diagnostics
+                ]
+            )
+            == 3
+        ), "Should raise 3 diagnostics"

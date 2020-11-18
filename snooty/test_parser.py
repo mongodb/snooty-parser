@@ -603,13 +603,14 @@ def test_include() -> None:
         </root>""",
     )
 
-    # Test include with start-after option
+    # Test include with start-after and end-before options
     page, diagnostics = parse_rst(
         parser,
         path,
         """
 .. include:: /test_parser/includes/sample_rst.rst
-    :start-after: example
+    :start-after: start after text
+    :end-before: end before text
         """,
     )
     page.finish(diagnostics)
@@ -617,27 +618,7 @@ def test_include() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="include" start-after="example">
-        <text>/test_parser/includes/sample_rst.rst</text>
-        </directive>
-        </root>""",
-    )
-
-    # Test include with end-before option
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /test_parser/includes/sample_rst.rst
-    :end-before: example
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-    check_ast_testing_string(
-        page.ast,
-        """<root fileid="test.rst">
-        <directive name="include" end-before="example">
+        <directive name="include" start-after="start after text" end-before="end before text">
         <text>/test_parser/includes/sample_rst.rst</text>
         </directive>
         </root>""",
