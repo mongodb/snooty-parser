@@ -648,7 +648,58 @@ class Postprocessor:
             assert include_page is not None
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
-            node.children = [util.fast_deep_copy(ast)]
+
+            # TODO: Move subsetting implementation into parse layer for cleaner implementation
+            start_after_text = (
+                node.options["start-after"] if "start-after" in node.options else ""
+            )
+            end_before_text = (
+                node.options["end-before"] if "end-before" in node.options else ""
+            )
+
+            deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
+
+            # This is computationally more complex than it should be - only operate if we must
+            if start_after_text or end_before_text:
+                # Determine if the given node contains specified start-after or end-before text
+                def is_bound(node: n.Node, search_text: str) -> bool:
+                    # We are only splicing included files based on Text and TargetIdentifier nodes
+                    # Comments have Text nodes as children; Labels have TargetIdentifiers as children
+                    if isinstance(node, n.Text) and node.value:
+                        return search_text == node.value
+                    elif isinstance(node, n.TargetIdentifier):
+                        if node.ids and isinstance(node.ids[0], str):
+                            return search_text in node.ids
+                    return False
+
+                # If start_after is a child of any given node, then that node should not
+                # be included in the resulting AST. If end_before is a child of any
+                # given node, then that node should be included
+                def bound(
+                    nodes: MutableSequence[n.Node],
+                ) -> Tuple[MutableSequence[n.Node], bool, bool]:
+                    start_index, end_index = 0, len(nodes)
+                    any_start, any_end = False, False
+                    for i, node in enumerate(nodes):
+                        has_start, has_end = False, False
+                        is_start = is_bound(node, start_after_text)
+                        is_end = is_bound(node, end_before_text)
+                        if isinstance(node, n.Parent):
+                            children, has_start, has_end = bound(node.children)
+                            node.children = children
+                        if is_start or has_start:
+                            any_start = True
+                            start_index = i
+                        if is_end or has_end:
+                            any_end = True
+                            end_index = i
+                    # Don't include any node before the node containing the start_after_text
+                    # Likewise, don't any node after the node containing the end_before_text
+                    return nodes[start_index : end_index + 1], any_start, any_end
+
+                deep_copy_children, _, _ = bound(deep_copy_children)
+
+            node.children = deep_copy_children
 
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name

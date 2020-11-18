@@ -172,6 +172,18 @@ class InlineParent(InlineNode, Parent[InlineNode]):
 
 
 @dataclass
+class Comment(Parent[Node]):
+    __slots__ = ()
+    type = "comment"
+
+
+@dataclass
+class Label(Parent[Node]):
+    __slots__ = ()
+    type = "label"
+
+
+@dataclass
 class Section(Parent[Node]):
     __slots__ = ()
     type = "section"

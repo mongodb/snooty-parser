@@ -554,6 +554,94 @@ def test_include() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include">
+        <text>/driver-examples/rstexample.rst</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test include with dedent flag
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. include:: /test_parser/includes/sample_rst.rst
+    :dedent:
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include" dedent="True">
+        <text>/test_parser/includes/sample_rst.rst</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test include with specified dedent
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. include:: /test_parser/includes/sample_rst.rst
+    :dedent: 4
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include" dedent="4">
+        <text>/test_parser/includes/sample_rst.rst</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test include with start-after option
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. include:: /test_parser/includes/sample_rst.rst
+    :start-after: example
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include" start-after="example">
+        <text>/test_parser/includes/sample_rst.rst</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test include with end-before option
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. include:: /test_parser/includes/sample_rst.rst
+    :end-before: example
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include" end-before="example">
+        <text>/test_parser/includes/sample_rst.rst</text>
+        </directive>
+        </root>""",
+    )
 
     # Test generated include
     page, diagnostics = parse_rst(
