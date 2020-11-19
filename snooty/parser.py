@@ -1,10 +1,10 @@
 import collections
 import docutils.nodes
+import errno
+import getpass
 import logging
 import multiprocessing
 import os
-import errno
-import pwd
 import re
 import subprocess
 import threading
@@ -1083,7 +1083,7 @@ class _Project:
 
         self.config.substitution_nodes = substitution_nodes
 
-        username = pwd.getpwuid(os.getuid()).pw_name
+        username = getpass.getuser()
         try:
             branch = subprocess.check_output(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
