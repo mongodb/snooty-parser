@@ -151,13 +151,29 @@ class TextDocumentEdit:
     edits: List[TextEdit]
 
 
-def pid_exists(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except OSError:
+if sys.platform == "win32":
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_INFROMATION = 0x1000
+
+    def pid_exists(pid: int) -> bool:
+        process = kernel32.OpenProcess(PROCESS_QUERY_INFROMATION, 0, pid)
+        if process != 0:
+            kernel32.CloseHandle(process)
+            return True
         return False
-    else:
-        return True
+
+
+else:
+
+    def pid_exists(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        else:
+            return True
 
 
 class Backend:

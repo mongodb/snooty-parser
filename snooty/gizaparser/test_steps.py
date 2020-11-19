@@ -36,7 +36,7 @@ def test_step() -> None:
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
 
     pages = category.to_pages(path, create_page, giza_node.data)
-    assert [str(page.fake_full_path()) for page in pages] == [
+    assert [page.fake_full_path().as_posix() for page in pages] == [
         "test_data/test_gizaparser/source/includes/steps/test.rst"
     ]
     # Ensure that no diagnostics were raised

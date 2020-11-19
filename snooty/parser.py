@@ -577,7 +577,7 @@ class JSONVisitor:
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             try:
@@ -615,7 +615,7 @@ class JSONVisitor:
                 return doc
 
             _, filepath = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Attempt to read the literally included file
@@ -743,7 +743,7 @@ class JSONVisitor:
                 return doc
 
             fileid, path = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Validate if file exists
@@ -851,9 +851,8 @@ class JSONVisitor:
             return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
-        path = Path(raw_path)
         fileid, path = util.reroot_path(
-            path, self.docpath, self.project_config.source_path
+            FileId(raw_path), self.docpath, self.project_config.source_path
         )
         static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
@@ -1186,9 +1185,7 @@ class _Project:
                         giza_node.path,
                         filename,
                         text,
-                        n.Root(
-                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
-                        ),
+                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
                     )
                     return (
                         page,
@@ -1268,9 +1265,7 @@ class _Project:
                         giza_node.path,
                         filename,
                         giza_node.text,
-                        n.Root(
-                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
-                        ),
+                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
                     )
                     return (
                         page,

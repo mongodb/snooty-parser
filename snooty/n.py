@@ -54,6 +54,17 @@ class FileId(PurePosixPath):
 
     PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
 
+    def collapse_dots(self) -> "FileId":
+        result: List[str] = []
+        for part in self.parts:
+            if part == "..":
+                result.pop()
+            elif part == ".":
+                continue
+            else:
+                result.append(part)
+        return FileId(*result)
+
     @property
     def without_known_suffix(self) -> str:
         """Returns the fileid without any of its known file extensions (txt, rst, yaml)"""
