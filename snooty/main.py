@@ -17,12 +17,13 @@ Environment variables:
 
 """
 import getpass
+import json
 import logging
+import multiprocessing
 import os
 import pymongo
 import sys
 import toml
-import json
 import watchdog.events
 import watchdog.observers
 from collections import defaultdict
@@ -268,6 +269,8 @@ def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifi
 
 
 def main() -> None:
+    multiprocessing.freeze_support()
+
     # docopt will terminate here and display usage instructions if snooty is run improperly
     args = docopt(__doc__)
 
