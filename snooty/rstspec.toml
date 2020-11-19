@@ -170,11 +170,9 @@ help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
 options.start-after = "string"
 options.end-before = "string"
-options.dedent = ["nonnegative_integer", "flag"]
 example = """.. include:: ${1:/includes/file.rst}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
-   ${5::dedent:}
 """
 
 [directive.literalinclude]

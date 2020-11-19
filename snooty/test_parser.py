@@ -563,46 +563,6 @@ def test_include() -> None:
         </root>""",
     )
 
-    # Test include with dedent flag
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /test_parser/includes/sample_rst.rst
-    :dedent:
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-    check_ast_testing_string(
-        page.ast,
-        """<root fileid="test.rst">
-        <directive name="include" dedent="True">
-        <text>/test_parser/includes/sample_rst.rst</text>
-        </directive>
-        </root>""",
-    )
-
-    # Test include with specified dedent
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /test_parser/includes/sample_rst.rst
-    :dedent: 4
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-    check_ast_testing_string(
-        page.ast,
-        """<root fileid="test.rst">
-        <directive name="include" dedent="4">
-        <text>/test_parser/includes/sample_rst.rst</text>
-        </directive>
-        </root>""",
-    )
-
     # Test include with start-after and end-before options
     page, diagnostics = parse_rst(
         parser,
