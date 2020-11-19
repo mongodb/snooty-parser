@@ -1146,9 +1146,10 @@ class Parser(Generic[_V]):
     def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
-        Registry.get(project_config.default_domain).activate()
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
+        Registry.get(self.project_config.default_domain).activate()
+
         diagnostics: List[Diagnostic] = []
         text, diagnostics = self.project_config.read(path, text)
 

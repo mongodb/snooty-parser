@@ -66,10 +66,6 @@ from .types import (
 )
 from .util import RST_EXTENSIONS
 
-# XXX: Work around to get snooty working with Python 3.8 until we can fix
-# our implicit data flow issues.
-multiprocessing.set_start_method("fork")
-
 NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
