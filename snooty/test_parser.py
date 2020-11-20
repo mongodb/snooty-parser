@@ -1085,13 +1085,6 @@ def test_figure() -> None:
 
 .. figure:: /test_parser/sample.jpg
     :alt: sample jpeg
-
-.. figure:: /test_parser/sample.jp2
-    :alt: sample jpeg2000
-
-.. figure:: /test_parser/sample.tiff
-    :alt: sample tiff
-
 """,
     )
     page.finish(diagnostics)
@@ -1105,12 +1098,6 @@ def test_figure() -> None:
     </directive>
     <directive name="figure" alt="sample jpeg" checksum="423345d0e4268d547aeaef46b74479f5df6e949d2b3288de1507f1f3082805ae">
         <text>/test_parser/sample.jpg</text>
-    </directive>
-    <directive name="figure" alt="sample jpeg2000" checksum="f57bd6db000c1d92e34421a8b1b6592267e24ffdb0342ae15de87081e23d85a4">
-        <text>/test_parser/sample.jp2</text>
-    </directive>
-    <directive name="figure" alt="sample tiff" checksum="18bee81070f84973a3b5a4637860788b844d56c95acbce4c62d4e5b7d397d72a">
-        <text>/test_parser/sample.tiff</text>
     </directive>
 </root>""",
     )
@@ -1175,77 +1162,6 @@ def test_figure() -> None:
         path,
         """
 .. figure:: /test_parser/sample.png
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
-
-
-def test_image() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
-
-    # Test good image with all options
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. image:: /test_parser/sample.png
-    :alt: sample png
-    :figwidth: 100
-    :width: 100
-    :scale: 1
-    :align: left
-    :lightbox:
-    :class: class
-    :border:
-
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 0
-    check_ast_testing_string(
-        page.ast,
-        """
-<root fileid="test.rst">
-    <directive name="image" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665"
-        align="left" border="True" class="class" figwidth="100" lightbox="True" scale="1" width="100">
-        <text>/test_parser/sample.png</text>
-    </directive>
-</root>""",
-    )
-
-    # No filepath supplied
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. image::
-    :alt: no image
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
-
-    # No file found
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. image:: fake_image.png
-    :alt: missing image file
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
-
-    # Missing required alt text
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. image:: /test_parser/sample.png
 """,
     )
     page.finish(diagnostics)
