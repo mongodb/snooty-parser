@@ -1081,10 +1081,10 @@ def test_figure() -> None:
         path,
         """
 .. figure:: /test_parser/sample.png
-    :alt: sample png
+   :alt: sample png
 
 .. figure:: /test_parser/sample.jpg
-    :alt: sample jpeg
+   :alt: sample jpeg
 """,
     )
     page.finish(diagnostics)
@@ -1108,14 +1108,14 @@ def test_figure() -> None:
         path,
         """
 .. figure:: /test_parser/sample.png
-    :alt: sample png
-    :figwidth: 100
-    :width: 100
-    :scale: 1
-    :align: left
-    :lightbox:
-    :class: class
-    :border:
+   :alt: sample png
+   :figwidth: 100
+   :width: 100
+   :scale: 1
+   :align: left
+   :lightbox:
+   :class: class
+   :border:
 
 """,
     )
@@ -1138,7 +1138,7 @@ def test_figure() -> None:
         path,
         """
 .. figure::
-    :alt: no figure
+   :alt: no figure
 """,
     )
     page.finish(diagnostics)
@@ -1150,7 +1150,7 @@ def test_figure() -> None:
         path,
         """
 .. figure:: fake_figure.png
-    :alt: missing figure file
+   :alt: missing figure file
 """,
     )
     page.finish(diagnostics)
@@ -1876,7 +1876,7 @@ def test_cardgroup() -> None:
         path,
         """
 .. card-group::
-    :type: small
+   :type: small
 
     cards:
 
@@ -2274,7 +2274,7 @@ def test_required_option() -> None:
         path,
         """
 .. figure:: compass-create-database.png
-    :alt: alt text""",
+   :alt: alt text""",
     )
     assert [type(d) for d in diagnostics] == []
 
