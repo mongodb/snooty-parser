@@ -744,7 +744,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
 class BaseCodeDirective(docutils.parsers.rst.Directive):
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
-        copyable = "copyable" not in self.options or self.options["copyable"] == "true"
+        copyable = "copyable" not in self.options or self.options["copyable"]
         linenos = "linenos" in self.options
 
         try:
