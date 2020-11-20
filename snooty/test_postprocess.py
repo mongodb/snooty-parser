@@ -743,24 +743,24 @@ def test_include_subset() -> None:
                 "source/program1.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: start-comment
-    :end-before: end-comment
+   :start-after: start-comment
+   :end-before: end-comment
 """,
             # Splice on labels
             Path(
                 "source/program2.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: start-label
-    :end-before: end-label
+   :start-after: start-label
+   :end-before: end-label
 """,
             # Splice on text
             Path(
                 "source/program3.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: start-text
-    :end-before: end-text
+   :start-after: start-text
+   :end-before: end-text
 """,
             Path(
                 "source/includes/included.rst"
@@ -881,24 +881,24 @@ def test_include_subset_fails() -> None:
                 "source/program1.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: end-text
-    :end-before: start-text
+   :start-after: end-text
+   :end-before: start-text
 """,
             # Can't find start text
             Path(
                 "source/program2.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: fake-start-text
-    :end-before: end-text
+   :start-after: fake-start-text
+   :end-before: end-text
 """,
             # Can't find end text
             Path(
                 "source/program3.txt"
             ): """
 .. include:: /includes/included.rst
-    :start-after: start-text
-    :end-before: fake-end-text
+   :start-after: start-text
+   :end-before: fake-end-text
 """,
             Path(
                 "source/includes/included.rst"

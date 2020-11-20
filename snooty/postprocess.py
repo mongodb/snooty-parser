@@ -619,19 +619,19 @@ class Postprocessor:
     def bound_included_AST(
         self,
         nodes: MutableSequence[n.Node],
-        start_after_text: str,
-        end_before_text: str,
+        start_after_text: Optional[str],
+        end_before_text: Optional[str],
     ) -> Tuple[MutableSequence[n.Node], bool, bool]:
-        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of 
+        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of
         the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
         a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
         or if it succeeds and is not any ancestor of the end-before node."""
 
-        def is_bound(node: n.Node, search_text: str) -> bool:
-            """Helper function to determine if the given node contains specified start-after or end-before text. 
-            
-            Note: For now, we are only splicing included files based on Text and TargetIdentifier nodes. 
-            Comments have Text nodes as children; Labels have TargetIdentifiers as children. 
+        def is_bound(node: n.Node, search_text: Optional[str]) -> bool:
+            """Helper function to determine if the given node contains specified start-after or end-before text.
+
+            Note: For now, we are only splicing included files based on Text and TargetIdentifier nodes.
+            Comments have Text nodes as children; Labels have TargetIdentifiers as children.
             So, writers can splice on these parent directives as well."""
             if isinstance(node, n.Text) and node.value:
                 return search_text == node.value
@@ -707,12 +707,8 @@ class Postprocessor:
 
             # TODO: Move subsgraphing implementation into parse layer, where we can
             # ideally take subgraph of the raw RST
-            start_after_text = (
-                node.options["start-after"] if "start-after" in node.options else ""
-            )
-            end_before_text = (
-                node.options["end-before"] if "end-before" in node.options else ""
-            )
+            start_after_text = node.options.get("start-after")
+            end_before_text = node.options.get("end-before")
 
             if start_after_text or end_before_text:
                 try:
