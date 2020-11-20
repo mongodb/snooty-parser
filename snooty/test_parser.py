@@ -1793,12 +1793,12 @@ def test_toctree() -> None:
         path,
         """
 .. toctree::
-    :titlesonly:
+   :titlesonly:
 
-    Title here </test1>
-    /test2/faq
-    URL with title <https://docs.atlas.mongodb.com>
-    <https://docs.mongodb.com/stitch>
+   Title here </test1>
+   /test2/faq
+   URL with title <https://docs.atlas.mongodb.com>
+   <https://docs.mongodb.com/stitch>
 """,
     )
     page.finish(diagnostics)
