@@ -82,6 +82,11 @@ docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatc
 docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
 docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
 
+# Docutils by default will move existing label names into a node key called "dupnames".
+# We don't want it to do this: we just want docutils to be a dumb parser, since we handle
+# references and such in our own logic.
+docutils.nodes.dupname = lambda node, name: None
+
 
 def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
     match = PAT_EXPLICIT_TITLE.match(text)
