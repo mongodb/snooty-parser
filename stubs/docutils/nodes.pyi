@@ -36,6 +36,9 @@ class Node:
     def __contains__(self, key: str) -> bool: ...
 
 
+def dupname(node: Node, name: str) -> None: ...
+
+
 class Root: ...
 
 

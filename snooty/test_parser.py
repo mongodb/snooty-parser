@@ -2333,3 +2333,55 @@ Foobar Baz
     </section>
 </root>""",
     )
+
+
+def test_duplicate_ref() -> None:
+    """docutils changes the target node shape when duplicate labels are used. See: DOP-1326"""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+==========
+Index Page
+==========
+
+.. _a-heading:
+
+A Heading
+---------
+
+.. _a-heading:
+
+A Heading
+---------
+""",
+    )
+
+    page.finish(diagnostics)
+    assert [type(x) for x in diagnostics] == [DocUtilsParseError]
+
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="../test.rst">
+    <section>
+        <heading id="index-page"><text>Index Page</text></heading>
+        <target domain="std" name="label">
+            <target_identifier ids="['a-heading']"></target_identifier>
+        </target>
+        <section>
+            <heading id="a-heading"><text>A Heading</text></heading>
+            <target domain="std" name="label">
+                <target_identifier ids="['a-heading']"></target_identifier>
+            </target>
+        </section>
+        <section>
+            <heading id="a-heading"><text>A Heading</text></heading>
+        </section>
+    </section>
+</root>""",
+    )
