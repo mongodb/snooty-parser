@@ -124,6 +124,120 @@ class ProgramOptionHandler:
             node.children.extend(new_identifiers)
 
 
+class IncludeHandler:
+    """Bound included ASTs by writer-specified strings"""
+
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.diagnostics = diagnostics
+
+    def reset(self, fileid_stack: FileIdStack) -> None:
+        pass
+
+    @staticmethod
+    def is_bound(node: n.Node, search_text: Optional[str]) -> bool:
+        """Helper function to determine if the given node contains specified start-after or end-before text.
+
+        Note: For now, we are only splicing included files based on Comments and TargetIdentifier nodes.
+        Comments have Text nodes as children; Labels have TargetIdentifiers as children."""
+        if isinstance(node, n.Comment):
+            if node.children and isinstance(node.children[0], n.Text):
+                comment_text = node.children[0].get_text()
+                return search_text == comment_text
+        elif isinstance(node, n.Target):
+            # TODO: get_child_of_type
+            if node.domain == "std" and node.name == "label":
+                if node.children and isinstance(node.children[0], n.TargetIdentifier):
+                    target_identifier = node.children[0]
+                    if target_identifier.ids:
+                        return search_text in target_identifier.ids
+        return False
+
+    def bound_included_AST(
+        self,
+        nodes: MutableSequence[n.Node],
+        start_after_text: Optional[str],
+        end_before_text: Optional[str],
+    ) -> Tuple[MutableSequence[n.Node], bool, bool]:
+        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of
+            the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
+            a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
+            or if it succeeds and is not any ancestor of the end-before node."""
+
+        start_index, end_index = 0, len(nodes)
+        any_start, any_end = False, False
+
+        # For any given node: if the start_after node is within this node's subtree, do not include any
+        # preceding siblings of this node in the resulting AST; if the end_before node is within this
+        # node's subtree, then do not include any succeeding siblings of this node.
+        for i, node in enumerate(nodes):
+            has_start, has_end = False, False
+            # Determine if this node itself (not a child node) contains a bound
+            is_start = IncludeHandler.is_bound(node, start_after_text)
+            is_end = IncludeHandler.is_bound(node, end_before_text)
+            # Recursively search the child nodes for bounds
+            if isinstance(node, n.Parent):
+                children, has_start, has_end = self.bound_included_AST(
+                    node.children, start_after_text, end_before_text
+                )
+                node.children = children
+            if is_start or has_start:
+                any_start = True
+                start_index = i
+            if is_end or has_end:
+                any_end = True
+                end_index = i
+        if start_index > end_index:
+            raise Exception("start-after text should precede end-before text")
+        # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
+        return nodes[start_index : end_index + 1], any_start, any_end
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive):
+            return
+
+        if not node.name == "include":
+            return
+
+        # TODO: Move subsgraphing implementation into parse layer, where we can
+        # ideally take subgraph of the raw RST
+        start_after_text = node.options.get("start-after")
+        end_before_text = node.options.get("end-before")
+
+        if start_after_text or end_before_text:
+            deep_copy_children: MutableSequence[n.Node] = util.fast_deep_copy(
+                node.children
+            )
+            line = node.span[0]
+            any_start, any_end = False, False
+            try:
+                # Returns a subgraph of the AST based on text bounds
+                deep_copy_children, any_start, any_end = self.bound_included_AST(
+                    deep_copy_children, start_after_text, end_before_text
+                )
+            except Exception as e:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(str(e), line)
+                )
+            # Confirm that we found all specified text (with helpful diagnostic )message if not)
+            msg = "Please be sure your text is a comment or label. Search is case-sensitive."
+            if start_after_text and not any_start:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(
+                        f"Could not find specified start-after text: {start_after_text}. {msg}",
+                        line,
+                    )
+                )
+            if end_before_text and not any_end:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(
+                        f"Could not find specified end-before text: {end_before_text}. {msg}",
+                        line,
+                    )
+                )
+
+            node.children = deep_copy_children
+
+
 class TabsSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
@@ -334,10 +448,12 @@ class Postprocessor:
 
         option_handler = ProgramOptionHandler(self.diagnostics)
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
+        include_handler = IncludeHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
 
         self.run_event_parser(
             [
+                (EventParser.OBJECT_START_EVENT, include_handler),
                 (EventParser.OBJECT_START_EVENT, self.heading_handler),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
                 (EventParser.OBJECT_START_EVENT, option_handler,),
@@ -616,59 +732,6 @@ class Postprocessor:
                     target.children = heading.children
             self.pending_targets = []
 
-    def bound_included_AST(
-        self,
-        nodes: MutableSequence[n.Node],
-        start_after_text: Optional[str],
-        end_before_text: Optional[str],
-    ) -> Tuple[MutableSequence[n.Node], bool, bool]:
-        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of
-        the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
-        a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
-        or if it succeeds and is not any ancestor of the end-before node."""
-
-        def is_bound(node: n.Node, search_text: Optional[str]) -> bool:
-            """Helper function to determine if the given node contains specified start-after or end-before text.
-
-            Note: For now, we are only splicing included files based on Text and TargetIdentifier nodes.
-            Comments have Text nodes as children; Labels have TargetIdentifiers as children.
-            So, writers can splice on these parent directives as well."""
-            if isinstance(node, n.Text) and node.value:
-                return search_text == node.value
-            elif isinstance(node, n.TargetIdentifier):
-                if node.ids and isinstance(node.ids[0], str):
-                    return search_text in node.ids
-            return False
-
-        start_index, end_index = 0, len(nodes)
-        any_start, any_end = False, False
-
-        # For any given node: if the start_after node is within this node's subtree, do not include any
-        # preceding siblings of this node in the resulting AST; if the end_before node is within this
-        # node's subtree, then do not include any succeeding siblings of this node.
-        for i, node in enumerate(nodes):
-            has_start, has_end = False, False
-            # Determine if this node itself (not a child node) contains a bound
-            is_start = is_bound(node, start_after_text)
-            is_end = is_bound(node, end_before_text)
-            # Recursively search the child nodes for bounds
-            if isinstance(node, n.Parent):
-                children, has_start, has_end = self.bound_included_AST(
-                    node.children, start_after_text, end_before_text
-                )
-                node.children = children
-            if is_start or has_start:
-                any_start = True
-                start_index = i
-            if is_end or has_end:
-                any_end = True
-                end_index = i
-        assert (
-            start_index <= end_index
-        ), "start-after text should precede end-before text"
-        # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
-        return nodes[start_index : end_index + 1], any_start, any_end
-
     def populate_include_nodes(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Iterate over all pages to find include directives. When found, replace their
         `children` property with the contents of the include file.
@@ -703,40 +766,7 @@ class Postprocessor:
             ast = include_page.ast
             assert isinstance(ast, n.Parent)
 
-            deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
-
-            # TODO: Move subsgraphing implementation into parse layer, where we can
-            # ideally take subgraph of the raw RST
-            start_after_text = node.options.get("start-after")
-            end_before_text = node.options.get("end-before")
-
-            if start_after_text or end_before_text:
-                try:
-                    # Returns a subgraph of the AST based on text bounds
-                    deep_copy_children, any_start, any_end = self.bound_included_AST(
-                        deep_copy_children, start_after_text, end_before_text
-                    )
-                    # Confirm that we found all specified text (with helpful diagnostic message if not)
-                    msg = (
-                        "If you are sure your text is within the included RST file, try using it in a comment or "
-                        "label. Search is case-sensitive."
-                    )
-                    if start_after_text:
-                        assert (
-                            any_start
-                        ), f"Could not find specified start-after text: {start_after_text}. {msg}"
-                    if end_before_text:
-                        assert (
-                            any_end
-                        ), f"Could not find specified end-before text: {end_before_text}. {msg}"
-
-                except AssertionError as e:
-                    line = node.span[0]
-                    self.diagnostics[fileid_stack.current].append(
-                        InvalidInclude(f"Invalid include options: {str(e)}", line)
-                    )
-
-            node.children = deep_copy_children
+            node.children = [util.fast_deep_copy(ast)]
 
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name

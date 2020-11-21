@@ -355,10 +355,8 @@ class JSONVisitor:
             self.state.append(n.Transition((line,)))
         elif isinstance(node, docutils.nodes.table):
             raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.problematic):
+        elif isinstance(node, (docutils.nodes.problematic, docutils.nodes.label)):
             raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.label):
-            self.state.append(n.Label((line,), []))
         elif isinstance(node, docutils.nodes.comment):
             self.state.append(n.Comment((line,), []))
         elif isinstance(node, docutils.nodes.system_message):
