@@ -207,7 +207,7 @@ def test_codeblock() -> None:
         tabs_path,
         """
 .. code-block:: sh
-   :copyable: false
+   :copyable: true
    :emphasize-lines: 1, 2-3
    :linenos:
 
@@ -220,7 +220,7 @@ def test_codeblock() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]" linenos="True">foo\nbar\nbaz</code>
+        <code lang="sh" emphasize_lines="[(1, 1), (2, 3)]" copyable="True" linenos="True">foo\nbar\nbaz</code>
         </root>""",
     )
 
