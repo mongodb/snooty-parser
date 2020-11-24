@@ -98,6 +98,14 @@ class StaticAsset:
 
 @checked
 @dataclass
+class ManPageConfig:
+    file: str
+    title: str
+    section: int
+
+
+@checked
+@dataclass
 class ProjectConfig:
     root: Path
     name: str
@@ -113,6 +121,7 @@ class ProjectConfig:
     substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
+    manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
 
     @property
     def source_path(self) -> Path:

@@ -334,6 +334,11 @@ class Target(Parent[Node]):
     refuri: Optional[str]
     html_id: Optional[str]
 
+    @property
+    def identifier(self) -> Tuple[str, str]:
+        """Retrieve the fully-qualified name of this target as a (domain, name) tuple."""
+        return (self.domain, self.name)
+
 
 @dataclass
 class TargetIdentifier(InlineParent):

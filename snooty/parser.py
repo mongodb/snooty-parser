@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
     cast,
 )
 
@@ -31,6 +32,7 @@ import watchdog.events
 from typing_extensions import Protocol
 
 from . import gizaparser, n, rstparser, specparser, util
+from .builders import man
 from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
@@ -1286,12 +1288,11 @@ class _Project:
         if postprocess:
             post_metadata, post_diagnostics = self.pages.flush()
 
-            static_files = {
+            static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
                     self.config.name, ""
                 )
             }
-            post_metadata["static_files"] = static_files
 
             with util.PerformanceLogger.singleton().start("commit"):
                 for fileid, page in self.pages.items():
@@ -1300,6 +1301,16 @@ class _Project:
                     )
                 self.backend.flush()
 
+            # Build manpages
+            for name, definition in self.config.manpages.items():
+                fileid = FileId(definition.file)
+                page = self.pages[fileid.with_suffix(".txt")]
+                for filename, rendered in man.render(
+                    page, name, definition.title, definition.section
+                ).items():
+                    static_files[filename.as_posix()] = rendered
+
+            post_metadata["static_files"] = static_files
             for fileid, diagnostics in post_diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
@@ -1395,6 +1406,12 @@ class Project:
         # We don't need to obtain a lock because this method only operates on
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
+
+    def pages(self) -> Iterable[Tuple[FileId, Page]]:
+        with self._lock:
+            for fileid, page in self._project.pages.items():
+                if fileid.suffix == ".txt":
+                    yield fileid, page
 
     def get_page_ast(self, path: Path) -> n.Node:
         """Return complete AST of page with updated text"""
