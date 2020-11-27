@@ -4,15 +4,11 @@ import os
 import sys
 import threading
 import urllib.parse
-import pyls_jsonrpc.dispatchers
-import pyls_jsonrpc.endpoint
-import pyls_jsonrpc.streams
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path, PurePath
 from typing import (
-    cast,
     Any,
     BinaryIO,
     Callable,
@@ -20,15 +16,21 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
     TypeVar,
+    Union,
+    cast,
 )
-from .flutter import checked, check_type
-from .types import BuildIdentifierSet, FileId, SerializableType
-from . import util, n
+
+import pyls_jsonrpc.dispatchers
+import pyls_jsonrpc.endpoint
+import pyls_jsonrpc.streams
+
+from . import n, util
+from .diagnostics import Diagnostic
+from .flutter import check_type, checked
 from .page import Page
 from .parser import Project
-from .diagnostics import Diagnostic
+from .types import BuildIdentifierSet, FileId, SerializableType
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str

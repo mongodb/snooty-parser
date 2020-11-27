@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Set, Tuple, Dict, DefaultDict, Optional, Iterator, TypeVar, Generic
+from typing import DefaultDict, Dict, Generic, Iterator, Optional, Set, Tuple, TypeVar
 
 _T = TypeVar("_T")
 

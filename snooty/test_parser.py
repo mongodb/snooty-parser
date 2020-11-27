@@ -1,7 +1,6 @@
 from pathlib import Path
+
 from . import rstparser
-from .util_test import check_ast_testing_string, ast_to_testing_string
-from .types import ProjectConfig
 from .diagnostics import (
     CannotOpenFile,
     Diagnostic,
@@ -19,7 +18,9 @@ from .diagnostics import (
     UnknownTabID,
     UnknownTabset,
 )
-from .parser import parse_rst, JSONVisitor, InlineJSONVisitor
+from .parser import InlineJSONVisitor, JSONVisitor, parse_rst
+from .types import ProjectConfig
+from .util_test import ast_to_testing_string, check_ast_testing_string
 
 ROOT_PATH = Path("test_data")
 

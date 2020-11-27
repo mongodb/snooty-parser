@@ -8,6 +8,7 @@ on the docs front-end.
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
 from ..diagnostics import Diagnostic
 from ..flutter import checked
 from ..types import ProjectConfig, SerializableType

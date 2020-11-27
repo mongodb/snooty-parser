@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, Optional
+
 from ..flutter import checked
-from .nodes import Node, Inherit
+from .nodes import Inherit, Node
 
 
 @checked

@@ -29,7 +29,8 @@ dev = [
     "black ~= 19.10b0",
     "pyflakes ~= 2.2.0",
     "mypy ~= 0.782",
-    "pyinstaller ~= 4.0"
+    "pyinstaller ~= 4.0",
+    "isort ~= 5.6.4"
 ]
 test = [
     "pytest ~= 5.4.3",
@@ -38,3 +39,7 @@ test = [
 
 [tool.flit.scripts]
 snooty = "snooty.main:main"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3

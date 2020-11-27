@@ -1,8 +1,9 @@
 from pathlib import Path
+
 from . import rstparser
-from .util_test import check_ast_testing_string
+from .parser import JSONVisitor, parse_rst
 from .types import ProjectConfig
-from .parser import parse_rst, JSONVisitor
+from .util_test import check_ast_testing_string
 
 ROOT_PATH = Path("test_data")
 

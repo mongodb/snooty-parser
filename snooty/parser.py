@@ -1,5 +1,4 @@
 import collections
-import docutils.nodes
 import errno
 import getpass
 import logging
@@ -16,55 +15,56 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
+    List,
     MutableSequence,
-    Tuple,
     Optional,
     Set,
-    List,
-    Iterable,
+    Tuple,
     cast,
 )
-from typing_extensions import Protocol
-import docutils.utils
-import watchdog.events
-import networkx
 
-from . import n, gizaparser, rstparser, util
+import docutils.nodes
+import docutils.utils
+import networkx
+import watchdog.events
+from typing_extensions import Protocol
+
+from . import gizaparser, n, rstparser, specparser, util
 from .cache import Cache
+from .diagnostics import (
+    CannotOpenFile,
+    Diagnostic,
+    DocUtilsParseError,
+    ExpectedImageArg,
+    ExpectedPathArg,
+    ImageSuggested,
+    InvalidField,
+    InvalidLiteralInclude,
+    InvalidTableStructure,
+    InvalidURL,
+    MalformedGlossary,
+    RemovedLiteralBlockSyntax,
+    TabMustBeDirective,
+    TodoInfo,
+    UnexpectedIndentation,
+    UnknownTabID,
+    UnknownTabset,
+)
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .openapi import OpenAPI
-from .postprocess import DevhubPostprocessor, Postprocessor
-from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
-from . import specparser
+from .postprocess import DevhubPostprocessor, Postprocessor
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
+    BuildIdentifierSet,
+    FileId,
+    ProjectConfig,
     SerializableType,
     StaticAsset,
-    ProjectConfig,
-    FileId,
-    BuildIdentifierSet,
 )
-from .diagnostics import (
-    Diagnostic,
-    UnexpectedIndentation,
-    ExpectedPathArg,
-    ExpectedImageArg,
-    ImageSuggested,
-    TodoInfo,
-    DocUtilsParseError,
-    CannotOpenFile,
-    InvalidURL,
-    InvalidLiteralInclude,
-    InvalidTableStructure,
-    MalformedGlossary,
-    InvalidField,
-    UnknownTabset,
-    UnknownTabID,
-    TabMustBeDirective,
-    RemovedLiteralBlockSyntax,
-)
+from .util import RST_EXTENSIONS
 
 # XXX: Work around to get snooty working with Python 3.8 until we can fix
 # our implicit data flow issues.

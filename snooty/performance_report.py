@@ -1,11 +1,12 @@
-import sys
 import logging
+import sys
 from pathlib import Path
 from typing import Dict, List
-from .parser import Project
-from .types import FileId, SerializableType, BuildIdentifierSet
-from .page import Page
+
 from .diagnostics import Diagnostic
+from .page import Page
+from .parser import Project
+from .types import BuildIdentifierSet, FileId, SerializableType
 from .util import PerformanceLogger
 
 logging.basicConfig(level=logging.INFO)

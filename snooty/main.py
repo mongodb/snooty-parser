@@ -17,26 +17,27 @@ Environment variables:
 
 """
 import getpass
+import json
 import logging
 import os
-import pymongo
 import sys
-import toml
-import json
-import watchdog.events
-import watchdog.observers
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
+
+import pymongo
+import toml
+import watchdog.events
+import watchdog.observers
 from docopt import docopt
-from datetime import datetime
 
 from . import __version__, language_server
-from .parser import Project
-from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
-from .types import FileId, SerializableType, BuildIdentifierSet
-from .page import Page
 from .diagnostics import Diagnostic, MakeCorrectionMixin
+from .page import Page
+from .parser import Project
+from .types import BuildIdentifierSet, FileId, SerializableType
+from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]

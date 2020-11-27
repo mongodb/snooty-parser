@@ -1,39 +1,41 @@
 import dataclasses
+import errno
 import logging
 import os
-import errno
 import re
-import docutils.nodes
-import networkx
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import (
-    cast,
     Callable,
     Dict,
     Generic,
-    Optional,
-    TypeVar,
-    Tuple,
     Iterator,
-    Sequence,
     List,
-    Union,
     Match,
     MutableSequence,
+    Optional,
+    Sequence,
     Set,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
+
+import docutils.nodes
+import networkx
+
+from .. import n
+from ..diagnostics import (
+    CannotOpenFile,
+    Diagnostic,
+    FailedToInheritRef,
+    RefAlreadyExists,
+    UnknownSubstitution,
 )
 from ..flutter import checked
-from ..types import EmbeddedRstParser, ProjectConfig
-from ..diagnostics import (
-    Diagnostic,
-    UnknownSubstitution,
-    FailedToInheritRef,
-    CannotOpenFile,
-    RefAlreadyExists,
-)
 from ..page import Page
-from .. import n
+from ..types import EmbeddedRstParser, ProjectConfig
 
 _T = TypeVar("_T", str, object)
 PAT_SUBSTITUTION = re.compile(r"\{\{([\w-]+)\}\}")

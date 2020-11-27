@@ -1,5 +1,26 @@
-import re
 import dataclasses
+import re
+import urllib.parse
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path, PurePath
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -9,36 +30,15 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
-import urllib.parse
-from collections import defaultdict
-from dataclasses import dataclass, field
-from pathlib import Path, PurePath
-from typing import (
-    Any,
-    AbstractSet,
-    Callable,
-    Dict,
-    DefaultDict,
-    Generic,
-    Sequence,
-    Optional,
-    List,
-    Tuple,
-    Type,
-    TypeVar,
-    Iterable,
-    Union,
-)
-from typing_extensions import Protocol
 from docutils.nodes import unescape
-from .gizaparser.parse import load_yaml
+from typing_extensions import Protocol
+
+from . import n, specparser, util
+from .diagnostics import Diagnostic, IncorrectLinkSyntax, IncorrectMonospaceSyntax
+from .flutter import LoadError, check_type, checked
 from .gizaparser import nodes
+from .gizaparser.parse import load_yaml
 from .types import ProjectConfig
-from .diagnostics import Diagnostic, IncorrectMonospaceSyntax, IncorrectLinkSyntax
-from .flutter import checked, check_type, LoadError
-from . import util
-from . import specparser
-from . import n
 
 RoleHandlerType = Callable[
     [
