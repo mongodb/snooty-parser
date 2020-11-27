@@ -2,10 +2,12 @@
    Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path
+
 from . import diagnostics
-from .util_test import make_test, check_ast_testing_string, ast_to_testing_string
+from .diagnostics import DuplicateDirective, ExpectedTabs, MissingTab, TargetNotFound
 from .types import FileId
-from .diagnostics import TargetNotFound, ExpectedTabs, MissingTab, DuplicateDirective
+from .util_test import ast_to_testing_string, check_ast_testing_string, make_test
+
 
 # ensure that broken links still generate titles
 def test_broken_link() -> None:

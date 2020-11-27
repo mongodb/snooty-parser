@@ -2,7 +2,7 @@
 import datetime
 import re
 import sys
-from typing import List, Optional, Tuple, NoReturn
+from typing import List, NoReturn, Optional, Tuple
 
 FILENAME = sys.argv[1]
 VERSION_PAT = re.compile(

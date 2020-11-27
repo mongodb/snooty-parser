@@ -1,15 +1,17 @@
 import os
 import sys
 import time
-import pytest
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
+
+import pytest
+
 from . import language_server
-from .util_test import check_ast_testing_string, ast_to_testing_string
-from .diagnostics import InvalidTableStructure, DocUtilsParseError
+from .diagnostics import DocUtilsParseError, InvalidTableStructure
+from .flutter import check_type, checked
 from .types import FileId, SerializableType
-from .flutter import checked, check_type
+from .util_test import ast_to_testing_string, check_ast_testing_string
 
 CWD_URL = "file://" + Path().resolve().as_posix()
 

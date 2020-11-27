@@ -1,7 +1,8 @@
+import pytest
+from docutils.frontend import OptionParser
+
 from .diagnostics import Diagnostic, UnexpectedIndentation
 from .language_server import DiagnosticSeverity
-from docutils.frontend import OptionParser
-import pytest
 
 
 def test_diagnostics() -> None:

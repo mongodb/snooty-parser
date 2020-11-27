@@ -1,7 +1,8 @@
-from typing import Any, Callable, Dict, Set, Tuple, Iterable, Union, List, Optional
-from .types import FileId
-from .page import Page
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+
 from . import n
+from .page import Page
+from .types import FileId
 
 
 class FileIdStack:

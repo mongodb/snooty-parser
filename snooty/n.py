@@ -1,26 +1,25 @@
 import dataclasses
 import re
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
 from typing import (
     Any,
     ClassVar,
     Dict,
-    Tuple,
-    List,
-    NamedTuple,
-    MutableSequence,
-    Sequence,
-    Optional,
+    Generic,
     Iterator,
+    List,
+    MutableSequence,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
-    Generic,
 )
-from dataclasses import dataclass
-from datetime import datetime
-
 
 __all__ = (
     "Node",

@@ -1,4 +1,4 @@
-from lint_changelog import lint_changelog, InputError
+from lint_changelog import InputError, lint_changelog
 
 
 def test_opening_line() -> None:

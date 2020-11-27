@@ -1,10 +1,12 @@
 from pathlib import Path
-from .types import BuildIdentifierSet, FileId
+
+import pytest
+
+from . import n
 from .parser import Project
 from .test_project import Backend
+from .types import BuildIdentifierSet, FileId
 from .util_test import check_ast_testing_string
-from . import n
-import pytest
 
 
 @pytest.fixture

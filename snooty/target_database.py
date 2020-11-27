@@ -3,11 +3,13 @@ import logging
 import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, DefaultDict, NamedTuple, Sequence, List, Tuple, Optional, Union
+from typing import DefaultDict, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
+
 from typing_extensions import Protocol
-from .types import normalize_target, FileId, ProjectConfig
+
+from . import intersphinx, n, specparser
 from .cache import Cache
-from . import n, intersphinx, specparser
+from .types import FileId, ProjectConfig, normalize_target
 
 logger = logging.getLogger(__name__)
 

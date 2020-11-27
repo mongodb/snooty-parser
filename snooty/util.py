@@ -4,31 +4,33 @@ import pickle
 import re
 import sys
 import time
+from collections import defaultdict
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path, PurePath
+from typing import (
+    Callable,
+    Container,
+    Counter,
+    Dict,
+    Hashable,
+    Iterator,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+    TypeVar,
+    cast,
+)
+
 import docutils.nodes
 import docutils.parsers.rst.directives
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
-from contextlib import contextmanager
-from dataclasses import dataclass
-from collections import defaultdict
-from pathlib import Path, PurePath
-from typing import (
-    cast,
-    Callable,
-    Container,
-    Counter,
-    List,
-    Dict,
-    Optional,
-    Tuple,
-    TypeVar,
-    TextIO,
-    Iterator,
-    Hashable,
-)
-from .types import FileId
+
 from . import n
+from .types import FileId
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")

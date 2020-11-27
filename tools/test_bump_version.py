@@ -1,4 +1,5 @@
 import datetime
+
 from bump_version import compare_versions, release_changelog
 
 DATE_STRING = datetime.datetime.now().strftime("%Y-%m-%d")

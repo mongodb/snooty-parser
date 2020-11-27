@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import cast, Any, Dict, List
-from .types import BuildIdentifierSet, FileId, SerializableType
+from typing import Any, Dict, List, cast
+
+import pytest
+
 from .parser import Project
 from .test_project import Backend
+from .types import BuildIdentifierSet, FileId, SerializableType
 from .util_test import ast_to_testing_string, check_ast_testing_string
-import pytest
 
 
 @pytest.fixture

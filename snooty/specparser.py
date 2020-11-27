@@ -2,32 +2,33 @@
    directives and roles, and what types of data each should expect."""
 
 import dataclasses
-import toml
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-import docutils.nodes
-import docutils.parsers.rst
-import docutils.parsers.rst.directives
-from .flutter import check_type, checked
-from . import util
 from typing import (
-    cast,
     Any,
     Callable,
     Dict,
-    Set,
-    Sequence,
-    List,
-    Optional,
-    Union,
-    TypeVar,
-    Mapping,
     FrozenSet,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    TypeVar,
+    Union,
+    cast,
 )
+
+import docutils.nodes
+import docutils.parsers.rst
+import docutils.parsers.rst.directives
+import toml
 from typing_extensions import Protocol
 
+from . import util
+from .flutter import check_type, checked
 
 PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
 if PACKAGE_ROOT.is_file():

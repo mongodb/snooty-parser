@@ -1,10 +1,12 @@
 import os
-import pytest
 import sys
 import time
-import watchdog.events
 from pathlib import Path, PurePath
 from typing import List, Tuple
+
+import pytest
+import watchdog.events
+
 from . import util
 
 

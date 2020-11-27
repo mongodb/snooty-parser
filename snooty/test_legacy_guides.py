@@ -1,8 +1,9 @@
 from pathlib import Path
+
 from . import rstparser
+from .parser import JSONVisitor, parse_rst
+from .types import FileId, ProjectConfig
 from .util_test import check_ast_testing_string
-from .types import ProjectConfig, FileId
-from .parser import parse_rst, JSONVisitor
 
 
 def test_legacy_guides() -> None:
