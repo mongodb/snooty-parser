@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.8.2] - 2020-12-02
+
 ### Added
 
 - Support for figure border flag ([DOP-1579](https://jira.mongodb.com/browse/DOP-1579))
