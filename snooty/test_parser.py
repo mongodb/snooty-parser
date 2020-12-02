@@ -87,6 +87,24 @@ def test_tabs() -> None:
     assert isinstance(diagnostics[1], UnknownTabset)
     assert isinstance(diagnostics[2], DocUtilsParseError)
 
+    # Test a tab with no tabid
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. tabs-drivers::
+
+   .. tab::
+
+      Tab with no ID
+""",
+    )
+    page.finish(diagnostics)
+    assert [(type(d), d.severity) for d in diagnostics] == [
+        (DocUtilsParseError, Diagnostic.Level.error)
+    ]
+
 
 def test_tabsets_with_options() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs_options.rst"))
@@ -236,7 +254,7 @@ def test_codeblock() -> None:
    foo""",
     )
     page.finish(diagnostics)
-    assert diagnostics[0].severity == Diagnostic.Level.warning
+    assert diagnostics[0].severity == Diagnostic.Level.error
 
     # Test absent language
     page, diagnostics = parse_rst(

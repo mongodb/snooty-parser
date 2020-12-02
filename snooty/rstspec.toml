@@ -379,7 +379,7 @@ inherit = "tabs"
 [directive.tab]
 argument_type = "string"
 content_type = "block"
-options.tabid = "string"
+options.tabid = {type = "string", required = true}
 example = """.. tab:: ${1:Tab Title}
    :tabid: ${2:id of the tab}
 

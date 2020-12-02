@@ -361,7 +361,9 @@ class JSONVisitor:
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
                 msg = node[0].astext()
-                self.diagnostics.append(DocUtilsParseError(msg, util.get_line(node)))
+                diagnostic = DocUtilsParseError(msg, util.get_line(node))
+                diagnostic.severity = level
+                self.diagnostics.append(diagnostic)
             raise docutils.nodes.SkipNode()
         elif isinstance(node, rstparser.snooty_diagnostic):
             self.diagnostics.append(node["diagnostic"])
@@ -455,7 +457,11 @@ class JSONVisitor:
                 )
                 return
 
-            tabid = child.options["tabid"]
+            tabid = child.options.get("tabid")
+            if tabid is None:
+                # Required options get warned about elsewhere, so no need to log an error
+                return
+
             if not isinstance(tabid, str):
                 self.diagnostics.append(
                     UnknownTabID(
