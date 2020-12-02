@@ -106,6 +106,14 @@ This will generate an HTML representation of code coverage throughout the repo t
 
 ### Release Process
 
+#### Prerequisites
+
+Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew.
+
+If you have not generated a key before, follow the instructions from [GitHub Docs on Generating a new GPG key](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-gpg-key).
+
+#### Releasing
+
 To release snooty, do the following:
 
 1. Make sure you are on the `master` branch.
@@ -129,8 +137,10 @@ To release snooty, do the following:
 4. Go to <https://github.com/mongodb/snooty-parser/releases/> to locate the newly-created
    release.
 
-5. Copy the appropriate section from CHANGELOG.md into the release description, and
-   check the _This is a pre-release_ checkbox.
+5. Copy the appropriate section from CHANGELOG.md into the release description,
+   check the _This is a pre-release_ checkbox, and create the release.
+
+6. Push your branch.
 
 If there is an error, use `git reset --hard <previous_commit_hash>` to revert any
 commits that might have been made, and
