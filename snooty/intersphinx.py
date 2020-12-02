@@ -3,16 +3,17 @@
 
    This module is responsible for loading and parsing these inventories."""
 
-import re
-import logging
 import datetime
+import logging
+import re
 import urllib.parse
 import zlib
 from dataclasses import dataclass, field
 from email.utils import formatdate
-from time import mktime
 from pathlib import Path
-from typing import Dict, List, Tuple, NamedTuple, Optional
+from time import mktime
+from typing import Dict, List, NamedTuple, Optional, Tuple
+
 import requests
 
 __all__ = ("TargetDefinition", "Inventory")

@@ -1,26 +1,25 @@
 import dataclasses
 import re
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
 from typing import (
     Any,
     ClassVar,
     Dict,
-    Tuple,
-    List,
-    NamedTuple,
-    MutableSequence,
-    Sequence,
-    Optional,
+    Generic,
     Iterator,
+    List,
+    MutableSequence,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
-    Generic,
 )
-from dataclasses import dataclass
-from datetime import datetime
-
 
 __all__ = (
     "Node",
@@ -54,6 +53,17 @@ class FileId(PurePosixPath):
     """An unambiguous file path relative to the local project's root."""
 
     PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
+
+    def collapse_dots(self) -> "FileId":
+        result: List[str] = []
+        for part in self.parts:
+            if part == "..":
+                result.pop()
+            elif part == ".":
+                continue
+            else:
+                result.append(part)
+        return FileId(*result)
 
     @property
     def without_known_suffix(self) -> str:

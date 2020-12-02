@@ -1,7 +1,4 @@
-import fett
 import json
-import yaml
-
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
@@ -16,6 +13,9 @@ from typing import (
     TextIO,
     Tuple,
 )
+
+import fett
+import yaml
 
 from . import n
 from .diagnostics import CannotRenderOpenAPI, Diagnostic

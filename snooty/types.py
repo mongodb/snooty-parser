@@ -4,18 +4,21 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, MutableSequence, Tuple, Optional, Match
-from .diagnostics import (
-    Diagnostic,
-    UnmarshallingError,
-    GitMergeConflictArtifactFound,
-    ConstantNotDeclared,
-)
-from typing_extensions import Protocol
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple
+
 import toml
-from .flutter import checked, check_type, LoadError
+from typing_extensions import Protocol
+
 from . import n
-from .n import SerializableType as ST, FileId as FD
+from .diagnostics import (
+    ConstantNotDeclared,
+    Diagnostic,
+    GitMergeConflictArtifactFound,
+    UnmarshallingError,
+)
+from .flutter import LoadError, check_type, checked
+from .n import FileId as FD
+from .n import SerializableType as ST
 
 SerializableType = ST
 FileId = FD
@@ -120,7 +123,9 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(os.path.relpath(path, self.source_path))
+        result = PurePath(os.path.relpath(path, self.source_path))
+        # Ensure that we transform any Windows-style paths into a Posix-style FileId
+        return FileId(*result.parts)
 
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:

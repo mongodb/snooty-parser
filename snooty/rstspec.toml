@@ -209,7 +209,8 @@ example = """.. figure:: ${1:/path or uri.png}
    :scale:
    :align:
    :lightbox:
-   :class:}
+   :class:
+   :border:}
 
    ${0: Optional caption for the figure.}
 """
@@ -220,6 +221,7 @@ options.width = "length"
 options.align = "alignment"
 options.lightbox = "flag"
 options.class = "string"
+options.border = "flag"
 
 
 [directive.image]
@@ -231,7 +233,8 @@ example = """.. image:: ${1:/path or uri.png}
    :scale:
    :align:
    :lightbox:
-   :class:}
+   :class:
+   :border:}
 
    ${0: Optional caption for the figure.}
 """

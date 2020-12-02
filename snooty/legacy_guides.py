@@ -1,10 +1,12 @@
 import re
-import fett
+from dataclasses import dataclass
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
+
 import docutils.nodes
 import docutils.parsers.rst.directives
-from dataclasses import dataclass
+import fett
+
 from .rstparser import BaseDocutilsDirective
-from typing import Callable, Dict, List, Tuple, Iterable, Optional
 
 LEADING_WHITESPACE = re.compile(r"^\n?(\x20+)")
 LEGACY_GUIDES_TEMPLATE = fett.Template(

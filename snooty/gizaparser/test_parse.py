@@ -1,7 +1,8 @@
 from pathlib import Path
-from .parse import parse
-from .extracts import Extract
+
 from ..types import ProjectConfig
+from .extracts import Extract
+from .parse import parse
 
 
 def test_invalid_yaml() -> None:

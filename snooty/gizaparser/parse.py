@@ -1,13 +1,15 @@
 import logging
+from pathlib import Path
+from typing import List, Optional, Tuple, Type, TypeVar
+
 import yaml
 import yaml.resolver
 import yaml.scanner
-from pathlib import Path
-from typing import List, Optional, Tuple, Type, TypeVar
 from yaml.composer import Composer
-from ..flutter import check_type, LoadError, mapping_dict
-from ..types import ProjectConfig, SerializableType
+
 from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, UnmarshallingError
+from ..flutter import LoadError, check_type, mapping_dict
+from ..types import ProjectConfig, SerializableType
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)

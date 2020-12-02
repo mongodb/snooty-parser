@@ -1,12 +1,14 @@
 import shutil
 from pathlib import Path
+
 from pytest import raises
-from .intersphinx import fetch_inventory, Inventory, TargetDefinition
+
+from . import n
+from .intersphinx import Inventory, TargetDefinition, fetch_inventory
 from .parser import Project
-from .types import FileId
 from .target_database import TargetDatabase
 from .test_project import Backend
-from . import n
+from .types import FileId
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")
 INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"

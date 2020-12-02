@@ -1,5 +1,26 @@
-import re
 import dataclasses
+import re
+import urllib.parse
+from collections import defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path, PurePath
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -9,36 +30,15 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
-import urllib.parse
-from collections import defaultdict
-from dataclasses import dataclass, field
-from pathlib import Path, PurePath
-from typing import (
-    Any,
-    AbstractSet,
-    Callable,
-    Dict,
-    DefaultDict,
-    Generic,
-    Sequence,
-    Optional,
-    List,
-    Tuple,
-    Type,
-    TypeVar,
-    Iterable,
-    Union,
-)
-from typing_extensions import Protocol
 from docutils.nodes import unescape
-from .gizaparser.parse import load_yaml
+from typing_extensions import Protocol
+
+from . import n, specparser, util
+from .diagnostics import Diagnostic, IncorrectLinkSyntax, IncorrectMonospaceSyntax
+from .flutter import LoadError, check_type, checked
 from .gizaparser import nodes
+from .gizaparser.parse import load_yaml
 from .types import ProjectConfig
-from .diagnostics import Diagnostic, IncorrectMonospaceSyntax, IncorrectLinkSyntax
-from .flutter import checked, check_type, LoadError
-from . import util
-from . import specparser
-from . import n
 
 RoleHandlerType = Callable[
     [
@@ -81,6 +81,11 @@ docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatc
 # Monkey patch out the docutils name mutatation. We handle this ourselves
 docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
 docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
+
+# Docutils by default will move existing label names into a node key called "dupnames".
+# We don't want it to do this: we just want docutils to be a dumb parser, since we handle
+# references and such in our own logic.
+docutils.nodes.dupname = lambda node, name: None
 
 
 def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
@@ -744,7 +749,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
 class BaseCodeDirective(docutils.parsers.rst.Directive):
     def run(self) -> List[docutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
-        copyable = "copyable" not in self.options or self.options["copyable"] == "true"
+        copyable = "copyable" not in self.options or self.options["copyable"]
         linenos = "linenos" in self.options
 
         try:
@@ -1141,9 +1146,10 @@ class Parser(Generic[_V]):
     def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
-        Registry.get(project_config.default_domain).activate()
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
+        Registry.get(self.project_config.default_domain).activate()
+
         diagnostics: List[Diagnostic] = []
         text, diagnostics = self.project_config.read(path, text)
 

@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Handle include subsets in postprocessor (DOP-323)
 
+## [v0.8.2] - 2020-12-02
+
+### Added
+
+- Support for figure border flag ([DOP-1579](https://jira.mongodb.com/browse/DOP-1579))
+- Experimental support for installation on Windows
+
+### Fixed
+
+- Handling of :copyable: flag for code blocks ([DOP-1750](https://jira.mongodb.com/browse/DOP-1750))
+- Handling of duplicate header / label naming ([DOP-1326](https://jira.mongodb.com/browse/DOP-1326))
+- Installation behavior with new pip resolver
+
 ## [v0.8.1] - 2020-11-18
 
 ### Added

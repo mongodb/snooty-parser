@@ -8,34 +8,34 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
+    MutableSequence,
     Optional,
+    Sequence,
     Set,
     Tuple,
-    Iterable,
-    Sequence,
-    MutableSequence,
 )
-from .eventparser import EventParser, FileIdStack
-from .types import FileId, ProjectConfig, SerializableType
+
+from . import n, specparser, util
 from .diagnostics import (
-    Diagnostic,
-    MissingOption,
-    TargetNotFound,
     AmbiguousTarget,
-    SubstitutionRefError,
-    ExpectedPathArg,
-    UnnamedPage,
-    MissingTocTreeEntry,
-    MissingTab,
-    ExpectedTabs,
+    Diagnostic,
     DuplicateDirective,
+    ExpectedPathArg,
+    ExpectedTabs,
+    MissingOption,
+    MissingTab,
+    MissingTocTreeEntry,
+    SubstitutionRefError,
+    TargetNotFound,
+    UnnamedPage,
     InvalidInclude,
 )
-from . import specparser
-from . import n, util
+from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
+from .types import FileId, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)

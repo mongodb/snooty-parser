@@ -7,13 +7,14 @@ import textwrap
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
+from typing import Any, Dict, Iterator, List
 from xml.sax.saxutils import escape
-from typing import Any, Dict, List, Iterator
+
 from . import n
 from .diagnostics import Diagnostic
 from .page import Page
 from .parser import Project
-from .types import FileId, SerializableType, BuildIdentifierSet
+from .types import BuildIdentifierSet, FileId, SerializableType
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
 

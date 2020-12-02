@@ -1,11 +1,12 @@
 from pathlib import Path, PurePath
-from typing import Dict, Tuple, List, Optional
-from .steps import GizaStepsCategory
-from ..types import ProjectConfig
-from ..page import Page
+from typing import Dict, List, Optional, Tuple
+
 from ..diagnostics import Diagnostic
+from ..page import Page
 from ..parser import EmbeddedRstParser
+from ..types import ProjectConfig
 from ..util_test import ast_to_testing_string, check_ast_testing_string
+from .steps import GizaStepsCategory
 
 
 def test_step() -> None:
@@ -35,7 +36,7 @@ def test_step() -> None:
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
 
     pages = category.to_pages(path, create_page, giza_node.data)
-    assert [str(page.fake_full_path()) for page in pages] == [
+    assert [page.fake_full_path().as_posix() for page in pages] == [
         "test_data/test_gizaparser/source/includes/steps/test.rst"
     ]
     # Ensure that no diagnostics were raised

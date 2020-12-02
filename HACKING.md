@@ -106,31 +106,41 @@ This will generate an HTML representation of code coverage throughout the repo t
 
 ### Release Process
 
+#### Prerequisites
+
+Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew.
+
+If you have not generated a key before, follow the instructions from [GitHub Docs on Generating a new GPG key](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-gpg-key).
+
+#### Releasing
+
 To release snooty, do the following:
 
-* Make sure you are on the `master` branch.
+1. Make sure you are on the `master` branch.
 
-* Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date.
+2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date.
 
-* Run `make cut-release BUMP_TO_VERSION="<new_version>"`.
+3. Run `make cut-release BUMP_TO_VERSION="<new_version>"`.
 
-  The new version number should follow [semantic versioning](https://semver.org):
-  `MAJOR.MINOR.PATCH`. For example, `make cut-release BUMP_TO_VERSION="0.1.2"`.
-  Refer to `snooty/__init__.py` for the current version number.
+   The new version number should follow [semantic versioning](https://semver.org):
+   `MAJOR.MINOR.PATCH`. For example, `make cut-release BUMP_TO_VERSION="0.1.2"`.
+   Refer to `snooty/__init__.py` for the current version number.
 
-  This will create a new tag named `v<new_version>` and push it to your origin,
-  causing Github Actions to trigger the release process. After several minutes
-  (you can monitor its progress at <https://github.com/mongodb/snooty-parser/actions>),
-  a new release should be created with binaries for supported platforms.
+   This will create a new tag named `v<new_version>` and push it to your origin,
+   causing Github Actions to trigger the release process. After several minutes
+   (you can monitor its progress at <https://github.com/mongodb/snooty-parser/actions>),
+   a new release should be created with binaries for supported platforms.
 
-  You can instruct the `cut-release` target to avoid pushing the tag by passing the
-  `PUSH_TO=""` option. For example, `make cut-release BUMP_TO_VERSION="0.1.2" PUSH_TO=""`.
+   You can instruct the `cut-release` target to avoid pushing the tag by passing the
+   `PUSH_TO=""` option. For example, `make cut-release BUMP_TO_VERSION="0.1.2" PUSH_TO=""`.
 
-* Go to <https://github.com/mongodb/snooty-parser/releases/> to locate the newly-created
-  release.
+4. Go to <https://github.com/mongodb/snooty-parser/releases/> to locate the newly-created
+   release.
 
-* Copy the appropriate section from CHANGELOG.md into the release description, and
-  check the _This is a pre-release_ checkbox.
+5. Copy the appropriate section from CHANGELOG.md into the release description,
+   check the _This is a pre-release_ checkbox, and create the release.
+
+6. Push your branch.
 
 If there is an error, use `git reset --hard <previous_commit_hash>` to revert any
 commits that might have been made, and

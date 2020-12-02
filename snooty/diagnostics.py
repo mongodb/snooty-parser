@@ -1,8 +1,9 @@
 import enum
-from typing import Tuple, Union, Dict, Optional, List, Set
 from pathlib import Path
-from .n import SerializableType
+from typing import Dict, List, Optional, Set, Tuple, Union
+
 from . import n
+from .n import SerializableType
 
 
 class MakeCorrectionMixin:

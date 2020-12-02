@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Tuple, Sequence, Optional
-from ..flutter import checked
-from .nodes import Inheritable, GizaCategory, HeadingMixin
-from .parse import parse
-from ..types import EmbeddedRstParser
-from ..page import Page
-from ..diagnostics import Diagnostic, MissingRef
+from typing import Callable, List, Optional, Sequence, Tuple
+
 from .. import n
+from ..diagnostics import Diagnostic, MissingRef
+from ..flutter import checked
+from ..page import Page
+from ..types import EmbeddedRstParser
+from .nodes import GizaCategory, HeadingMixin, Inheritable
+from .parse import parse
 
 
 @checked

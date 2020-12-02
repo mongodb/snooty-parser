@@ -1,10 +1,9 @@
 import collections
-import docutils.nodes
+import errno
+import getpass
 import logging
 import multiprocessing
 import os
-import errno
-import pwd
 import re
 import subprocess
 import threading
@@ -16,59 +15,56 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
+    List,
     MutableSequence,
-    Tuple,
     Optional,
     Set,
-    List,
-    Iterable,
+    Tuple,
     cast,
 )
-from typing_extensions import Protocol
-import docutils.utils
-import watchdog.events
-import networkx
 
-from . import n, gizaparser, rstparser, util
+import docutils.nodes
+import docutils.utils
+import networkx
+import watchdog.events
+from typing_extensions import Protocol
+
+from . import gizaparser, n, rstparser, specparser, util
 from .cache import Cache
+from .diagnostics import (
+    CannotOpenFile,
+    Diagnostic,
+    DocUtilsParseError,
+    ExpectedImageArg,
+    ExpectedPathArg,
+    ImageSuggested,
+    InvalidField,
+    InvalidLiteralInclude,
+    InvalidTableStructure,
+    InvalidURL,
+    MalformedGlossary,
+    RemovedLiteralBlockSyntax,
+    TabMustBeDirective,
+    TodoInfo,
+    UnexpectedIndentation,
+    UnknownTabID,
+    UnknownTabset,
+)
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .openapi import OpenAPI
-from .postprocess import DevhubPostprocessor, Postprocessor
-from .util import RST_EXTENSIONS
 from .page import Page, PendingTask
-from . import specparser
+from .postprocess import DevhubPostprocessor, Postprocessor
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
+    BuildIdentifierSet,
+    FileId,
+    ProjectConfig,
     SerializableType,
     StaticAsset,
-    ProjectConfig,
-    FileId,
-    BuildIdentifierSet,
 )
-from .diagnostics import (
-    Diagnostic,
-    UnexpectedIndentation,
-    ExpectedPathArg,
-    ExpectedImageArg,
-    ImageSuggested,
-    TodoInfo,
-    DocUtilsParseError,
-    CannotOpenFile,
-    InvalidURL,
-    InvalidLiteralInclude,
-    InvalidTableStructure,
-    MalformedGlossary,
-    InvalidField,
-    UnknownTabset,
-    UnknownTabID,
-    TabMustBeDirective,
-    RemovedLiteralBlockSyntax,
-)
-
-# XXX: Work around to get snooty working with Python 3.8 until we can fix
-# our implicit data flow issues.
-multiprocessing.set_start_method("fork")
+from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
@@ -580,7 +576,7 @@ class JSONVisitor:
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             try:
@@ -618,7 +614,7 @@ class JSONVisitor:
                 return doc
 
             _, filepath = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Attempt to read the literally included file
@@ -746,7 +742,7 @@ class JSONVisitor:
                 return doc
 
             fileid, path = util.reroot_path(
-                Path(argument_text), self.docpath, self.project_config.source_path
+                FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             # Validate if file exists
@@ -854,9 +850,8 @@ class JSONVisitor:
             return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
-        path = Path(raw_path)
         fileid, path = util.reroot_path(
-            path, self.docpath, self.project_config.source_path
+            FileId(raw_path), self.docpath, self.project_config.source_path
         )
         static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
@@ -1082,7 +1077,7 @@ class _Project:
 
         self.config.substitution_nodes = substitution_nodes
 
-        username = pwd.getpwuid(os.getuid()).pw_name
+        username = getpass.getuser()
         try:
             branch = subprocess.check_output(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -1189,9 +1184,7 @@ class _Project:
                         giza_node.path,
                         filename,
                         text,
-                        n.Root(
-                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
-                        ),
+                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
                     )
                     return (
                         page,
@@ -1271,9 +1264,7 @@ class _Project:
                         giza_node.path,
                         filename,
                         giza_node.text,
-                        n.Root(
-                            (-1,), [], self.config.get_fileid(PurePath(filename)), {}
-                        ),
+                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
                     )
                     return (
                         page,

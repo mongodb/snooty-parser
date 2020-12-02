@@ -1,11 +1,12 @@
 from pathlib import Path, PurePath
-from typing import Dict, Tuple, List, Optional
-from .release import GizaReleaseSpecificationCategory
-from ..types import ProjectConfig
-from ..page import Page
+from typing import Dict, List, Optional, Tuple
+
 from ..diagnostics import Diagnostic
+from ..page import Page
 from ..parser import EmbeddedRstParser
+from ..types import ProjectConfig
 from ..util_test import check_ast_testing_string
+from .release import GizaReleaseSpecificationCategory
 
 
 def test_release_specification() -> None:
@@ -42,7 +43,7 @@ def test_release_specification() -> None:
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
 
     pages = category.to_pages(path, create_page, giza_node.data)
-    assert [str(page.fake_full_path()) for page in pages] == [
+    assert [page.fake_full_path().as_posix() for page in pages] == [
         "test_data/test_gizaparser/source/includes/release/untar-release-osx-x86_64.rst",
         "test_data/test_gizaparser/source/includes/release/install-ent-windows-default.rst",
     ]

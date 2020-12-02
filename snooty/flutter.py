@@ -4,18 +4,19 @@ import enum
 import typing
 from dataclasses import MISSING
 from typing import (
-    cast,
     Any,
     Callable,
     Dict,
+    Iterator,
+    Optional,
     Set,
     Tuple,
     Type,
     TypeVar,
-    Iterator,
-    Optional,
     Union,
+    cast,
 )
+
 from typing_extensions import Protocol
 
 

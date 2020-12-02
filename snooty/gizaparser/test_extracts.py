@@ -1,11 +1,12 @@
 from pathlib import Path, PurePath
-from typing import Dict, Tuple, List, Optional
-from .extracts import GizaExtractsCategory
-from ..types import ProjectConfig, FileId
-from ..page import Page
+from typing import Dict, List, Optional, Tuple
+
 from ..diagnostics import Diagnostic, FailedToInheritRef
+from ..page import Page
 from ..parser import EmbeddedRstParser
-from ..util_test import make_test, check_ast_testing_string
+from ..types import FileId, ProjectConfig
+from ..util_test import check_ast_testing_string, make_test
+from .extracts import GizaExtractsCategory
 
 
 def test_extract() -> None:
@@ -43,7 +44,7 @@ def test_extract() -> None:
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
 
     pages = category.to_pages(path, create_page, giza_node.data)
-    assert [str(page.fake_full_path()) for page in pages] == [
+    assert [page.fake_full_path().as_posix() for page in pages] == [
         "test_data/test_gizaparser/source/includes/extracts/installation-directory-rhel.rst",
         "test_data/test_gizaparser/source/includes/extracts/broken-inherit.rst",
         "test_data/test_gizaparser/source/includes/extracts/another-file.rst",

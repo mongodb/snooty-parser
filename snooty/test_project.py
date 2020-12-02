@@ -4,14 +4,15 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, DefaultDict, List
-from .types import FileId, ProjectConfig, SerializableType, BuildIdentifierSet
+from typing import DefaultDict, Dict, List
+
+from . import n
+from .diagnostics import ConstantNotDeclared, Diagnostic, GitMergeConflictArtifactFound
 from .page import Page
-from .diagnostics import Diagnostic, GitMergeConflictArtifactFound, ConstantNotDeclared
 from .parser import Project
+from .types import BuildIdentifierSet, FileId, ProjectConfig, SerializableType
 from .util import ast_dive
 from .util_test import check_ast_testing_string
-from . import n
 
 build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "789"}
 

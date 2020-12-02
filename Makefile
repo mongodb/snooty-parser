@@ -26,6 +26,7 @@ lint: .venv/.EXISTS ## Run all linting
 	tools/lint_changelog.py CHANGELOG.md
 
 format: .venv/.EXISTS ## Format source code with black
+	. .venv/bin/activate && python3 -m isort snooty tools
 	. .venv/bin/activate && python3 -m black snooty tools
 
 test: lint ## Run unit tests

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
+from ..diagnostics import Diagnostic
+from ..types import ProjectConfig
 from . import nodes
 from .release import GizaReleaseSpecificationCategory
-from ..types import ProjectConfig
-from ..diagnostics import Diagnostic
 
 
 @dataclass

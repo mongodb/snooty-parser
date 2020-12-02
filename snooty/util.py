@@ -4,31 +4,33 @@ import pickle
 import re
 import sys
 import time
+from collections import defaultdict
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path, PurePath, PurePosixPath
+from typing import (
+    Callable,
+    Container,
+    Counter,
+    Dict,
+    Hashable,
+    Iterator,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+    TypeVar,
+    cast,
+)
+
 import docutils.nodes
 import docutils.parsers.rst.directives
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
-from contextlib import contextmanager
-from dataclasses import dataclass
-from collections import defaultdict
-from pathlib import Path, PurePath
-from typing import (
-    cast,
-    Callable,
-    Container,
-    Counter,
-    List,
-    Dict,
-    Optional,
-    Tuple,
-    TypeVar,
-    TextIO,
-    Iterator,
-    Hashable,
-)
-from .types import FileId
+
 from . import n
+from .types import FileId
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -40,14 +42,14 @@ RST_EXTENSIONS = {".txt", ".rst"}
 
 
 def reroot_path(
-    filename: PurePath, docpath: PurePath, project_root: Path
+    filename: PurePosixPath, docpath: PurePath, project_root: Path
 ) -> Tuple[FileId, Path]:
     """Files within a project may refer to other files. Return a canonical path
        relative to the project root."""
     if filename.is_absolute():
         rel_fn = FileId(*filename.parts[1:])
     else:
-        rel_fn = FileId(os.path.normpath(docpath.parent.joinpath(filename)))
+        rel_fn = FileId(*docpath.parent.joinpath(filename).parts).collapse_dots()
     return rel_fn, project_root.joinpath(rel_fn).resolve()
 
 
@@ -97,7 +99,7 @@ def ast_dive(ast: n.Node) -> Iterator[n.Node]:
 def add_doc_target_ext(target: str, docpath: PurePath, project_root: Path) -> Path:
     """Given the target file of a doc role, add the appropriate extension and return full file path"""
     # Add .txt to end of doc role target path
-    target_path = PurePath(target)
+    target_path = PurePosixPath(target)
     # Adding the current suffix first takes into account dotted targets
     new_suffix = target_path.suffix + ".txt"
     target_path = target_path.with_suffix(new_suffix)
