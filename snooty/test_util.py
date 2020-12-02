@@ -1,11 +1,4 @@
-import os
-import sys
-import time
 from pathlib import Path, PurePath, PurePosixPath
-from typing import List, Tuple
-
-import pytest
-import watchdog.events
 
 from . import util
 
