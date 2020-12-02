@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import List, Tuple
 
 import pytest
@@ -12,13 +12,19 @@ from . import util
 
 def test_reroot_path() -> None:
     relative, absolute = util.reroot_path(
-        PurePath("/foo/bar/baz.rst"), PurePath("/foo/dir/test.txt"), Path("foo")
+        PurePosixPath("/test_data/bar/baz.rst"),
+        PurePath("/test_data/dir/test.txt"),
+        Path("test_data"),
     )
     assert absolute.is_absolute()
-    assert relative == PurePath("foo/bar/baz.rst")
-    assert util.reroot_path(
-        PurePath("../bar/baz.rst"), PurePath("foo/dir/test.txt"), Path("foo")
-    )[0] == PurePath("foo/bar/baz.rst")
+    assert relative.parts == ("test_data", "bar", "baz.rst")
+
+    relative, absolute = util.reroot_path(
+        PurePosixPath("../bar/baz.rst"),
+        PurePath("test_data/dir/test.txt"),
+        Path("test_data"),
+    )
+    assert relative.parts == ("test_data", "bar", "baz.rst")
 
 
 def test_option_string() -> None:

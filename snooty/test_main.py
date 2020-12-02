@@ -2,6 +2,7 @@ import builtins
 import json
 import os
 import subprocess
+import sys
 from typing import Any, List
 
 from . import main
@@ -77,5 +78,7 @@ def test_backend() -> None:
 
 
 def test_parser_failure() -> None:
-    return_code = subprocess.call(["snooty", "build", "test_data/test_parser_failure"])
+    return_code = subprocess.call(
+        [sys.executable, "-m", "snooty", "build", "test_data/test_parser_failure"]
+    )
     assert return_code == 1

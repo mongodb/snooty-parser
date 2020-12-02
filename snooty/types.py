@@ -123,7 +123,9 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
-        return FileId(os.path.relpath(path, self.source_path))
+        result = PurePath(os.path.relpath(path, self.source_path))
+        # Ensure that we transform any Windows-style paths into a Posix-style FileId
+        return FileId(*result.parts)
 
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:

@@ -62,7 +62,7 @@ def test_debounce() -> None:
 
 
 def test_pid_exists() -> None:
-    assert language_server.pid_exists(0)
+    assert language_server.pid_exists(os.getpid())
     # Test that an invalid PID returns False
     assert not language_server.pid_exists(537920)
 
@@ -263,7 +263,7 @@ def test_reporting_config_error() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/bad_project")
         doc = {
-            "uri": f"file://{CWD_URL}/test_data/bad_project/snooty.toml",
+            "uri": f"{CWD_URL}/test_data/bad_project/snooty.toml",
             "languageId": "",
             "version": 0,
             "text": "",
