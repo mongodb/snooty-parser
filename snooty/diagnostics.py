@@ -177,6 +177,10 @@ class ErrorParsingYAMLFile(Diagnostic):
         self.reason = reason
 
 
+class InvalidInclude(Diagnostic):
+    severity = Diagnostic.Level.error
+
+
 class InvalidLiteralInclude(Diagnostic):
     severity = Diagnostic.Level.error
 

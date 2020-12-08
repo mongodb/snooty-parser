@@ -24,6 +24,7 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    InvalidInclude,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -121,6 +122,149 @@ class ProgramOptionHandler:
                 text_node.value = f"{program_name} {value}"
 
             node.children.extend(new_identifiers)
+
+
+class IncludeHandler:
+    """Iterate over all pages to find include directives. When found, replace their
+    `children` property with the contents of the include file.
+    Because the include contents are added to the tree on which the event parser is
+    running, they will automatically be parsed and have their includes expanded, too."""
+
+    def __init__(
+        self,
+        diagnostics: Dict[FileId, List[Diagnostic]],
+        slug_fileid_mapping: Dict[str, FileId],
+        pages: Dict[FileId, Page],
+    ) -> None:
+        self.diagnostics = diagnostics
+        self.slug_fileid_mapping = slug_fileid_mapping
+        self.pages = pages
+
+    def reset(self, fileid_stack: FileIdStack) -> None:
+        pass
+
+    @staticmethod
+    def is_bound(node: n.Node, search_text: Optional[str]) -> bool:
+        """Helper function to determine if the given node contains specified start-after or end-before text.
+
+        Note: For now, we are only splicing included files based on Comments and TargetIdentifier nodes.
+        Comments have Text nodes as children; Labels have TargetIdentifiers as children."""
+        if isinstance(node, n.Comment):
+            if node.children and isinstance(node.children[0], n.Text):
+                comment_text = node.children[0].get_text()
+                return search_text == comment_text
+        elif isinstance(node, n.Target):
+            # TODO: get_child_of_type
+            if node.domain == "std" and node.name == "label":
+                if node.children and isinstance(node.children[0], n.TargetIdentifier):
+                    target_identifier = node.children[0]
+                    if target_identifier.ids:
+                        return search_text in target_identifier.ids
+        return False
+
+    def bound_included_AST(
+        self,
+        nodes: MutableSequence[n.Node],
+        start_after_text: Optional[str],
+        end_before_text: Optional[str],
+    ) -> Tuple[MutableSequence[n.Node], bool, bool]:
+        """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of
+            the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
+            a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
+            or if it succeeds and is not any ancestor of the end-before node."""
+
+        start_index, end_index = 0, len(nodes)
+        any_start, any_end = False, False
+
+        # For any given node: if the start_after node is within this node's subtree, do not include any
+        # preceding siblings of this node in the resulting AST; if the end_before node is within this
+        # node's subtree, then do not include any succeeding siblings of this node.
+        for i, node in enumerate(nodes):
+            has_start, has_end = False, False
+            # Determine if this node itself (not a child node) contains a bound
+            is_start = IncludeHandler.is_bound(node, start_after_text)
+            is_end = IncludeHandler.is_bound(node, end_before_text)
+            # Recursively search the child nodes for bounds
+            if isinstance(node, n.Parent):
+                children, has_start, has_end = self.bound_included_AST(
+                    node.children, start_after_text, end_before_text
+                )
+                node.children = children
+            if is_start or has_start:
+                any_start = True
+                start_index = i
+            if is_end or has_end:
+                any_end = True
+                end_index = i
+        if start_index > end_index:
+            raise Exception("start-after text should precede end-before text")
+        # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
+        return nodes[start_index : end_index + 1], any_start, any_end
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        def get_include_argument(node: n.Directive) -> str:
+            """Get filename of include"""
+            argument_list = node.argument
+            assert len(argument_list) > 0
+            return argument_list[0].value
+
+        if not isinstance(node, n.Directive) or not node.name == "include":
+            return
+
+        argument = get_include_argument(node)
+        include_slug = clean_slug(argument)
+        include_fileid = self.slug_fileid_mapping.get(include_slug)
+        # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
+        # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
+        if include_fileid is None:
+            include_slug = argument.strip("/")
+            include_fileid = self.slug_fileid_mapping.get(include_slug)
+
+            # End if we can't find a file
+            if include_fileid is None:
+                return
+
+        include_page = self.pages.get(include_fileid)
+        assert include_page is not None
+        ast = include_page.ast
+        assert isinstance(ast, n.Parent)
+        deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
+
+        # TODO: Move subgraphing implementation into parse layer, where we can
+        # ideally take subgraph of the raw RST
+        start_after_text = node.options.get("start-after")
+        end_before_text = node.options.get("end-before")
+
+        if start_after_text or end_before_text:
+            line = node.span[0]
+            any_start, any_end = False, False
+            try:
+                # Returns a subgraph of the AST based on text bounds
+                deep_copy_children, any_start, any_end = self.bound_included_AST(
+                    deep_copy_children, start_after_text, end_before_text
+                )
+            except Exception as e:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(str(e), line)
+                )
+            # Confirm that we found all specified text (with helpful diagnostic )message if not)
+            msg = "Please be sure your text is a comment or label. Search is case-sensitive."
+            if start_after_text and not any_start:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(
+                        f"Could not find specified start-after text: '{start_after_text}'. {msg}",
+                        line,
+                    )
+                )
+            if end_before_text and not any_end:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidInclude(
+                        f"Could not find specified end-before text: '{end_before_text}'. {msg}",
+                        line,
+                    )
+                )
+
+        node.children = deep_copy_children
 
 
 class TabsSelectorHandler:
@@ -325,9 +469,10 @@ class Postprocessor:
         self.build_slug_fileid_mapping()
         self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
 
-        self.run_event_parser(
-            [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
+        include_handler = IncludeHandler(
+            self.diagnostics, self.slug_fileid_mapping, self.pages
         )
+        self.run_event_parser([(EventParser.OBJECT_START_EVENT, include_handler)])
 
         self.handle_substitutions()
 
@@ -615,41 +760,6 @@ class Postprocessor:
                     target.children = heading.children
             self.pending_targets = []
 
-    def populate_include_nodes(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        """Iterate over all pages to find include directives. When found, replace their
-        `children` property with the contents of the include file.
-        Because the include contents are added to the tree on which the event parser is
-        running, they will automatically be parsed and have their includes expanded, too."""
-
-        def get_include_argument(node: n.Directive) -> str:
-            """Get filename of include"""
-            argument_list = node.argument
-            assert len(argument_list) > 0
-            return argument_list[0].value
-
-        if not isinstance(node, n.Directive):
-            return
-
-        if node.name == "include":
-            argument = get_include_argument(node)
-            include_slug = clean_slug(argument)
-            include_fileid = self.slug_fileid_mapping.get(include_slug)
-            # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
-            # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
-            if include_fileid is None:
-                include_slug = argument.strip("/")
-                include_fileid = self.slug_fileid_mapping.get(include_slug)
-
-                # End if we can't find a file
-                if include_fileid is None:
-                    return
-
-            include_page = self.pages.get(include_fileid)
-            assert include_page is not None
-            ast = include_page.ast
-            assert isinstance(ast, n.Parent)
-            node.children = [util.fast_deep_copy(ast)]
-
     def build_slug_fileid_mapping(self) -> None:
         """Construct a {slug: fileid} mapping so that we can retrieve the full file name
         given a slug. We cannot use the with_suffix method since the type of the slug
@@ -845,9 +955,10 @@ class DevhubPostprocessor(Postprocessor):
         self.build_slug_fileid_mapping()
         self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
 
-        self.run_event_parser(
-            [(EventParser.OBJECT_START_EVENT, self.populate_include_nodes)]
+        include_handler = IncludeHandler(
+            self.diagnostics, self.slug_fileid_mapping, self.pages
         )
+        self.run_event_parser([(EventParser.OBJECT_START_EVENT, include_handler)])
 
         self.handle_substitutions()
 

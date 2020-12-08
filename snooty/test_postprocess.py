@@ -735,3 +735,173 @@ A Heading
     </section>
 </section></root>""",
         )
+
+
+def test_include_subset() -> None:
+    with make_test(
+        {
+            # Splice on comments
+            Path(
+                "source/program1.txt"
+            ): """
+.. include:: /includes/included.rst
+   :start-after: start-comment
+   :end-before: end-comment
+""",
+            # Splice on labels
+            Path(
+                "source/program2.txt"
+            ): """
+.. include:: /includes/included.rst
+   :start-after: start-label
+   :end-before: end-label
+""",
+            Path(
+                "source/includes/included.rst"
+            ): """
+.. start-comment
+
+Section Heading
+---------------
+
+Paragraph.
+
+.. end-comment
+
+.. _start-label:
+
+Section Heading
+---------------
+
+Paragraph
+
+.. _end-label:
+""",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        page = result.pages[FileId("program1.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="program1.txt">
+    <directive name="include" start-after="start-comment" end-before="end-comment">
+        <text>/includes/included.rst</text>
+        <root fileid="includes/included.rst">
+            <comment><text>start-comment</text></comment>
+            <section>
+                <heading id="section-heading">
+                    <text>Section Heading</text>
+                </heading>
+                <paragraph>
+                    <text>Paragraph.</text>
+                </paragraph>
+                <comment>
+                    <text>end-comment</text>
+                </comment>
+            </section>
+        </root>
+    </directive>
+</root>
+        """,
+        )
+
+        page = result.pages[FileId("program2.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="program2.txt">
+    <directive name="include" start-after="start-label" end-before="end-label">
+        <text>/includes/included.rst</text>
+        <root fileid="includes/included.rst">
+            <section>
+                <target domain="std" name="label" html_id="std-label-start-label">
+                    <target_identifier ids="['start-label']">
+                        <text>Section Heading</text>
+                    </target_identifier>
+                </target>
+            </section>
+            <section>
+                <heading id="section-heading">
+                    <text>Section Heading</text>
+                </heading>
+                <paragraph>
+                    <text>Paragraph</text>
+                </paragraph>
+                <target domain="std" name="label" html_id="std-label-end-label">
+                    <target_identifier ids="['end-label']"/>
+                </target>
+            </section>
+        </root>
+    </directive>
+</root>
+        """,
+        )
+
+
+def test_include_subset_fails() -> None:
+    with make_test(
+        {
+            # Splice on text in reverse order
+            Path(
+                "source/program1.txt"
+            ): """
+.. include:: /includes/included.rst
+   :start-after: end-text
+   :end-before: start-text
+""",
+            # Can't find start text
+            Path(
+                "source/program2.txt"
+            ): """
+.. include:: /includes/included.rst
+   :start-after: fake-start-text
+   :end-before: end-text
+""",
+            # Can't find end text
+            Path(
+                "source/program3.txt"
+            ): """
+.. include:: /includes/included.rst
+   :start-after: start-text
+   :end-before: fake-end-text
+""",
+            Path(
+                "source/includes/included.rst"
+            ): """
+.. start-comment
+
+Section Heading
+---------------
+
+Paragraph.
+
+.. end-comment
+
+start-text
+
+end-text
+
+.. _start-label:
+
+Section Heading
+---------------
+
+Paragraph
+
+.. _end-label:
+""",
+        }
+    ) as result:
+        assert (
+            len(
+                [
+                    diagnostics
+                    for diagnostics in result.diagnostics.values()
+                    if diagnostics
+                ]
+            )
+            == 3
+        ), "Should raise 3 diagnostics"

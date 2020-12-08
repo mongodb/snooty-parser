@@ -555,6 +555,35 @@ def test_include() -> None:
     )
     page.finish(diagnostics)
     assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include">
+        <text>/driver-examples/rstexample.rst</text>
+        </directive>
+        </root>""",
+    )
+
+    # Test include with start-after and end-before options
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. include:: /test_parser/includes/sample_rst.rst
+    :start-after: start after text
+    :end-before: end before text
+        """,
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="include" start-after="start after text" end-before="end before text">
+        <text>/test_parser/includes/sample_rst.rst</text>
+        </directive>
+        </root>""",
+    )
 
     # Test generated include
     page, diagnostics = parse_rst(

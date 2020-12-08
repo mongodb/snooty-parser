@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Handle include subsets in postprocessor (DOP-323)
+
 ## [v0.8.2] - 2020-12-02
 
 ### Added

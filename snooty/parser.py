@@ -351,11 +351,10 @@ class JSONVisitor:
             self.state.append(n.Transition((line,)))
         elif isinstance(node, docutils.nodes.table):
             raise docutils.nodes.SkipNode()
-        elif isinstance(
-            node,
-            (docutils.nodes.comment, docutils.nodes.problematic, docutils.nodes.label),
-        ):
+        elif isinstance(node, (docutils.nodes.problematic, docutils.nodes.label)):
             raise docutils.nodes.SkipNode()
+        elif isinstance(node, docutils.nodes.comment):
+            self.state.append(n.Comment((line,), []))
         elif isinstance(node, docutils.nodes.system_message):
             level = int(node["level"])
             if level >= 2:
