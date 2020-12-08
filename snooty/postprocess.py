@@ -24,13 +24,13 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    InvalidInclude,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
     SubstitutionRefError,
     TargetNotFound,
     UnnamedPage,
-    InvalidInclude,
 )
 from .eventparser import EventParser, FileIdStack
 from .page import Page
@@ -230,7 +230,7 @@ class IncludeHandler:
         assert isinstance(ast, n.Parent)
         deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
 
-        # TODO: Move subsgraphing implementation into parse layer, where we can
+        # TODO: Move subgraphing implementation into parse layer, where we can
         # ideally take subgraph of the raw RST
         start_after_text = node.options.get("start-after")
         end_before_text = node.options.get("end-before")
