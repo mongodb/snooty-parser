@@ -4,7 +4,13 @@
 from pathlib import Path
 
 from . import diagnostics
-from .diagnostics import DuplicateDirective, ExpectedTabs, MissingTab, TargetNotFound
+from .diagnostics import (
+    DuplicateDirective,
+    ExpectedTabs,
+    MissingTab,
+    TabMustBeDirective,
+    TargetNotFound,
+)
 from .types import FileId
 from .util_test import ast_to_testing_string, check_ast_testing_string, make_test
 
@@ -543,6 +549,29 @@ def test_language_selector() -> None:
 </root>
             """,
         )
+
+    # Ensure we gracefully handle invalid tabs
+    with make_test(
+        {
+            Path(
+                "source/tabs-six.txt"
+            ): """
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+
+   .. tip::
+
+      A tip
+"""
+        }
+    ) as result:
+        assert [type(d) for d in result.diagnostics[FileId("tabs-six.txt")]] == [
+            TabMustBeDirective
+        ]
 
 
 def test_correct_diagnostic_path() -> None:

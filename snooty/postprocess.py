@@ -329,11 +329,11 @@ class TabsSelectorHandler:
             return
 
         tabset_name = node.options.get("tabset", "")
-        if tabset_name in self.selectors.keys():
+        if tabset_name in self.selectors:
             tabs = {
                 tab.options["tabid"]: tab.argument
-                for tab in node.children
-                if isinstance(tab, n.Directive)
+                for tab in node.get_child_of_type(n.Directive)
+                if tab.name == "tab" and "tabid" in tab.options
             }
             self.selectors[tabset_name].append(tabs)
 

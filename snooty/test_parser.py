@@ -64,9 +64,6 @@ def test_tabs() -> None:
         </directive>
 
         <directive name="tabs" tabset="platforms">
-            <directive name="tab" tabid="bobs_your_uncle">
-            <paragraph><text>Windows Content</text></paragraph>
-            </directive>
         </directive>
 
         <directive name="tabs" tabset="platfors">
@@ -86,6 +83,58 @@ def test_tabs() -> None:
     assert isinstance(diagnostics[0], UnknownTabID)
     assert isinstance(diagnostics[1], UnknownTabset)
     assert isinstance(diagnostics[2], DocUtilsParseError)
+
+    # Test a tab with no tabid
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: python
+
+      Python!
+
+   .. tab::
+
+      Tab with no ID
+
+   .. tab::
+      :tabid: faketab
+
+      Not a real tab!
+
+   .. tab::
+      :tabid: php
+
+      PHP!
+""",
+    )
+    page.finish(diagnostics)
+    assert [(type(d), d.severity) for d in diagnostics] == [
+        (DocUtilsParseError, Diagnostic.Level.error),
+        (UnknownTabID, Diagnostic.Level.error),
+    ]
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test_tabs.rst">
+    <directive name="tabs" tabset="drivers">
+        <directive name="tab" tabid="python">
+            <text>Python</text>
+            <paragraph><text>Python!</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="php">
+            <text>PHP</text>
+            <paragraph><text>PHP!</text></paragraph>
+        </directive>
+    </directive>
+</root>
+    """,
+    )
 
 
 def test_tabsets_with_options() -> None:
@@ -236,7 +285,7 @@ def test_codeblock() -> None:
    foo""",
     )
     page.finish(diagnostics)
-    assert diagnostics[0].severity == Diagnostic.Level.warning
+    assert diagnostics[0].severity == Diagnostic.Level.error
 
     # Test absent language
     page, diagnostics = parse_rst(
