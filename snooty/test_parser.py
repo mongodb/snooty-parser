@@ -102,9 +102,9 @@ def test_tabs() -> None:
       Tab with no ID
 
    .. tab::
-      :tabid: javascript
+      :tabid: faketab
 
-      Javascript!
+      Not a real tab!
 
    .. tab::
       :tabid: php
