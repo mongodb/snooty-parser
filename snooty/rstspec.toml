@@ -1374,16 +1374,16 @@ type = {link = "https://developer.apple.com/%s"}
 type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s"}
 
 [role."java-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/java/10.0.0-BETA.8/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s"}
 
 [role."kotlin-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/10.0.0-BETA.8/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s"}
 
 [role."swift-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/swift/10.0.0-beta.5/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
 
 [role."objc-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/objc/10.0.0-beta.5/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s"}
 
 [role."codesandbox"]
 type = {link = "https://codesandbox.io/%s"}
