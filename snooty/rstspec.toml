@@ -1275,22 +1275,22 @@ inherit = "charts-v0.9"
 
 [role.compass]
 help = """Link to a page in the Compass docs."""
-type = {link = "https://docs.mongodb.com/compass%s"}
+type = {link = "https://docs.mongodb.com/compass/current%s"}
 
 [role."dotnet-sdk"]
 type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s"}
 
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
-type = {link = "https://docs.mongodb.com/ecosystem%s"}
+type = {link = "https://docs.mongodb.com/drivers%s"}
+
+[role.driver]
+help = """Link to a driver's page in the Ecosystem docs."""
+type = {link = "https://docs.mongodb.com/drivers%s"}
 
 [role.products]
 help = """Link to a page in the MongoDB Products site."""
 type = {link = "https://www.mongodb.com/products%s"}
-
-[role.driver]
-help = """Link to a driver's page in the Ecosystem docs."""
-type = {link = "https://docs.mongodb.com/ecosystem/drivers%s"}
 
 [role.bic]
 type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
