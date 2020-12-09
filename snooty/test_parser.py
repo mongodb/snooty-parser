@@ -64,9 +64,6 @@ def test_tabs() -> None:
         </directive>
 
         <directive name="tabs" tabset="platforms">
-            <directive name="tab" tabid="bobs_your_uncle">
-            <paragraph><text>Windows Content</text></paragraph>
-            </directive>
         </directive>
 
         <directive name="tabs" tabset="platfors">
@@ -96,14 +93,48 @@ def test_tabs() -> None:
 .. tabs-drivers::
 
    .. tab::
+      :tabid: python
+
+      Python!
+
+   .. tab::
 
       Tab with no ID
+
+   .. tab::
+      :tabid: javascript
+
+      Javascript!
+
+   .. tab::
+      :tabid: php
+
+      PHP!
 """,
     )
     page.finish(diagnostics)
     assert [(type(d), d.severity) for d in diagnostics] == [
-        (DocUtilsParseError, Diagnostic.Level.error)
+        (DocUtilsParseError, Diagnostic.Level.error),
+        (UnknownTabID, Diagnostic.Level.error),
     ]
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test_tabs.rst">
+    <directive name="tabs" tabset="drivers">
+        <directive name="tab" tabid="python">
+            <text>Python</text>
+            <paragraph><text>Python!</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="php">
+            <text>PHP</text>
+            <paragraph><text>PHP!</text></paragraph>
+        </directive>
+    </directive>
+</root>
+    """,
+    )
 
 
 def test_tabsets_with_options() -> None:

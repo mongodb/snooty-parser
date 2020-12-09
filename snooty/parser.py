@@ -450,17 +450,19 @@ class JSONVisitor:
             self.diagnostics.append(UnknownTabset(tabset, line))
             return
 
-        for idx, child in enumerate(node.children):
+        old_children = node.children
+        new_children: List[n.Node] = []
+        for child in old_children:
             if (not isinstance(child, n.Directive)) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
                 )
-                return
+                continue
 
             tabid = child.options.get("tabid")
             if tabid is None:
                 # Required options get warned about elsewhere, so no need to log an error
-                return
+                continue
 
             if not isinstance(tabid, str):
                 self.diagnostics.append(
@@ -471,7 +473,7 @@ class JSONVisitor:
                         line,
                     )
                 )
-                return
+                continue
 
             unknown_tabid = True
             # find matching title given id and insert directive_argument
@@ -489,7 +491,11 @@ class JSONVisitor:
                         line,
                     )
                 )
-                return
+                continue
+
+            new_children.append(child)
+
+        node.children = new_children
 
         # Sort tab directives based on order defined in rstspec.toml
         tabid_list = [tab.id for tab in tab_definitions_list]
