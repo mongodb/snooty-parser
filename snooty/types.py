@@ -116,7 +116,12 @@ class ProjectConfig:
 
     @property
     def source_path(self) -> Path:
-        return self.root.joinpath(self.source)
+        result = self.root.joinpath(self.source)
+        if os.path.exists(result):
+            return result
+        # added support for projects that do not have "source" folder.
+        self.source = ""
+        return self.root
 
     @property
     def config_path(self) -> Path:
