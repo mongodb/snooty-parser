@@ -3,7 +3,8 @@ import logging
 import os
 import sys
 import threading
-import urllib.parse
+from urllib.parse import urlparse, unquote
+from urllib.request import url2pathname
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
@@ -313,18 +314,18 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         if not self.project:
             raise TypeError("Cannot map uri to fileid before a project is open")
 
-        parsed = urllib.parse.urlparse(uri)
+        parsed = urlparse(uri)
         if parsed.scheme != "file":
             raise ValueError("Only file:// URIs may be resolved", uri)
 
-        path = Path(parsed.netloc).joinpath(Path(parsed.path)).resolve()
+        path = self.uriToPath(uri)
         return self.project.config.get_fileid(path)
 
     def fileid_to_uri(self, fileid: FileId) -> str:
         if not self.project:
             raise TypeError("Cannot map fileid to uri before a project is open")
 
-        return "file://" + str(self.project.config.source_path.joinpath(fileid))
+        return self.project.config.source_path.joinpath(fileid).as_uri()
 
     def m_initialize(
         self,
@@ -332,8 +333,8 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         rootUri: Optional[Uri] = None,
         **kwargs: object,
     ) -> SerializableType:
-        if rootUri:
-            root_path = Path(rootUri.replace("file://", "", 1))
+        if rootUri:            
+            root_path = self.uriToPath(rootUri)
             self.project = Project(root_path, self.backend, {})
             self.notify_diagnostics()
 
@@ -362,6 +363,14 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             watching_thread.start()
 
         return {"capabilities": {"textDocumentSync": 1}}
+
+    @staticmethod
+    def uriToPath(uri: Uri) -> Path:
+        parsed = urlparse(uri)
+        host = "{0}{0}{mnt}{0}".format(os.path.sep, mnt=parsed.netloc)
+        return Path(os.path.abspath(
+            os.path.join(host, url2pathname(unquote(parsed.path)))
+        ))
 
     def m_initialized(self, **kwargs: object) -> None:
         # Ignore this message to avoid logging a pointless warning
