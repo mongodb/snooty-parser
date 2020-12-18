@@ -12,6 +12,9 @@ from . import man
 def normalize(text: str) -> str:
     """Remove any non-word characters to make groff output comparable
        across platforms."""
+    # Strip the strange escape characters that Groff inserts for TTYs
+    text = re.sub(r".\x08", "", text)
+
     # Strip the header: this varies platform to platform.
     text = text.split("\n", 1)[1]
 
@@ -140,13 +143,13 @@ Trailing paragraph.
         assert "\n\n" not in troff
 
         try:
+            # Use GNU Roff to turn our generated troff source into text we can compare.
             text = subprocess.check_output(
                 ["groff", "-T", "utf8", "-t", "-man"], encoding="utf-8", input=troff,
             )
         except FileNotFoundError:
             pytest.xfail("groff is not installed")
 
-        text = re.sub(r".\x08", "", text)
         assert normalize(text).strip() == normalize(
             """mongo(1)                    General Commands Manual                   mongo(1)
 

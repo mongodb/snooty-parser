@@ -50,11 +50,12 @@ class ManNode:
     children: Union[str, List["ManNode"]]
     attributes: Dict[str, str] = field(default_factory=dict)
 
-    def translate(self) -> str:
+    def to_troff(self) -> str:
         """Transform this node into a troff document string."""
-        handler = XMLToManHandler()
+        handler = TroffNodeHandler()
 
-        def helper(node: "ManNode") -> None:
+        def handle_node(node: "ManNode") -> None:
+            """Call relevant handlers in TroffNodeHandler for a given node."""
             handler.handle_start(node)
             if isinstance(node.children, str):
                 assert node.element in {
@@ -64,10 +65,10 @@ class ManNode:
                 handler.handle_text(node.children)
             else:
                 for child in node.children:
-                    helper(child)
+                    handle_node(child)
             handler.handle_end(node)
 
-        helper(self)
+        handle_node(self)
         return handler.output.getvalue()
 
 
@@ -76,7 +77,7 @@ class Formatting(Enum):
     EMPHASIS = auto()
 
 
-class XMLToManHandler:
+class TroffNodeHandler:
     def __init__(self) -> None:
         self.text_buffer = io.StringIO()
         self.output = io.StringIO()
@@ -196,7 +197,9 @@ class XMLToManHandler:
             self.write_raw("\\f1")
 
 
-class Mapper:
+class SnootyToTroffTree:
+    """Transforms snooty AST nodes to an intermediate representation of ManNodes."""
+
     def handle(self, node: n.Node) -> List[ManNode]:
         return cast(List[ManNode], getattr(self, f"handle_{type(node).__name__}")(node))
 
@@ -381,9 +384,9 @@ def render(page: Page, name: str, title: str, section: int) -> Dict[FileId, str]
     """Render the given page as a manpage."""
     root = ManNode(
         ManNode.ElementType.MANPAGE,
-        Mapper().handle(page.ast),
+        SnootyToTroffTree().handle(page.ast),
         {"name": name, "section": str(section), "desc": title},
     )
-    body = root.translate()
+    body = root.to_troff()
 
     return {FileId(f"{name}.{section}"): body}
