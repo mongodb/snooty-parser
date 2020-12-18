@@ -1407,12 +1407,6 @@ class Project:
         # _Project.root, which never changes after creation.
         return self._project.get_full_path(fileid)
 
-    def pages(self) -> Iterable[Tuple[FileId, Page]]:
-        with self._lock:
-            for fileid, page in self._project.pages.items():
-                if fileid.suffix == ".txt":
-                    yield fileid, page
-
     def get_page_ast(self, path: Path) -> n.Node:
         """Return complete AST of page with updated text"""
         with self._lock:

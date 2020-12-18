@@ -83,7 +83,7 @@ class TroffNodeHandler:
         self.output = io.StringIO()
         self.formatting_stack: List[Formatting] = []
         self.list_stack: List[str] = []
-        self.section_depth: int = 0
+        self.section_depth = 0
 
         self.need_paragraph_splitter = False
         self.trailing_newline = True
