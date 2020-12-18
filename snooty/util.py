@@ -100,6 +100,10 @@ def add_doc_target_ext(target: str, docpath: PurePath, project_root: Path) -> Pa
     """Given the target file of a doc role, add the appropriate extension and return full file path"""
     # Add .txt or .rst to end of doc role target path
     target_path = PurePosixPath(target)
+    if (target.endswith('/')):
+        # return directly if target is a folder.
+        fileid, resolved_target_path = reroot_path(target_path, docpath, project_root)
+        return resolved_target_path
     # Adding the current suffix first takes into account dotted targets
     last: Path = Path()
     for ext in RST_EXTENSIONS:
