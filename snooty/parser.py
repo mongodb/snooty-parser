@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
     cast,
 )
 
@@ -31,6 +32,7 @@ import watchdog.events
 from typing_extensions import Protocol
 
 from . import gizaparser, n, rstparser, specparser, util
+from .builders import man
 from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
@@ -1002,6 +1004,12 @@ class PageDatabase:
         self.parsed[key] = value
         self.__changed_pages.add(key)
 
+    def get(self, key: FileId) -> Optional[Page]:
+        try:
+            return self[key]
+        except KeyError:
+            return None
+
     def __getitem__(self, key: FileId) -> Page:
         """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
         assert not self.__changed_pages
@@ -1297,12 +1305,11 @@ class _Project:
         if postprocess:
             post_metadata, post_diagnostics = self.pages.flush()
 
-            static_files = {
+            static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
                     self.config.name, ""
                 )
             }
-            post_metadata["static_files"] = static_files
 
             with util.PerformanceLogger.singleton().start("commit"):
                 for fileid, page in self.pages.items():
@@ -1311,6 +1318,22 @@ class _Project:
                     )
                 self.backend.flush()
 
+            # Build manpages
+            for name, definition in self.config.manpages.items():
+                fileid = FileId(definition.file)
+                manpage_page = self.pages.get(fileid)
+                if not manpage_page:
+                    self.backend.on_diagnostics(
+                        FileId(self.config.config_path.relative_to(self.config.root)),
+                        [CannotOpenFile(Path(fileid), "Page not found", 0)],
+                    )
+                    continue
+                for filename, rendered in man.render(
+                    manpage_page, name, definition.title, definition.section
+                ).items():
+                    static_files[filename.as_posix()] = rendered
+
+            post_metadata["static_files"] = static_files
             for fileid, diagnostics in post_diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
