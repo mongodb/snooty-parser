@@ -1,12 +1,13 @@
 import re
 import subprocess
 from pathlib import Path
+from typing import Dict, Union, cast
 
 import pytest
 
+from ..diagnostics import CannotOpenFile
 from ..types import FileId
 from ..util_test import make_test
-from . import man
 
 
 def normalize(text: str) -> str:
@@ -25,6 +26,21 @@ def normalize(text: str) -> str:
 def test_manpage() -> None:
     with make_test(
         {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_manpage"
+
+[manpages.mongo]
+file = "index.txt"
+section = 1
+title = "The MongoDB Shell"
+
+[manpages.missing]
+file = "missing.txt"
+section = 1
+title = "This Manpage Doesn't Exist"
+""",
             Path(
                 "source/index.txt"
             ): """
@@ -134,10 +150,18 @@ Trailing paragraph.
 """,
         }
     ) as result:
-        fileid = FileId("index.txt")
-        troff = man.render(result.pages[fileid], "mongo", "The MongoDB Shell", 1)[
-            FileId("mongo.1")
+        # Ensure that we have an error about the missing manpage
+        assert [type(diag) for diag in result.diagnostics[FileId("snooty.toml")]] == [
+            CannotOpenFile
         ]
+
+        static_files = cast(
+            Dict[str, Union[str, bytes]], result.metadata["static_files"]
+        )
+
+        troff = static_files["mongo.1"]
+
+        assert isinstance(troff, str)
 
         # Empty lines are discouraged in troff source
         assert "\n\n" not in troff

@@ -127,6 +127,7 @@ class BackendTestResults:
     def __init__(self) -> None:
         self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
         self.pages: Dict[FileId, Page] = {}
+        self.metadata: Dict[str, SerializableType] = {}
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -149,7 +150,7 @@ class BackendTestResults:
         build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
-        pass
+        self.metadata.update(field)
 
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
         pass
