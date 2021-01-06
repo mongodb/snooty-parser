@@ -10,3 +10,4 @@ htmlcov/
 .venv/
 dist/
 .docs
+.vscode

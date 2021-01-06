@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Handle include subsets in postprocessor (DOP-323)
+- Build manpages ([DOP-1584](https://jira.mongodb.com/browse/DOP-1584))
+- Support for include options and subsets in postprocessor ([DOP-323](https://jira.mongodb.com/browse/DOP-323))
+- Update driver, compass, ecosystem, and Realm SDK roles to point to correct URLs ([DOP-1777](https://jira.mongodb.com/browse/DOP-1777))
+
+### Fixed
+
+- Handling of invalid tabs (parser no longer crashes, uses correct diagnostic levels)
 
 ## [v0.8.2] - 2020-12-02
 
