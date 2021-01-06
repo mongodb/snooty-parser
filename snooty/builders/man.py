@@ -1,4 +1,5 @@
 import io
+import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Dict, Iterable, List, Union, cast
@@ -6,6 +7,8 @@ from typing import Dict, Iterable, List, Union, cast
 from .. import n
 from ..page import Page
 from ..types import FileId
+
+logger = logging.getLogger(__name__)
 
 
 def troff_escape(value: str) -> str:
@@ -201,7 +204,13 @@ class SnootyToTroffTree:
     """Transforms snooty AST nodes to an intermediate representation of ManNodes."""
 
     def handle(self, node: n.Node) -> List[ManNode]:
-        return cast(List[ManNode], getattr(self, f"handle_{type(node).__name__}")(node))
+        try:
+            handler = getattr(self, f"handle_{type(node).__name__}")
+        except AttributeError:
+            logger.error("INTERNAL: Unknown node type: %s", type(node).__name__)
+            return []
+
+        return cast(List[ManNode], handler(node))
 
     def children(self, nodes: Iterable[n.Node]) -> List[ManNode]:
         list_of_lists = [self.handle(child) for child in nodes]
@@ -377,6 +386,9 @@ class SnootyToTroffTree:
         return []
 
     def handle_Table(self, node: n.Table) -> List[ManNode]:
+        return []
+
+    def handle_Comment(self, node: n.Comment) -> List[ManNode]:
         return []
 
 
