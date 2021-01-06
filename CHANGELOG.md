@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Don't crash upon building a manpage containing comments ([DOP-1874](https://jira.mongodb.com/browse/DOP-1874)).
+
 ## [v0.8.3] - 2021-01-06
 
 ### Added
