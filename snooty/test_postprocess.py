@@ -253,6 +253,43 @@ Program 2
         )
 
 
+def test_abbreviated_link() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. method:: db.collection.watch()
+
+:method:`~db.collection.watch`
+""",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+
+        page = result.pages[FileId("index.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+    <target domain="mongodb" name="method" html_id="mongodb-method-db.collection.watch">
+        <directive_argument><literal><text>db.collection.watch()</text></literal></directive_argument>
+        <target_identifier ids="['db.collection.watch']"><text>db.collection.watch()</text></target_identifier>
+    </target>
+
+    <paragraph>
+        <ref_role domain="mongodb" name="method" target="db.collection.watch" flag="~" fileid="['index', 'mongodb-method-db.collection.watch']">
+            <literal><text>watch()</text></literal>
+        </ref_role>
+    </paragraph>
+</root>
+        """,
+        )
+
+
 def test_language_selector() -> None:
     with make_test(
         {

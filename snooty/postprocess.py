@@ -681,6 +681,17 @@ class Postprocessor:
             )
             for title_node in cloned_title_nodes:
                 deep_copy_position(node, title_node)
+
+            # Label abbreviation is underspecified. Good luck!
+            if "~" in node.flag and cloned_title_nodes:
+                node_to_abbreviate = cloned_title_nodes[0]
+                if isinstance(node_to_abbreviate, n.Text):
+                    index = node_to_abbreviate.value.rfind(".")
+                    new_value = node_to_abbreviate.value[index + 1 :].strip()
+
+                    if new_value:
+                        node_to_abbreviate.value = new_value
+
             injection_candidate.children = cloned_title_nodes
 
     def attempt_disambugation(
