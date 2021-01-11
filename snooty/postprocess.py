@@ -267,6 +267,36 @@ class IncludeHandler:
         node.children = deep_copy_children
 
 
+class NamedReferenceHandler:
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.named_references: Dict[str, str] = {}
+        self.diagnostics = diagnostics
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.NamedReference):
+            return
+
+        self.named_references[node.refname] = node.refuri
+
+    def populate(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Reference):
+            return
+
+        if node.refuri:
+            # Node is already populated with url; nothing to do
+            return
+
+        refuri = self.named_references.get(node.refname)
+        if refuri is None:
+            line = node.span[0]
+            self.diagnostics[fileid_stack.current].append(
+                TargetNotFound("extlink", node.refname, line)
+            )
+            return
+
+        node.refuri = refuri
+
+
 class TabsSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
@@ -496,11 +526,20 @@ class Postprocessor:
         )
 
         target_handler = TargetHandler(self.targets)
+        named_reference_handler = NamedReferenceHandler(self.diagnostics)
         self.run_event_parser(
-            [(EventParser.OBJECT_START_EVENT, target_handler)],
+            [
+                (EventParser.OBJECT_START_EVENT, target_handler),
+                (EventParser.OBJECT_START_EVENT, named_reference_handler),
+            ],
             [(EventParser.PAGE_START_EVENT, target_handler.reset)],
         )
-        self.run_event_parser([(EventParser.OBJECT_START_EVENT, self.handle_refs)])
+        self.run_event_parser(
+            [
+                (EventParser.OBJECT_START_EVENT, self.handle_refs),
+                (EventParser.OBJECT_START_EVENT, named_reference_handler.populate),
+            ]
+        )
         document = self.generate_metadata()
 
         return document, self.diagnostics

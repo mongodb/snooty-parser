@@ -369,6 +369,14 @@ class Reference(InlineParent):
 
 
 @dataclass
+class NamedReference(InlineParent):
+    __slots__ = ("refname", "refuri")
+    type = "named_reference"
+    refname: str
+    refuri: str
+
+
+@dataclass
 class Role(InlineParent):
     __slots__ = ("domain", "name", "target", "flag")
     type = "role"

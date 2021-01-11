@@ -57,11 +57,13 @@ def test_step() -> None:
         <reference refuri="https://en.wikipedia.org/wiki/Package_manager">
         <text>package management system</text>
         </reference>
+        <named_reference refname="package management system" refuri="https://en.wikipedia.org/wiki/Package_manager" />
     </heading>
     <paragraph>
         <text>Issue the following command to import the\n</text>
         <reference refuri="https://www.mongodb.org/static/pgp/server-3.4.asc">
         <text>MongoDB public GPG Key</text></reference>
+        <named_reference refname="MongoDB public GPG Key" refuri="https://www.mongodb.org/static/pgp/server-3.4.asc" />
     </paragraph></section></directive>
 <directive name="step">
     <section>

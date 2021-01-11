@@ -275,17 +275,20 @@ class JSONVisitor:
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
-            if "refuri" in node:
-                raise docutils.nodes.SkipNode()
-
             if not node["ids"]:
                 self.diagnostics.append(InvalidURL(util.get_line(node)))
                 raise docutils.nodes.SkipNode()
 
             node_id = node["names"][0]
+
+            if "refuri" in node:
+                self.state.append(
+                    n.NamedReference((line,), [], node_id, node["refuri"])
+                )
+                return
+
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
-            refuri = node["refuri"] if "refuri" in node else None
-            self.state.append(n.Target((line,), children, "std", "label", refuri, None))
+            self.state.append(n.Target((line,), children, "std", "label", None, None))
         elif isinstance(node, rstparser.target_identifier):
             self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
         elif isinstance(node, docutils.nodes.definition_list):
