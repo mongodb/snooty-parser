@@ -148,8 +148,7 @@ _I = TypeVar("_I", bound=Inheritable)
 
 def inherit(obj: _I, parent: Optional[_I], diagnostics: List[Diagnostic],) -> _I:
     """Implement inheritance on a pair of Giza nodes: parent's fields overwrite any
-       unset fields in obj, and substitution variables are replaced if obj is not
-       a base node. If parent is None, then only substitution occurs."""
+       unset fields in obj."""
     logger.debug("Inheriting %s", obj.ref)
     changes: Dict[str, object] = {}
 
