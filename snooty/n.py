@@ -339,7 +339,7 @@ class DirectiveArgument(Parent[InlineNode]):
 
 @dataclass
 class Target(Parent[Node]):
-    __slots__ = ("domain", "name", "refuri", "html_id")
+    __slots__ = ("domain", "name", "html_id")
     type = "target"
     domain: str
     name: str
