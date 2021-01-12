@@ -339,11 +339,10 @@ class DirectiveArgument(Parent[InlineNode]):
 
 @dataclass
 class Target(Parent[Node]):
-    __slots__ = ("domain", "name", "refuri", "html_id")
+    __slots__ = ("domain", "name", "html_id")
     type = "target"
     domain: str
     name: str
-    refuri: Optional[str]
     html_id: Optional[str]
 
 
@@ -366,6 +365,14 @@ class Reference(InlineParent):
     type = "reference"
     refuri: str
     refname: str
+
+
+@dataclass
+class NamedReference(InlineNode):
+    __slots__ = ("refname", "refuri")
+    type = "named_reference"
+    refname: str
+    refuri: str
 
 
 @dataclass

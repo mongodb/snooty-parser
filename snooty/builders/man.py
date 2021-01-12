@@ -358,6 +358,9 @@ class SnootyToTroffTree:
             )
         ]
 
+    def handle_NamedReference(self, node: n.NamedReference) -> List[ManNode]:
+        return []
+
     def handle_Role(self, node: n.Role) -> List[ManNode]:
         return self.children(node.children)
 
