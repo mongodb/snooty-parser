@@ -268,6 +268,10 @@ class IncludeHandler:
 
 
 class NamedReferenceHandler:
+    """Identify non-anonymous hyperlinks (i.e. those defined with a single underscore) and save them according to {name: url}.
+    Attach the associated URL to any uses of this named reference.
+    """
+
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.named_references: Dict[str, str] = {}
         self.diagnostics = diagnostics

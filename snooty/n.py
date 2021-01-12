@@ -343,7 +343,6 @@ class Target(Parent[Node]):
     type = "target"
     domain: str
     name: str
-    refuri: Optional[str]
     html_id: Optional[str]
 
 
@@ -369,7 +368,7 @@ class Reference(InlineParent):
 
 
 @dataclass
-class NamedReference(InlineParent):
+class NamedReference(InlineNode):
     __slots__ = ("refname", "refuri")
     type = "named_reference"
     refname: str
