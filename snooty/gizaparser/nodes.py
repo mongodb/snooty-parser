@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Dict,
     Generic,
+    Iterable,
     Iterator,
     List,
     Match,
@@ -133,19 +134,21 @@ class Inheritable(Node):
         """If this node has a parent identifier, return it."""
         return self.source or self.inherit
 
+    def keys(self) -> Iterable[str]:
+        """Iterate over keys in this node that are subject to inheritance & substitutions."""
+        yield from (
+            field.name
+            for field in dataclasses.fields(self)
+            if field.name not in {"replacement", "ref", "source", "inherit"}
+        )
+
 
 _I = TypeVar("_I", bound=Inheritable)
 
 
-def inherit(
-    project_config: ProjectConfig,
-    obj: _I,
-    parent: Optional[_I],
-    diagnostics: List[Diagnostic],
-) -> _I:
+def inherit(obj: _I, parent: Optional[_I], diagnostics: List[Diagnostic],) -> _I:
     """Implement inheritance on a pair of Giza nodes: parent's fields overwrite any
-       unset fields in obj, and substitution variables are replaced if obj is not
-       a base node. If parent is None, then only substitution occurs."""
+       unset fields in obj."""
     logger.debug("Inheriting %s", obj.ref)
     changes: Dict[str, object] = {}
 
@@ -157,27 +160,14 @@ def inherit(
             if src not in replacement:
                 replacement[src] = dest
 
-    # Merge in project-wide constants into the giza substitutions system
-    new_replacement = {k: str(v) for k, v in project_config.constants.items()}
-    new_replacement.update(replacement)
-    replacement = new_replacement
-
     # Inherit root-level keys
-    for field_name in (
-        field.name
-        for field in dataclasses.fields(obj)
-        if field.name not in {"replacement", "ref", "source", "inherit"}
-    ):
+    for field_name in obj.keys():
         value = getattr(obj, field_name)
         if parent is not None and value is None:
             new_value = getattr(parent, field_name)
             if new_value is not None:
                 changes[field_name] = new_value
                 value = new_value
-
-        # Avoid substituting if this is a base node.
-        if value is not None and obj.ref and not obj.ref.startswith("_"):
-            changes[field_name] = substitute(value, replacement, diagnostics)
 
     return dataclasses.replace(obj, **changes) if changes else obj
 
@@ -237,6 +227,7 @@ class GizaCategory(Generic[_I]):
         diagnostics: List[Diagnostic],
         refs_set: Optional[Set[str]],
         cycle_set: Set[Tuple[str, str]],
+        do_substitutions: bool = True,
     ) -> _I:
         """Resolve inheritance and substitution in a single Giza node."""
         parent_identifier = obj.parent_information
@@ -284,12 +275,14 @@ class GizaCategory(Generic[_I]):
                 )
                 return obj
             cycle_set.add(key)
-            parent = self.reify(parent, diagnostics, None, cycle_set)
+            parent = self.reify(
+                parent, diagnostics, None, cycle_set, do_substitutions=False
+            )
 
         if obj.ref is None:
             obj.ref = ""
 
-        obj = inherit(self.project_config, obj, parent, diagnostics)
+        obj = inherit(obj, parent, diagnostics)
 
         # Check if ref already exists within the same file
         if refs_set is not None:
@@ -298,6 +291,26 @@ class GizaCategory(Generic[_I]):
                 diagnostics.append(RefAlreadyExists(msg, obj.line))
             elif obj.ref is not None:
                 refs_set.add(obj.ref)
+
+        # Avoid substituting if this is a base node.
+        if do_substitutions and obj.ref and not obj.ref.startswith("_"):
+            changes = {}
+            replacements = obj.replacement or {}
+
+            # Merge in project-wide constants into the giza substitutions system
+            new_replacement = {
+                k: str(v) for k, v in self.project_config.constants.items()
+            }
+            new_replacement.update(replacements)
+            replacements = new_replacement
+
+            for field_name in obj.keys():
+                value = getattr(obj, field_name)
+                if value is not None:
+                    changes[field_name] = substitute(value, replacements, diagnostics)
+
+            if changes:
+                obj = dataclasses.replace(obj, **changes)
 
         return obj
 

@@ -76,15 +76,22 @@ def test_inheritance() -> None:
     child = TestNode(
         ref="child",
         replacement={"bar": "baz", "old": "new"},
-        source=nodes.Inherit("self.yaml", "parent"),
+        source=nodes.Inherit("parent.yaml", "_parent"),
         inherit=None,
         content=None,
     )
-    parent = nodes.inherit(project_config, parent, None, diagnostics)
-    child = nodes.inherit(project_config, child, parent, diagnostics)
 
-    assert child.replacement == {"foo": "bar", "bar": "baz", "old": "new"}
-    assert child.content == "baz"
+    category: nodes.GizaCategory[TestNode] = nodes.GizaCategory(project_config)
+    category.add(Path("parent.yaml"), "", [parent])
+    category.add(Path("child.yaml"), "", [child])
+
+    reified_diagnostics: List[Diagnostic] = []
+    reified_child = category.reify(child, reified_diagnostics, set(), set())
+    assert not reified_diagnostics
+
+    assert reified_child.replacement == {"foo": "bar", "bar": "baz", "old": "new"}
+    # Inherit
+    assert reified_child.content == "baz"
     assert not diagnostics
 
 
