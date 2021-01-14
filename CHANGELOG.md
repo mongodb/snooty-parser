@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.8.5] - 2021-01-14
+
 ### Added
 
 - Support for the `~` tag on roles to cut off all but the last `.`-delimited segment (DOP-1806).
