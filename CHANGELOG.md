@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Allow "reusable" references (DOP-1857).
+
+### Changed
+
+- `rstspec.toml` updates.
+
+## [v0.8.5] - 2021-01-14
+
+### Added
+
+- Support for the `~` tag on roles to cut off all but the last `.`-delimited segment (DOP-1806).
+
+### Fixed
+
+- Fix altering giza substitutions in inheriting nodes (DOP-1875).
+
 ## [v0.8.4] - 2021-01-06
 
 ### Fixed
