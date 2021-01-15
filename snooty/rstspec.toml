@@ -1178,7 +1178,7 @@ type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-
 
 [role.java-core-api]
 help = """Link to the core Java driver's API reference."""
-type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-core//%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-core/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
