@@ -1166,7 +1166,7 @@ type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/
 
 [role.java-docs]
 help = """Link to the Java driver's documentation."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/4.2/%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
