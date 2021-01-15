@@ -1166,19 +1166,23 @@ type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/
 
 [role.java-docs]
 help = """Link to the Java driver's documentation."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/4.1/%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
-type = {link = "https://mongodb.github.io/mongo-java-driver/4.1/driver-reactive/%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/driver-reactive/%s"}
 
 [role.java-async-api]
 help = """Link to the async Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/4.1/apidocs/mongodb-driver-reactivestreams/%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-reactivestreams/%s"}
+
+[role.java-core-api]
+help = """Link to the core Java driver's API reference."""
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-core/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
-type = {link = "http://mongodb.github.io/mongo-java-driver/4.1/apidocs/mongodb-driver-sync/%s"}
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-sync/%s"}
 
 [role.go-api]
 help = """Link to the Go driver's API reference."""
@@ -1626,6 +1630,7 @@ drivers = [
   {id = "csharp", title = "C#"},
   {id = "perl", title = "Perl"},
   {id = "ruby", title = "Ruby"},
+  {id = "rust", title = "Rust"},
   {id = "scala", title = "Scala"},
   {id = "go", title = "Go"},
   {id = "swift-sync", title = "Swift (Sync)"},
