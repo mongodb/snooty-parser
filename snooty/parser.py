@@ -148,7 +148,10 @@ class JSONVisitor:
             if isinstance(top, n.Root):
                 for field in node.children:
                     key = field.children[0].astext()
-                    value = field.children[1].astext()
+                    value: Union[str, bool] = field.children[1].astext()
+                    # Correctly handle flags (e.g. :noprevnext:)
+                    if value == "":
+                        value = True
                     top.options[key] = value
                 raise docutils.nodes.SkipNode()
 

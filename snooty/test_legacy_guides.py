@@ -21,7 +21,7 @@ def test_legacy_guides() -> None:
     def make_correct(fileid: FileId) -> str:
         return "".join(
             (
-                f'<root fileid="{fileid.as_posix()}" guide="">',
+                f'<root fileid="{fileid.as_posix()}" guide="True">',
                 '<section><heading id="sample-app"><text>Sample App</text></heading>',
                 '<directive name="author"><text>MongoDB</text></directive>',
                 '<directive name="category"><text>Getting Started</text></directive>',
