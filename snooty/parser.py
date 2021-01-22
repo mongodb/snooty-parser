@@ -1,7 +1,11 @@
 import collections
 import errno
 import getpass
+<<<<<<< HEAD
 import io
+=======
+import json
+>>>>>>> DOP-1896: Update OpenAPI component to allow parsing with Swagger
 import logging
 import multiprocessing
 import os
@@ -32,6 +36,7 @@ import docutils.utils
 import networkx
 import watchdog.events
 from typing_extensions import Protocol
+from yaml import safe_load
 
 from . import gizaparser, n, rstparser, specparser, util
 from .builders import man
@@ -623,29 +628,39 @@ class JSONVisitor:
             openapi_fileid, filepath = util.reroot_path(
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
+            swagger_parse = True if "swagger-parse" in options else False
 
             try:
-                with open(filepath) as f:
-                    openapi = OpenAPI.load(f)
+                # swagger-parse leaves parsing to the Swagger React library in the frontend
+                if swagger_parse:
+                    with open(filepath) as f:
+                        spec = json.dumps(safe_load(f))
 
-                def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                    # Create dummy page in order to use EmbeddedRstParser
-                    page = Page.create(
-                        filepath, None, "", n.Root((-1,), [], openapi_fileid, {})
-                    )
-                    diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-                    return (
-                        page,
-                        EmbeddedRstParser(
-                            self.project_config,
+                        span = (line,)
+                        openapi_spec = n.OpenAPISpec(span, spec)
+                        doc.children.append(openapi_spec)
+                else:
+                    with open(filepath) as f:
+                        openapi = OpenAPI.load(f)
+
+                    def create_page() -> Tuple[Page, EmbeddedRstParser]:
+                        # Create dummy page in order to use EmbeddedRstParser
+                        page = Page.create(
+                            filepath, None, "", n.Root((-1,), [], openapi_fileid, {})
+                        )
+                        diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+                        return (
                             page,
-                            diagnostics.setdefault(filepath, []),
-                        ),
-                    )
+                            EmbeddedRstParser(
+                                self.project_config,
+                                page,
+                                diagnostics.setdefault(filepath, []),
+                            ),
+                        )
 
-                openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
-                self.diagnostics.extend(diagnostics)
-                doc.children.extend(openapi_ast)
+                    openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
+                    self.diagnostics.extend(diagnostics)
+                    doc.children.extend(openapi_ast)
 
             except OSError as err:
                 self.diagnostics.append(
