@@ -1,6 +1,6 @@
 import enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from . import n
 from .n import SerializableType
@@ -495,6 +495,23 @@ class RemovedLiteralBlockSyntax(Diagnostic):
     ) -> None:
         super().__init__(
             "Literal block syntax is unsupported; use a code-block directive instead",
+            start,
+            end,
+        )
+
+
+class UnsupportedFormat(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        actual: str,
+        expected: Sequence[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Unsupported file format: {actual}. Must be one of {','.join(expected)}",
             start,
             end,
         )
