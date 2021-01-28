@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.0] - 2021-01-28
+
 ### Added
 
 - Allow "reusable" references (DOP-1857).
