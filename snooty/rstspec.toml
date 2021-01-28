@@ -624,7 +624,7 @@ example = """.. mongo-web-shell::
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
-options.swagger-parse = "flag"
+options.snooty-parse = "flag"
 argument_type = ["path", "uri"]
 
 [directive."mongodb:operation"]

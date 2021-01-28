@@ -450,10 +450,3 @@ class Transition(Node):
 class Table(Parent[Node]):
     __slots__ = ()
     type = "table"
-
-
-@dataclass
-class OpenAPISpec(Node):
-    __slots__ = "value"
-    type = "openapi-spec"
-    value: str
