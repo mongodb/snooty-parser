@@ -628,18 +628,10 @@ class JSONVisitor:
             openapi_fileid, filepath = util.reroot_path(
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
-            swagger_parse = True if "swagger-parse" in options else False
+            snooty_parse = "snooty-parse" in options
 
             try:
-                # swagger-parse leaves parsing to the Swagger React library in the frontend
-                if swagger_parse:
-                    with open(filepath) as f:
-                        spec = json.dumps(safe_load(f))
-
-                        span = (line,)
-                        openapi_spec = n.OpenAPISpec(span, spec)
-                        doc.children.append(openapi_spec)
-                else:
+                if snooty_parse:
                     with open(filepath) as f:
                         openapi = OpenAPI.load(f)
 
@@ -661,6 +653,13 @@ class JSONVisitor:
                     openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
                     self.diagnostics.extend(diagnostics)
                     doc.children.extend(openapi_ast)
+
+                # If snooty-parse is not used as a flag, Swagger will be responsible for parsing on the frontend.
+                else:
+                    with open(filepath) as f:
+                        spec = json.dumps(safe_load(f))
+                        spec_node = n.Text((line,), spec)
+                        doc.children.append(spec_node)
 
             except OSError as err:
                 self.diagnostics.append(
