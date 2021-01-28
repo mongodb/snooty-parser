@@ -902,13 +902,15 @@ class Postprocessor:
 
                     toctree_node = {
                         "title": title,
-                        "slug": slug,
+                        "slug": "/" if slug == "index" else slug,
                         "children": [],
                         "options": {"drawer": slug not in self.toc_landing_pages},
                     }
 
-                    new_ast = self.pages[slug_fileid].ast
-                    self.find_toctree_nodes(slug_fileid, new_ast, toctree_node)
+                    # Don't recurse on the index page
+                    if entry.slug != "/index":
+                        new_ast = self.pages[slug_fileid].ast
+                        self.find_toctree_nodes(slug_fileid, new_ast, toctree_node)
 
                 if toctree_node:
                     node["children"].append(toctree_node)
