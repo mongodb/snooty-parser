@@ -389,14 +389,14 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs-two.txt" selectors="{'drivers': {'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}], 'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}]}}">
+<root fileid="tabs-two.txt" selectors="{'drivers': {'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}], 'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="nodejs"><text>Node.js</text>
-<paragraph><text>Node.js</text></paragraph>
-</directive>
 <directive name="tab" tabid="c"><text>C</text>
 <paragraph><text>C</text></paragraph>
+</directive>
+<directive name="tab" tabid="nodejs"><text>Node.js</text>
+<paragraph><text>Node.js</text></paragraph>
 </directive>
 </directive>
 <directive name="tabs" hidden="True" tabset="drivers">
@@ -567,14 +567,14 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs-six.txt" selectors="{'drivers': {'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}], 'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}]}}">
+<root fileid="tabs-six.txt" selectors="{'drivers': {'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" tabset="drivers">
-<directive name="tab" tabid="python"><text>Python</text>
-<paragraph><text>Python tab</text></paragraph>
-</directive>
 <directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
 <paragraph><text>Java (sync)</text></paragraph>
+</directive>
+<directive name="tab" tabid="python"><text>Python</text>
+<paragraph><text>Python tab</text></paragraph>
 </directive>
 </directive>
 <directive name="tabs-selector"><text>drivers</text></directive>
