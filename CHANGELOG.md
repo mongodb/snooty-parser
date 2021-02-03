@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.2] - 2021-02-03
+
 ### Fixed
 
 - Tarball bundles now contain members with 644 permissions.
