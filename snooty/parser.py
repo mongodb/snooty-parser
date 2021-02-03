@@ -95,7 +95,7 @@ def bundle(
                 tar_info = tarfile.TarInfo(name=member_name)
                 tar_info.size = len(member_data)
                 tar_info.mtime = int(current_time)
-                tar_info.mode = 0x644
+                tar_info.mode = 0o644
                 tf.addfile(tar_info, member_file)
 
         return output_file.getvalue()
