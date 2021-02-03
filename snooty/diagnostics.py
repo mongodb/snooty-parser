@@ -515,3 +515,17 @@ class UnsupportedFormat(Diagnostic):
             start,
             end,
         )
+
+
+class FetchError(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        message: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Failed to download file: {message}", start, end,
+        )

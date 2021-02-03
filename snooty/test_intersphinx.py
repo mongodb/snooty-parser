@@ -4,11 +4,13 @@ from pathlib import Path
 from pytest import raises
 
 from . import n
+from .diagnostics import FetchError
 from .intersphinx import Inventory, TargetDefinition, fetch_inventory
 from .parser import Project
 from .target_database import TargetDatabase
 from .test_project import Backend
 from .types import FileId
+from .util_test import make_test
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")
 INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"
@@ -155,3 +157,20 @@ def test_targets() -> None:
             display_name="mongosqld --maxVarcharLength",
         )
     }
+
+
+def test_fetch_failure() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_fetch_failure"
+intersphinx = ["booglygoogly not a real URL"]
+""",
+            Path("source/index.txt"): "",
+        }
+    ) as result:
+        assert [type(diag) for diag in result.diagnostics[FileId("snooty.toml")]] == [
+            FetchError
+        ]

@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
+import requests.exceptions
 from typing_extensions import Protocol
 
 from . import intersphinx, n, specparser
@@ -116,15 +117,21 @@ class TargetDatabase:
                 )
             )
 
-    def reset(self, config: "ProjectConfig") -> None:
+    def reset(self, config: "ProjectConfig") -> Sequence[Tuple[str, str]]:
         """Reset this database to a "blank" state with intersphinx inventories defined by
            the given ProjectConfig instance."""
         self.intersphinx_inventories.clear()
         self.local_definitions.clear()
 
+        failed_requests = []
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
         for url in config.intersphinx:
-            self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+            try:
+                self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+            except requests.exceptions.RequestException as err:
+                failed_requests.append((url, str(err)))
+
+        return failed_requests
 
     def generate_inventory(self, base_url: str) -> intersphinx.Inventory:
         targets: Dict[str, intersphinx.TargetDefinition] = {}
@@ -158,12 +165,14 @@ class TargetDatabase:
         return intersphinx.Inventory(base_url, targets)
 
     @classmethod
-    def load(cls, config: "ProjectConfig") -> "TargetDatabase":
+    def load(
+        cls, config: "ProjectConfig"
+    ) -> Tuple["TargetDatabase", Sequence[Tuple[str, str]]]:
         """Create a TargetDatabase with the intersphinx inventories specified by the given
            ProjectConfig."""
         db = cls()
-        db.reset(config)
-        return db
+        failed_urls = db.reset(config)
+        return db, failed_urls
 
 
 class ProjectInterface(Protocol):
