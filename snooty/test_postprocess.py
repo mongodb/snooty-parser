@@ -68,6 +68,37 @@ The :parameter:`title` stuff works
         )
 
 
+# Ensure that "index.txt" exclusively can add itself to the toctree
+def test_toctree_self_add() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+
+    /page1
+    Overview </index>
+    /page2
+            """,
+            Path("source/page1.txt"): "",
+            Path("source/page2.txt"): "",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+    <directive name="toctree" entries="[{'slug': '/page1'}, {'title': 'Overview', 'slug': '/index'}, {'slug': '/page2'}]"></directive>
+</root>
+            """,
+        )
+
+
 def test_case_sensitive_labels() -> None:
     with make_test(
         {
