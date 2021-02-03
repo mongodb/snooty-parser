@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Permit tarballing of manpages (DOP-1816).
+
+### Changed
+
+- Reorder drivers tabs (DOP-1958).
+
+### Removed
+
+- The `:xml:` role, which was never implemented, is now removed from rstspec.toml.
+
 ## [v0.9.0] - 2021-01-28
 
 ### Added
