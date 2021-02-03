@@ -1,5 +1,6 @@
 import io
 import re
+import stat
 import subprocess
 import tarfile
 from pathlib import Path
@@ -259,7 +260,11 @@ title = "This Manpage Doesn't Exist"
         with tarfile.open(None, "r:*", tarball) as tf:
             names = tf.getnames()
             assert sorted(names) == sorted(["mongo.1"])
-            assert tf.getmember("mongo.1").size == len(troff)
+            member = tf.getmember("mongo.1")
+            assert member.size == len(troff)
+            assert (
+                member.mode == stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+            )
 
 
 def test_bundling_error() -> None:
