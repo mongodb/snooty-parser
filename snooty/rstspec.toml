@@ -1017,10 +1017,6 @@ type = "explicit_title"
 help = """Show a FontAwesome 4 icon."""
 type = "explicit_title"
 
-[role.xml]
-help = """Use XML to create reStructuredText nodes."""
-type = "text"
-
 [role.rfc]
 help = """Reference an IETF RFC."""
 type = {link = "https://tools.ietf.org/html/%s"}
