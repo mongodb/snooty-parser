@@ -174,6 +174,7 @@ def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
             )
 
     res = requests.get(url, headers=request_headers)
+
     res.raise_for_status()
     if res.status_code == 304:
         return Inventory.parse(base_url, inventory_path.read_bytes())
