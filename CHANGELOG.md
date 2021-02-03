@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.1] - 2021-02-03
+
 ### Added
 
 - Permit tarballing of manpages (DOP-1816).
