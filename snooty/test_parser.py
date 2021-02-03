@@ -123,13 +123,13 @@ def test_tabs() -> None:
         """
 <root fileid="test_tabs.rst">
     <directive name="tabs" tabset="drivers">
-        <directive name="tab" tabid="python">
-            <text>Python</text>
-            <paragraph><text>Python!</text></paragraph>
-        </directive>
         <directive name="tab" tabid="php">
             <text>PHP</text>
             <paragraph><text>PHP!</text></paragraph>
+        </directive>
+        <directive name="tab" tabid="python">
+            <text>Python</text>
+            <paragraph><text>Python!</text></paragraph>
         </directive>
     </directive>
 </root>
@@ -197,12 +197,12 @@ def test_tabs_reorder() -> None:
 .. tabs-drivers::
 
    .. tab::
-      :tabid: nodejs
+      :tabid: python
 
       This tab should be second
 
    .. tab::
-      :tabid: python
+      :tabid: nodejs
 
       This tab should be first
 """,
@@ -214,10 +214,10 @@ def test_tabs_reorder() -> None:
         r"""
 <root fileid="test.rst">
 <directive name="tabs" tabset="drivers">
-<directive name="tab" tabid="python"><text>Python</text>
+<directive name="tab" tabid="nodejs"><text>Node.js</text>
 <paragraph><text>This tab should be first</text></paragraph>
 </directive>
-<directive name="tab" tabid="nodejs"><text>Node.js</text>
+<directive name="tab" tabid="python"><text>Python</text>
 <paragraph><text>This tab should be second</text></paragraph>
 </directive>
 </directive>

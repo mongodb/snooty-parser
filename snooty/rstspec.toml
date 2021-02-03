@@ -1017,10 +1017,6 @@ type = "explicit_title"
 help = """Show a FontAwesome 4 icon."""
 type = "explicit_title"
 
-[role.xml]
-help = """Use XML to create reStructuredText nodes."""
-type = "text"
-
 [role.rfc]
 help = """Reference an IETF RFC."""
 type = {link = "https://tools.ietf.org/html/%s"}
@@ -1619,22 +1615,22 @@ platforms = [
 drivers = [
   {id = "shell", title = "Mongo Shell"},
   {id = "compass", title = "Compass"},
-  {id = "python", title = "Python"},
-  {id = "java-sync", title = "Java (Sync)"},
-  {id = "nodejs", title = "Node.js"},
-  {id = "php", title = "PHP"},
-  {id = "motor", title = "Motor"},
-  {id = "java-async", title = "Java (Async)"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
   {id = "csharp", title = "C#"},
+  {id = "go", title = "Go"},
+  {id = "java-async", title = "Java (Async)"},
+  {id = "java-sync", title = "Java (Sync)"},
+  {id = "motor", title = "Motor"},
+  {id = "nodejs", title = "Node.js"},
   {id = "perl", title = "Perl"},
+  {id = "php", title = "PHP"},
+  {id = "python", title = "Python"},
   {id = "ruby", title = "Ruby"},
   {id = "rust", title = "Rust"},
   {id = "scala", title = "Scala"},
-  {id = "go", title = "Go"},
-  {id = "swift-sync", title = "Swift (Sync)"},
   {id = "swift-async", title = "Swift (Async)"},
+  {id = "swift-sync", title = "Swift (Sync)"},
 ]
 auth = [
   {id = "uidpwd", title = "Username and Password"},

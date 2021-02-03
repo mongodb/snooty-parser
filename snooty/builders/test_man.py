@@ -1,49 +1,18 @@
+import io
 import re
+import stat
 import subprocess
+import tarfile
 from pathlib import Path
 from typing import Dict, Union, cast
 
 import pytest
 
-from ..diagnostics import CannotOpenFile
+from ..diagnostics import CannotOpenFile, UnsupportedFormat
 from ..types import FileId
 from ..util_test import make_test
 
-
-def normalize(text: str) -> str:
-    """Remove any non-word characters to make groff output comparable
-       across platforms."""
-    # Strip the strange escape characters that Groff inserts for TTYs
-    text = re.sub(r".\x08", "", text)
-
-    # Strip the header: this varies platform to platform.
-    text = text.split("\n", 1)[1]
-
-    # Remove non-word characters
-    return re.sub(r"[^\w]+", "", text)
-
-
-def test_manpage() -> None:
-    with make_test(
-        {
-            Path(
-                "snooty.toml"
-            ): """
-name = "test_manpage"
-
-[manpages.mongo]
-file = "index.txt"
-section = 1
-title = "The MongoDB Shell"
-
-[manpages.missing]
-file = "missing.txt"
-section = 1
-title = "This Manpage Doesn't Exist"
-""",
-            Path(
-                "source/index.txt"
-            ): """
+PAGE_TEXT = """
 .. _mongo:
 
 =========
@@ -147,35 +116,9 @@ Another definition
    }
 
 Trailing paragraph.
-""",
-        }
-    ) as result:
-        # Ensure that we have an error about the missing manpage
-        assert [type(diag) for diag in result.diagnostics[FileId("snooty.toml")]] == [
-            CannotOpenFile
-        ]
+"""
 
-        static_files = cast(
-            Dict[str, Union[str, bytes]], result.metadata["static_files"]
-        )
-
-        troff = static_files["mongo.1"]
-
-        assert isinstance(troff, str)
-
-        # Empty lines are discouraged in troff source
-        assert "\n\n" not in troff
-
-        try:
-            # Use GNU Roff to turn our generated troff source into text we can compare.
-            text = subprocess.check_output(
-                ["groff", "-T", "utf8", "-t", "-man"], encoding="utf-8", input=troff,
-            )
-        except FileNotFoundError:
-            pytest.xfail("groff is not installed")
-
-        assert normalize(text).strip() == normalize(
-            """mongo(1)                    General Commands Manual                   mongo(1)
+MANPAGE_TEXT = """mongo(1)                    General Commands Manual                   mongo(1)
 
 
 
@@ -246,4 +189,102 @@ OPTIONS
 
 
 mongo(1)"""
+
+
+def normalize(text: str) -> str:
+    """Remove any non-word characters to make groff output comparable
+       across platforms."""
+    # Strip the strange escape characters that Groff inserts for TTYs
+    text = re.sub(r".\x08", "", text)
+
+    # Strip the header: this varies platform to platform.
+    text = text.split("\n", 1)[1]
+
+    # Remove non-word characters
+    return re.sub(r"[^\w]+", "", text)
+
+
+def test_manpage() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_manpage"
+
+[bundle]
+manpages = "manpages.tar.gz"
+
+[manpages.mongo]
+file = "index.txt"
+section = 1
+title = "The MongoDB Shell"
+
+[manpages.missing]
+file = "missing.txt"
+section = 1
+title = "This Manpage Doesn't Exist"
+""",
+            Path("source/index.txt"): PAGE_TEXT,
+        }
+    ) as result:
+        # Ensure that we have an error about the missing manpage
+        assert [type(diag) for diag in result.diagnostics[FileId("snooty.toml")]] == [
+            CannotOpenFile
+        ]
+
+        static_files = cast(
+            Dict[str, Union[str, bytes]], result.metadata["static_files"]
         )
+
+        troff = static_files["mongo.1"]
+
+        assert isinstance(troff, str)
+
+        # Empty lines are discouraged in troff source
+        assert "\n\n" not in troff
+
+        try:
+            # Use GNU Roff to turn our generated troff source into text we can compare.
+            text = subprocess.check_output(
+                ["groff", "-T", "utf8", "-t", "-man"], encoding="utf-8", input=troff,
+            )
+        except FileNotFoundError:
+            pytest.xfail("groff is not installed")
+
+        assert normalize(text).strip() == normalize(MANPAGE_TEXT)
+
+        tarball_data = static_files["manpages.tar.gz"]
+        assert isinstance(tarball_data, bytes)
+        tarball = io.BytesIO(tarball_data)
+        with tarfile.open(None, "r:*", tarball) as tf:
+            names = tf.getnames()
+            assert sorted(names) == sorted(["mongo.1"])
+            member = tf.getmember("mongo.1")
+            assert member.size == len(troff)
+            assert (
+                member.mode == stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+            )
+
+
+def test_bundling_error() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_manpage"
+
+[bundle]
+manpages = "manpages.goofy"
+
+[manpages.mongo]
+file = "index.txt"
+section = 1
+title = "The MongoDB Shell"
+""",
+            Path("source/index.txt"): PAGE_TEXT,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("snooty.toml")]
+        assert UnsupportedFormat in [type(diag) for diag in diagnostics]

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.2] - 2021-02-03
+
+### Fixed
+
+- Tarball bundles now contain members with 644 permissions.
+
+## [v0.9.1] - 2021-02-03
+
+### Added
+
+- Permit tarballing of manpages (DOP-1816).
+
+### Changed
+
+- Reorder drivers tabs (DOP-1958).
+
+### Removed
+
+- The `:xml:` role, which was never implemented, is now removed from rstspec.toml.
+
+## [v0.9.0] - 2021-01-28
+
+### Added
+
+- Allow "reusable" references (DOP-1857).
+
+### Changed
+
+- `rstspec.toml` updates.
+
+## [v0.8.5] - 2021-01-14
+
+### Added
+
+- Support for the `~` tag on roles to cut off all but the last `.`-delimited segment (DOP-1806).
+
+### Fixed
+
+- Fix altering giza substitutions in inheriting nodes (DOP-1875).
+
 ## [v0.8.4] - 2021-01-06
 
 ### Fixed
