@@ -1,11 +1,8 @@
 import collections
 import errno
 import getpass
-<<<<<<< HEAD
 import io
-=======
 import json
->>>>>>> DOP-1896: Update OpenAPI component to allow parsing with Swagger
 import logging
 import multiprocessing
 import os
@@ -622,51 +619,66 @@ class JSONVisitor:
                     self.validate_list_table(bullets, expected_num_columns)
 
         elif name == "openapi":
-            if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
-                return doc
+            # Parsing should be done by the OpenAPI renderer on the frontend by default
+            parse_method = options.get("parse-method", "filepath")
 
-            openapi_fileid, filepath = util.reroot_path(
-                FileId(argument_text), self.docpath, self.project_config.source_path
-            )
-            snooty_parse = "snooty-parse" in options
+            if parse_method == "url":
+                url_argument = None
+                try:
+                    url_argument = argument[0].children[0].value
+                except:
+                    pass
+                if url_argument is None:
+                    self.diagnostics.append(InvalidURL(line))
+                    return doc
 
-            try:
-                if snooty_parse:
-                    with open(filepath) as f:
-                        openapi = OpenAPI.load(f)
+            else:
+                if argument_text is None:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
 
-                    def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                        # Create dummy page in order to use EmbeddedRstParser
-                        page = Page.create(
-                            filepath, None, "", n.Root((-1,), [], openapi_fileid, {})
-                        )
-                        diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-                        return (
-                            page,
-                            EmbeddedRstParser(
-                                self.project_config,
-                                page,
-                                diagnostics.setdefault(filepath, []),
-                            ),
-                        )
-
-                    openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
-                    self.diagnostics.extend(diagnostics)
-                    doc.children.extend(openapi_ast)
-
-                # If snooty-parse is not used as a flag, Swagger will be responsible for parsing on the frontend.
-                else:
-                    with open(filepath) as f:
-                        spec = json.dumps(safe_load(f))
-                        spec_node = n.Text((line,), spec)
-                        doc.children.append(spec_node)
-
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
+                openapi_fileid, filepath = util.reroot_path(
+                    FileId(argument_text), self.docpath, self.project_config.source_path
                 )
-                return doc
+
+                try:
+                    if parse_method == "snooty":
+                        with open(filepath) as f:
+                            openapi = OpenAPI.load(f)
+
+                        def create_page() -> Tuple[Page, EmbeddedRstParser]:
+                            # Create dummy page in order to use EmbeddedRstParser
+                            page = Page.create(
+                                filepath,
+                                None,
+                                "",
+                                n.Root((-1,), [], openapi_fileid, {}),
+                            )
+                            diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+                            return (
+                                page,
+                                EmbeddedRstParser(
+                                    self.project_config,
+                                    page,
+                                    diagnostics.setdefault(filepath, []),
+                                ),
+                            )
+
+                        openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
+                        self.diagnostics.extend(diagnostics)
+                        doc.children.extend(openapi_ast)
+
+                    else:
+                        with open(filepath) as f:
+                            spec = json.dumps(safe_load(f))
+                            spec_node = n.Text((line,), spec)
+                            doc.children.append(spec_node)
+
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(argument_text, err.strerror, line)
+                    )
+                    return doc
 
         elif name == "literalinclude":
             if argument_text is None:
