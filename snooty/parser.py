@@ -42,6 +42,7 @@ from .diagnostics import (
     DocUtilsParseError,
     ExpectedImageArg,
     ExpectedPathArg,
+    FetchError,
     ImageSuggested,
     InvalidField,
     InvalidLiteralInclude,
@@ -1093,12 +1094,18 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
-        self.targets = TargetDatabase.load(self.config)
+        self.targets, failed_requests = TargetDatabase.load(self.config)
+
+        snooty_config_fileid = FileId(self.config.config_path.relative_to(root))
+
+        if failed_requests:
+            backend.on_diagnostics(
+                snooty_config_fileid,
+                [FetchError(message, 0) for _, message in failed_requests],
+            )
 
         if config_diagnostics:
-            backend.on_diagnostics(
-                FileId(self.config.config_path.relative_to(root)), config_diagnostics
-            )
+            backend.on_diagnostics(snooty_config_fileid, config_diagnostics)
 
         self.parser = rstparser.Parser(self.config, JSONVisitor)
         self.backend = backend
