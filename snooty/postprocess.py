@@ -845,13 +845,17 @@ class Postprocessor:
         }
         ast = self.pages[starting_fileid].ast
 
-        self.find_toctree_nodes(starting_fileid, ast, root)
+        self.find_toctree_nodes(starting_fileid, ast, root, {starting_fileid})
 
         self.toctree = root
         return root
 
     def find_toctree_nodes(
-        self, fileid: FileId, ast: n.Node, node: Dict[str, Any]
+        self,
+        fileid: FileId,
+        ast: n.Node,
+        node: Dict[str, Any],
+        visited_file_ids: Set[FileId] = set(),
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
 
@@ -908,16 +912,21 @@ class Postprocessor:
                     }
 
                     # Don't recurse on the index page
-                    if entry.slug != "/index":
+                    if slug_fileid not in visited_file_ids:
                         new_ast = self.pages[slug_fileid].ast
-                        self.find_toctree_nodes(slug_fileid, new_ast, toctree_node)
+                        self.find_toctree_nodes(
+                            slug_fileid,
+                            new_ast,
+                            toctree_node,
+                            visited_file_ids | {slug_fileid},
+                        )
 
                 if toctree_node:
                     node["children"].append(toctree_node)
 
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
-            self.find_toctree_nodes(fileid, child_ast, node)
+            self.find_toctree_nodes(fileid, child_ast, node, visited_file_ids)
 
     def breadcrumbs(self) -> Dict[str, List[str]]:
         """Generate breadcrumbs for each page represented in the toctree"""
