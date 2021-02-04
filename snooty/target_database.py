@@ -119,7 +119,7 @@ class TargetDatabase:
 
     def reset(self, config: "ProjectConfig") -> Sequence[Tuple[str, str]]:
         """Reset this database to a "blank" state with intersphinx inventories defined by
-           the given ProjectConfig instance."""
+        the given ProjectConfig instance."""
         self.intersphinx_inventories.clear()
         self.local_definitions.clear()
 
@@ -169,7 +169,7 @@ class TargetDatabase:
         cls, config: "ProjectConfig"
     ) -> Tuple["TargetDatabase", Sequence[Tuple[str, str]]]:
         """Create a TargetDatabase with the intersphinx inventories specified by the given
-           ProjectConfig."""
+        ProjectConfig."""
         db = cls()
         failed_urls = db.reset(config)
         return db, failed_urls

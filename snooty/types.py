@@ -38,7 +38,7 @@ class EmbeddedRstParser(Protocol):
 
 def normalize_target(target: str) -> str:
     """Normalize targets to allow easy matching against the target
-       database: normalize whitespace."""
+    database: normalize whitespace."""
     return re.sub(r"\s+", " ", target)
 
 
@@ -70,7 +70,7 @@ class StaticAsset:
 
     def can_upload(self) -> bool:
         """Return True iff the file exists and it's of a file type which should be uploaded
-           (e.g. an image)."""
+        (e.g. an image)."""
         try:
             self.__load()
         except OSError:
@@ -200,7 +200,7 @@ class ProjectConfig:
 
         def handle_match(match: Match[str]) -> str:
             """Replace a given placeholder match with a value from the project
-               configuration. Log a warning if it's not defined."""
+            configuration. Log a warning if it's not defined."""
             variable_name = match.group(1)
             try:
                 return str(self.constants[variable_name])

@@ -15,7 +15,7 @@ CHANGELOG_UNRELEASED_PAT = re.compile(
 
 def compare_versions(v1: str, v2: str) -> int:
     """Compare two semver-style version strings, returning -1 if v1 < v2; +1
-       if v1 > v2; or 0 if the two version strings are equal."""
+    if v1 > v2; or 0 if the two version strings are equal."""
     parts1 = v1.split(".")
     parts2 = v2.split(".")
 
@@ -39,7 +39,7 @@ def compare_versions(v1: str, v2: str) -> int:
 
 def release_changelog(version: str, text: str) -> str:
     """Update a ChangeLog string matching the "Keep a Changelog" format so that
-       anything in the [Unreleased] section is added to a new version section."""
+    anything in the [Unreleased] section is added to a new version section."""
     date_string = datetime.datetime.now().strftime("%Y-%m-%d")
 
     def replace(match: Match[str]) -> str:

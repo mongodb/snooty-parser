@@ -30,7 +30,7 @@ from .types import EmbeddedRstParser
 
 class DictLike:
     """Our templating engine accesses properties via indexing. This class
-       mixin creates a __getitem__ wrapper around getattr."""
+    mixin creates a __getitem__ wrapper around getattr."""
 
     def __getitem__(self, key: str) -> object:
         return getattr(self, key)
@@ -279,7 +279,7 @@ def decode_json_pointer(ptr: str) -> str:
 
 def dereference_json_pointer(root: n.SerializableType, ptr: str) -> Dict[str, Any]:
     """Given a dictionary or list, return the element referred to by the
-       given JSON pointer (RFC-6901)."""
+    given JSON pointer (RFC-6901)."""
     cursor = root
     components = ptr.lstrip("#").lstrip("/").split("/")
     for component in components:
@@ -369,11 +369,11 @@ def process_parameters(
     endpoint: Dict[str, Any], operation: Dict[str, Any]
 ) -> Dict[str, str]:
     """Integrate an operation's parameters with the endpoint's shared
-       set of parameters, and return a dictionary with two keys:
-       * path_parameters
-       * query_parameters
-       * header_parameters
-       * cookie_parameters"""
+    set of parameters, and return a dictionary with two keys:
+    * path_parameters
+    * query_parameters
+    * header_parameters
+    * cookie_parameters"""
     all_parameters = endpoint.get("parameters", []) + operation.get("parameters", [])
     path_parameters: List[FieldDescription] = []
     query_parameters: List[FieldDescription] = []
@@ -518,7 +518,7 @@ class OpenAPI:
 
     def get_security_schemas(self, operation: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Return the security schema definitions associated with an
-           operation definition."""
+        operation definition."""
         security_schemas = operation.get("security", None)
 
         if security_schemas is None:

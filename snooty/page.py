@@ -10,8 +10,8 @@ from .types import FileId, StaticAsset
 
 class PendingTask:
     """A thunk which will be executed in the main process after the full tree is
-       constructed. This should primarily be used to execute tasks which may need
-       to mutate state from the main process (e.g. caches or dependency graphs)."""
+    constructed. This should primarily be used to execute tasks which may need
+    to mutate state from the main process (e.g. caches or dependency graphs)."""
 
     def __init__(self, node: n.Node) -> None:
         self.node = node

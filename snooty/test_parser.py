@@ -2231,8 +2231,8 @@ def test_dates() -> None:
 
 def test_problematic() -> None:
     """Test that "<problematic>" nodes by the docutils parser --- typically when a
-       role isn't known --- are excluded from the output AST. We might change this
-       behavior, but for now we should define it."""
+    role isn't known --- are excluded from the output AST. We might change this
+    behavior, but for now we should define it."""
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
@@ -2268,7 +2268,8 @@ def test_deprecated() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     check_ast_testing_string(
-        page.ast, """<root fileid="test.rst"></root>""",
+        page.ast,
+        """<root fileid="test.rst"></root>""",
     )
 
 
@@ -2431,7 +2432,11 @@ def test_malformed_monospace() -> None:
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, InlineJSONVisitor)
 
-    page, diagnostics = parse_rst(parser, path, """`malformed syntax`""",)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """`malformed syntax`""",
+    )
     page.finish(diagnostics)
     assert [
         (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
@@ -2525,7 +2530,12 @@ This is a paragraph.
     assert [
         (type(d), d.did_you_mean() if isinstance(d, MakeCorrectionMixin) else "")
         for d in diagnostics
-    ] == [(UnexpectedIndentation, [".. blockquote::"],)]
+    ] == [
+        (
+            UnexpectedIndentation,
+            [".. blockquote::"],
+        )
+    ]
 
 
 def test_label_matches_heading() -> None:

@@ -53,8 +53,8 @@ class _Field:
 
 class _TypeThunk:
     """Type hints cannot be fully resolved at module runtime due to ForwardRefs. Instead,
-       store the type here, and resolve type hints only when needed. By that time, hopefully all
-       types have been declared."""
+    store the type here, and resolve type hints only when needed. By that time, hopefully all
+    types have been declared."""
 
     __slots__ = ("type", "_fields")
 

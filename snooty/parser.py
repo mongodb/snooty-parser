@@ -1022,8 +1022,8 @@ class ProjectBackend(Protocol):
 
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline
-       is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
-       pages can be accessed."""
+    is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
+    pages can be accessed."""
 
     def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
         self.postprocessor_factory = postprocessor_factory
@@ -1460,9 +1460,9 @@ class _Project:
 
 class Project:
     """A Snooty project, providing high-level operations on a project such as
-       requesting a rebuild, and updating a file based on new contents.
+    requesting a rebuild, and updating a file based on new contents.
 
-       This class's public methods are thread-safe."""
+    This class's public methods are thread-safe."""
 
     __slots__ = ("_project", "_lock", "_filesystem_watcher")
 

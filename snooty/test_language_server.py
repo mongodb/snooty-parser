@@ -198,8 +198,8 @@ def test_text_doc_get_page_ast() -> None:
 
         for i in range(len(test_files)):
             test_file_path = source_path.joinpath(test_files[i])
-            language_server_ast: SerializableType = server.m_text_document__get_page_ast(
-                test_file_path.as_posix()
+            language_server_ast: SerializableType = (
+                server.m_text_document__get_page_ast(test_file_path.as_posix())
             )
             print()
             print()

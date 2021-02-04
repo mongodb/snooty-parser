@@ -72,7 +72,7 @@ def get_deepest(node: n.Node) -> Optional[n.Node]:
 
 def deep_copy_position(source: n.Node, dest: n.Node) -> None:
     """Copy the source position data from one node to another, for the case
-       where the dest node's positional data is irrelevant or comes from another file."""
+    where the dest node's positional data is irrelevant or comes from another file."""
     source_position = source.span
     dest.span = source_position
     if isinstance(dest, n.Parent):
@@ -82,7 +82,7 @@ def deep_copy_position(source: n.Node, dest: n.Node) -> None:
 
 class ProgramOptionHandler:
     """Handle the program & option rstobjects, using the last program target
-       to populate option targets."""
+    to populate option targets."""
 
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.pending_program: Optional[n.Target] = None
@@ -169,9 +169,9 @@ class IncludeHandler:
         end_before_text: Optional[str],
     ) -> Tuple[MutableSequence[n.Node], bool, bool]:
         """Given an AST in the form of nodes, return a subgraph of that AST by removing nodes 'outside' of
-            the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
-            a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
-            or if it succeeds and is not any ancestor of the end-before node."""
+        the bound formed by the nodes containing the start_after_text or end_before_text. In in-order traversal,
+        a node is considered 'outside' the subgraph if it precedes and is not any ancestor of the start-after node,
+        or if it succeeds and is not any ancestor of the end-before node."""
 
         start_index, end_index = 0, len(nodes)
         any_start, any_end = False, False
@@ -424,7 +424,7 @@ class TargetHandler:
 
 class HeadingHandler:
     """Construct a slug-title mapping of all pages in property, and rewrite
-       heading IDs so as to be unique."""
+    heading IDs so as to be unique."""
 
     def __init__(self, targets: TargetDatabase) -> None:
         self.heading_counter: typing.Counter[str] = collections.Counter()
@@ -518,7 +518,10 @@ class Postprocessor:
             [
                 (EventParser.OBJECT_START_EVENT, self.heading_handler),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (EventParser.OBJECT_START_EVENT, option_handler,),
+                (
+                    EventParser.OBJECT_START_EVENT,
+                    option_handler,
+                ),
                 (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
             ],
             [
@@ -698,7 +701,7 @@ class Postprocessor:
         self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]
     ) -> Sequence[TargetDatabase.Result]:
         """Given multiple possible targets we can link to, attempt to narrow down the
-           list to one probably-intended target under a set of narrow circumstances."""
+        list to one probably-intended target under a set of narrow circumstances."""
 
         # If there is a single local candidate, choose that.
         local_candidates: List[TargetDatabase.InternalResult] = [
@@ -1022,7 +1025,10 @@ class DevhubPostprocessor(Postprocessor):
             [
                 (EventParser.OBJECT_START_EVENT, self.heading_handler),
                 (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (EventParser.OBJECT_START_EVENT, option_handler,),
+                (
+                    EventParser.OBJECT_START_EVENT,
+                    option_handler,
+                ),
             ],
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),

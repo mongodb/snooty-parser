@@ -98,7 +98,7 @@ def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
 
 def strip_parameters(target: str) -> str:
     """Remove trailing ALGOL-style parameters from a target name;
-       e.g. foo(bar, baz) -> foo."""
+    e.g. foo(bar, baz) -> foo."""
     match = PAT_PARAMETERS.search(target)
     if not match:
         return target
@@ -157,7 +157,7 @@ class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
 
 class target_identifier(docutils.nodes.Inline, docutils.nodes.TextElement):
     """Docutils node representing the title which should be used for refs to this node's
-       parent target, if no explicit title is given."""
+    parent target, if no explicit title is given."""
 
     pass
 
@@ -222,7 +222,10 @@ def handle_role_null(
         diagnostic = IncorrectMonospaceSyntax(target, lineno)
 
     return (
-        [docutils.nodes.literal(rawtext, text), snooty_diagnostic(diagnostic),],
+        [
+            docutils.nodes.literal(rawtext, text),
+            snooty_diagnostic(diagnostic),
+        ],
         [],
     )
 
@@ -552,7 +555,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
     def add_name(self, node: docutils.nodes.Node) -> None:
         """Docutils by default will, if a "name" option is given to a directive,
-           change the shape of the node. We don't want that and it muddles up higher layers."""
+        change the shape of the node. We don't want that and it muddles up higher layers."""
         pass
 
     @staticmethod
@@ -815,7 +818,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
 
 class DeprecatedVersionDirective(BaseVersionDirective):
     """Variant of BaseVersionDirective for the deprecated directive, which does not
-       require an argument."""
+    require an argument."""
 
     required_arguments = 0
     optional_arguments = 1
@@ -977,7 +980,7 @@ class Registry:
 
     def activate(self) -> None:
         """Unfortunately, the docutils API uses global state for dispatching directives
-           and roles. Bind the docutils dispatchers to this registry."""
+        and roles. Bind the docutils dispatchers to this registry."""
         docutils.parsers.rst.directives.directive = self.lookup_directive
         docutils.parsers.rst.roles.role = self.lookup_role
 
@@ -1042,8 +1045,8 @@ def register_spec_with_docutils(
     spec: specparser.Spec, default_domain: Optional[str]
 ) -> Registry:
     """Register all of the definitions in the spec with docutils, overwriting the previous
-       call to this function. This function should only be called once in the
-       process lifecycle."""
+    call to this function. This function should only be called once in the
+    process lifecycle."""
 
     from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
 

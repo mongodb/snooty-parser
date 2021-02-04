@@ -47,7 +47,7 @@ def substitute_text(
     text: str, replacements: Dict[str, str], diagnostics: List[Diagnostic]
 ) -> str:
     """Apply Giza-style replacements to a string. Report a diagnostic for unknown
-       substitutions, and insert an empty string."""
+    substitutions, and insert an empty string."""
 
     def substitute(match: Match[str]) -> str:
         """Handle a substitution match."""
@@ -146,9 +146,13 @@ class Inheritable(Node):
 _I = TypeVar("_I", bound=Inheritable)
 
 
-def inherit(obj: _I, parent: Optional[_I], diagnostics: List[Diagnostic],) -> _I:
+def inherit(
+    obj: _I,
+    parent: Optional[_I],
+    diagnostics: List[Diagnostic],
+) -> _I:
     """Implement inheritance on a pair of Giza nodes: parent's fields overwrite any
-       unset fields in obj."""
+    unset fields in obj."""
     logger.debug("Inheriting %s", obj.ref)
     changes: Dict[str, object] = {}
 
@@ -186,8 +190,8 @@ class GizaFile(Generic[_I]):
 @dataclass
 class GizaCategory(Generic[_I]):
     """A GizaCategory stores metadata about a "category" of Giza YAML files. For
-       example, "steps", or "apiargs". Each GizaCategory contains all types necessary
-       to transform a given path into Pages."""
+    example, "steps", or "apiargs". Each GizaCategory contains all types necessary
+    to transform a given path into Pages."""
 
     project_config: ProjectConfig
     nodes: Dict[str, GizaFile[_I]] = field(default_factory=dict)
@@ -360,7 +364,7 @@ class GizaCategory(Generic[_I]):
 @dataclass
 class OldHeading(Node):
     """Giza at one point supported manually setting the rSt character to use
-       for a heading. This node specification defines that format.."""
+    for a heading. This node specification defines that format.."""
 
     character: Optional[str]
     text: str

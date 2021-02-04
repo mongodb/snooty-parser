@@ -215,7 +215,7 @@ class Role:
 @dataclass
 class RstObject:
     """Declaration of a reStructuredText object, defining both a Directive
-       as well as a Role that links to that directive."""
+    as well as a Role that links to that directive."""
 
     inherit: Optional[str]
     help: Optional[str]
@@ -308,7 +308,7 @@ class Spec:
         self, option_spec: Union[DirectiveOption, ArgumentType]
     ) -> Callable[[str], object]:
         """Return a validation function for a given argument type. This function will take in a
-           string, and either throw an exception or return an output value."""
+        string, and either throw an exception or return an output value."""
         if isinstance(option_spec, DirectiveOption):
             option_spec = option_spec.type
 
@@ -342,9 +342,9 @@ class Spec:
     def _resolve_inheritance(self) -> None:
         """Spec entries can inherit from other entries; resolve this.
 
-           Not all fields are implicitly inherited: only fields with a default value
-           of None or MissingDict are inherited. This means that, for example content_type
-           is inherited, but as of this writing, deprecated is not."""
+        Not all fields are implicitly inherited: only fields with a default value
+        of None or MissingDict are inherited. This means that, for example content_type
+        is inherited, but as of this writing, deprecated is not."""
         self._resolve_category(self.directive)
         self._resolve_category(self.role)
         self._resolve_category(self.rstobject)

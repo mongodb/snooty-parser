@@ -34,7 +34,7 @@ def troff_escape(value: str) -> str:
 @dataclass
 class ManNode:
     """An intermediate representation node that acts as a middle step
-       between the Snooty AST and a troff document."""
+    between the Snooty AST and a troff document."""
 
     class ElementType(Enum):
         MANPAGE = auto()
@@ -339,7 +339,9 @@ class SnootyToTroffTree:
             ManNode(
                 ManNode.ElementType.PARAGRAPH,
                 names
-                + [ManNode(ManNode.ElementType.INDENT, self.children(node.children)),],
+                + [
+                    ManNode(ManNode.ElementType.INDENT, self.children(node.children)),
+                ],
             )
         ]
 

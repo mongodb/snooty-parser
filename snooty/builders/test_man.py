@@ -193,7 +193,7 @@ mongo(1)"""
 
 def normalize(text: str) -> str:
     """Remove any non-word characters to make groff output comparable
-       across platforms."""
+    across platforms."""
     # Strip the strange escape characters that Groff inserts for TTYs
     text = re.sub(r".\x08", "", text)
 
@@ -247,7 +247,9 @@ title = "This Manpage Doesn't Exist"
         try:
             # Use GNU Roff to turn our generated troff source into text we can compare.
             text = subprocess.check_output(
-                ["groff", "-T", "utf8", "-t", "-man"], encoding="utf-8", input=troff,
+                ["groff", "-T", "utf8", "-t", "-man"],
+                encoding="utf-8",
+                input=troff,
             )
         except FileNotFoundError:
             pytest.xfail("groff is not installed")

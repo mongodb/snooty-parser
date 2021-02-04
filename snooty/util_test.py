@@ -76,7 +76,7 @@ def ast_to_testing_string(ast: Any) -> str:
 
 def assert_etree_equals(e1: ET.Element, goal: ET.Element) -> None:
     """Assert that two XML Elements are the same. If there is a difference in a child,
-       log the difference to stderr."""
+    log the difference to stderr."""
     assert e1.tag == goal.tag
     if e1.text and goal.text:
         assert (e1.text.strip() if e1.text else "") == (

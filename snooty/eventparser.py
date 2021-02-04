@@ -7,8 +7,8 @@ from .types import FileId
 
 class FileIdStack:
     """A stack which tracks file inclusion history, allowing a postprocessor
-       pass to know at any point both the page where processing started, as well
-       as what file is currently being processed."""
+    pass to know at any point both the page where processing started, as well
+    as what file is currently being processed."""
 
     __slots__ = ("_stack",)
 

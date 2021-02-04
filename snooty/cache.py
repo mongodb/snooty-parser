@@ -8,7 +8,7 @@ _T = TypeVar("_T")
 @dataclass
 class Cache(Generic[_T]):
     """A versioned cache that associates a (_T, int) pair with an arbitrary object and
-       an integer version. Whenever the key is re-assigned, the version is incremented."""
+    an integer version. Whenever the key is re-assigned, the version is incremented."""
 
     _cache: Dict[Tuple[_T, int], object] = field(default_factory=dict)
     _keys_of_each_fileid: DefaultDict[_T, Set[int]] = field(

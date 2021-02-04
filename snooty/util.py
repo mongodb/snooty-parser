@@ -45,7 +45,7 @@ def reroot_path(
     filename: PurePosixPath, docpath: PurePath, project_root: Path
 ) -> Tuple[FileId, Path]:
     """Files within a project may refer to other files. Return a canonical path
-       relative to the project root."""
+    relative to the project root."""
     if filename.is_absolute():
         rel_fn = FileId(*filename.parts[1:])
     else:
@@ -55,7 +55,7 @@ def reroot_path(
 
 def get_files(root: PurePath, extensions: Container[str]) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
-       only filenames with the given extensions."""
+    only filenames with the given extensions."""
     for base, dirs, files in os.walk(root):
         for name in files:
             ext = os.path.splitext(name)[1]
@@ -70,7 +70,7 @@ def get_line(node: docutils.nodes.Node) -> int:
 
     def line_of_node(node: docutils.nodes.Node) -> Optional[int]:
         """Sometimes you need node['line']. Sometimes you need node.line.
-           Sometimes you want to just run away and herd yaks."""
+        Sometimes you want to just run away and herd yaks."""
         if isinstance(node, docutils.nodes.Element) and "line" in node:
             return cast(int, node["line"])
 
@@ -136,7 +136,7 @@ class FileWatcher:
     @dataclass
     class AssetWatch:
         """Track files in a directory to watch. This reflects the underlying interface
-           exposed by watchdog."""
+        exposed by watchdog."""
 
         filenames: Counter[str]
         watch_handle: watchdog.observers.api.ObservedWatch
@@ -249,7 +249,7 @@ def split_domain(name: str) -> Tuple[str, str]:
 
 def fast_deep_copy(v: _T) -> _T:
     """Time-efficiently create deep copy of trusted data.
-       This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
+    This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
     return cast(_T, pickle.loads(pickle.dumps(v)))
 
 

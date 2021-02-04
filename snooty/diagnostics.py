@@ -9,7 +9,7 @@ from .n import SerializableType
 class MakeCorrectionMixin:
     def did_you_mean(self) -> List[str]:
         """Suggest one or more possible corrections to the reStructuredText that this
-           diagnostic is about."""
+        diagnostic is about."""
         raise NotImplementedError()
 
 
@@ -466,7 +466,9 @@ class ExpectedTabs(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            "Expected tabs directive when tabs-selector directive in use", start, end,
+            "Expected tabs directive when tabs-selector directive in use",
+            start,
+            end,
         )
 
 
@@ -480,7 +482,9 @@ class DuplicateDirective(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Directive "{name}" should only appear once per page""", start, end,
+            f"""Directive "{name}" should only appear once per page""",
+            start,
+            end,
         )
         self.name = name
 
@@ -527,5 +531,7 @@ class FetchError(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Failed to download file: {message}", start, end,
+            f"Failed to download file: {message}",
+            start,
+            end,
         )
