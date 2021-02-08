@@ -822,6 +822,36 @@ options.icon = ["path", "uri"]
 options.icon-alt = "string"
 options.tag = "string"
 
+
+[directive."landing:steps"]
+help = "Make a set of numbered steps."
+example = '''.. steps::
+${0: Steps content}'''
+content_type = '_landing-block'
+
+[directive."landing:step"]
+help = 'Make a single, numbered step.'
+example = '''.. step::
+${0: Single step’s content}'''
+content_type = '_landing-block'
+
+[directive."landing:kicker"]
+help = 'Make a kicker.'
+example = '''.. kicker:: ${1: string}'''
+argument_type = 'string'
+content_type = '_landing-block'
+
+[directive."landing:button"]
+help = 'Make a button.'
+example = '''.. button:: ${1: string}
+:uri: ${2:/path or url}
+:class: ${3: left-column (Optional)}'''
+argument_type = 'string'
+content_type = '_landing-block'
+options.uri = { type = ['path', 'uri'], required = true }
+options.class = { required = true, type = 'string' }
+
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
