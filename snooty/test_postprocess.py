@@ -68,6 +68,64 @@ The :parameter:`title` stuff works
         )
 
 
+# Ensure that "index.txt" can add itself to the toctree
+def test_toctree_self_add() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+
+    /page1
+    Overview </index>
+    /page2
+            """,
+            Path("source/page1.txt"): "",
+            Path("source/page2.txt"): "",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        assert result.metadata.get("toctree") == {
+            "title": [
+                {
+                    "type": "text",
+                    "position": {"start": {"line": 0}},
+                    "value": "untitled",
+                }
+            ],
+            "slug": "/",
+            "children": [
+                {
+                    "title": None,
+                    "slug": "page1",
+                    "children": [],
+                    "options": {"drawer": True},
+                },
+                {
+                    "title": [
+                        {
+                            "type": "text",
+                            "position": {"start": {"line": 0}},
+                            "value": "Overview",
+                        }
+                    ],
+                    "slug": "/",
+                    "children": [],
+                    "options": {"drawer": True},
+                },
+                {
+                    "title": None,
+                    "slug": "page2",
+                    "children": [],
+                    "options": {"drawer": True},
+                },
+            ],
+        }
+
+
 def test_case_sensitive_labels() -> None:
     with make_test(
         {
