@@ -918,7 +918,7 @@ class Postprocessor:
                             slug_fileid,
                             new_ast,
                             toctree_node,
-                            visited_file_ids | {slug_fileid},
+                            visited_file_ids.union({slug_fileid}),
                         )
 
                 if toctree_node:
