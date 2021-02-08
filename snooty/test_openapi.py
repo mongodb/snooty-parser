@@ -21,7 +21,7 @@ def test_openapi_with_snooty() -> None:
         path,
         """
 .. openapi:: /test_parser/openapi-admin-v3.yaml
-   :snooty-parse:
+   :uses-rst:
 """,
     )
     page.finish(diagnostics)
@@ -29,7 +29,7 @@ def test_openapi_with_snooty() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root fileid="test.rst"><directive domain="mongodb" name="openapi" snooty-parse="True"><text>/test_parser/openapi-admin-v3.yaml</text><section><heading id="base-url"><text>Base URL</text></heading><code lang="none" copyable="True">https://realm.mongodb.com/api/admin/v3.0</code><paragraph><text>The root API resource and starting point for the Realm API.</text></paragraph></section><section><heading id="api-key-apis"><text>API Key APIs</text></heading><directive domain="mongodb" name="operation" hash="get-/groups/{groupid}/apps/{appid}/api_keys" method="get" path="/groups/{groupId}/apps/{appId}/api_keys"><paragraph><text>List </text><ref_role domain="std" name="doc" fileid="['/authentication/api-key', '']"><text>API keys</text></ref_role><text> associated with a Realm app.</text></paragraph><section><heading id="path-parameters"><text>Path Parameters</text></heading><directive name="list-table" header-rows="1" widths="20 15 15 50"><list enumtype="unordered"><listItem><list enumtype="unordered"><listItem><paragraph><text>Name</text></paragraph></listItem><listItem><paragraph><text>Type</text></paragraph></listItem><listItem><paragraph><text>Necessity</text></paragraph></listItem><listItem><paragraph><text>Description</text></paragraph></listItem></list></listItem><listItem><list enumtype="unordered"><listItem><paragraph><literal><text>groupId</text></literal></paragraph></listItem><listItem><paragraph><text>string</text></paragraph></listItem><listItem><paragraph><text>required</text></paragraph></listItem><listItem><paragraph><text>An </text><substitution_reference name="atlas"></substitution_reference><text> </text><reference refuri="https://docs.atlas.mongodb.com/tutorial/manage-projects/"><text>Project/Group ID</text></reference><text>.</text></paragraph></listItem></list></listItem><listItem><list enumtype="unordered"><listItem><paragraph><literal><text>appId</text></literal></paragraph></listItem><listItem><paragraph><text>string</text></paragraph></listItem><listItem><paragraph><text>required</text></paragraph></listItem><listItem><paragraph><text>The ObjectID of your application.</text></paragraph></listItem></list><paragraph><ref_role domain="std" name="label" target="realm-api-project-and-application-ids"></ref_role><text> demonstrates how
+<root fileid="test.rst"><directive domain="mongodb" name="openapi" uses-rst="True"><text>/test_parser/openapi-admin-v3.yaml</text><section><heading id="base-url"><text>Base URL</text></heading><code lang="none" copyable="True">https://realm.mongodb.com/api/admin/v3.0</code><paragraph><text>The root API resource and starting point for the Realm API.</text></paragraph></section><section><heading id="api-key-apis"><text>API Key APIs</text></heading><directive domain="mongodb" name="operation" hash="get-/groups/{groupid}/apps/{appid}/api_keys" method="get" path="/groups/{groupId}/apps/{appId}/api_keys"><paragraph><text>List </text><ref_role domain="std" name="doc" fileid="['/authentication/api-key', '']"><text>API keys</text></ref_role><text> associated with a Realm app.</text></paragraph><section><heading id="path-parameters"><text>Path Parameters</text></heading><directive name="list-table" header-rows="1" widths="20 15 15 50"><list enumtype="unordered"><listItem><list enumtype="unordered"><listItem><paragraph><text>Name</text></paragraph></listItem><listItem><paragraph><text>Type</text></paragraph></listItem><listItem><paragraph><text>Necessity</text></paragraph></listItem><listItem><paragraph><text>Description</text></paragraph></listItem></list></listItem><listItem><list enumtype="unordered"><listItem><paragraph><literal><text>groupId</text></literal></paragraph></listItem><listItem><paragraph><text>string</text></paragraph></listItem><listItem><paragraph><text>required</text></paragraph></listItem><listItem><paragraph><text>An </text><substitution_reference name="atlas"></substitution_reference><text> </text><reference refuri="https://docs.atlas.mongodb.com/tutorial/manage-projects/"><text>Project/Group ID</text></reference><text>.</text></paragraph></listItem></list></listItem><listItem><list enumtype="unordered"><listItem><paragraph><literal><text>appId</text></literal></paragraph></listItem><listItem><paragraph><text>string</text></paragraph></listItem><listItem><paragraph><text>required</text></paragraph></listItem><listItem><paragraph><text>The ObjectID of your application.</text></paragraph></listItem></list><paragraph><ref_role domain="std" name="label" target="realm-api-project-and-application-ids"></ref_role><text> demonstrates how
 to find this value.</text></paragraph></listItem></list></directive></section><section><heading id="header-parameters"><text>Header Parameters</text></heading><directive name="list-table" header-rows="1" widths="20 15 15 50"><list enumtype="unordered"><listItem><list enumtype="unordered"><listItem><paragraph><text>Name</text></paragraph></listItem><listItem><paragraph><text>Type</text></paragraph></listItem><listItem><paragraph><text>Necessity</text></paragraph></listItem><listItem><paragraph><text>Description</text></paragraph></listItem></list></listItem><listItem><list enumtype="unordered"><listItem><paragraph><literal><text>Authorization</text></literal></paragraph></listItem><listItem><paragraph><text>string</text></paragraph></listItem><listItem><paragraph><text>required</text></paragraph></listItem><listItem><paragraph><text>The authorization token provided in the </text><literal><text>access_token</text></literal><text> field of</text></paragraph></listItem></list><paragraph><text>the </text><ref_role domain="std" name="label" target="post-/auth/providers/{provider}/login"></ref_role><text> and
 </text><ref_role domain="std" name="label" target="post-/auth/session"></ref_role><text> API endpoints.</text></paragraph></listItem></list></directive></section><section><heading id="responses"><text>Responses</text></heading><paragraph><literal><text>200</text></literal><text>: The API keys were successfully listed.</text></paragraph><code lang="json" copyable="True">[
   {
@@ -113,7 +113,7 @@ to find this value.</text></paragraph></listItem><listItem><list enumtype="unord
         path,
         """
 .. openapi:: https://www.example.com/
-   :snooty-parse:
+   :uses-rst:
 """,
     )
     page.finish(diagnostics)
@@ -162,7 +162,7 @@ def test_openapi_using_url() -> None:
     check_ast_testing_string(
         page.ast,
         """
-<root fileid="test.rst"><directive domain="mongodb" name="openapi" isUrl="True"><reference refuri="https://www.example.com/">
+<root fileid="test.rst"><directive domain="mongodb" name="openapi"><reference refuri="https://www.example.com/">
 <text>https://www.example.com/</text></reference></directive></root>
         """,
     )
