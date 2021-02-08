@@ -620,19 +620,17 @@ class JSONVisitor:
 
         elif name == "openapi":
             # Parsing should be done by the OpenAPI renderer on the frontend by default
-            snooty_parse = options.get("snooty-parse", False)
+            uses_rst = options.get("uses-rst", False)
 
             if argument_text is None:
                 # Check if argument is a url instead
                 url_argument = None
                 try:
-                    url_argument = argument[0].children[0].value
+                    url_argument = argument[0].refuri
                 except:
                     pass
-                if not (url_argument is None or snooty_parse):
-                    doc.options["isUrl"] = "True"
-                    return doc
-                self.diagnostics.append(ExpectedPathArg(name, line))
+                if url_argument is None or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
@@ -640,7 +638,7 @@ class JSONVisitor:
             )
 
             try:
-                if snooty_parse:
+                if uses_rst:
                     with open(filepath) as f:
                         openapi = OpenAPI.load(f)
 
