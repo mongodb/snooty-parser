@@ -38,27 +38,40 @@ def test_tabs() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test_tabs.rst">
-        <directive name="tabs" hidden="True"><directive name="tab" tabid="bionic"><text>Ubuntu 18.04 (Bionic)</text>
-        <paragraph><text>Bionic content</text></paragraph></directive>
-        <directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>
-        Xenial content</text></paragraph></directive>
-        <directive name="tab" tabid="trusty"><text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
-        Trusty content</text></paragraph></directive></directive>
+
+        <directive name="tabs" hidden="True">
+            <directive name="tab" tabid="bionic">
+                <text>Ubuntu 18.04 (Bionic)</text>
+                <paragraph><text>Bionic content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="xenial">
+                <text>Ubuntu 16.04 (Xenial)</text>
+                <paragraph><text>Xenial content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="trusty">
+                <text>Ubuntu 14.04 (Trusty)</text>
+                <paragraph><text>Trusty content</text></paragraph>
+            </directive>
+        </directive>
 
         <directive name="tabs" tabset="platforms">
-            <directive name="tab" tabid="windows"><text>Windows</text>
+            <directive name="tab" tabid="windows">
+                <text>Windows</text>
                 <paragraph><text>Windows content</text></paragraph>
             </directive>
         </directive>
 
         <directive name="tabs" tabset="platforms">
-            <directive name="tab" tabid="windows"><text>Windows</text>
+            <directive name="tab" tabid="windows">
+                <text>Windows</text>
                 <paragraph><text>Windows Content</text></paragraph>
             </directive>
-            <directive name="tab" tabid="macos"><text>macOS</text>
+            <directive name="tab" tabid="macos">
+                <text>macOS</text>
                 <paragraph><text>macOS Content</text></paragraph>
             </directive>
-            <directive name="tab" tabid="linux"><text>Linux</text>
+            <directive name="tab" tabid="linux">
+                <text>Linux</text>
                 <paragraph><text>Linux Content</text></paragraph>
             </directive>
         </directive>
@@ -66,17 +79,23 @@ def test_tabs() -> None:
         <directive name="tabs" tabset="platforms">
         </directive>
 
-        <directive name="tabs" tabset="platfors">
+        <directive name="tabs" tabset="unknown-tabset">
             <directive name="tab" tabid="linux">
-            <paragraph><text>Linux Content</text></paragraph>
+                <paragraph><text>Linux Content</text></paragraph>
             </directive>
         </directive>
 
-        <directive name="tabs" hidden="True"><directive name="tab" tabid="trusty">
-        <text>Ubuntu 14.04 (Trusty)</text><paragraph><text>
-        Trusty content</text></paragraph></directive>
-        <directive name="tab" tabid="xenial"><text>Ubuntu 16.04 (Xenial)</text><paragraph><text>
-        Xenial content</text></paragraph></directive></directive>
+        <directive name="tabs" hidden="True">
+            <directive name="tab" tabid="trusty">
+                <text>Ubuntu 14.04 (Trusty)</text>
+                <paragraph><text>Trusty content</text></paragraph>
+            </directive>
+            <directive name="tab" tabid="xenial">
+                <text>Ubuntu 16.04 (Xenial)</text>
+                <paragraph><text>Xenial content</text></paragraph>
+            </directive>
+        </directive>
+
         </root>""",
     )
 

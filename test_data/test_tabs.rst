@@ -28,7 +28,7 @@
         content: |
 
            Windows content
-           
+
 .. tabs::
    :tabset: platforms
 
@@ -40,12 +40,12 @@
    .. tab::
       :tabid: linux
 
-      Linux Content 
+      Linux Content
 
    .. tab::
       :tabid: macos
 
-      macOS Content 
+      macOS Content
 
 
 .. tabs::
@@ -57,7 +57,7 @@
       Windows Content
 
 .. tabs::
-   :tabset: platfors
+   :tabset: unknown-tabset
 
    .. tab::
       :tabid: linux

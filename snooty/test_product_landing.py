@@ -25,6 +25,28 @@ def test_queryable_fields(backend: Backend) -> None:
     page_id = FileId("index.txt")
     page = backend.pages[page_id]
 
+    # Assert index has successfully added itself to the toctree
+    assert backend.metadata.get("toctree") == {
+        "title": [
+            {"type": "text", "position": {"start": {"line": 0}}, "value": "Product Title"}
+        ],
+        "slug": "/",
+        "children": [
+            {
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 0}},
+                        "value": "Overview",
+                    }
+                ],
+                "slug": "/",
+                "children": [],
+                "options": {"drawer": True},
+            }
+        ],
+    }
+
     ast = page.ast
     section1 = ast.children[0]
     assert isinstance(section1, n.Section)
@@ -105,12 +127,11 @@ def test_queryable_fields(backend: Backend) -> None:
         """<directive name="tab" tabid="query"><text>Query Your Data</text></directive>""",
     )
 
-    # kicker = section2.children[3]
-    # print("kicker: ", kicker)
-    # check_ast_testing_string(
-    #     kicker,
-    #     """<directive domain="landing" name="kicker"><text>Related Products & Resources</text></directive>""",
-    # )
+    kicker = section2.children[3]
+    check_ast_testing_string(
+        kicker,
+        """<directive domain="landing" name="kicker"><text>Related Products &amp; Resources</text></directive>""",
+    )
 
     # Section 3: Deeper Engagement
     section3 = section1.children[7]
