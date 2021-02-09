@@ -8,10 +8,11 @@ Product Elevator Pitch
 
    Elevator pitch.
 
-.. button::
+.. button:: Download Compass
+   :uri: /path/to/download
    :class: left-column
 
-:doc:`Link Text <path/to/file>`
+:doc:`View installation instructions <path/to/instructions>`
 
 .. image:: /path/to/image.png
    :class: right-column
@@ -37,11 +38,13 @@ This is the features and use cases section.
 
             Paragraph.
 
-		    :ref:`To learn more, see Connect to MongoDB<Connect to MongoDB>`
+		      :ref:`To learn more, see Connect to MongoDB<Connect to MongoDB>`
 
          .. step:: Import Your Data
 
-		    Paragraph.
+		      Paragraph.
+
+            :ref:`To learn more, see Import and Export Data<Import and Export Data>`
 
       .. image:: /path/to/image.png
          :class: right-column
@@ -62,7 +65,6 @@ This is the deeper engagement section.
    :alt-style:
 
    .. card::
-      :headline: Headline 1
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon
@@ -71,7 +73,6 @@ This is the deeper engagement section.
       Paragraph.
 
    .. card::
-      :headline: Headline 2
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon
@@ -80,7 +81,6 @@ This is the deeper engagement section.
       Paragraph.
 
    .. card::
-      :headline: Headline 3
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon

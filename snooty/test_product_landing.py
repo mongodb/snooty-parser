@@ -72,7 +72,8 @@ def test_queryable_fields(backend: Backend) -> None:
     button = section1.children[2]
     check_ast_testing_string(
         button,
-        """<directive domain="landing" name="button" class="left-column"></directive>""",
+        """<directive domain="landing" name="button" class="left-column" uri="/path/to/download">
+            <text>Download Compass</text></directive>""",
     )
 
     # Skip refrole
@@ -114,11 +115,20 @@ def test_queryable_fields(backend: Backend) -> None:
             <directive domain="landing" name="step">
                 <paragraph><text>Connect to Your Deployment</text></paragraph>
                 <paragraph><text>Paragraph.</text></paragraph>
-                <paragraph><ref_role domain="std" name="label" target="Connect to MongoDB"><text>To learn more, see Connect to MongoDB</text></ref_role></paragraph>
+                <paragraph>
+                    <ref_role domain="std" name="label" target="Connect to MongoDB">
+                        <text>To learn more, see Connect to MongoDB</text>
+                    </ref_role>
+                </paragraph>
             </directive>
             <directive domain="landing" name="step">
                 <paragraph><text>Import Your Data</text></paragraph>
                 <paragraph><text>Paragraph.</text></paragraph>
+                <paragraph>
+                    <ref_role domain="std" name="label" target="Import and Export Data">
+                        <text>To learn more, see Import and Export Data</text>
+                    </ref_role>
+                </paragraph>
             </directive>
         </directive>
     <directive name="image" class="right-column" alt="Alternate captioning"><text>/path/to/image.png</text></directive></directive>""",
@@ -148,13 +158,13 @@ def test_queryable_fields(backend: Backend) -> None:
     check_ast_testing_string(
         card_group,
         """<directive domain="landing" name="card-group" columns="3" alt-style="True">
-            <directive domain="landing" name="card" headline="Headline 1" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
-            <directive domain="landing" name="card" headline="Headline 2" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
-            <directive domain="landing" name="card" headline="Headline 3" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
         </directive>""",

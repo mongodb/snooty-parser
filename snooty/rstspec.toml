@@ -805,7 +805,7 @@ example = """.. card-group::
 
 [directive."landing:card"]
 example = """.. card::
-   :headline: ${1:Run a self-managed database}
+   :headline: ${1:Run a self-managed database (Optional)}
    :cta: ${2:Get started with MongoDB}
    :url: {$3:url-card-should-link-to}
    ${4::icon: /path-to-icon.svg
