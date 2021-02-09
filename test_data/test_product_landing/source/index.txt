@@ -62,7 +62,7 @@ This is the deeper engagement section.
 
 .. card-group::
    :columns: 3
-   :alt-style:
+   :style: compact
 
    .. card::
       :cta: Call to action

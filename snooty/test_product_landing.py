@@ -157,7 +157,7 @@ def test_queryable_fields(backend: Backend) -> None:
     assert len(card_group.children) == 3
     check_ast_testing_string(
         card_group,
-        """<directive domain="landing" name="card-group" columns="3" alt-style="True">
+        """<directive domain="landing" name="card-group" columns="3" style="compact">
             <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>

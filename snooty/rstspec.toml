@@ -796,11 +796,12 @@ inherit = "_landing-block"
 inherit = "_landing-block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
-options.alt-style = "flag"
+options.style = "string"
 example = """.. card-group::
    ${1::columns: 2}
+   :style: ${2:compact (Optional)}
 
-   $0
+   ${0: Card content}
 """
 
 [directive."landing:card"]
