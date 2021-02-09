@@ -796,6 +796,7 @@ inherit = "_landing-block"
 inherit = "_landing-block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
+options.alt-style = "flag"
 example = """.. card-group::
    ${1::columns: 2}
 
@@ -823,9 +824,9 @@ options.icon-alt = "string"
 options.tag = "string"
 
 
-[directive."landing:steps"]
+[directive."landing:procedure"]
 help = "Make a set of numbered steps."
-example = '''.. steps::
+example = '''.. procedure::
 ${0: Steps content}'''
 content_type = '_landing-block'
 

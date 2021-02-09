@@ -22,7 +22,7 @@ Product Elevator Pitch
 Features and Use Cases
 ----------------------
 
-This is the features and use cases section. We can re-use the existing tabs directive.
+This is the features and use cases section.
 
 .. tabs::
 
@@ -31,7 +31,7 @@ This is the features and use cases section. We can re-use the existing tabs dire
 
       Paragraph.
 
-      .. steps::
+      .. procedure::
 
          .. step:: Connect to Your Deployment
 
@@ -55,17 +55,18 @@ This is the features and use cases section. We can re-use the existing tabs dire
 Deeper Engagement
 -----------------
 
-This is the deeper engagement section. We can re-use the existing card-group directive.
+This is the deeper engagement section.
 
 .. card-group::
    :columns: 3
+   :alt-style:
 
    .. card::
       :headline: Headline 1
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon
-      :alt-icon: /path/to/alt-icon
+      :icon-alt: /path/to/icon-alt
 
       Paragraph.
 
@@ -74,7 +75,7 @@ This is the deeper engagement section. We can re-use the existing card-group dir
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon
-      :alt-icon: /path/to/alt-icon
+      :icon-alt: /path/to/icon-alt
 
       Paragraph.
 
@@ -83,7 +84,7 @@ This is the deeper engagement section. We can re-use the existing card-group dir
       :cta: Call to action
       :url: https://www.url.com
       :icon: /path/to/icon
-      :alt-icon: /path/to/alt-icon
+      :icon-alt: /path/to/icon-alt
 
       Paragraph.
 

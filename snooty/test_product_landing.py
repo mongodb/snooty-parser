@@ -108,21 +108,20 @@ def test_queryable_fields(backend: Backend) -> None:
     check_ast_testing_string(
         tab1,
         """<directive name="tab" tabid="import">
-<text>Import Your Data</text>
-<paragraph><text>Paragraph.</text></paragraph>
-<directive domain="landing" name="steps">
-<directive domain="landing" name="step">
-<paragraph><text>Connect to Your Deployment</text></paragraph>
-<paragraph><text>Paragraph.</text></paragraph>
-<paragraph><ref_role domain="std" name="label" target="Connect to MongoDB"><text>To learn more, see Connect to MongoDB</text></ref_role></paragraph>
-</directive>
-<directive domain="landing" name="step">
-<paragraph><text>Import Your Data</text></paragraph>
-<paragraph><text>Paragraph.</text></paragraph>
-</directive>
-</directive>
-<directive name="image" class="right-column" alt="Alternate captioning"><text>/path/to/image.png</text></directive></directive>
-""",
+        <text>Import Your Data</text>
+        <paragraph><text>Paragraph.</text></paragraph>
+        <directive domain="landing" name="procedure">
+            <directive domain="landing" name="step">
+                <paragraph><text>Connect to Your Deployment</text></paragraph>
+                <paragraph><text>Paragraph.</text></paragraph>
+                <paragraph><ref_role domain="std" name="label" target="Connect to MongoDB"><text>To learn more, see Connect to MongoDB</text></ref_role></paragraph>
+            </directive>
+            <directive domain="landing" name="step">
+                <paragraph><text>Import Your Data</text></paragraph>
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+        </directive>
+    <directive name="image" class="right-column" alt="Alternate captioning"><text>/path/to/image.png</text></directive></directive>""",
     )
 
     tab2 = tabs.children[1]
@@ -144,7 +143,19 @@ def test_queryable_fields(backend: Backend) -> None:
     # Skip paragraph
 
     card_group = section3.children[2]
+    assert isinstance(card_group, n.Parent)
+    assert len(card_group.children) == 3
     check_ast_testing_string(
         card_group,
-        """<directive domain="landing" name="card-group" columns="3"></directive>""",
+        """<directive domain="landing" name="card-group" columns="3" alt-style="True">
+            <directive domain="landing" name="card" headline="Headline 1" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+            <directive domain="landing" name="card" headline="Headline 2" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+            <directive domain="landing" name="card" headline="Headline 3" cta="Call to action" url="https://www.url.com" icon="/path/to/icon" icon-alt="/path/to/icon-alt">
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+        </directive>""",
     )
