@@ -28,7 +28,11 @@ def test_queryable_fields(backend: Backend) -> None:
     # Assert index has successfully added itself to the toctree
     assert backend.metadata.get("toctree") == {
         "title": [
-            {"type": "text", "position": {"start": {"line": 0}}, "value": "Product Title"}
+            {
+                "type": "text",
+                "position": {"start": {"line": 0}},
+                "value": "Product Title",
+            }
         ],
         "slug": "/",
         "children": [
