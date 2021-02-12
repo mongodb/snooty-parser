@@ -58,7 +58,7 @@ def test_queryable_fields(backend: Backend) -> None:
     cta = section.children[2]
     check_ast_testing_string(
         cta,
-        """<directive domain="landing" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
+        """<directive domain="landing" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction/"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
     )
 
     image = section.children[3]

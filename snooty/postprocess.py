@@ -1,9 +1,11 @@
 import collections
 import logging
 import os.path
+import re
 import typing
 from collections import defaultdict
 from copy import deepcopy
+from mimetypes import guess_type
 from typing import (
     Any,
     Callable,
@@ -39,6 +41,13 @@ from .types import FileId, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
+
+DOCS_DOMAINS = {
+    "docs.mongodb.com",
+    "docs.atlas.mongodb.com",
+    "docs.cloudmanager.mongodb.com",
+    "docs.opsmanager.mongodb.com",
+}
 
 
 # XXX: The following two functions should probably be combined at some point
@@ -288,6 +297,7 @@ class NamedReferenceHandler:
 
         if node.refuri:
             # Node is already populated with url; nothing to do
+            node.refuri = self.assert_trailing_slash(node.refuri)
             return
 
         refuri = self.named_references.get(node.refname)
@@ -298,7 +308,15 @@ class NamedReferenceHandler:
             )
             return
 
-        node.refuri = refuri
+        node.refuri = self.assert_trailing_slash(refuri)
+
+    def assert_trailing_slash(self, url: str) -> str:
+        """Append trailing slash to roles that link to Docs sites, while preserving hashes and query params"""
+        if guess_type(url) != (None, None):
+            return url
+        if not any(domain in url for domain in DOCS_DOMAINS):
+            return url
+        return re.sub(r"\/?(\?|#|$)", r"/\1", url, 1)
 
 
 class TabsSelectorHandler:

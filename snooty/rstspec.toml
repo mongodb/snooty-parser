@@ -1067,7 +1067,7 @@ type = {link = "https://docs.mongodb.com/guides%s"}
 
 [role.mms-docs]
 help = """Link to a page in the Cloud Manager documentation."""
-type = {link = "https://docs.cloud.mongodb.com%s"}
+type = {link = "https://docs.cloudmanager.mongodb.com%s"}
 
 [role.mms-home]
 help = """Link to a MongoDB Cloud Services page."""
