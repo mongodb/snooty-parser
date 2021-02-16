@@ -7,6 +7,7 @@ backlinks = ["entry", "top", "none"]
 guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
 card_type = ["small", "large"]
+card_style = ["default", "compact"]
 output_format = ["html"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 charts_theme = ["light", "dark"]
@@ -160,7 +161,7 @@ options.depth = "nonnegative_integer"
 options.class = "string"
 example = """.. contents:: ${1:string}
    ${2::local: (Optional)}
-   :backlinks: ${3|entry,top,none}
+   :backlinks: ${3|entry,top,none|}
    :depth: ${4:1 (Optional)}
    :class: ${5:Fancy (Optional)}
 """
@@ -781,25 +782,24 @@ argument_type = "string"
 inherit = "_landing-base"
 content_type = "block"
 
-[directive."landing:introduction"]
-inherit = "_landing-block"
-
-[directive."landing:cta"]
-help = "Call to action directing users to a new part of the site"
-example = """..cta::
-
-   ${0::manual:`Read the Introduction to MongoDB </introduction>`}
-"""
-inherit = "_landing-block"
+[directive."landing:button"]
+help = 'Make a button.'
+example = '''.. button:: ${1: string}
+:uri: ${2:/path or url}
+:class: ${3: left-column (Optional)}'''
+argument_type = 'string'
+content_type = '_landing-block'
+options.uri = { type = ['path', 'uri'], required = true }
+options.class = { required = true, type = 'string' }
 
 [directive."landing:card-group"]
 inherit = "_landing-block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
-options.style = "string"
+options.style = "card_style"
 example = """.. card-group::
    ${1::columns: 2}
-   :style: ${2:compact (Optional)}
+   :style: ${2:|default,compact| (Optional)}
 
    ${0: Card content}
 """
@@ -824,6 +824,22 @@ options.icon = ["path", "uri"]
 options.icon-alt = "string"
 options.tag = "string"
 
+[directive."landing:cta"]
+help = "Call to action directing users to a new part of the site"
+example = """..cta::
+
+   ${0::manual:`Read the Introduction to MongoDB </introduction>`}
+"""
+inherit = "_landing-block"
+
+[directive."landing:introduction"]
+inherit = "_landing-block"
+
+[directive."landing:kicker"]
+help = 'Make a kicker (a subheader that is placed on top of the main header).'
+example = '''.. kicker:: ${1: string}'''
+argument_type = 'string'
+content_type = '_landing-block'
 
 [directive."landing:procedure"]
 help = "Make a set of numbered steps."
@@ -836,22 +852,6 @@ help = 'Make a single, numbered step.'
 example = '''.. step::
 ${0: Single step’s content}'''
 content_type = '_landing-block'
-
-[directive."landing:kicker"]
-help = 'Make a kicker.'
-example = '''.. kicker:: ${1: string}'''
-argument_type = 'string'
-content_type = '_landing-block'
-
-[directive."landing:button"]
-help = 'Make a button.'
-example = '''.. button:: ${1: string}
-:uri: ${2:/path or url}
-:class: ${3: left-column (Optional)}'''
-argument_type = 'string'
-content_type = '_landing-block'
-options.uri = { type = ['path', 'uri'], required = true }
-options.class = { required = true, type = 'string' }
 
 
 ###### Misc.
