@@ -645,7 +645,10 @@ class JSONVisitor:
                     def create_page() -> Tuple[Page, EmbeddedRstParser]:
                         # Create dummy page in order to use EmbeddedRstParser
                         page = Page.create(
-                            filepath, None, "", n.Root((-1,), [], openapi_fileid, {}),
+                            filepath,
+                            None,
+                            "",
+                            n.Root((-1,), [], openapi_fileid, {}),
                         )
                         diagnostics: Dict[PurePath, List[Diagnostic]] = {}
                         return (
