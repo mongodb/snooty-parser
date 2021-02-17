@@ -2,6 +2,7 @@ import collections
 import errno
 import getpass
 import io
+import json
 import logging
 import multiprocessing
 import os
@@ -32,6 +33,7 @@ import docutils.utils
 import networkx
 import watchdog.events
 from typing_extensions import Protocol
+from yaml import safe_load
 
 from . import gizaparser, n, rstparser, specparser, util
 from .builders import man
@@ -617,8 +619,18 @@ class JSONVisitor:
                     self.validate_list_table(bullets, expected_num_columns)
 
         elif name == "openapi":
+            # Parsing should be done by the OpenAPI renderer on the frontend by default
+            uses_rst = options.get("uses-rst", False)
+
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
+                # Check if argument is a url instead
+                url_argument = None
+                try:
+                    url_argument = argument[0].refuri
+                except:
+                    pass
+                if url_argument is None or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
@@ -626,27 +638,34 @@ class JSONVisitor:
             )
 
             try:
-                with open(filepath) as f:
-                    openapi = OpenAPI.load(f)
+                if uses_rst:
+                    with open(filepath) as f:
+                        openapi = OpenAPI.load(f)
 
-                def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                    # Create dummy page in order to use EmbeddedRstParser
-                    page = Page.create(
-                        filepath, None, "", n.Root((-1,), [], openapi_fileid, {})
-                    )
-                    diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-                    return (
-                        page,
-                        EmbeddedRstParser(
-                            self.project_config,
+                    def create_page() -> Tuple[Page, EmbeddedRstParser]:
+                        # Create dummy page in order to use EmbeddedRstParser
+                        page = Page.create(
+                            filepath, None, "", n.Root((-1,), [], openapi_fileid, {}),
+                        )
+                        diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+                        return (
                             page,
-                            diagnostics.setdefault(filepath, []),
-                        ),
-                    )
+                            EmbeddedRstParser(
+                                self.project_config,
+                                page,
+                                diagnostics.setdefault(filepath, []),
+                            ),
+                        )
 
-                openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
-                self.diagnostics.extend(diagnostics)
-                doc.children.extend(openapi_ast)
+                    openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
+                    self.diagnostics.extend(diagnostics)
+                    doc.children.extend(openapi_ast)
+
+                else:
+                    with open(filepath) as f:
+                        spec = json.dumps(safe_load(f))
+                        spec_node = n.Text((line,), spec)
+                        doc.children.append(spec_node)
 
             except OSError as err:
                 self.diagnostics.append(
