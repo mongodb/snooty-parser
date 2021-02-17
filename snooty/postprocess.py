@@ -312,9 +312,9 @@ class NamedReferenceHandler:
 
     def assert_trailing_slash(self, url: str) -> str:
         """Append trailing slash to roles that link to Docs sites, while preserving hashes and query params"""
-        if guess_type(url) != (None, None):
-            return url
         if not any(domain in url for domain in DOCS_DOMAINS):
+            return url
+        if guess_type(url) != (None, None):
             return url
         return re.sub(r"\/?(\?|#|$)", r"/\1", url, 1)
 
