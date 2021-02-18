@@ -2,16 +2,16 @@
 version = 0
 
 [enum]
-user_level = ["beginner", "intermediate", "advanced"]
-backlinks = ["entry", "top", "none"]
-guide_categories = ["Getting Started"]
 alignment = ["left", "center", "right"]
+backlinks = ["entry", "top", "none"]
 card_type = ["small", "large"]
 card_style = ["default", "compact"]
-output_format = ["html"]
-devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 charts_theme = ["light", "dark"]
+devhub_type = ["article", "quickstart", "how-to", "video", "live"]
+guide_categories = ["Getting Started"]
 mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "latest"]
+output_format = ["html"]
+user_level = ["beginner", "intermediate", "advanced"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -626,6 +626,7 @@ example = """.. mongo-web-shell::
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
+options.uses-rst = "flag"
 
 [directive."mongodb:operation"]
 content_type = "block"
