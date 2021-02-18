@@ -19,10 +19,11 @@ def backend() -> Backend:
     return backend
 
 
-def test_queryable_fields(backend: Backend) -> None:
+# Test all directives exclusive to the landing domain
+def test_landing_directives(backend: Backend) -> None:
     page_id = FileId("index.txt")
     page = backend.pages[page_id]
-    assert len(page.static_assets) == 2
+    assert len(page.static_assets) == 1
 
     ast = page.ast
     section = ast.children[0]
@@ -31,38 +32,72 @@ def test_queryable_fields(backend: Backend) -> None:
     introduction = section.children[1]
     check_ast_testing_string(
         introduction,
-        """<directive domain="landing" name="introduction"><paragraph><text>
-   MongoDB is a distributed, object-oriented database that uses\nJSON-like documents to work with data in a more natural way.</text></paragraph></directive>""",
+        """<directive domain="landing" name="introduction">
+            <paragraph><text>
+            This test project tests all directives exclusive to the landing domain, which is used for docs-landing and product landing pages.
+            </text></paragraph>
+        </directive>""",
     )
 
-    atf_image = section.children[2]
+    button = section.children[2]
     check_ast_testing_string(
-        atf_image,
-        """<directive name="atf-image" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b"><text>/images/pink.png</text></directive>""",
+        button,
+        """<directive domain="landing" name="button" class="left-column" uri="/path/to/download">
+            <text>Button text</text></directive>""",
     )
 
     card_group = section.children[3]
+    assert isinstance(card_group, n.Parent)
+    assert len(card_group.children) == 3
     check_ast_testing_string(
         card_group,
-        """<directive domain="landing" name="card-group">
-        <directive domain="landing" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/purple.png" icon-alt="Alt text" tag="server" checksum="637c0eefb8026322bb5a563325a4ee70c53e2e7b9aecee576e2c576f2e3e1df6">
-        <paragraph><text>Download and install the MongoDB database on your own\ninfrastructure.</text></paragraph>
-        </directive>
-        </directive>
-        """,
+        """<directive domain="landing" name="card-group" columns="3" style="compact">
+            <directive domain="landing" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/pink.png" icon-alt="Alt text" tag="server" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+                <paragraph><text>Download and install the MongoDB database on your own\ninfrastructure.</text></paragraph>
+            </directive>
+            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+                <paragraph><text>Paragraph.</text></paragraph>
+            </directive>
+        </directive>""",
     )
 
-    section = section.children[4]
-    assert isinstance(section, n.Section)
-
-    cta = section.children[2]
+    cta = section.children[4]
     check_ast_testing_string(
         cta,
         """<directive domain="landing" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
     )
 
-    image = section.children[3]
+    kicker = section.children[5]
     check_ast_testing_string(
-        image,
-        """<directive name="image" alt="Alt text label" class="fancypantscalloutpicturething" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b"><text>/images/pink.png</text></directive>""",
+        kicker,
+        """<directive domain="landing" name="kicker"><text>A kicker is a subheader above a main header</text></directive>""",
+    )
+
+    procedure = section.children[6]
+    check_ast_testing_string(
+        procedure,
+        """
+        <directive domain="landing" name="procedure">
+            <directive domain="landing" name="step">
+                <paragraph><text>Connect to Your Deployment</text></paragraph>
+                <paragraph><text>Paragraph.</text></paragraph>
+                <paragraph>
+                    <ref_role domain="std" name="label" target="Connect to MongoDB">
+                        <text>To learn more, see Connect to MongoDB</text>
+                    </ref_role>
+                </paragraph>
+            </directive>
+            <directive domain="landing" name="step">
+                <paragraph><text>Import Your Data</text></paragraph>
+                <paragraph><text>Paragraph.</text></paragraph>
+                <paragraph>
+                    <ref_role domain="std" name="label" target="Import and Export Data">
+                        <text>To learn more, see Import and Export Data</text>
+                    </ref_role>
+                </paragraph>
+            </directive>
+        </directive>""",
     )

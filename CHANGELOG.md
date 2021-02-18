@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Product landing page directives (DOP-1970).
+
 ## [v0.9.2] - 2021-02-03
 
 ### Fixed
