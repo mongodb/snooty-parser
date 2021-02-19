@@ -1051,7 +1051,7 @@ type = {link = "https://docs.microsoft.com/en-us/azure%s"}
 
 [role.gettingstarted]
 help = """Link to the MongoDB Getting Started guide."""
-type = {link = "https://docs.mongodb.org/getting-started%s"}
+type = {link = "https://docs.mongodb.org/getting-started%s", ensure_trailing_slash = true}
 
 [role.master]
 help = """Link to a path in the master branch of the current project."""
@@ -1063,11 +1063,11 @@ type = {link = "http://github.com/mongodb/docs/blob/master/%s"}
 
 [role.guides]
 help = """Link to a page in the MongoDB Guides site."""
-type = {link = "https://docs.mongodb.com/guides%s"}
+type = {link = "https://docs.mongodb.com/guides%s", ensure_trailing_slash = true}
 
 [role.mms-docs]
 help = """Link to a page in the Cloud Manager documentation."""
-type = {link = "https://docs.cloudmanager.mongodb.com%s"}
+type = {link = "https://docs.cloudmanager.mongodb.com%s", ensure_trailing_slash = true}
 
 [role.mms-home]
 help = """Link to a MongoDB Cloud Services page."""
@@ -1075,11 +1075,11 @@ type = {link = "https://cloud.mongodb.com%s"}
 
 [role.osb]
 help = """Link to a page in the Atlas Open Service Broker documentation."""
-type = {link = "https://docs.mongodb.com/atlas-open-service-broker/current%s"}
+type = {link = "https://docs.mongodb.com/atlas-open-service-broker/current%s", ensure_trailing_slash = true}
 
 [role.adl]
 help = """Link to a page in the Atlas Data Lake documentation."""
-type = {link = "https://docs.mongodb.com/datalake%s"}
+type = {link = "https://docs.mongodb.com/datalake%s", ensure_trailing_slash = true}
 
 [role.dochub]
 help = """Specify a dochub link."""
@@ -1110,7 +1110,7 @@ type = {link = "https://jira.mongodb.org/browse/%s"}
 
 [role.technical-support]
 help = "Link to the MongoDB support site."
-type = {link = "https://docs.mongodb.com/manual/support%s"}
+type = {link = "https://docs.mongodb.com/manual/support%s", ensure_trailing_slash = true}
 
 [role.contact]
 help = """Link to the MongoDB contact page."""
@@ -1142,7 +1142,7 @@ type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
 
 [role.ruby]
 help = """Link to a page in the Ruby driver's documentation."""
-type = {link = "https://docs.mongodb.com/ruby-driver/current%s"}
+type = {link = "https://docs.mongodb.com/ruby-driver/current%s", ensure_trailing_slash = true}
 
 [role.scala-docs]
 help = "Link to a page in the Scala driver's documentation"
@@ -1186,34 +1186,34 @@ type = {link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s"}
 
 [role.atlas]
 help = """Link to the synchronous Atlas documentation."""
-type = {link = "https://docs.atlas.mongodb.com%s"}
+type = {link = "https://docs.atlas.mongodb.com%s", ensure_trailing_slash = true}
 
 [role."v2.2"]
-type = {link = "https://docs.mongodb.com/v2.2%s"}
+type = {link = "https://docs.mongodb.com/v2.2%s", ensure_trailing_slash = true}
 
 [role."v2.4"]
-type = {link = "https://docs.mongodb.com/v2.4%s"}
+type = {link = "https://docs.mongodb.com/v2.4%s", ensure_trailing_slash = true}
 
 [role."v2.6"]
-type = {link = "https://docs.mongodb.com/v2.6%s"}
+type = {link = "https://docs.mongodb.com/v2.6%s", ensure_trailing_slash = true}
 
 [role."v3.0"]
-type = {link = "https://docs.mongodb.com/v3.0%s"}
+type = {link = "https://docs.mongodb.com/v3.0%s", ensure_trailing_slash = true}
 
 [role."v3.2"]
-type = {link = "https://docs.mongodb.com/v3.2%s"}
+type = {link = "https://docs.mongodb.com/v3.2%s", ensure_trailing_slash = true}
 
 [role."v3.4"]
-type = {link = "https://docs.mongodb.com/v3.4%s"}
+type = {link = "https://docs.mongodb.com/v3.4%s", ensure_trailing_slash = true}
 
 [role."v3.6"]
-type = {link = "https://docs.mongodb.com/v3.6%s"}
+type = {link = "https://docs.mongodb.com/v3.6%s", ensure_trailing_slash = true}
 
 [role."v4.0"]
-type = {link = "https://docs.mongodb.com/v4.0%s"}
+type = {link = "https://docs.mongodb.com/v4.0%s", ensure_trailing_slash = true}
 
 [role."v4.2"]
-type = {link = "https://docs.mongodb.com/v4.2%s"}
+type = {link = "https://docs.mongodb.com/v4.2%s", ensure_trailing_slash = true}
 
 [role.website]
 help = """Link to a page in the MongoDB website."""
@@ -1225,45 +1225,45 @@ type = {link = "https://www.mongodb.com/legal%s?tck=docs_atlas"}
 
 [role.manual]
 help = """Link to a page in the latest stable version of the MongoDB manual."""
-type = {link = "https://docs.mongodb.com/manual%s"}
+type = {link = "https://docs.mongodb.com/manual%s", ensure_trailing_slash = true}
 
 [role.cloudmgr]
 help = """Link to a page in the Cloud Manager docs."""
-type = {link = "https://docs.cloudmanager.mongodb.com%s"}
+type = {link = "https://docs.cloudmanager.mongodb.com%s", ensure_trailing_slash = true}
 
 [role.opsmgr]
 help = """Link to a page in the MMS Ops Manager documentation."""
-type = {link = "https://docs.opsmanager.mongodb.com/current%s"}
+type = {link = "https://docs.opsmanager.mongodb.com/current%s", ensure_trailing_slash = true}
 
 [role.realm]
 help = """Link to a page in the Realm docs."""
-type = {link = "https://docs.mongodb.com/realm%s"}
+type = {link = "https://docs.mongodb.com/realm%s", ensure_trailing_slash = true}
 
 [role.stitch]
 inherit = "realm"
 
 [role.mdb-shell]
 help = """Link to a page in the MongoDB Shell docs."""
-type = {link = "https://docs.mongodb.com/mongodb-shell%s"}
+type = {link = "https://docs.mongodb.com/mongodb-shell%s", ensure_trailing_slash = true}
 
 [role.mongosh]
 inherit = "mdb-shell"
 
 [role.charts]
 help = """Link to a page in the Charts docs."""
-type = {link = "https://docs.mongodb.com/charts/saas%s"}
+type = {link = "https://docs.mongodb.com/charts/saas%s", ensure_trailing_slash = true}
 
 [role."charts-v0.10"]
 help = """Link to a page in v0.10 of the Charts docs."""
-type = {link = "https://docs.mongodb.com/charts/v0.10%s"}
+type = {link = "https://docs.mongodb.com/charts/v0.10%s", ensure_trailing_slash = true}
 
 [role."charts-v0.9"]
 help = """Link to a page in v0.9 of the Charts docs."""
-type = {link = "https://docs.mongodb.com/charts/v0.9%s"}
+type = {link = "https://docs.mongodb.com/charts/v0.9%s", ensure_trailing_slash = true}
 
 [role."charts-onprem"]
 help = """Link to a page in the newest edition of Charts onprem docs."""
-type = {link = "https://docs.mongodb.com/charts/onprem%s"}
+type = {link = "https://docs.mongodb.com/charts/onprem%s", ensure_trailing_slash = true}
 
 [role."v0.10"]
 deprecated = true
@@ -1275,34 +1275,34 @@ inherit = "charts-v0.9"
 
 [role.compass]
 help = """Link to a page in the Compass docs."""
-type = {link = "https://docs.mongodb.com/compass/current%s"}
+type = {link = "https://docs.mongodb.com/compass/current%s", ensure_trailing_slash = true}
 
 [role."dotnet-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s", ensure_trailing_slash = true}
 
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
-type = {link = "https://docs.mongodb.com/drivers%s"}
+type = {link = "https://docs.mongodb.com/drivers%s", ensure_trailing_slash = true}
 
 [role.driver]
 help = """Link to a driver's page in the Ecosystem docs."""
-type = {link = "https://docs.mongodb.com/drivers%s"}
+type = {link = "https://docs.mongodb.com/drivers%s", ensure_trailing_slash = true}
 
 [role.products]
 help = """Link to a page in the MongoDB Products site."""
 type = {link = "https://www.mongodb.com/products%s"}
 
 [role.bic]
-type = {link = "https://docs.mongodb.com/bi-connector/current%s"}
+type = {link = "https://docs.mongodb.com/bi-connector/current%s", ensure_trailing_slash = true}
 
 [role."bic-v2.10"]
-type = {link = "https://docs.mongodb.com/bi-connector/v2.10%s"}
+type = {link = "https://docs.mongodb.com/bi-connector/v2.10%s", ensure_trailing_slash = true}
 
 [role.dbtools]
-type = {link = "https://docs.mongodb.com/database-tools%s"}
+type = {link = "https://docs.mongodb.com/database-tools%s", ensure_trailing_slash = true}
 
 [role.k8s]
-type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s"}
+type = {link = "https://docs.mongodb.com/kubernetes-operator/stable%s", ensure_trailing_slash = true}
 
 [role.product]
 type = {link = "http://www.mongodb.com/products/%s?tck=docs"}
@@ -1317,7 +1317,7 @@ type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s", ensure_trailing_slash = true}
 
 [role."facebook"]
 type = {link = "https://developers.facebook.com/%s"}
@@ -1371,19 +1371,19 @@ type = {link = "https://developer.android.com/%s"}
 type = {link = "https://developer.apple.com/%s"}
 
 [role."admin-api-endpoint"]
-type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s"}
+type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s", ensure_trailing_slash = true}
 
 [role."java-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s", ensure_trailing_slash = true}
 
 [role."kotlin-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s", ensure_trailing_slash = true}
 
 [role."swift-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s", ensure_trailing_slash = true}
 
 [role."objc-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s", ensure_trailing_slash = true}
 
 [role."codesandbox"]
 type = {link = "https://codesandbox.io/%s"}

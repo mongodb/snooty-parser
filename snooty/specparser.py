@@ -67,6 +67,7 @@ class LinkRoleType:
     """Configuration for a role which links to a specific URL template."""
 
     link: str
+    ensure_trailing_slash: Optional[bool]
     format: Set[FormattingType] = field(default_factory=set)
 
 

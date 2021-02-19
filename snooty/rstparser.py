@@ -3,6 +3,7 @@ import re
 import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass, field
+from mimetypes import guess_type
 from pathlib import Path, PurePath
 from typing import (
     AbstractSet,
@@ -369,10 +370,14 @@ class LinkRoleHandler:
     """Handle roles which generate a link from a template."""
 
     def __init__(
-        self, url_template: str, format: AbstractSet[specparser.FormattingType]
+        self,
+        url_template: str,
+        ensure_trailing_slash: bool,
+        format: AbstractSet[specparser.FormattingType],
     ) -> None:
         self.url_template = url_template
         self.format = format
+        self.ensure_trailing_slash = ensure_trailing_slash
 
     def __call__(
         self,
@@ -390,16 +395,27 @@ class LinkRoleHandler:
             label = "".join(["RFC-", target])
 
         url = self.url_template % target
+        if self.ensure_trailing_slash:
+            url = self.assert_trailing_slash(url)
         if not label:
             label = target
         node: docutils.nodes.Node = docutils.nodes.reference(
-            label, label, internal=False, refuri=url
+            label,
+            label,
+            internal=False,
+            refuri=url,
         )
 
         if self.format:
             node = format_node(node, self.format)
 
         return [node], []
+
+    def assert_trailing_slash(self, url: str) -> str:
+        """Append trailing slash to urls while preserving hashes and query params"""
+        if guess_type(url) != (None, None):
+            return url
+        return re.sub(r"\/?(\?|#|$)", r"/\1", url, 1)
 
 
 def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
@@ -1121,7 +1137,11 @@ def register_spec_with_docutils(
         if not role_spec.type or role_spec.type == specparser.PrimitiveRoleType.text:
             handler = TextRoleHandler(domain)
         elif isinstance(role_spec.type, specparser.LinkRoleType):
-            handler = LinkRoleHandler(role_spec.type.link, role_spec.type.format)
+            handler = LinkRoleHandler(
+                role_spec.type.link,
+                role_spec.type.ensure_trailing_slash == True,
+                role_spec.type.format,
+            )
         elif isinstance(role_spec.type, specparser.RefRoleType):
             handler = RefRoleHandler(
                 role_spec.type.domain or domain,
