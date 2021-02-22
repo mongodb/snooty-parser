@@ -2638,3 +2638,41 @@ A Heading
     </section>
 </root>""",
     )
+
+
+def test_trailing_slash() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Link to :compass:`Compass </>`
+Link to :charts:`Charts </path>`
+Link to :atlas:`Atlas </path#hash>`
+Link to :guides:`Guides </path/#hash>`
+Link to :cloudmgr:`Cloud Manager file </test.csv>`
+Link to :opsmgr:`Ops Manager </page?q=true>`
+""",
+    )
+
+    page.finish(diagnostics)
+    assert not diagnostics
+
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="../test.rst">
+<paragraph>
+    <text>Link to </text><reference refuri="https://docs.mongodb.com/compass/current/"><text>Compass</text></reference>
+    <text>Link to </text><reference refuri="https://docs.mongodb.com/charts/saas/path/"><text>Charts</text></reference>
+    <text>Link to </text><reference refuri="https://docs.atlas.mongodb.com/path/#hash"><text>Atlas</text></reference>
+    <text>Link to </text><reference refuri="https://docs.mongodb.com/guides/path/#hash"><text>Guides</text></reference>
+    <text>Link to </text><reference refuri="https://docs.cloudmanager.mongodb.com/test.csv"><text>Cloud Manager file</text></reference>
+    <text>Link to </text><reference refuri="https://docs.opsmanager.mongodb.com/current/page/?q=true"><text>Ops Manager</text></reference>
+</paragraph>
+</root>
+""",
+    )
