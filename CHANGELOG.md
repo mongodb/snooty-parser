@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Product landing page directives (DOP-1970).
 
+### Changed
+
+- Update OpenAPI directive to allow parsing through the frontend (DOP-1896).
+- Apply trailing slashes to inter-docs roles (DOP-1966).
+
+### Fixed
+
+- Don't crash on failed intersphinx fetch: raise diagnostic (#287).
+- Modify the toctree handling so that index.txt can add itself to the toctree with RecursionError (DOP-1931).
+- Don't crash if invoked in a child directory of a project.
+
 ## [v0.9.2] - 2021-02-03
 
 ### Fixed
