@@ -1116,6 +1116,10 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
+
+        # We might have found the project in a parent directory. Use that.
+        root = self.config.root
+
         self.targets, failed_requests = TargetDatabase.load(self.config)
 
         snooty_config_fileid = FileId(self.config.config_path.relative_to(root))

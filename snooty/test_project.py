@@ -207,3 +207,11 @@ following example:</text></paragraph>
             </root>
         </directive></section></root>""",
     )
+
+
+def test_start_from_child_directory() -> None:
+    backend = Backend()
+    project = Project(
+        Path("test_data/test_project/source/images"), backend, build_identifiers
+    )
+    assert project.config.root == Path("test_data/test_project").absolute()
