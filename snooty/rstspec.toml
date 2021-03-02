@@ -1311,7 +1311,7 @@ help = """Link to a page in the Compass docs."""
 type = {link = "https://docs.mongodb.com/compass/current%s", ensure_trailing_slash = true}
 
 [role."dotnet-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/dotnet/10.0.0-beta.1/%s"}
 
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
@@ -1350,7 +1350,7 @@ type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/js/latest/%s"}
 
 [role."facebook"]
 type = {link = "https://developers.facebook.com/%s"}
@@ -1407,16 +1407,16 @@ type = {link = "https://developer.apple.com/%s"}
 type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s", ensure_trailing_slash = true}
 
 [role."java-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s"}
 
 [role."kotlin-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s"}
 
 [role."swift-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
 
 [role."objc-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s", ensure_trailing_slash = true}
+type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s"}
 
 [role."codesandbox"]
 type = {link = "https://codesandbox.io/%s"}
