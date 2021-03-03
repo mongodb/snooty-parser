@@ -840,7 +840,6 @@ inherit = "_landing-block"
 help = 'Make a kicker (a subheader that is placed on top of the main header).'
 example = '''.. kicker:: ${1: string}'''
 argument_type = 'string'
-content_type = '_landing-block'
 
 [directive."landing:procedure"]
 help = "Make a set of numbered steps."
