@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.4] - 2021-03-03
+
 ### Fixed
 
 - Links to Realm SDKs should not require a trailing slash (DOP-2022).
