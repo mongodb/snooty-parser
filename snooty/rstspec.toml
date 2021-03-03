@@ -850,8 +850,9 @@ content_type = '_landing-block'
 
 [directive."landing:step"]
 help = 'Make a single, numbered step.'
-example = '''.. step::
-${0: Single step’s content}'''
+example = '''.. step:: ${0: Step's headline string}
+${1: Step content}'''
+argument_type = 'string'
 content_type = '_landing-block'
 
 

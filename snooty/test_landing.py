@@ -82,7 +82,7 @@ def test_landing_directives(backend: Backend) -> None:
         """
         <directive domain="landing" name="procedure">
             <directive domain="landing" name="step">
-                <paragraph><text>Connect to Your Deployment</text></paragraph>
+                <text>Connect to Your Deployment</text>
                 <paragraph><text>Paragraph.</text></paragraph>
                 <paragraph>
                     <ref_role domain="std" name="label" target="Connect to MongoDB">
@@ -91,7 +91,7 @@ def test_landing_directives(backend: Backend) -> None:
                 </paragraph>
             </directive>
             <directive domain="landing" name="step">
-                <paragraph><text>Import Your Data</text></paragraph>
+                <text>Import Your Data</text>
                 <paragraph><text>Paragraph.</text></paragraph>
                 <paragraph>
                     <ref_role domain="std" name="label" target="Import and Export Data">
