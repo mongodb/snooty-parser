@@ -1410,7 +1410,7 @@ type = {link = "https://docs.mongodb.com/realm/admin/api/v3/#%s", ensure_trailin
 type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s"}
 
 [role."kotlin-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s"}
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/kotlin-extensions/%s"}
 
 [role."swift-sdk"]
 type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
