@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.5] - 2021-03-10
+
 ### Fixed
 
 - step-fix: Add an argument to landing steps (#295)
