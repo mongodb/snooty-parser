@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- step-fix: Add an argument to landing steps (#295)
+- DOP-1883: update URL of kotlin SDK to avoid redirect chain (#296)
+
 ## [v0.9.4] - 2021-03-03
 
 ### Fixed
