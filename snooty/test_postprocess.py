@@ -1173,7 +1173,17 @@ Third Heading
 
 .. contents::
    :depth: 2
-"""
+""",
+            Path(
+                "source/no-contents.txt"
+            ): """
+=======
+Title 2
+=======
+
+A Heading
+---------
+""",
         }
     ) as result:
         for d in result.diagnostics[FileId("page.txt")]:
@@ -1201,6 +1211,23 @@ Third Heading
 <section>
 <heading id="third-heading"><text>Third Heading</text></heading>
 <directive name="contents" depth="2" />
+</section>
+</section>
+</root>
+            """,
+        )
+
+        # No headings object attached to root without contents directive
+        page = result.pages[FileId("no-contents.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="no-contents.txt">
+<section>
+<heading id="title-2"><text>Title 2</text></heading>
+<section>
+<heading id="a-heading"><text>A Heading</text></heading>
 </section>
 </section>
 </root>

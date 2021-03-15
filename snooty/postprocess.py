@@ -303,18 +303,17 @@ class NamedReferenceHandler:
         node.refuri = refuri
 
 
-class HeadingNode(NamedTuple):
-    depth: int
-    id: str
-    title: Sequence[n.InlineNode]
-
-
 class ContentsHandler:
+    class HeadingNode(NamedTuple):
+        depth: int
+        id: str
+        title: Sequence[n.InlineNode]
+
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.contents_depth = sys.maxsize
         self.current_depth = 0
         self.has_contents_directive = False
-        self.headings: List[HeadingNode] = []
+        self.headings: List[ContentsHandler.HeadingNode] = []
         self.diagnostics = diagnostics
 
     def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -337,7 +336,7 @@ class ContentsHandler:
                 for h in self.headings
                 if h.depth - 1 <= self.contents_depth
             ]
-            if len(heading_list) > 0:
+            if heading_list:
                 page.ast.options["headings"] = heading_list
 
     def enter_section(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -360,7 +359,7 @@ class ContentsHandler:
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
-                HeadingNode(self.current_depth, node.id, node.children)
+                ContentsHandler.HeadingNode(self.current_depth, node.id, node.children)
             )
 
 
@@ -586,10 +585,10 @@ class Postprocessor:
                     EventParser.OBJECT_START_EVENT,
                     option_handler,
                 ),
+                (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
                 (EventParser.OBJECT_START_EVENT, contents_handler.enter_section),
                 (EventParser.OBJECT_START_EVENT, contents_handler),
                 (EventParser.OBJECT_END_EVENT, contents_handler.exit_section),
-                (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
             ],
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
