@@ -964,6 +964,20 @@ example = """.. topic:: ${1:Title of block}
 [directive.search-results]
 help = """Shows search results from browser query params (no arguments)."""
 
+[directive.ia]
+content_type = "block"
+
+[directive.entry]
+argument_type = "string"
+options.url = "string"
+options.snooty-name = "string"
+options.primary = "flag"
+example = """.. item:: ${0: string}
+   ${1::item: (string)
+   :snooty-name: (string)
+   :hidden: (optional)}
+"""
+
 ###### Roles
 [role.kbd]
 help = """Mark a sequence of keystrokes."""

@@ -7,12 +7,94 @@ from . import diagnostics
 from .diagnostics import (
     DuplicateDirective,
     ExpectedTabs,
+    InvalidChild,
+    InvalidIAEntry,
     MissingTab,
     TabMustBeDirective,
     TargetNotFound,
 )
 from .types import FileId
 from .util_test import ast_to_testing_string, check_ast_testing_string, make_test
+
+
+def test_ia() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. ia::
+
+   .. entry::
+      :url: /page1
+
+   .. entry:: Snooty Item
+      :url: https://docs.mongodb.com/snooty/
+      :snooty-name: snooty
+      :primary:
+
+   .. entry:: Invalid
+      :snooty-name: invalid
+
+   .. note::
+""",
+            Path(
+                "source/page1.txt"
+            ): """
+==============
+Page One Title
+==============
+
+.. ia::
+
+   .. entry::
+      :url: https://google.com
+""",
+        }
+    ) as result:
+
+        active_file = "index.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], InvalidIAEntry)
+        assert isinstance(diagnostics[1], InvalidChild)
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" ia="[{'primary': False, 'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'primary': True, 'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'snootyName': 'snooty', 'url': 'https://docs.mongodb.com/snooty/'}]">
+<directive name="ia">
+<directive name="entry" url="/page1" />
+<directive name="entry" url="https://docs.mongodb.com/snooty/" snooty-name="snooty" primary="True">
+<text>Snooty Item</text>
+</directive>
+<directive name="entry" snooty-name="invalid">
+<text>Invalid</text>
+</directive>
+<directive name="note" />
+</directive>
+</root>
+""",
+        )
+
+        active_file = "page1.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidIAEntry)
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="page1.txt" ia="[{'primary': False, 'title': [], 'url': 'https://google.com'}]">
+<section>
+<heading id="page-one-title"><text>Page One Title</text></heading>
+<directive name="ia">
+<directive name="entry" url="https://google.com" />
+</directive>
+</section>
+</root>
+""",
+        )
 
 
 # ensure that broken links still generate titles
