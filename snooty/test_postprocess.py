@@ -1159,6 +1159,9 @@ def test_contents_directive() -> None:
 Title
 =====
 
+.. contents::
+   :depth: 2
+
 First Heading
 -------------
 
@@ -1172,7 +1175,7 @@ Third Heading
 -------------
 
 .. contents::
-   :depth: 2
+   :depth: 3
 """,
             Path(
                 "source/no-contents.txt"
@@ -1186,19 +1189,18 @@ A Heading
 """,
         }
     ) as result:
-        for d in result.diagnostics[FileId("page.txt")]:
-            print(d.message)
-        assert not [
-            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
-        ], "Should not raise any diagnostics"
+        diagnostics = result.diagnostics[FileId("page.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicateDirective)
         page = result.pages[FileId("page.txt")]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 15}}, 'value': 'Third Heading'}]}]">
+<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}]}]">
 <section>
 <heading id="title"><text>Title</text></heading>
+<directive name="contents" depth="2" />
 <section>
 <heading id="first-heading"><text>First Heading</text></heading>
 <section>
@@ -1210,7 +1212,7 @@ A Heading
 </section>
 <section>
 <heading id="third-heading"><text>Third Heading</text></heading>
-<directive name="contents" depth="2" />
+<directive name="contents" depth="3" />
 </section>
 </section>
 </root>

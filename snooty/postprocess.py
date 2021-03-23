@@ -304,7 +304,9 @@ class NamedReferenceHandler:
 
 
 class ContentsHandler:
-    class HeadingNode(NamedTuple):
+    """Identify all headings on a given page. If a contents directive appears on the page, save list of headings as a page-level option."""
+
+    class HeadingData(NamedTuple):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
@@ -313,7 +315,7 @@ class ContentsHandler:
         self.contents_depth = sys.maxsize
         self.current_depth = 0
         self.has_contents_directive = False
-        self.headings: List[ContentsHandler.HeadingNode] = []
+        self.headings: List[ContentsHandler.HeadingData] = []
         self.diagnostics = diagnostics
 
     def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -349,17 +351,23 @@ class ContentsHandler:
 
     def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and node.name == "contents":
+            if self.has_contents_directive:
+                self.diagnostics[fileid_stack.current].append(
+                    DuplicateDirective(node.name, node.start[0])
+                )
+                return
+
             self.has_contents_directive = True
             self.contents_depth = int(node.options.get("depth", sys.maxsize))
             return
 
-        if self.current_depth > self.contents_depth:
+        if self.current_depth - 1 > self.contents_depth:
             return
 
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
-                ContentsHandler.HeadingNode(self.current_depth, node.id, node.children)
+                ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
             )
 
 
