@@ -1147,3 +1147,91 @@ Reference `GitHub`_
 </root>
 """,
         )
+
+
+def test_contents_directive() -> None:
+    with make_test(
+        {
+            Path(
+                "source/page.txt"
+            ): """
+=====
+Title
+=====
+
+.. contents::
+   :depth: 2
+
+First Heading
+-------------
+
+Second Heading
+~~~~~~~~~~~~~~
+
+Omitted Heading
+^^^^^^^^^^^^^^^^
+
+Third Heading
+-------------
+
+.. contents::
+   :depth: 3
+""",
+            Path(
+                "source/no-contents.txt"
+            ): """
+=======
+Title 2
+=======
+
+A Heading
+---------
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("page.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        page = result.pages[FileId("page.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}]}]">
+<section>
+<heading id="title"><text>Title</text></heading>
+<directive name="contents" depth="2" />
+<section>
+<heading id="first-heading"><text>First Heading</text></heading>
+<section>
+<heading id="second-heading"><text>Second Heading</text></heading>
+<section>
+<heading id="omitted-heading"><text>Omitted Heading</text></heading>
+</section>
+</section>
+</section>
+<section>
+<heading id="third-heading"><text>Third Heading</text></heading>
+<directive name="contents" depth="3" />
+</section>
+</section>
+</root>
+            """,
+        )
+
+        # No headings object attached to root without contents directive
+        page = result.pages[FileId("no-contents.txt")]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="no-contents.txt">
+<section>
+<heading id="title-2"><text>Title 2</text></heading>
+<section>
+<heading id="a-heading"><text>A Heading</text></heading>
+</section>
+</section>
+</root>
+            """,
+        )

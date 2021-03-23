@@ -1,6 +1,7 @@
 import collections
 import logging
 import os.path
+import sys
 import typing
 from collections import defaultdict
 from copy import deepcopy
@@ -11,6 +12,7 @@ from typing import (
     Iterable,
     List,
     MutableSequence,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -301,6 +303,74 @@ class NamedReferenceHandler:
         node.refuri = refuri
 
 
+class ContentsHandler:
+    """Identify all headings on a given page. If a contents directive appears on the page, save list of headings as a page-level option."""
+
+    class HeadingData(NamedTuple):
+        depth: int
+        id: str
+        title: Sequence[n.InlineNode]
+
+    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+        self.contents_depth = sys.maxsize
+        self.current_depth = 0
+        self.has_contents_directive = False
+        self.headings: List[ContentsHandler.HeadingData] = []
+        self.diagnostics = diagnostics
+
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.contents_depth = sys.maxsize
+        self.current_depth = 0
+        self.has_contents_directive = False
+        self.headings = []
+
+    def finalize_headings(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.has_contents_directive:
+            return
+
+        if isinstance(page.ast, n.Root):
+            heading_list = [
+                {
+                    "depth": h.depth,
+                    "id": h.id,
+                    "title": [node.serialize() for node in h.title],
+                }
+                for h in self.headings
+                if h.depth - 1 <= self.contents_depth
+            ]
+            if heading_list:
+                page.ast.options["headings"] = heading_list
+
+    def enter_section(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Section):
+            self.current_depth += 1
+
+    def exit_section(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Section):
+            self.current_depth -= 1
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Directive) and node.name == "contents":
+            if self.has_contents_directive:
+                self.diagnostics[fileid_stack.current].append(
+                    DuplicateDirective(node.name, node.start[0])
+                )
+                return
+
+            self.has_contents_directive = True
+            self.contents_depth = int(node.options.get("depth", sys.maxsize))
+            return
+
+        if self.current_depth - 1 > self.contents_depth:
+            return
+
+        # Omit title headings (depth = 1) from heading list
+        if isinstance(node, n.Heading) and self.current_depth > 1:
+            self.headings.append(
+                ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
+            )
+
+
 class TabsSelectorHandler:
     def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
@@ -512,6 +582,7 @@ class Postprocessor:
 
         option_handler = ProgramOptionHandler(self.diagnostics)
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
+        contents_handler = ContentsHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
 
         self.run_event_parser(
@@ -523,10 +594,15 @@ class Postprocessor:
                     option_handler,
                 ),
                 (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
+                (EventParser.OBJECT_START_EVENT, contents_handler.enter_section),
+                (EventParser.OBJECT_START_EVENT, contents_handler),
+                (EventParser.OBJECT_END_EVENT, contents_handler.exit_section),
             ],
             [
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
+                (EventParser.PAGE_START_EVENT, contents_handler.reset),
+                (EventParser.PAGE_END_EVENT, contents_handler.finalize_headings),
                 (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
                 (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
             ],
