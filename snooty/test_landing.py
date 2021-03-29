@@ -42,7 +42,7 @@ def test_landing_directives(backend: Backend) -> None:
     button = section.children[2]
     check_ast_testing_string(
         button,
-        """<directive domain="landing" name="button" class="left-column" uri="/path/to/download">
+        """<directive domain="landing" name="button" uri="/path/to/download">
             <text>Button text</text></directive>""",
     )
 

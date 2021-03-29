@@ -10,7 +10,6 @@ Landing Domain Directive Tests
 
 .. button:: Button text
    :uri: /path/to/download
-   :class: left-column
 
 .. card-group::
    :columns: 3
