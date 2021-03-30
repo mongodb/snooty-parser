@@ -784,14 +784,12 @@ inherit = "_landing-base"
 content_type = "block"
 
 [directive."landing:button"]
-help = 'Make a button.'
-example = '''.. button:: ${1: string}
-:uri: ${2:/path or url}
-:class: ${3: left-column (Optional)}'''
-argument_type = 'string'
-content_type = '_landing-block'
-options.uri = { type = ['path', 'uri'], required = true }
-options.class = { required = true, type = 'string' }
+help = "Make a button."
+example = """.. button:: ${1: string}
+:uri: ${2:/path or url}"""
+argument_type = "string"
+content_type = "_landing-block"
+options.uri = { type = ["path", "uri"], required = true }
 
 [directive."landing:card-group"]
 inherit = "_landing-block"
@@ -837,22 +835,22 @@ inherit = "_landing-block"
 inherit = "_landing-block"
 
 [directive."landing:kicker"]
-help = 'Make a kicker (a subheader that is placed on top of the main header).'
-example = '''.. kicker:: ${1: string}'''
-argument_type = 'string'
+help = "Make a kicker (a subheader that is placed on top of the main header)."
+example = """.. kicker:: ${1: string}"""
+argument_type = "string"
 
 [directive."landing:procedure"]
 help = "Make a set of numbered steps."
-example = '''.. procedure::
-${0: Steps content}'''
-content_type = '_landing-block'
+example = """.. procedure::
+${0: Steps content}"""
+content_type = "_landing-block"
 
 [directive."landing:step"]
-help = 'Make a single, numbered step.'
-example = '''.. step:: ${0: Step's headline string}
-${1: Step content}'''
-argument_type = 'string'
-content_type = '_landing-block'
+help = "Make a single, numbered step."
+example = """.. step:: ${0: Step's headline string}
+${1: Step content}"""
+argument_type = "string"
+content_type = "_landing-block"
 
 
 ###### Misc.
