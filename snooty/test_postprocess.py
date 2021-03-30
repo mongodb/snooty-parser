@@ -14,7 +14,12 @@ from .diagnostics import (
     TargetNotFound,
 )
 from .types import FileId
-from .util_test import ast_to_testing_string, check_ast_testing_string, make_test
+from .util_test import (
+    ast_to_testing_string,
+    check_ast_testing_string,
+    check_toctree_testing_string,
+    make_test,
+)
 
 
 def test_ia() -> None:
@@ -95,6 +100,21 @@ Page One Title
 </root>
 """,
         )
+        check_toctree_testing_string(
+            result.metadata["iatree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="/page1">
+        <title><text>Page One Title</text></title>
+        <toctree url="https://google.com" />
+    </toctree>
+    <toctree url="https://docs.mongodb.com/snooty/" snootyName="snooty" primary="True">
+        <title><text>Snooty Item</text></title>
+    </toctree>
+</toctree>
+""",
+        )
 
 
 # ensure that broken links still generate titles
@@ -170,42 +190,19 @@ def test_toctree_self_add() -> None:
         assert not [
             diagnostics for diagnostics in result.diagnostics.values() if diagnostics
         ], "Should not raise any diagnostics"
-        assert result.metadata.get("toctree") == {
-            "title": [
-                {
-                    "type": "text",
-                    "position": {"start": {"line": 0}},
-                    "value": "untitled",
-                }
-            ],
-            "slug": "/",
-            "children": [
-                {
-                    "title": None,
-                    "slug": "page1",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-                {
-                    "title": [
-                        {
-                            "type": "text",
-                            "position": {"start": {"line": 0}},
-                            "value": "Overview",
-                        }
-                    ],
-                    "slug": "/",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-                {
-                    "title": None,
-                    "slug": "page2",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-            ],
-        }
+        check_toctree_testing_string(
+            result.metadata["toctree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="page1" drawer="True" />
+    <toctree slug="/" drawer="True">
+        <title><text>Overview</text></title>
+    </toctree>
+    <toctree slug="page2" drawer="True" />
+</toctree>
+""",
+        )
 
 
 def test_case_sensitive_labels() -> None:

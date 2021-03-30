@@ -8,7 +8,11 @@ from .diagnostics import AmbiguousTarget, MissingTocTreeEntry, TargetNotFound
 from .parser import Project
 from .test_project import Backend
 from .types import BuildIdentifierSet, FileId
-from .util_test import ast_to_testing_string, check_ast_testing_string
+from .util_test import (
+    ast_to_testing_string,
+    check_ast_testing_string,
+    check_toctree_testing_string,
+)
 
 ROOT_PATH = Path("test_data")
 
@@ -216,72 +220,27 @@ def test_role_explicit_title(backend: Backend) -> None:
 
 
 def test_toctree(backend: Backend) -> None:
-    assert backend.metadata["toctree"] == {
-        "children": [
-            {
-                "children": [],
-                "options": {"drawer": True},
-                "slug": "page1",
-                "title": [
-                    {
-                        "position": {"start": {"line": 4}},
-                        "type": "text",
-                        "value": "Print this heading",
-                    }
-                ],
-            },
-            {
-                "options": {"drawer": False},
-                "slug": "page2",
-                "title": [
-                    {
-                        "position": {"start": {"line": 19}},
-                        "type": "text",
-                        "value": "Heading is not at the top for some reason",
-                    }
-                ],
-                "children": [
-                    {
-                        "children": [],
-                        "title": [
-                            {
-                                "position": {"start": {"line": 0}},
-                                "type": "text",
-                                "value": "MongoDB Connector for Business Intelligence",
-                            }
-                        ],
-                        "url": "https://docs.mongodb.com/bi-connector/current/",
-                    },
-                    {
-                        "children": [],
-                        "options": {"drawer": False},
-                        "slug": "page3",
-                        "title": None,
-                    },
-                    {
-                        "children": [],
-                        "options": {"drawer": True},
-                        "slug": "page4",
-                        "title": [
-                            {
-                                "position": {"start": {"line": 0}},
-                                "type": "text",
-                                "value": "Page Four",
-                            }
-                        ],
-                    },
-                ],
-            },
-        ],
-        "title": [
-            {
-                "position": {"start": {"line": 0}},
-                "type": "text",
-                "value": "MongoDB title",
-            }
-        ],
-        "slug": "/",
-    }
+    check_toctree_testing_string(
+        backend.metadata["toctree"],
+        """
+<toctree slug="/">
+    <title><text>MongoDB title</text></title>
+    <toctree slug="page1" drawer="True">
+        <title><text>Print this heading</text></title>
+    </toctree>
+    <toctree slug="page2" drawer="False">
+        <title><text>Heading is not at the top for some reason</text></title>
+        <toctree url="https://docs.mongodb.com/bi-connector/current/">
+            <title><text>MongoDB Connector for Business Intelligence</text></title>
+        </toctree>
+        <toctree slug="page3" drawer="False" />
+        <toctree slug="page4" drawer="True">
+            <title><text>Page Four</text></title>
+        </toctree>
+    </toctree>
+</toctree>
+""",
+    )
 
     assert any(
         isinstance(x, MissingTocTreeEntry)

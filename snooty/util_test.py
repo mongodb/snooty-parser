@@ -30,6 +30,43 @@ class FinalAssertionError(AssertionError):
     pass
 
 
+def toctree_to_testing_string(ast: Any) -> str:
+    """Create an XML string representation of a toctree."""
+    value = ast.get("value", "")
+    children = ast.get("children", [])
+    attr_pairs = [
+        (k, v)
+        for k, v in ast.items()
+        if k not in ("children", "options", "title") and v
+    ]
+
+    attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
+    attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
+    contents = (
+        escape(value)
+        if value
+        else (
+            "".join(toctree_to_testing_string(child) for child in children)
+            if children
+            else ""
+        )
+    )
+
+    if ast.get("title"):
+        contents = "<title>{}</title>{}".format(
+            "".join(ast_to_testing_string(part) for part in ast["title"]), contents
+        )
+
+    return "<toctree{}>{}</toctree>".format(" " + attrs if attrs else "", contents)
+
+
+def check_toctree_testing_string(ast: Any, testing_string: str) -> None:
+    """Ensure that an AST node matches the given testing XML string, using ast_to_testing_string()."""
+    correct_tree = ET.fromstring(testing_string)
+    evaluating_tree = ET.fromstring(toctree_to_testing_string(ast))
+    assert_etree_equals(evaluating_tree, correct_tree)
+
+
 def ast_to_testing_string(ast: Any) -> str:
     """Create an XML string representation of an AST node."""
     if isinstance(ast, n.Node):
