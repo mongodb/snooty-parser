@@ -54,6 +54,8 @@ Page One Title
 
    .. entry::
       :url: https://google.com
+
+.. ia::
 """,
         }
     ) as result:
@@ -84,8 +86,9 @@ Page One Title
 
         active_file = "page1.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
-        assert len(diagnostics) == 1
+        assert len(diagnostics) == 2
         assert isinstance(diagnostics[0], InvalidIAEntry)
+        assert isinstance(diagnostics[1], DuplicateDirective)
         page = result.pages[FileId(active_file)]
         check_ast_testing_string(
             page.ast,
@@ -96,6 +99,7 @@ Page One Title
 <directive name="ia">
 <directive name="entry" url="https://google.com" />
 </directive>
+<directive name="ia" />
 </section>
 </root>
 """,

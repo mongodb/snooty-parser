@@ -478,6 +478,7 @@ class HeadingHandler:
 
 
 class IAHandler:
+    """Identify IA directive on a page and save a list of its entries as a page-level option."""
     class IAData(NamedTuple):
         title: Sequence[n.InlineNode]
         url: Optional[str]
@@ -516,7 +517,11 @@ class IAHandler:
         if not isinstance(node, n.Directive) or not node.name == "ia":
             return
 
-        self.ia = []
+        if self.ia:
+            self.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
 
         for entry in node.get_child_of_type(n.Directive):
             if entry.name != "entry":
