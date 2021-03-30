@@ -548,6 +548,7 @@ class HeadingHandler:
 
 class IAHandler:
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
+
     class IAData(NamedTuple):
         title: Sequence[n.InlineNode]
         url: Optional[str]
@@ -753,7 +754,8 @@ class Postprocessor:
             k: [node.serialize() for node in v]
             for k, v in self.heading_handler.slug_title_mapping.items()
         }
-        # Run postprocessing operations related to toctree and append to metadata document
+        # Run postprocessing operations related to toctree and append to metadata document.
+        # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
         iatree = self.build_iatree()
         toctree = self.build_toctree()
         if iatree and toctree.get("children"):

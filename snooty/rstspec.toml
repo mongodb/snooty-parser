@@ -970,10 +970,10 @@ argument_type = "string"
 options.url = "string"
 options.snooty-name = "string"
 options.primary = "flag"
-example = """.. item:: ${0: string}
-   ${1::item: (string)
-   :snooty-name: (string)
-   :hidden: (optional)}
+example = """.. entry:: ${0: string}
+   ${1::url: (string)
+   :snooty-name: (string) [optional]
+   :primary: (optional)}
 """
 
 ###### Roles
