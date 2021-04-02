@@ -275,7 +275,7 @@ argument_type = "string"
 
 [directive.class]
 help = """Set a class on the next element."""
-deprecated = true
+# deprecated = true
 argument_type = "string"
 content_type = "block"
 
