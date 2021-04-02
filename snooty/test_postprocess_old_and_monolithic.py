@@ -92,7 +92,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="setting"
         target="net.port"
-        url="https://docs.mongodb.com/manual/reference/configuration-options/#net.port">
+        url="https://docs.mongodb.com/manual/reference/configuration-options/#mongodb-setting-net.port">
         <literal><text>net.port</text></literal>
         </ref_role>""",
     )
@@ -139,7 +139,7 @@ def test_validate_ref_targets(backend: Backend) -> None:
         domain="mongodb"
         name="binary"
         target="bin.mongod"
-        url="https://docs.mongodb.com/manual/reference/program/mongod/#bin.mongod">
+        url="https://docs.mongodb.com/manual/reference/program/mongod/#mongodb-binary-bin.mongod">
         <literal><text>mongod</text></literal>
         </ref_role>""",
     )
