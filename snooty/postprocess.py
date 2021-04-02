@@ -601,6 +601,15 @@ class IAHandler:
                 )
                 continue
 
+            if not entry.options.get("url"):
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidIAEntry(
+                        "IA entry directives must include url",
+                        node.span[0],
+                    )
+                )
+                continue
+
             parsed = urllib.parse.urlparse(entry.options.get("url"))
             if parsed.scheme:
                 url = entry.options.get("url")
@@ -608,6 +617,12 @@ class IAHandler:
             else:
                 url = None
                 slug = entry.options.get("url")
+
+            if slug and not self.heading_handler.get_title(clean_slug(slug)):
+                self.diagnostics[fileid_stack.current].append(
+                    MissingTocTreeEntry(slug, node.span[0])
+                )
+                continue
 
             title: Sequence[n.InlineNode] = []
             if len(entry.argument) > 0:
@@ -617,23 +632,22 @@ class IAHandler:
 
             snooty_name = entry.options.get("snooty-name")
             if snooty_name and not url:
-                line = node.span[0]
                 self.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
                         "IA entry directives with snooty-name option must include url",
-                        line,
+                        node.span[0],
                     )
                 )
                 continue
 
             if url and not title:
-                line = node.span[0]
                 self.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
                         "IA entries to external URLs must include titles",
-                        line,
+                        node.span[0],
                     )
                 )
+                continue
 
             self.ia.append(
                 IAHandler.IAData(

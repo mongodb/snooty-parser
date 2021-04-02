@@ -10,6 +10,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidIAEntry,
     MissingTab,
+    MissingTocTreeEntry,
     TabMustBeDirective,
     TargetNotFound,
 )
@@ -42,6 +43,8 @@ def test_ia() -> None:
       :snooty-name: invalid
 
    .. note::
+
+.. ia::
 """,
             Path(
                 "source/page1.txt"
@@ -55,16 +58,20 @@ Page One Title
    .. entry::
       :url: https://google.com
 
-.. ia::
+   .. entry::
+      :url: /nonexistent
+
+   .. entry:: Title
 """,
         }
     ) as result:
 
         active_file = "index.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
-        assert len(diagnostics) == 2
+        assert len(diagnostics) == 3
         assert isinstance(diagnostics[0], InvalidIAEntry)
         assert isinstance(diagnostics[1], InvalidChild)
+        assert isinstance(diagnostics[2], DuplicateDirective)
         page = result.pages[FileId(active_file)]
         check_ast_testing_string(
             page.ast,
@@ -80,26 +87,31 @@ Page One Title
 </directive>
 <directive name="note" />
 </directive>
+<directive name="ia" />
 </root>
 """,
         )
 
         active_file = "page1.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
-        assert len(diagnostics) == 2
+        assert len(diagnostics) == 3
         assert isinstance(diagnostics[0], InvalidIAEntry)
-        assert isinstance(diagnostics[1], DuplicateDirective)
+        assert isinstance(diagnostics[1], MissingTocTreeEntry)
+        assert isinstance(diagnostics[2], InvalidIAEntry)
         page = result.pages[FileId(active_file)]
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page1.txt" ia="[{'primary': False, 'title': [], 'url': 'https://google.com'}]">
+<root fileid="page1.txt">
 <section>
 <heading id="page-one-title"><text>Page One Title</text></heading>
 <directive name="ia">
 <directive name="entry" url="https://google.com" />
+<directive name="entry" url="/nonexistent" />
+<directive name="entry">
+<text>Title</text>
 </directive>
-<directive name="ia" />
+</directive>
 </section>
 </root>
 """,
@@ -111,7 +123,6 @@ Page One Title
     <title><text>untitled</text></title>
     <toctree slug="/page1">
         <title><text>Page One Title</text></title>
-        <toctree url="https://google.com" />
     </toctree>
     <toctree url="https://docs.mongodb.com/snooty/" snootyName="snooty" primary="True">
         <title><text>Snooty Item</text></title>
