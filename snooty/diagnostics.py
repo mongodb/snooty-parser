@@ -364,7 +364,7 @@ class InvalidToctree(Diagnostic, MakeCorrectionMixin):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            "Projects with both toctree and ia directives are not supported",
+            """Projects with both "toctree" and "ia" directives are not supported""",
             start,
             end,
         )

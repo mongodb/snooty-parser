@@ -36,11 +36,11 @@ def test_ia() -> None:
 
    .. entry:: Snooty Item
       :url: https://docs.mongodb.com/snooty/
-      :snooty-name: snooty
+      :project-name: snooty
       :primary:
 
    .. entry:: Invalid
-      :snooty-name: invalid
+      :project-name: invalid
 
    .. note::
 
@@ -76,13 +76,13 @@ Page One Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="index.txt" ia="[{'primary': False, 'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'primary': True, 'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'snootyName': 'snooty', 'url': 'https://docs.mongodb.com/snooty/'}]">
+<root fileid="index.txt" ia="[{'primary': False, 'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'primary': True, 'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/'}]">
 <directive name="ia">
 <directive name="entry" url="/page1" />
-<directive name="entry" url="https://docs.mongodb.com/snooty/" snooty-name="snooty" primary="True">
+<directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty" primary="True">
 <text>Snooty Item</text>
 </directive>
-<directive name="entry" snooty-name="invalid">
+<directive name="entry" project-name="invalid">
 <text>Invalid</text>
 </directive>
 <directive name="note" />
@@ -124,7 +124,7 @@ Page One Title
     <toctree slug="/page1">
         <title><text>Page One Title</text></title>
     </toctree>
-    <toctree url="https://docs.mongodb.com/snooty/" snootyName="snooty" primary="True">
+    <toctree url="https://docs.mongodb.com/snooty/" project_name="snooty" primary="True">
         <title><text>Snooty Item</text></title>
     </toctree>
 </toctree>

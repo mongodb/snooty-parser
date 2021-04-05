@@ -553,7 +553,7 @@ class IAHandler:
         title: Sequence[n.InlineNode]
         url: Optional[str]
         slug: Optional[str]
-        snooty_name: Optional[str]
+        project_name: Optional[str]
         primary: bool
 
         def serialize(self) -> n.SerializedNode:
@@ -562,8 +562,8 @@ class IAHandler:
                 "title": [node.serialize() for node in self.title],
             }
 
-            if self.snooty_name:
-                result["snootyName"] = self.snooty_name
+            if self.project_name:
+                result["project_name"] = self.project_name
             if self.slug:
                 result["slug"] = self.slug
             if self.url:
@@ -584,7 +584,11 @@ class IAHandler:
         self.ia = []
 
     def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or not node.name == "ia":
+        if (
+            not isinstance(node, n.Directive)
+            or not node.name == "ia"
+            or not node.domain == ""
+        ):
             return
 
         if self.ia:
@@ -604,7 +608,7 @@ class IAHandler:
             if not entry.options.get("url"):
                 self.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
-                        "IA entry directives must include url",
+                        "IA entry directives must include the :url: option",
                         node.span[0],
                     )
                 )
@@ -630,11 +634,11 @@ class IAHandler:
             elif slug:
                 title = self.heading_handler.get_title(clean_slug(slug)) or []
 
-            snooty_name = entry.options.get("snooty-name")
-            if snooty_name and not url:
+            project_name = entry.options.get("project-name")
+            if project_name and not url:
                 self.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
-                        "IA entry directives with snooty-name option must include url",
+                        "IA entry directives with :project-name: option must include :url: option",
                         node.span[0],
                     )
                 )
@@ -654,7 +658,7 @@ class IAHandler:
                     title,
                     url,
                     slug,
-                    snooty_name,
+                    project_name,
                     bool(entry.options.get("primary", False)),
                 )
             )
@@ -793,7 +797,11 @@ class Postprocessor:
         relative, _ = util.reroot_path(
             FileId(slug), current_page.source_path, self.project_config.source_path
         )
-        fileid_with_ext = self.slug_fileid_mapping[relative.as_posix()]
+
+        try:
+            fileid_with_ext = self.slug_fileid_mapping[relative.as_posix()]
+        except KeyError:
+            return None
         return self.pages.get(fileid_with_ext)
 
     def run_event_parser(
@@ -1242,8 +1250,8 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
         if "slug" in node:
             path.append(clean_slug(node["slug"]))
             all_paths.append(path)
-        elif "snootyName" in node:
-            path.append(node["snootyName"])
+        elif "project_name" in node:
+            path.append(node["project_name"])
             all_paths.append(path)
     else:
         # Recursively build the path
