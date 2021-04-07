@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Temporarily un-deprecate directive.class (DOP-2088).
+- Remove button class option (#298).
+- Identify headings for 'On this page' box (DOP-2045, #297).
+
 ## [v0.9.5] - 2021-03-10
 
 ### Fixed
