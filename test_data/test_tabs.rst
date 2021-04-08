@@ -83,4 +83,18 @@
    tabs:
      - bobs_your_uncle: foo
 
+.. tabs::
+
+   .. tab:: HTTP
+      :tabid: http
+   
+      This tab contains the syntax and parameters for creating a
+      collection for a |http| {+data-lake-store+}.
+   
+      .. include:: /includes/extracts/fact-http-beta-message.rst
+         
+   .. tip:: This isn't a tab
+   
+      Words words words.
+
 
