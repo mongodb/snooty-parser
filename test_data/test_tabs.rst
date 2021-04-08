@@ -88,13 +88,6 @@
    .. tab:: HTTP
       :tabid: http
    
-      This tab contains the syntax and parameters for creating a
-      collection for a |http| {+data-lake-store+}.
-   
-      .. include:: /includes/extracts/fact-http-beta-message.rst
-         
+      Tab Content
+  
    .. tip:: This isn't a tab
-   
-      Words words words.
-
-
