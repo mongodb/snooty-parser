@@ -554,11 +554,10 @@ class IAHandler:
         url: Optional[str]
         slug: Optional[str]
         project_name: Optional[str]
-        primary: bool
+        primary: Optional[bool]
 
         def serialize(self) -> n.SerializedNode:
             result: n.SerializedNode = {
-                "primary": self.primary,
                 "title": [node.serialize() for node in self.title],
             }
 
@@ -568,6 +567,8 @@ class IAHandler:
                 result["slug"] = self.slug
             if self.url:
                 result["url"] = self.url
+            if self.primary is not None:
+                result["primary"] = self.primary
 
             return result
 
@@ -659,7 +660,7 @@ class IAHandler:
                     url,
                     slug,
                     project_name,
-                    bool(entry.options.get("primary", False)),
+                    bool(entry.options.get("primary", False)) if project_name else None,
                 )
             )
 
@@ -1250,7 +1251,7 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
         if "slug" in node:
             path.append(clean_slug(node["slug"]))
             all_paths.append(path)
-        elif "project_name" in node:
+        elif "project_name" in node and node.get("primary"):
             path.append(node["project_name"])
             all_paths.append(path)
     else:

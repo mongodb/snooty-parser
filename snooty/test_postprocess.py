@@ -62,6 +62,10 @@ Page One Title
       :url: /nonexistent
 
    .. entry:: Title
+
+   .. entry:: Snooty Item Two
+      :url: https://docs.mongodb.com/snooty/
+      :project-name: snooty
 """,
         }
     ) as result:
@@ -76,7 +80,7 @@ Page One Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="index.txt" ia="[{'primary': False, 'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'primary': True, 'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/'}]">
+<root fileid="index.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': True}]">
 <directive name="ia">
 <directive name="entry" url="/page1" />
 <directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty" primary="True">
@@ -102,7 +106,7 @@ Page One Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page1.txt">
+<root fileid="page1.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 15}}, 'value': 'Snooty Item Two'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': False}]">
 <section>
 <heading id="page-one-title"><text>Page One Title</text></heading>
 <directive name="ia">
@@ -110,6 +114,9 @@ Page One Title
 <directive name="entry" url="/nonexistent" />
 <directive name="entry">
 <text>Title</text>
+</directive>
+<directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty">
+<text>Snooty Item Two</text>
 </directive>
 </directive>
 </section>
@@ -123,6 +130,9 @@ Page One Title
     <title><text>untitled</text></title>
     <toctree slug="/page1">
         <title><text>Page One Title</text></title>
+        <toctree url="https://docs.mongodb.com/snooty/" project_name="snooty">
+            <title><text>Snooty Item Two</text></title>
+        </toctree>
     </toctree>
     <toctree url="https://docs.mongodb.com/snooty/" project_name="snooty" primary="True">
         <title><text>Snooty Item</text></title>
