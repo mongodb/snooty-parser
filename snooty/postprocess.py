@@ -5,6 +5,7 @@ import sys
 import typing
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -41,7 +42,6 @@ from .types import FileId, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
-
 
 # XXX: The following two functions should probably be combined at some point
 def get_title_injection_candidate(node: n.Node) -> Optional[n.Parent[n.Node]]:
@@ -210,12 +210,21 @@ class IncludeHandler:
             assert len(argument_list) > 0
             return argument_list[0].value
 
-        if not isinstance(node, n.Directive) or not node.name == "include":
+        if not isinstance(node, n.Directive) or not node.name in [
+            "include",
+            "sharedinclude",
+        ]:
             return
 
         argument = get_include_argument(node)
+        print("# argument")
+        print(argument)
         include_slug = clean_slug(argument)
+        print("# include_slug")
+        print(include_slug)
+
         include_fileid = self.slug_fileid_mapping.get(include_slug)
+
         # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
         # This will likely be resolved by DOCSP-7159 https://jira.mongodb.org/browse/DOCSP-7159
         if include_fileid is None:

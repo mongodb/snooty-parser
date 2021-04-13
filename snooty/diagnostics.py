@@ -310,6 +310,23 @@ class UnmarshallingError(Diagnostic):
         self.reason = reason
 
 
+class CannotFetchSharedContent(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        path: str,
+        reason: int,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Error fetching {str(path)} from Github: {reason}", start, end
+        )
+        self.path = path
+        self.reason = reason
+
+
 class CannotOpenFile(Diagnostic):
     severity = Diagnostic.Level.error
 

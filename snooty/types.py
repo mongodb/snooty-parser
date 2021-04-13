@@ -24,6 +24,8 @@ SerializableType = ST
 FileId = FD
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
+DEFAULT_CACHE_DIR = Path.home().joinpath(".cache", "snooty")
+
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
 
@@ -139,7 +141,10 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
-        result = PurePath(os.path.relpath(path, self.source_path))
+        if path.is_relative_to(DEFAULT_CACHE_DIR):
+            result = path.relative_to(DEFAULT_CACHE_DIR)
+        else:
+            result = PurePath(os.path.relpath(path, self.source_path))
         # Ensure that we transform any Windows-style paths into a Posix-style FileId
         return FileId(*result.parts)
 
