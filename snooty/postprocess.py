@@ -5,7 +5,6 @@ import sys
 import typing
 from collections import defaultdict
 from copy import deepcopy
-from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -217,11 +216,7 @@ class IncludeHandler:
             return
 
         argument = get_include_argument(node)
-        print("# argument")
-        print(argument)
         include_slug = clean_slug(argument)
-        print("# include_slug")
-        print(include_slug)
 
         include_fileid = self.slug_fileid_mapping.get(include_slug)
 

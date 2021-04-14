@@ -8,7 +8,7 @@ author = "MongoDB, inc."
 author-email = "i80and@foxquill.com"
 home-page = "https://github.com/mongodb/snooty-parser"
 classifiers = ["License :: OSI Approved :: Apache Software License"]
-requires-python = "~= 3.7"
+requires-python = "~= 3.9"
 requires = [
     "pymongo[srv,tls] ~= 3.11.1",
     "docutils ~= 0.16",
