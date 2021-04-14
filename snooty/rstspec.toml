@@ -202,15 +202,16 @@ example = """..literalinclude:: ${1:/path/to/file.js}
 [directive.sharedinclude]
 help = """Include content from docs-shared."""
 content_type = "block"
-argument_type = ["path", "uri"]
+argument_type = "path"
 example = """.. sharedinclude:: ${1:/path/to/file.rst}
 
-   ${2:content such as replacements}
+   ${2:(optional) content such as replacements}
 """
 
 [directive.replacement]
 help = """Specify replacements for variables in a shared content item."""
 argument_type = "str"
+content_type = "block"
 example = """.. replacement:: ${1:variable name}
 
    ${2:Content with which to replace variable}
