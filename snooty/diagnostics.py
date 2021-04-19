@@ -355,7 +355,7 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
-class InvalidToctree(Diagnostic, MakeCorrectionMixin):
+class InvalidTocTree(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
 
     def __init__(

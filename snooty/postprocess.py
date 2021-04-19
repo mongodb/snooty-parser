@@ -30,7 +30,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidIAEntry,
     InvalidInclude,
-    InvalidToctree,
+    InvalidTocTree,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -778,7 +778,7 @@ class Postprocessor:
         iatree = self.build_iatree()
         toctree = self.build_toctree()
         if iatree and toctree.get("children"):
-            self.diagnostics[FileId("index.txt")].append(InvalidToctree(0))
+            self.diagnostics[FileId("index.txt")].append(InvalidTocTree(0))
 
         tree = iatree or toctree
         document.update(
@@ -1068,7 +1068,7 @@ class Postprocessor:
             return {}
         if not isinstance(starting_page.ast, n.Root):
             return {}
-        if not starting_page.ast.options.get("ia"):
+        if "ia" not in starting_page.ast.options:
             return {}
 
         title: Sequence[n.InlineNode] = self.heading_handler.get_title("index") or [
@@ -1083,6 +1083,7 @@ class Postprocessor:
         return root
 
     def iterate_ia(self, page: Page, result: Dict[str, SerializableType]) -> None:
+        """Construct a tree of similar structure to toctree. Starting from root, identify ia object on page and recurse on its entries to build a tree. Includes all potential properties of an entry including title, URI, project name, and primary status."""
         if not isinstance(page.ast, n.Root):
             return
 
@@ -1205,7 +1206,7 @@ class Postprocessor:
             self.find_toctree_nodes(fileid, child_ast, node, visited_file_ids)
 
     def breadcrumbs(self, tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
-        """Generate breadcrumbs for each page represented in the toctree"""
+        """Generate breadcrumbs for each page represented in the provided toctree"""
         page_dict: Dict[str, List[str]] = {}
         all_paths: List[Any] = []
 
