@@ -7,12 +7,139 @@ from . import diagnostics
 from .diagnostics import (
     DuplicateDirective,
     ExpectedTabs,
+    InvalidChild,
+    InvalidIAEntry,
     MissingTab,
+    MissingTocTreeEntry,
     TabMustBeDirective,
     TargetNotFound,
 )
 from .types import FileId
-from .util_test import ast_to_testing_string, check_ast_testing_string, make_test
+from .util_test import (
+    ast_to_testing_string,
+    check_ast_testing_string,
+    check_toctree_testing_string,
+    make_test,
+)
+
+
+def test_ia() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. ia::
+
+   .. entry::
+      :url: /page1
+
+   .. entry:: Snooty Item
+      :url: https://docs.mongodb.com/snooty/
+      :project-name: snooty
+      :primary:
+
+   .. entry:: Invalid
+      :project-name: invalid
+
+   .. note::
+
+.. ia::
+""",
+            Path(
+                "source/page1.txt"
+            ): """
+==============
+Page One Title
+==============
+
+.. ia::
+
+   .. entry::
+      :url: https://google.com
+
+   .. entry::
+      :url: /nonexistent
+
+   .. entry:: Title
+
+   .. entry:: Snooty Item Two
+      :url: https://docs.mongodb.com/snooty/
+      :project-name: snooty
+""",
+        }
+    ) as result:
+
+        active_file = "index.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 3
+        assert isinstance(diagnostics[0], InvalidIAEntry)
+        assert isinstance(diagnostics[1], InvalidChild)
+        assert isinstance(diagnostics[2], DuplicateDirective)
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': True}]">
+<directive name="ia">
+<directive name="entry" url="/page1" />
+<directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty" primary="True">
+<text>Snooty Item</text>
+</directive>
+<directive name="entry" project-name="invalid">
+<text>Invalid</text>
+</directive>
+<directive name="note" />
+</directive>
+<directive name="ia" />
+</root>
+""",
+        )
+
+        active_file = "page1.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 3
+        assert isinstance(diagnostics[0], InvalidIAEntry)
+        assert isinstance(diagnostics[1], MissingTocTreeEntry)
+        assert isinstance(diagnostics[2], InvalidIAEntry)
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="page1.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 15}}, 'value': 'Snooty Item Two'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': False}]">
+<section>
+<heading id="page-one-title"><text>Page One Title</text></heading>
+<directive name="ia">
+<directive name="entry" url="https://google.com" />
+<directive name="entry" url="/nonexistent" />
+<directive name="entry">
+<text>Title</text>
+</directive>
+<directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty">
+<text>Snooty Item Two</text>
+</directive>
+</directive>
+</section>
+</root>
+""",
+        )
+        check_toctree_testing_string(
+            result.metadata["iatree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="/page1">
+        <title><text>Page One Title</text></title>
+        <toctree url="https://docs.mongodb.com/snooty/" project_name="snooty">
+            <title><text>Snooty Item Two</text></title>
+        </toctree>
+    </toctree>
+    <toctree url="https://docs.mongodb.com/snooty/" project_name="snooty" primary="True">
+        <title><text>Snooty Item</text></title>
+    </toctree>
+</toctree>
+""",
+        )
 
 
 # ensure that broken links still generate titles
@@ -88,42 +215,19 @@ def test_toctree_self_add() -> None:
         assert not [
             diagnostics for diagnostics in result.diagnostics.values() if diagnostics
         ], "Should not raise any diagnostics"
-        assert result.metadata.get("toctree") == {
-            "title": [
-                {
-                    "type": "text",
-                    "position": {"start": {"line": 0}},
-                    "value": "untitled",
-                }
-            ],
-            "slug": "/",
-            "children": [
-                {
-                    "title": None,
-                    "slug": "page1",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-                {
-                    "title": [
-                        {
-                            "type": "text",
-                            "position": {"start": {"line": 0}},
-                            "value": "Overview",
-                        }
-                    ],
-                    "slug": "/",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-                {
-                    "title": None,
-                    "slug": "page2",
-                    "children": [],
-                    "options": {"drawer": True},
-                },
-            ],
-        }
+        check_toctree_testing_string(
+            result.metadata["toctree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="page1" drawer="True" />
+    <toctree slug="/" drawer="True">
+        <title><text>Overview</text></title>
+    </toctree>
+    <toctree slug="page2" drawer="True" />
+</toctree>
+""",
+        )
 
 
 def test_case_sensitive_labels() -> None:

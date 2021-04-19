@@ -3,6 +3,7 @@ import logging
 import os.path
 import sys
 import typing
+import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from typing import (
@@ -26,7 +27,10 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    InvalidChild,
+    InvalidIAEntry,
     InvalidInclude,
+    InvalidTocTree,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -542,6 +546,132 @@ class HeadingHandler:
             )
 
 
+class IAHandler:
+    """Identify IA directive on a page and save a list of its entries as a page-level option."""
+
+    class IAData(NamedTuple):
+        title: Sequence[n.InlineNode]
+        url: Optional[str]
+        slug: Optional[str]
+        project_name: Optional[str]
+        primary: Optional[bool]
+
+        def serialize(self) -> n.SerializedNode:
+            result: n.SerializedNode = {
+                "title": [node.serialize() for node in self.title],
+            }
+
+            if self.project_name:
+                result["project_name"] = self.project_name
+            if self.slug:
+                result["slug"] = self.slug
+            if self.url:
+                result["url"] = self.url
+            if self.primary is not None:
+                result["primary"] = self.primary
+
+            return result
+
+    def __init__(
+        self,
+        diagnostics: Dict[FileId, List[Diagnostic]],
+        heading_handler: HeadingHandler,
+    ) -> None:
+        self.ia: List[IAHandler.IAData] = []
+        self.diagnostics = diagnostics
+        self.heading_handler = heading_handler
+
+    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.ia = []
+
+    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if (
+            not isinstance(node, n.Directive)
+            or not node.name == "ia"
+            or not node.domain == ""
+        ):
+            return
+
+        if self.ia:
+            self.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
+
+        for entry in node.get_child_of_type(n.Directive):
+            if entry.name != "entry":
+                line = node.span[0]
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidChild(entry.name, "ia", "entry", line)
+                )
+                continue
+
+            if not entry.options.get("url"):
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidIAEntry(
+                        "IA entry directives must include the :url: option",
+                        node.span[0],
+                    )
+                )
+                continue
+
+            parsed = urllib.parse.urlparse(entry.options.get("url"))
+            if parsed.scheme:
+                url = entry.options.get("url")
+                slug = None
+            else:
+                url = None
+                slug = entry.options.get("url")
+
+            if slug and not self.heading_handler.get_title(clean_slug(slug)):
+                self.diagnostics[fileid_stack.current].append(
+                    MissingTocTreeEntry(slug, node.span[0])
+                )
+                continue
+
+            title: Sequence[n.InlineNode] = []
+            if len(entry.argument) > 0:
+                title = entry.argument
+            elif slug:
+                title = self.heading_handler.get_title(clean_slug(slug)) or []
+
+            project_name = entry.options.get("project-name")
+            if project_name and not url:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidIAEntry(
+                        "IA entry directives with :project-name: option must include :url: option",
+                        node.span[0],
+                    )
+                )
+                continue
+
+            if url and not title:
+                self.diagnostics[fileid_stack.current].append(
+                    InvalidIAEntry(
+                        "IA entries to external URLs must include titles",
+                        node.span[0],
+                    )
+                )
+                continue
+
+            self.ia.append(
+                IAHandler.IAData(
+                    title,
+                    url,
+                    slug,
+                    project_name,
+                    bool(entry.options.get("primary", False)) if project_name else None,
+                )
+            )
+
+    def finalize_ia(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.ia:
+            return
+
+        if isinstance(page.ast, n.Root):
+            page.ast.options["ia"] = [entry.serialize() for entry in self.ia]
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -610,12 +740,18 @@ class Postprocessor:
 
         target_handler = TargetHandler(self.targets)
         named_reference_handler = NamedReferenceHandler(self.diagnostics)
+        ia_handler = IAHandler(self.diagnostics, self.heading_handler)
         self.run_event_parser(
             [
                 (EventParser.OBJECT_START_EVENT, target_handler),
                 (EventParser.OBJECT_START_EVENT, named_reference_handler),
+                (EventParser.OBJECT_START_EVENT, ia_handler),
             ],
-            [(EventParser.PAGE_START_EVENT, target_handler.reset)],
+            [
+                (EventParser.PAGE_START_EVENT, target_handler.reset),
+                (EventParser.PAGE_START_EVENT, ia_handler.reset),
+                (EventParser.PAGE_END_EVENT, ia_handler.finalize_ia),
+            ],
         )
         self.run_event_parser(
             [
@@ -637,15 +773,37 @@ class Postprocessor:
             k: [node.serialize() for node in v]
             for k, v in self.heading_handler.slug_title_mapping.items()
         }
-        # Run postprocessing operations related to toctree and append to metadata document
+        # Run postprocessing operations related to toctree and append to metadata document.
+        # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
+        iatree = self.build_iatree()
+        toctree = self.build_toctree()
+        if iatree and toctree.get("children"):
+            self.diagnostics[FileId("index.txt")].append(InvalidTocTree(0))
+
+        tree = iatree or toctree
         document.update(
             {
-                "toctree": self.build_toctree(),
-                "toctreeOrder": self.toctree_order(),
-                "parentPaths": self.breadcrumbs(),
+                "toctree": toctree,
+                "toctreeOrder": self.toctree_order(tree),
+                "parentPaths": self.breadcrumbs(tree),
             }
         )
+
+        if iatree:
+            document["iatree"] = iatree
+
         return document
+
+    def _get_page_from_slug(self, current_page: Page, slug: str) -> Optional[Page]:
+        relative, _ = util.reroot_path(
+            FileId(slug), current_page.source_path, self.project_config.source_path
+        )
+
+        try:
+            fileid_with_ext = self.slug_fileid_mapping[relative.as_posix()]
+        except KeyError:
+            return None
+        return self.pages.get(fileid_with_ext)
 
     def run_event_parser(
         self,
@@ -903,6 +1061,46 @@ class Postprocessor:
             fileid_dict[slug] = fileid
         self.slug_fileid_mapping = fileid_dict
 
+    def build_iatree(self) -> Dict[str, SerializableType]:
+        starting_page = self.pages.get(FileId("index.txt"))
+
+        if not starting_page:
+            return {}
+        if not isinstance(starting_page.ast, n.Root):
+            return {}
+        if "ia" not in starting_page.ast.options:
+            return {}
+
+        title: Sequence[n.InlineNode] = self.heading_handler.get_title("index") or [
+            n.Text((0,), self.project_config.title)
+        ]
+        root: Dict[str, SerializableType] = {
+            "title": [node.serialize() for node in title],
+            "slug": "/",
+            "children": [],
+        }
+        self.iterate_ia(starting_page, root)
+        return root
+
+    def iterate_ia(self, page: Page, result: Dict[str, SerializableType]) -> None:
+        """Construct a tree of similar structure to toctree. Starting from root, identify ia object on page and recurse on its entries to build a tree. Includes all potential properties of an entry including title, URI, project name, and primary status."""
+        if not isinstance(page.ast, n.Root):
+            return
+
+        ia = page.ast.options.get("ia")
+        if not isinstance(ia, List):
+            return
+        for entry in ia:
+            curr: Dict[str, SerializableType] = {**entry, "children": []}
+            if isinstance(result["children"], List):
+                result["children"].append(curr)
+
+            slug = curr.get("slug")
+            if isinstance(slug, str):
+                child = self._get_page_from_slug(page, slug)
+                if child:
+                    self.iterate_ia(child, curr)
+
     def build_toctree(self) -> Dict[str, SerializableType]:
         """Build property toctree"""
 
@@ -1007,15 +1205,15 @@ class Postprocessor:
         for child_ast in ast.children:
             self.find_toctree_nodes(fileid, child_ast, node, visited_file_ids)
 
-    def breadcrumbs(self) -> Dict[str, List[str]]:
-        """Generate breadcrumbs for each page represented in the toctree"""
+    def breadcrumbs(self, tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
+        """Generate breadcrumbs for each page represented in the provided toctree"""
         page_dict: Dict[str, List[str]] = {}
         all_paths: List[Any] = []
 
         # Find all node to leaf paths for each node in the toctree
-        if "children" in self.toctree:
-            assert isinstance(self.toctree["children"], List)
-            for node in self.toctree["children"]:
+        if "children" in tree:
+            assert isinstance(tree["children"], List)
+            for node in tree["children"]:
                 paths: List[str] = []
                 get_paths(node, [], paths)
                 all_paths.extend(paths)
@@ -1023,15 +1221,15 @@ class Postprocessor:
         # Populate page_dict with a list of parent paths for each slug
         for path in all_paths:
             for i in range(len(path)):
-                slug = clean_slug(path[i])
+                slug = path[i]
                 page_dict[slug] = path[:i]
         return page_dict
 
-    def toctree_order(self) -> List[str]:
+    def toctree_order(self, tree: Dict[str, SerializableType]) -> List[str]:
         """Return a pre-order traversal of the toctree to be used for internal page navigation"""
         order: List[str] = []
 
-        pre_order(self.toctree, order)
+        pre_order(tree, order)
         return order
 
 
@@ -1053,6 +1251,9 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
         # Skip urls
         if "slug" in node:
             path.append(clean_slug(node["slug"]))
+            all_paths.append(path)
+        elif "project_name" in node and node.get("primary"):
+            path.append(node["project_name"])
             all_paths.append(path)
     else:
         # Recursively build the path

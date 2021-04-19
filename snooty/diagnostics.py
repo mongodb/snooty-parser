@@ -355,6 +355,40 @@ class MissingTocTreeEntry(Diagnostic):
         self.entry = entry
 
 
+class InvalidTocTree(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            """Projects with both "toctree" and "ia" directives are not supported""",
+            start,
+            end,
+        )
+
+    def did_you_mean(self) -> List[str]:
+        return [".. ia::"]
+
+
+class InvalidIAEntry(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        msg: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Invalid IA entry: {msg}",
+            start,
+            end,
+        )
+
+
 class UnknownTabset(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -535,3 +569,21 @@ class FetchError(Diagnostic):
             start,
             end,
         )
+
+
+class InvalidChild(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        child: str,
+        parent: str,
+        suggestion: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"{child} is not a valid child of {parent}", start, end)
+        self.suggestion = suggestion
+
+    def did_you_mean(self) -> List[str]:
+        return [f".. {self.suggestion}::"]
