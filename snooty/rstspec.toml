@@ -5,7 +5,7 @@ version = 0
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
 card_type = ["small", "large"]
-card_style = ["default", "compact"]
+card_style = ["default", "compact", "extra-compact"]
 charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
@@ -798,7 +798,7 @@ options.columns = "nonnegative_integer"
 options.style = "card_style"
 example = """.. card-group::
    ${1::columns: 2}
-   :style: ${2:|default,compact| (Optional)}
+   :style: ${2:|default,compact,extra-compact| (Optional)}
 
    ${0: Card content}
 """
