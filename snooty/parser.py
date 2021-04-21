@@ -921,12 +921,16 @@ class JSONVisitor:
             return
 
     def validate_tabs_children(self, node: n.Directive) -> None:
+        new_children: List[n.Node] = []
         line = node.start[0]
         for child in node.children:
             if (not isinstance(child, n.Directive)) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
                 )
+                continue
+            new_children.append(child)
+        node.children = new_children
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:

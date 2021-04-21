@@ -102,9 +102,6 @@ def test_tabs() -> None:
                 <text>HTTP</text>
                 <paragraph><text>Tab Content</text></paragraph>
             </directive>
-            <directive name="tip">
-                <text>This isn't a tab</text>
-            </directive>
         </directive>
         </root>""",
     )

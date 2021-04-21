@@ -645,7 +645,7 @@ def test_language_selector() -> None:
             """,
         )
 
-    # Ensure we gracefully handle invalid tabs
+    # Ensure we gracefully handle invalid children in named tabs
     with make_test(
         {
             Path(
@@ -668,7 +668,7 @@ def test_language_selector() -> None:
             TabMustBeDirective
         ]
 
-    # Ensure we gracefully handle invalid tabs
+    # Ensure we gracefully handle invalid children in tabs::
     with make_test(
         {
             Path(
