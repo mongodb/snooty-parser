@@ -83,4 +83,11 @@
    tabs:
      - bobs_your_uncle: foo
 
+.. tabs::
 
+   .. tab:: HTTP
+      :tabid: http
+   
+      Tab Content
+  
+   .. tip:: This isn't a tab

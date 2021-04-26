@@ -435,7 +435,7 @@ class TabMustBeDirective(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Tab sets may only contain tab directives, but found {tab_type}",
+            f"Tabs or Tab sets may only contain tab directives, but found {tab_type}",
             start,
             end,
         )

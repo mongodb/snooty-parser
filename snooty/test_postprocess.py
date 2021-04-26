@@ -749,13 +749,36 @@ def test_language_selector() -> None:
             """,
         )
 
-    # Ensure we gracefully handle invalid tabs
+    # Ensure we gracefully handle invalid children in named tabs
     with make_test(
         {
             Path(
                 "source/tabs-six.txt"
             ): """
 .. tabs-drivers::
+
+   .. tab::
+      :tabid: java-sync
+
+      Java (sync)
+
+   .. tip::
+
+      A tip
+"""
+        }
+    ) as result:
+        assert [type(d) for d in result.diagnostics[FileId("tabs-six.txt")]] == [
+            TabMustBeDirective
+        ]
+
+    # Ensure we gracefully handle invalid children in tabs::
+    with make_test(
+        {
+            Path(
+                "source/tabs-six.txt"
+            ): """
+.. tabs::
 
    .. tab::
       :tabid: java-sync

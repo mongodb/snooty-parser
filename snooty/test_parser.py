@@ -14,6 +14,7 @@ from .diagnostics import (
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
+    TabMustBeDirective,
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
@@ -96,12 +97,18 @@ def test_tabs() -> None:
             </directive>
         </directive>
 
+        <directive name="tabs">
+            <directive name="tab" tabid="http">
+                <text>HTTP</text>
+                <paragraph><text>Tab Content</text></paragraph>
+            </directive>
+        </directive>
         </root>""",
     )
-
     assert isinstance(diagnostics[0], UnknownTabID)
     assert isinstance(diagnostics[1], UnknownTabset)
     assert isinstance(diagnostics[2], DocUtilsParseError)
+    assert isinstance(diagnostics[3], TabMustBeDirective)
 
     # Test a tab with no tabid
     parser = rstparser.Parser(project_config, JSONVisitor)
