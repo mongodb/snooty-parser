@@ -784,6 +784,34 @@ def test_admonition_deprecated() -> None:
     )
 
 
+def test_banner() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. banner:: 
+    :variant: warning
+
+    Content
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    print(page.ast)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="banner" variant="warning">
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        </root>""",
+    )
+
+
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

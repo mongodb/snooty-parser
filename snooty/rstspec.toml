@@ -153,6 +153,14 @@ argument_type = "string"
 content_type = "string"
 example = """.. todo::"""
 
+[directive.banner]
+content_type = "block"
+options.variant = "string"
+example = """.. banner::
+   :variant: ${1: warning (Optional)}
+   ${2:banner content}
+"""
+
 [directive.contents]
 argument_type = "string"
 options.local = "flag"
