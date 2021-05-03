@@ -1468,6 +1468,9 @@ type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 [rstobject."py:meth"]
 type = "callable"
 
+[rstobject."py:method"]
+inherit = "py:meth"
+
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
 [rstobject."mongodb:mailgunaction"]
@@ -1599,11 +1602,11 @@ prefix = "asetting"
 [rstobject."mongodb:apierror"]
 help = """Error Code for Public API"""
 
-[rstobject.phpclass]
+[rstobject."mongodb:phpclass"]
 help = """PHP Library class"""
 prefix = "phpclass"
 
-[rstobject.phpmethod]
+[rstobject."mongodb:phpmethod"]
 help = """PHP Library method"""
 prefix = "phpmethod"
 
