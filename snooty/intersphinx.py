@@ -114,9 +114,11 @@ class Inventory:
 
             name, domain_and_role, raw_priority, uri, raw_dispname = match.groups()
 
-            # This is hard-coded in Sphinx as well. Support this name for compatibility.
+            # These are hard-coded in Sphinx as well. Support these names for compatibility.
             if domain_and_role == "std:cmdoption":
                 domain_and_role = "std:option"
+            elif domain_and_role == "py:method":
+                domain_and_role = "py:meth"
 
             uri_base = uri
             if uri.endswith("$"):
@@ -139,7 +141,6 @@ class Inventory:
                 name, (domain, role), priority, uri_base, uri, dispname
             )
             inventory.targets[f"{domain_and_role}:{name}"] = target_definition
-
         return inventory
 
 
@@ -181,5 +182,4 @@ def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
 
     with open(inventory_path, "wb") as f:
         f.write(res.content)
-
     return Inventory.parse(base_url, res.content)

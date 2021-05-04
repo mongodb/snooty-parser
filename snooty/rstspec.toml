@@ -1599,11 +1599,11 @@ prefix = "asetting"
 [rstobject."mongodb:apierror"]
 help = """Error Code for Public API"""
 
-[rstobject.phpclass]
+[rstobject."mongodb:phpclass"]
 help = """PHP Library class"""
 prefix = "phpclass"
 
-[rstobject.phpmethod]
+[rstobject."mongodb:phpmethod"]
 help = """PHP Library method"""
 prefix = "phpmethod"
 
