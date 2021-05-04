@@ -1468,9 +1468,6 @@ type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 [rstobject."py:meth"]
 type = "callable"
 
-[rstobject."py:method"]
-inherit = "py:meth"
-
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
 [rstobject."mongodb:mailgunaction"]

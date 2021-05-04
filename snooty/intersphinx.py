@@ -117,7 +117,7 @@ class Inventory:
             # These are hard-coded in Sphinx as well. Support these names for compatibility.
             if domain_and_role == "std:cmdoption":
                 domain_and_role = "std:option"
-            if domain_and_role == "py:method":
+            elif domain_and_role == "py:method":
                 domain_and_role = "py:meth"
 
             uri_base = uri
