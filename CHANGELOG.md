@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add IA Support (DOP-2055)
+- Add extra-compact card-group style (DOP-1836)
+- Add role to link to manual v4.4 (#307)
+- Validate children within tabs directives (DOP-1878)
+- Update Realm .NET SDK API role to latest release (#306)
+
+### Fixed
+
+- Fix handling of sphinx-generated intersphinx inventories
+  for pymongo, motor, and the php library docs. (DOP-1810)
+
 ## [v0.9.6] - 2021-04-07
 
 ### Changed
