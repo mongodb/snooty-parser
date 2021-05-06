@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.7] - 2021-05-06
+
 ### Added
 
 - Add IA Support (DOP-2055)
