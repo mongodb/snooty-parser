@@ -12,7 +12,7 @@ help: ## Show this help message
 
 .venv/.EXISTS: pyproject.toml
 	-rm -r .venv snootycli.py
-	python3 -m venv .venv
+	"$(SYSTEM_PYTHON)" -m venv .venv
 	. .venv/bin/activate && \
 		python3 -m pip install --upgrade pip && \
 		python3 -m pip install flit && \
