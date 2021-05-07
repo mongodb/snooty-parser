@@ -6,6 +6,7 @@ alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
 card_type = ["small", "large"]
 card_style = ["default", "compact", "extra-compact"]
+card_layout = ["default", "carousel"]
 charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
@@ -796,9 +797,11 @@ inherit = "_landing-block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
 options.style = "card_style"
+options.layout = "card_layout"
 example = """.. card-group::
    ${1::columns: 2}
    :style: ${2:|default,compact,extra-compact| (Optional)}
+   :layout: ${3:|default,carousel| (Optional)}
 
    ${0: Card content}
 """
