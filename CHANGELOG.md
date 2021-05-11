@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add layout option to landing cards (DOP-2117, #311).
+
+### Fixed
+
+- Respect the `SYSTEM_PYTHON` makefile variable when creating the virtual environment.
+
 ## [v0.9.7] - 2021-05-06
 
 ### Added
