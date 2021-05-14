@@ -1029,6 +1029,10 @@ type = "text"
 help = """Show a file path."""
 type = "text"
 
+[role.card-tag]
+help = """Create a tag that links to a named target."""
+inherit = "ref"
+
 [role.command]
 deprecated = true
 type = "text"
