@@ -1029,6 +1029,11 @@ type = "text"
 help = """Show a file path."""
 type = "text"
 
+[role."mongodb:card-ref"]
+help = """Create a reference, embedded within landing cards, with additional styling, that links to a named target."""
+example = """:card-ref:`Android <android-intro>`"""
+inherit = "ref"
+
 [role.command]
 deprecated = true
 type = "text"
