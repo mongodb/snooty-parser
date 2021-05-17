@@ -1029,8 +1029,9 @@ type = "text"
 help = """Show a file path."""
 type = "text"
 
-[role.card-ref]
-help = """Create a styled reference that links to a named target."""
+[role."mongodb:card-ref"]
+help = """Create a reference, embedded within landing cards, with additional styling, that links to a named target."""
+example = """:card-ref:`Android <android-intro>`"""
 inherit = "ref"
 
 [role.command]
