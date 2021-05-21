@@ -546,6 +546,64 @@ class HeadingHandler:
             )
 
 
+class BannerHandler:
+    """Traverse a series of pages matching specified targets in Snooty.toml
+    and append Banner directive nodes"""
+
+    def __init__(self, target: str, banner: n.Parent[n.Node]) -> None:
+        self.target = target
+        self.banner = banner
+
+    def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
+        """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
+        no 'section' is found within the first 50 nodes."""
+        queue: MutableSequence[n.Node] = node.children
+        curr_iteration = 0
+        max_iteration = 50
+
+        insertion_node = None
+
+        while queue and curr_iteration < max_iteration:
+            candidate = queue.pop(0)
+            if candidate.type == "section":
+                insertion_node = candidate
+                break
+            if isinstance(candidate, n.Parent):
+                queue.extend(candidate.children)
+
+            curr_iteration += 1
+        return insertion_node
+
+    def __determine_banner_index(self, node: n.Parent[n.Node]) -> int:
+        """Determine if there's a heading within the first level of the target insertion node's children.
+        If so, return the index position after the first detected heading. Otherwise, return 0."""
+        return next(
+            (idx for idx, child in enumerate(node.children) if child.type == "heading"),
+            0,
+        )
+
+    def __page_target_match(self, page: Page) -> bool:
+        """Check if page matches target specified, but always return false for includes"""
+        is_include_file = "includes" in page.source_path.parts
+        return not is_include_file and page.source_path.match(self.target)
+
+    def __call__(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """Attach a banner as specified throughout project for target pages"""
+        if (
+            self.target == ""
+            or not self.banner.children
+            or not self.__page_target_match(page)
+        ):
+            return
+
+        banner_parent = self.__find_target_insertion_node(page.ast)
+        target_insertion = -1
+        if isinstance(banner_parent, n.Parent):
+            target_insertion = self.__determine_banner_index(banner_parent)
+            assert banner_parent is not None
+            banner_parent.children.insert(target_insertion, self.banner)
+
+
 class IAHandler:
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -714,6 +772,9 @@ class Postprocessor:
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         contents_handler = ContentsHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
+        banner_handler = BannerHandler(
+            self.project_config.banner_node.target, self.project_config.banner_node.node
+        )
 
         self.run_event_parser(
             [
@@ -732,6 +793,7 @@ class Postprocessor:
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
                 (EventParser.PAGE_START_EVENT, contents_handler.reset),
+                (EventParser.PAGE_START_EVENT, banner_handler),
                 (EventParser.PAGE_END_EVENT, contents_handler.finalize_headings),
                 (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
                 (EventParser.PAGE_END_EVENT, self.heading_handler.reset),

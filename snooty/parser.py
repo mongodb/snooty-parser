@@ -66,6 +66,7 @@ from .page import Page, PendingTask
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
+    BannerConfig,
     BuildIdentifierSet,
     FileId,
     ProjectConfig,
@@ -1176,6 +1177,41 @@ class _Project:
                 )
 
         self.config.substitution_nodes = substitution_nodes
+
+        # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
+        if self.config.banner and self.config.banner.get("value"):
+            banner_data = self.config.banner
+
+            variant = (
+                banner_data.get("variant")
+                if isinstance(banner_data.get("variant"), str)
+                else "info"
+            )
+
+            target = (
+                ""
+                if not isinstance(banner_data.get("target"), str)
+                else banner_data.get("target")
+            )
+
+            assert target is not None and variant is not None
+            options = {"variant": variant}
+            self.config.banner_node = BannerConfig(
+                target, n.Directive((-1,), [], "", "banner", [], options)
+            )
+
+            page, banner_diagnostics = parse_rst(
+                inline_parser, root, banner_data.get("value")
+            )
+            self.config.banner_node.node.children = list(
+                deepcopy(child) for child in page.ast.children
+            )
+
+            if banner_diagnostics:
+                backend.on_diagnostics(
+                    self.config.get_fileid(self.config.config_path),
+                    banner_diagnostics,
+                )
 
         username = getpass.getuser()
         try:

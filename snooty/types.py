@@ -98,6 +98,13 @@ class StaticAsset:
 
 @checked
 @dataclass
+class BannerConfig:
+    target: str
+    node: n.Directive
+
+
+@checked
+@dataclass
 class ManPageConfig:
     file: str
     title: str
@@ -119,6 +126,13 @@ class ProjectConfig:
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
+    banner: Dict[str, str] = field(default_factory=dict)
+    # banner_node contains an instantiated banner node with target data
+    banner_node: BannerConfig = field(
+        default_factory=lambda: BannerConfig(
+            "", n.Directive((-1,), [], "", "banner", [], {})
+        )
+    )
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
