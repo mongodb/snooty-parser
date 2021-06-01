@@ -1064,11 +1064,6 @@ def register_spec_with_docutils(
     call to this function. This function should only be called once in the
     process lifecycle."""
 
-    from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
-
-    SPECIAL_DIRECTIVE_HANDLERS["guide"] = LegacyGuideDirective
-    SPECIAL_DIRECTIVE_HANDLERS["guide-index"] = LegacyGuideIndexDirective
-
     builder = Registry.Builder()
     directives = list(spec.directive.items())
     roles = list(spec.role.items())

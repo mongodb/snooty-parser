@@ -1971,66 +1971,67 @@ This is an autonumbered footnote [#]_ in use.
     )
 
 
-def test_cardgroup() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
+# DEPRECATING?
+# def test_cardgroup() -> None:
+#     path = ROOT_PATH.joinpath(Path("test.rst"))
+#     project_config = ProjectConfig(ROOT_PATH, "", source="./")
+#     parser = rstparser.Parser(project_config, JSONVisitor)
 
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. card-group::
-   :type: small
+#     page, diagnostics = parse_rst(
+#         parser,
+#         path,
+#         """
+# .. card-group::
+#    :type: small
 
-    cards:
+#     cards:
 
-    - id: test-one
-      headline: Test One
-      image: /compass-explain-plan-with-index-raw-json.png
-      link: https://docs.mongodb.com/guides/server/delete
+#     - id: test-one
+#       headline: Test One
+#       image: /compass-explain-plan-with-index-raw-json.png
+#       link: https://docs.mongodb.com/guides/server/delete
 
-    - id: test-two
-      headline: Test Two
-      image: /compass-explain-plan-with-index-raw-json.png
-      link: https://docs.mongodb.com/guides/server/update
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 0
-    check_ast_testing_string(
-        page.ast,
-        """<root fileid="test.rst">
-        <directive name="card-group" type="small">
-        <directive name="cardgroup-card" cardid="test-one" headline="Test One" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/delete" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
-        <directive name="cardgroup-card" cardid="test-two" headline="Test Two" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/update" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
-        </directive>
-        </root>""",
-    )
+#     - id: test-two
+#       headline: Test Two
+#       image: /compass-explain-plan-with-index-raw-json.png
+#       link: https://docs.mongodb.com/guides/server/update
+# """,
+#     )
+#     page.finish(diagnostics)
+#     assert len(diagnostics) == 0
+#     check_ast_testing_string(
+#         page.ast,
+#         """<root fileid="test.rst">
+#         <directive name="card-group" type="small">
+#         <directive name="cardgroup-card" cardid="test-one" headline="Test One" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/delete" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
+#         <directive name="cardgroup-card" cardid="test-two" headline="Test Two" image="/compass-explain-plan-with-index-raw-json.png" link="https://docs.mongodb.com/guides/server/update" checksum="e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c" />
+#         </directive>
+#         </root>""",
+#     )
 
+# DEPRECATING?
+# def test_cardgroup_invalid_yaml() -> None:
+#     path = ROOT_PATH.joinpath(Path("test.rst"))
+#     project_config = ProjectConfig(ROOT_PATH, "", source="./")
+#     parser = rstparser.Parser(project_config, JSONVisitor)
+#     page, diagnostics = parse_rst(
+#         parser,
+#         path,
+#         """
+# .. card-group::
 
-def test_cardgroup_invalid_yaml() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. card-group::
+#     cards:
 
-    cards:
-
-    - id test-one
-      headline: Test One
-      image: /compass-explain-plan-with-index-raw-json.png
-      link: https://docs.mongodb.com/guides/server/delete
-""",
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], ErrorParsingYAMLFile)
-    assert diagnostics[0].start[0] == 5
+#     - id test-one
+#       headline: Test One
+#       image: /compass-explain-plan-with-index-raw-json.png
+#       link: https://docs.mongodb.com/guides/server/delete
+# """,
+#     )
+#     page.finish(diagnostics)
+#     assert len(diagnostics) == 1
+#     assert isinstance(diagnostics[0], ErrorParsingYAMLFile)
+#     assert diagnostics[0].start[0] == 5
 
 
 def test_toctree() -> None:

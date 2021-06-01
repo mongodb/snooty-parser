@@ -458,79 +458,12 @@ example = """.. cssclass:: ${1:class name}
 [directive.card-group]
 options.type = "card_type"
 content_type = "block"
+deprecated = true
 example = """.. card-group::
-   :card_type: ${1:small or large}
+   :type: ${1:small or large}
 
    ${0:Card content}
 """
-
-###### Guides
-# Examples commented out to avoid confusion with similar devhub directives;
-# can be used for workspace-specific snippets in future.
-[directive.card]
-help = """A single-page card."""
-argument_type = "string"
-
-[directive.multi-card]
-help = """A card with multiple pages."""
-# example = """.. multi-card:: ${1:Card Title}
-
-#    * ${0:/path-to-included-article
-#    * }
-# """
-argument_type = "string"
-content_type = "path-list"
-
-[directive.guide-index]
-help = """Render the guide landing page, using the cards listed in this directive."""
-content_type = ["directive.card", "directive.multi-card"]
-
-[directive.guide]
-help = """Legacy guide definition."""
-content_type = "block"
-deprecated = true
-
-[directive._guides-base]
-required_context = "guide"
-argument_type = "string"
-content_type = "block"
-
-[directive.category]
-help = """The guide's type."""
-inherit = "_guides-base"
-argument_type = "guide_categories"
-# example = """.. category:: ${1:Getting Started}
-# """
-
-[directive.level]
-help = """The expected level of user experience for this guide."""
-inherit = "_guides-base"
-argument_type = "user_level"
-# example = """.. level:: ${0|beginner,intermediate,advanced|}
-# """
-
-[directive.author]
-help = """The author of this guide."""
-inherit = "_guides-base"
-# example = """.. author:: ${0: Author of the guide}
-# """
-
-[directive.product_version]
-help = """The version of product to which this guide applies."""
-inherit = "_guides-base"
-# example = """.. product_version:: ${0:v4.4}
-# """
-
-[directive.hlist]
-content_type = "list"
-options.columns = "nonnegative_integer"
-
-[directive.blockquote]
-help = """A block of content which is quoted from another source."""
-content_type = "block"
-# example = """.. blockquote::
-#    ${0: quoted content}
-# """
 
 [directive.languages]
 help = """A list of languages that this guide supports."""
@@ -540,82 +473,7 @@ help = """A list of languages that this guide supports."""
 #    * compass
 #    * python}
 # """
-inherit = "_guides-base"
 content_type = "list"
-
-[directive.deployments]
-help = """Lists the expected types of MongoDB deployments for this guide."""
-inherit = "_guides-base"
-# example = """.. deployments::
-
-#    * ${0:standalone
-#    * replica set}
-# """
-
-[directive.result_description]
-help = """Describes the end result that the user should have once they have finished this guide."""
-inherit = "_guides-base"
-example = """.. result_description::
-
-   ${0:End result user should reach when they've finished the guide}
-"""
-
-[directive.prerequisites]
-help = """The prerequisites to start this guide."""
-inherit = "_guides-base"
-# example = """.. prerequisites::
-
-#    ${0:List of prerequisites required before starting the guide's procedure}
-# """
-
-[directive.check_your_environment]
-help = """Checks the user should perform before starting this guide."""
-inherit = "_guides-base"
-# example = """.. check_your_environment::
-
-#    ${0:Verifications user should perform to ensure they're ready to
-#    do the procedure}
-# """
-
-[directive.time]
-help = """Shows the time expected for this guide."""
-inherit = "_guides-base"
-# example = """.. time:: ${0:20 minutes}
-# """
-
-[directive.procedure]
-help = """This guide's main procedure."""
-inherit = "_guides-base"
-# example = """.. procedure::
-
-#    ${0:Main container for the procedure}
-# """
-
-[directive.summary]
-inherit = "_guides-base"
-# example = """.. summary::
-
-#    ${0:In this guide, you will…}
-# """
-[directive.whats_next]
-help = """What the user should do next. Typically a brief paragraph, followed by a list of articles."""
-inherit = "_guides-base"
-# example = """.. whats_next::
-
-#    ${1:Brief paragraph indicating what the user should do next.}
-
-#    ${0:* article example 1
-#    * article example 2}
-# """
-
-[directive."guide:seealso"]
-help = """Related pages. Typically a list."""
-inherit = "_guides-base"
-# example = """.. seealso::
-
-#    ${0:- first related page
-#    - second related page}
-# """
 
 [directive."mongodb:mongo-web-shell"]
 help = """An instance of the web version of a Mongo shell"""
@@ -784,16 +642,16 @@ argument_type = "string"
 inherit = "_landing-base"
 content_type = "block"
 
-[directive."landing:button"]
+[directive."mongodb:button"]
 help = "Make a button."
 example = """.. button:: ${1: string}
 :uri: ${2:/path or url}"""
 argument_type = "string"
-content_type = "_landing-block"
+content_type = "block"
 options.uri = { type = ["path", "uri"], required = true }
 
-[directive."landing:card-group"]
-inherit = "_landing-block"
+[directive."mongodb:card-group"]
+content_type = "block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
 options.layout = "card_layout"
@@ -806,7 +664,7 @@ example = """.. card-group::
    ${0: Card content}
 """
 
-[directive."landing:card"]
+[directive."mongodb:card"]
 example = """.. card::
    :headline: ${1:Run a self-managed database (Optional)}
    :cta: ${2:Get started with MongoDB}
@@ -818,7 +676,7 @@ example = """.. card::
    ${0:Card content.}
 """
 help = """Card in a card-group. Each card links to the specified URI, and can include an icon, as well as a call-to-action string"""
-inherit = "_landing-block"
+content_type = "block"
 options.headline = "string"
 options.cta = "string"
 options.url = "uri"
@@ -832,29 +690,28 @@ example = """..cta::
 
    ${0::manual:`Read the Introduction to MongoDB </introduction>`}
 """
-inherit = "_landing-block"
+content_type = "block"
 
-[directive."landing:introduction"]
-inherit = "_landing-block"
+[directive."mongodb:introduction"]
+content_type = "block"
 
-[directive."landing:kicker"]
+[directive."mongodb:kicker"]
 help = "Make a kicker (a subheader that is placed on top of the main header)."
 example = """.. kicker:: ${1: string}"""
 argument_type = "string"
 
-[directive."landing:procedure"]
+[directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
 example = """.. procedure::
 ${0: Steps content}"""
-content_type = "_landing-block"
+content_type = "block"
 
-[directive."landing:step"]
+[directive."mongodb:step"]
 help = "Make a single, numbered step."
 example = """.. step:: ${0: Step's headline string}
 ${1: Step content}"""
 argument_type = "string"
-content_type = "_landing-block"
-
+content_type = "block"
 
 ###### Misc.
 [directive.atf-image]
