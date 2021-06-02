@@ -264,7 +264,9 @@ class JSONVisitor:
             if directive:
                 self.state.append(directive)
         elif isinstance(node, docutils.nodes.Text):
-            self.state.append(n.Text((line,), str(node)))
+            # docutils will inject \0000 characters into text nodes when there are escape characters
+            text = str(node).replace("\x00", "")
+            self.state.append(n.Text((line,), text))
             return
         elif isinstance(node, docutils.nodes.literal_block):
             self.diagnostics.append(
