@@ -577,9 +577,16 @@ class BannerHandler:
     def __determine_banner_index(self, node: n.Parent[n.Node]) -> int:
         """Determine if there's a heading within the first level of the target insertion node's children.
         If so, return the index position after the first detected heading. Otherwise, return 0."""
-        return next(
-            (idx for idx, child in enumerate(node.children) if child.type == "heading"),
-            0,
+        return (
+            next(
+                (
+                    idx
+                    for idx, child in enumerate(node.children)
+                    if child.type == "heading"
+                ),
+                0,
+            )
+            + 1
         )
 
     def __page_target_match(self, page: Page) -> bool:
@@ -602,7 +609,6 @@ class BannerHandler:
             target_insertion = self.__determine_banner_index(banner_parent)
             assert banner_parent is not None
             banner_parent.children.insert(target_insertion, self.banner)
-
 
 
 class IAHandler:

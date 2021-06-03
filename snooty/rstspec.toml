@@ -6,6 +6,7 @@ alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
 card_type = ["small", "large"]
 card_style = ["default", "compact", "extra-compact"]
+banner_variant = ["info","warning","danger"]
 charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
@@ -155,7 +156,7 @@ example = """.. todo::"""
 
 [directive.banner]
 content_type = "block"
-options.variant = "string"
+options.variant = "banner_variant"
 example = """.. banner::
    :variant: ${1: warning (Optional)}
    ${2:banner content}
