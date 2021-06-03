@@ -1,9 +1,0 @@
-:template: landing
-
-==============================
-Landing Domain Directive Tests
-==============================
-
-.. cta::
-
-   :manual:`Read the Introduction to MongoDB </introduction>`

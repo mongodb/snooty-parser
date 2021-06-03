@@ -56,3 +56,7 @@ MongoDB Domain Directive Tests
       Paragraph.
 
       :ref:`To learn more, see Import and Export Data<Import and Export Data>`
+
+.. cta::
+
+   :manual:`Read the Introduction to MongoDB </introduction>`

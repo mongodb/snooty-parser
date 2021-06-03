@@ -454,16 +454,7 @@ example = """.. cssclass:: ${1:class name}
 """
 
 [directive.uriwriter]
-
-[directive.card-group]
-options.type = "card_type"
-content_type = "block"
 deprecated = true
-example = """.. card-group::
-   :type: ${1:small or large}
-
-   ${0:Card content}
-"""
 
 [directive.languages]
 help = """A list of languages that this guide supports."""
@@ -474,27 +465,6 @@ help = """A list of languages that this guide supports."""
 #    * python}
 # """
 content_type = "list"
-
-[directive."mongodb:mongo-web-shell"]
-help = """An instance of the web version of a Mongo shell"""
-options.version = "mws_version"
-example = """.. mongo-web-shell::
-   ${1::version: (string)}
-"""
-
-[directive."mongodb:openapi"]
-help = """Include a reStructuredText file's contents."""
-argument_type = ["path", "uri"]
-options.uses-rst = "flag"
-
-[directive."mongodb:operation"]
-content_type = "block"
-options.hash = "string"
-options.method = "string"
-options.path = "string"
-
-[role."mongodb:required"]
-type = "explicit_title"
 
 ###### DevHub
 [directive._devhub-base]
@@ -630,18 +600,7 @@ example = """.. related::
    * https://url-of-related-article}
 """
 
-##### Landing Pages
-[directive._landing-base]
-required_context = "landing"
-
-[directive._landing-inline]
-inherit = "_landing-base"
-argument_type = "string"
-
-[directive._landing-block]
-inherit = "_landing-base"
-content_type = "block"
-
+##### Internal "mongodb" directives
 [directive."mongodb:button"]
 help = "Make a button."
 example = """.. button:: ${1: string}
@@ -649,20 +608,6 @@ example = """.. button:: ${1: string}
 argument_type = "string"
 content_type = "block"
 options.uri = { type = ["path", "uri"], required = true }
-
-[directive."mongodb:card-group"]
-content_type = "block"
-help = """Container to hold a group of cards"""
-options.columns = "nonnegative_integer"
-options.layout = "card_layout"
-options.style = "card_style"
-example = """.. card-group::
-   ${1::columns: 2}
-   :layout: ${3:|default,carousel| (Optional)}
-   :style: ${2:|default,compact,extra-compact| (Optional)}
-
-   ${0: Card content}
-"""
 
 [directive."mongodb:card"]
 example = """.. card::
@@ -684,7 +629,21 @@ options.icon = ["path", "uri"]
 options.icon-alt = "string"
 options.tag = "string"
 
-[directive."landing:cta"]
+[directive."mongodb:card-group"]
+content_type = "block"
+help = """Container to hold a group of cards"""
+options.columns = "nonnegative_integer"
+options.layout = "card_layout"
+options.style = "card_style"
+example = """.. card-group::
+   ${1::columns: 2}
+   :layout: ${3:|default,carousel| (Optional)}
+   :style: ${2:|default,compact,extra-compact| (Optional)}
+
+   ${0: Card content}
+"""
+
+[directive."mongodb:cta"]
 help = "Call to action directing users to a new part of the site"
 example = """..cta::
 
@@ -699,6 +658,24 @@ content_type = "block"
 help = "Make a kicker (a subheader that is placed on top of the main header)."
 example = """.. kicker:: ${1: string}"""
 argument_type = "string"
+
+[directive."mongodb:mongo-web-shell"]
+help = """An instance of the web version of a Mongo shell"""
+options.version = "mws_version"
+example = """.. mongo-web-shell::
+   ${1::version: (string)}
+"""
+
+[directive."mongodb:openapi"]
+help = """Include a reStructuredText file's contents."""
+argument_type = ["path", "uri"]
+options.uses-rst = "flag"
+
+[directive."mongodb:operation"]
+content_type = "block"
+options.hash = "string"
+options.method = "string"
+options.path = "string"
 
 [directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
@@ -886,11 +863,6 @@ type = "text"
 help = """Show a file path."""
 type = "text"
 
-[role."mongodb:card-ref"]
-help = """Create a reference, embedded within landing cards, with additional styling, that links to a named target."""
-example = """:card-ref:`Android <android-intro>`"""
-inherit = "ref"
-
 [role.command]
 deprecated = true
 type = "text"
@@ -1011,6 +983,14 @@ type = {domain = "std", name = "label", format = []}
 
 [role."mongodb:ref"]
 inherit = "ref"
+
+[role."mongodb:card-ref"]
+help = """Create a reference, embedded within cards, with additional styling, that links to a named target."""
+example = """:card-ref:`Android <android-intro>`"""
+inherit = "ref"
+
+[role."mongodb:required"]
+type = "explicit_title"
 
 [role.term]
 help = """Link to a term in the glossary."""

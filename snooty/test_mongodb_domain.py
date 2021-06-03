@@ -97,3 +97,9 @@ def test_mongodb_directives(backend: Backend) -> None:
             </directive>
         </directive>""",
     )
+
+    cta = section.children[6]
+    check_ast_testing_string(
+        cta,
+        """<directive domain="mongodb" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction/"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
+    )
