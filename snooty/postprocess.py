@@ -557,7 +557,7 @@ class BannerHandler:
     def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
         """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
         no 'section' is found within the first 50 nodes."""
-        queue: MutableSequence[n.Node] = node.children
+        queue: List[n.Node] = list(node.children)
         curr_iteration = 0
         max_iteration = 50
 
@@ -569,7 +569,7 @@ class BannerHandler:
                 insertion_node = candidate
                 break
             if isinstance(candidate, n.Parent):
-                queue.extend(candidate.children)
+                queue.extend(list(candidate.children))
 
             curr_iteration += 1
         return insertion_node
@@ -602,6 +602,7 @@ class BannerHandler:
             target_insertion = self.__determine_banner_index(banner_parent)
             assert banner_parent is not None
             banner_parent.children.insert(target_insertion, self.banner)
+
 
 
 class IAHandler:
@@ -1427,7 +1428,6 @@ class DevhubPostprocessor(Postprocessor):
 
         if page_groups:
             document.update({"pageGroups": page_groups})
-
         return document, self.diagnostics
 
     def reset_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
