@@ -2686,9 +2686,13 @@ Link to :opsmgr:`Ops Manager </page?q=true>`
 
 
 def test_escape() -> None:
+    """Ensure that escaping characters after a substitution results in the proper output."""
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # DOP-2196: Writers discovered that an |adl|\s substitution resulted in a box character rendering
+    # after Atlas Data Lake.
     page, diagnostics = parse_rst(
         parser,
         path,
