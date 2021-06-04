@@ -1191,6 +1191,14 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/%s"}
 help = """Link to a page in the Node.js driver's API reference."""
 type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
+[role.node-api-4.0]
+help = """Link to a page in Node.js driver V4.0's API reference."""
+type = {link = "https://mongodb.github.io/node-mongodb-native/4.0%s"}
+
+[role.node-api-3.6]
+help = """Link to a page in Node.js driver V3.6's API reference."""
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
+
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
 type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
