@@ -2699,7 +2699,7 @@ def test_escape() -> None:
         r"""
 .. |adl| replace:: Atlas Data Lake
 
-|adl|\s
+|adl|\ss
 """,
     )
 
@@ -2712,6 +2712,6 @@ def test_escape() -> None:
         """
 <root fileid="../test.rst">
     <substitution_definition name="adl"><text>Atlas Data Lake</text></substitution_definition>
-    <paragraph><substitution_reference name="adl"></substitution_reference><text>s</text></paragraph>
+    <paragraph><substitution_reference name="adl"></substitution_reference><text>ss</text></paragraph>
 </root>""",
     )
