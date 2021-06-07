@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.9.9] - 2021-06-07
 
+### Added
+
+- Add versioned node api directives (DOP-2223, #317).
+- Add card-tag refrole (DOP-2174, #313).
+
+### Changed
+
+- Optimized the postprocessor (#316).
+
+### Fixed
+
+- Remove \x00 characters from text nodes (DOP-2196, #315).
+
 ## [v0.9.8] - 2021-05-11
 
 ### Added
