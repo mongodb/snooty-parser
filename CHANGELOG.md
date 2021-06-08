@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Remove \x00 characters from text nodes (DOP-2196, #315).
+### Changed
+
+- Remove landing domain and guides content (DOP-2215, #314)
 
 ## [v0.9.8] - 2021-05-11
 

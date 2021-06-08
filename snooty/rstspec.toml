@@ -56,7 +56,8 @@ ${4:   :align:
 
 [directive."ecosystem:landing-page-tiles"]
 
-[directive."landing:deprecated-version-selector"]
+# Intended for use on the docs.mongodb.com/legacy landing site only
+[directive."mongodb:deprecated-version-selector"]
 
 [directive.admonition]
 content_type = "block"
