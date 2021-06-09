@@ -1363,6 +1363,7 @@ A Heading
             """,
         )
 
+
 def test_monospace_limit_fix() -> None:
     with make_test(
         {
@@ -1374,13 +1375,16 @@ Title
 =====
 .. limit:: a test of a limit
 :limit:`a test of a limit`
-"""}
+"""
+        }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 1
         page = result.pages[FileId("index.txt")]
         print(ast_to_testing_string(page.ast))
-        check_ast_testing_string(page.ast, """
+        check_ast_testing_string(
+            page.ast,
+            """
 <root fileid="index.txt">
 <section><heading id="title">
 <text>Title</text></heading>
@@ -1390,4 +1394,5 @@ Title
 <text>a test of a limit</text></target_identifier></target><paragraph>
 <ref_role domain="mongodb" name="limit" target="a test of a limit" fileid="['index', 'mongodb-limit-a-test-of-a-limit']">
 <text>a test of a limit</text>
-</ref_role></paragraph></section></root>""")
+</ref_role></paragraph></section></root>""",
+        )
