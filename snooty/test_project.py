@@ -184,7 +184,7 @@ def test_get_ast() -> None:
         <paragraph><text>Test.</text></paragraph>
         <directive name="include"><text>/includes/steps/test.rst</text>
             <root fileid="includes/steps-test.yaml">
-            <directive name="steps"><directive name="step"><section><heading id="identify-the-privileges-granted-by-a-role">
+            <directive name="steps-yaml"><directive name="step-yaml"><section><heading id="identify-the-privileges-granted-by-a-role">
             <text>Identify the privileges granted by a role.</text></heading>
             <paragraph><text>this is a test step.</text></paragraph></section></directive></directive>
             </root>
