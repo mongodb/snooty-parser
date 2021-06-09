@@ -1541,6 +1541,7 @@ help = """MongoDB reporting output"""
 [rstobject."mongodb:error"]
 [rstobject."mongodb:limit"]
 help = """MongoDB system limit"""
+format = []
 
 [rstobject."mongodb:macro"]
 help = """JavaScript shell macro"""
