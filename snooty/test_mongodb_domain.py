@@ -25,7 +25,7 @@ def backend() -> Backend:
 def test_mongodb_directives(backend: Backend) -> None:
     page_id = FileId("index.txt")
     page = backend.pages[page_id]
-    # assert len(page.static_assets) == 1
+    assert len(page.static_assets) == 1
 
     ast = page.ast
     section = ast.children[0]
