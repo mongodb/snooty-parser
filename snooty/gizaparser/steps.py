@@ -107,7 +107,7 @@ class Step(Inheritable, HeadingMixin):
 
 def step_to_page(page: Page, step: Step, rst_parser: EmbeddedRstParser) -> n.Directive:
     rendered = step.render(page, rst_parser)
-    directive = n.Directive((step.line,), [], "", "step", [], {})
+    directive = n.Directive((step.line,), [], "", "step-yaml", [], {})
     directive.children = [rendered]
     return directive
 
@@ -129,7 +129,7 @@ class GizaStepsCategory(GizaCategory[Step]):
         page, rst_parser = page_factory(output_filename)
         page.category = "steps"
         source_fileid = self.project_config.get_fileid(source_path)
-        steps_directive = n.Directive((0,), [], "", "steps", [], {})
+        steps_directive = n.Directive((0,), [], "", "steps-yaml", [], {})
         steps_directive.children = [
             step_to_page(page, step, rst_parser) for step in steps
         ]

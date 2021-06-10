@@ -173,12 +173,12 @@ def test_text_doc_get_page_ast() -> None:
 
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
             <root fileid="includes/steps-migrate-compose-pr.yaml">
-            <directive name="steps">
-            <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
+            <directive name="steps-yaml">
+            <directive name="step-yaml"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
             <ref_role domain="std" name="doc" fileid="['/cloud/atlas', '']"><text>create one</text></ref_role>
             <text> now.</text></paragraph></section></directive>
-            <directive name="step"><section><heading id="compose-mongodb-deployment">
+            <directive name="step-yaml"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>
             </section></directive></directive>
             </root></directive></section></root>"""
