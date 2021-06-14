@@ -1497,7 +1497,8 @@ value = "This product is deprecated"
 </section>
 </root>
             """,
-)
+        )
+
 
 def test_monospace_limit_fix() -> None:
     with make_test(
