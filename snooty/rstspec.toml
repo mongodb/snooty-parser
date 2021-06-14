@@ -4,9 +4,10 @@ version = 0
 [enum]
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
-card_type = ["small", "large"]
-card_style = ["default", "compact", "extra-compact"]
 banner_variant = ["info", "warning", "danger"]
+card_layout = ["default", "carousel"]
+card_style = ["default", "compact", "extra-compact"]
+card_type = ["small", "large"]
 charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
@@ -805,9 +806,11 @@ options.uri = { type = ["path", "uri"], required = true }
 inherit = "_landing-block"
 help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
+options.layout = "card_layout"
 options.style = "card_style"
 example = """.. card-group::
    ${1::columns: 2}
+   :layout: ${3:|default,carousel| (Optional)}
    :style: ${2:|default,compact,extra-compact| (Optional)}
 
    ${0: Card content}
@@ -1036,6 +1039,11 @@ type = "text"
 help = """Show a file path."""
 type = "text"
 
+[role."mongodb:card-ref"]
+help = """Create a reference, embedded within landing cards, with additional styling, that links to a named target."""
+example = """:card-ref:`Android <android-intro>`"""
+inherit = "ref"
+
 [role.command]
 deprecated = true
 type = "text"
@@ -1191,6 +1199,14 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/%s"}
 
 [role.node-api]
 help = """Link to a page in the Node.js driver's API reference."""
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
+
+[role."node-api-4.0"]
+help = """Link to a page in Node.js driver V4.0's API reference."""
+type = {link = "https://mongodb.github.io/node-mongodb-native/4.0%s"}
+
+[role."node-api-3.6"]
+help = """Link to a page in Node.js driver V3.6's API reference."""
 type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role.ruby-api]
@@ -1543,6 +1559,7 @@ help = """MongoDB reporting output"""
 [rstobject."mongodb:error"]
 [rstobject."mongodb:limit"]
 help = """MongoDB system limit"""
+format = []
 
 [rstobject."mongodb:macro"]
 help = """JavaScript shell macro"""
@@ -1609,11 +1626,11 @@ prefix = "asetting"
 [rstobject."mongodb:apierror"]
 help = """Error Code for Public API"""
 
-[rstobject.phpclass]
+[rstobject."mongodb:phpclass"]
 help = """PHP Library class"""
 prefix = "phpclass"
 
-[rstobject.phpmethod]
+[rstobject."mongodb:phpmethod"]
 help = """PHP Library method"""
 prefix = "phpmethod"
 

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.9] - 2021-06-07
+
+### Added
+
+- Add versioned node api directives (DOP-2223, #317).
+- Add card-tag refrole (DOP-2174, #313).
+
+### Changed
+
+- Optimized the postprocessor (#316).
+
+### Fixed
+
+- Remove \x00 characters from text nodes (DOP-2196, #315).
+
+## [v0.9.8] - 2021-05-11
+
+### Added
+
+- Add layout option to landing cards (DOP-2117, #311).
+
+### Fixed
+
+- Respect the `SYSTEM_PYTHON` makefile variable when creating the virtual environment.
+
+## [v0.9.7] - 2021-05-06
+
+### Added
+
+- Add IA Support (DOP-2055)
+- Add extra-compact card-group style (DOP-1836)
+- Add role to link to manual v4.4 (#307)
+- Validate children within tabs directives (DOP-1878)
+- Update Realm .NET SDK API role to latest release (#306)
+
+### Fixed
+
+- Fix handling of sphinx-generated intersphinx inventories
+  for pymongo, motor, and the php library docs. (DOP-1810)
+
 ## [v0.9.6] - 2021-04-07
 
 ### Changed

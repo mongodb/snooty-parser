@@ -26,10 +26,12 @@ requires = [
 [tool.flit.metadata.requires-extra]
 dev = [
     "black ~= 20.8b1",
-    "pyflakes ~= 2.2.0",
-    "mypy ~= 0.782",
+    "pyflakes ~= 2.3",
+    "mypy ~= 0.900",
     "pyinstaller ~= 4.0",
-    "isort ~= 5.6.4"
+    "isort ~= 5.6.4",
+    "types-requests ~= 0.1",
+    "types-toml ~= 0.1"
 ]
 test = [
     "pytest ~= 6.1.2",

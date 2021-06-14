@@ -51,7 +51,7 @@ def test_landing_directives(backend: Backend) -> None:
     assert len(card_group.children) == 3
     check_ast_testing_string(
         card_group,
-        """<directive domain="landing" name="card-group" columns="3" style="compact">
+        """<directive domain="landing" name="card-group" columns="3" style="compact" layout="carousel">
             <directive domain="landing" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/pink.png" icon-alt="Alt text" tag="server" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Download and install the MongoDB database on your own\ninfrastructure.</text></paragraph>
             </directive>
