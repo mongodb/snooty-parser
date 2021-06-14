@@ -569,7 +569,7 @@ class BannerHandler:
                 insertion_node = candidate
                 break
             if isinstance(candidate, n.Parent):
-                queue.extend(list(candidate.children))
+                queue.extend(candidate.children)
 
             curr_iteration += 1
         return insertion_node
@@ -589,22 +589,20 @@ class BannerHandler:
             + 1
         )
 
-    def __page_target_match(self, page: Page) -> bool:
+    def __page_target_match(self, page: Page, fileid: FileId) -> bool:
         """Check if page matches target specified, but always return false for includes"""
-        is_include_file = "includes" in page.source_path.parts
-        return not is_include_file and page.source_path.match(self.target)
+        return fileid.suffix == ".txt" and page.source_path.match(self.target)
 
     def __call__(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attach a banner as specified throughout project for target pages"""
         if (
             self.target == ""
             or not self.banner.children
-            or not self.__page_target_match(page)
+            or not self.__page_target_match(page, fileid_stack.current)
         ):
             return
 
         banner_parent = self.__find_target_insertion_node(page.ast)
-        target_insertion = -1
         if isinstance(banner_parent, n.Parent):
             target_insertion = self.__determine_banner_index(banner_parent)
             assert banner_parent is not None

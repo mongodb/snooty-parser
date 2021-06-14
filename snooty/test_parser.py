@@ -805,7 +805,7 @@ def test_banner() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="banner" variant="warning">
+        <directive domain="mongodb" name="banner" variant="warning">
             <paragraph><text>Content</text></paragraph>
         </directive>
         </root>""",

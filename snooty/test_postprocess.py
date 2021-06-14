@@ -1434,7 +1434,7 @@ value = "This product is deprecated"
 <heading id="index-page">
 <text>Index Page</text>
 </heading>
-<directive name="banner" variant="info">
+<directive domain="mongodb" name="banner" variant="info">
 <text>This product is deprecated</text>
 </directive>
 <section>
@@ -1460,7 +1460,7 @@ value = "This product is deprecated"
 <heading id="index-page">
 <text>Index Page</text>
 </heading>
-<directive name="banner" variant="info">
+<directive domain="mongodb" name="banner" variant="info">
 <text>This product is deprecated</text>
 </directive>
 <section>

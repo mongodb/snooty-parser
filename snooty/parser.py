@@ -1197,15 +1197,15 @@ class _Project:
             assert target is not None and variant is not None
             options = {"variant": variant}
             self.config.banner_node = BannerConfig(
-                target, n.Directive((-1,), [], "", "banner", [], options)
+                target, n.Directive((-1,), [], "mongodb", "banner", [], options)
             )
 
             page, banner_diagnostics = parse_rst(
                 inline_parser, root, banner_data.get("value")
             )
-            self.config.banner_node.node.children = list(
-                deepcopy(child) for child in page.ast.children
-            )
+            self.config.banner_node.node.children = [
+                util.fast_deep_copy(child) for child in page.ast.children
+            ]
 
             if banner_diagnostics:
                 backend.on_diagnostics(

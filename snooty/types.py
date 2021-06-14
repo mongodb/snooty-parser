@@ -130,7 +130,7 @@ class ProjectConfig:
     # banner_node contains an instantiated banner node with target data
     banner_node: BannerConfig = field(
         default_factory=lambda: BannerConfig(
-            "", n.Directive((-1,), [], "", "banner", [], {})
+            "", n.Directive((-1,), [], "", "mongo:banner", [], {})
         )
     )
     constants: Dict[str, object] = field(default_factory=dict)
