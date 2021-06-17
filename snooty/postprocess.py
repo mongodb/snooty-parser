@@ -41,7 +41,7 @@ from .diagnostics import (
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
-from .types import FileId, ProjectConfig, SerializableType
+from .types import BannerInstantiated, FileId, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -550,9 +550,8 @@ class BannerHandler:
     """Traverse a series of pages matching specified targets in Snooty.toml
     and append Banner directive nodes"""
 
-    def __init__(self, target: str, banner: n.Parent[n.Node]) -> None:
-        self.target = target
-        self.banner = banner
+    def __init__(self, banners: List[BannerInstantiated]) -> None:
+        self.banners = banners
 
     def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
         """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
@@ -582,31 +581,37 @@ class BannerHandler:
                 (
                     idx
                     for idx, child in enumerate(node.children)
-                    if child.type == "heading"
+                    if isinstance(child, n.Heading)
                 ),
                 0,
             )
             + 1
         )
 
-    def __page_target_match(self, page: Page, fileid: FileId) -> bool:
+    def __page_target_match(
+        self, targets: List[str], page: Page, fileid: FileId
+    ) -> bool:
         """Check if page matches target specified, but always return false for includes"""
-        return fileid.suffix == ".txt" and page.source_path.match(self.target)
+        if fileid.suffix != ".txt":
+            return False
+        for target in targets:
+            if page.source_path.match(target):
+                return True
+        return False
 
     def __call__(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attach a banner as specified throughout project for target pages"""
-        if (
-            self.target == ""
-            or not self.banner.children
-            or not self.__page_target_match(page, fileid_stack.current)
-        ):
-            return
+        for banner in self.banners:
+            if not banner.node.children or not self.__page_target_match(
+                banner.targets, page, fileid_stack.current
+            ):
+                continue
 
-        banner_parent = self.__find_target_insertion_node(page.ast)
-        if isinstance(banner_parent, n.Parent):
-            target_insertion = self.__determine_banner_index(banner_parent)
-            assert banner_parent is not None
-            banner_parent.children.insert(target_insertion, self.banner)
+            banner_parent = self.__find_target_insertion_node(page.ast)
+            if isinstance(banner_parent, n.Parent):
+                target_insertion = self.__determine_banner_index(banner_parent)
+                assert banner_parent is not None
+                banner_parent.children.insert(target_insertion, banner.node)
 
 
 class IAHandler:
@@ -777,9 +782,7 @@ class Postprocessor:
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         contents_handler = ContentsHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
-        banner_handler = BannerHandler(
-            self.project_config.banner_node.target, self.project_config.banner_node.node
-        )
+        banner_handler = BannerHandler(self.project_config.banner_nodes)
 
         self.run_event_parser(
             [

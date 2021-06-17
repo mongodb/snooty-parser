@@ -98,9 +98,17 @@ class StaticAsset:
 
 @checked
 @dataclass
-class BannerConfig:
-    target: str
+class BannerInstantiated:
+    targets: List[str]
     node: n.Directive
+
+
+@checked
+@dataclass
+class BannerConfig:
+    targets: List[str] = field(default_factory=list)
+    variant: str = field(default="info")
+    value: str = field(default="")
 
 
 @checked
@@ -126,13 +134,9 @@ class ProjectConfig:
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
-    banner: Dict[str, str] = field(default_factory=dict)
-    # banner_node contains an instantiated banner node with target data
-    banner_node: BannerConfig = field(
-        default_factory=lambda: BannerConfig(
-            "", n.Directive((-1,), [], "", "mongo:banner", [], {})
-        )
-    )
+    banners: List[BannerConfig] = field(default_factory=list)
+    # banner_nodes contains instantiated banner nodes with target data
+    banner_nodes: List[BannerInstantiated] = field(default_factory=list)
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
