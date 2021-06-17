@@ -1416,8 +1416,8 @@ name = "test_name"
 intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
 title = "MongoDB title"
 
-[banner]
-target = "*test/*.txt"
+[[banners]]
+targets = ["*test/*.txt"]
 variant = "info"
 value = "This product is deprecated"
             """,
