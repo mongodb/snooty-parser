@@ -6,6 +6,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -550,8 +551,9 @@ class BannerHandler:
     """Traverse a series of pages matching specified targets in Snooty.toml
     and append Banner directive nodes"""
 
-    def __init__(self, banners: List[BannerInstantiated]) -> None:
+    def __init__(self, banners: List[BannerInstantiated], root: Path) -> None:
         self.banners = banners
+        self.root = root
 
     def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
         """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
@@ -594,8 +596,13 @@ class BannerHandler:
         """Check if page matches target specified, but always return false for includes"""
         if fileid.suffix != ".txt":
             return False
+
+        page_path_relative_to_source = page.source_path.relative_to(
+            self.root / "source"
+        )
+
         for target in targets:
-            if page.source_path.match(target):
+            if page_path_relative_to_source.match(target):
                 return True
         return False
 
@@ -782,7 +789,9 @@ class Postprocessor:
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         contents_handler = ContentsHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
-        banner_handler = BannerHandler(self.project_config.banner_nodes)
+        banner_handler = BannerHandler(
+            self.project_config.banner_nodes, self.project_config.root
+        )
 
         self.run_event_parser(
             [
