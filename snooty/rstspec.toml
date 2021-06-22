@@ -619,6 +619,7 @@ inherit = "_guides-base"
 # """
 
 [directive."mongodb:banner"]
+help = """A skinny admonition, meant for alerts or smaller notifications."""
 content_type = "block"
 options.variant = "banner_variant"
 example = """.. banner::
