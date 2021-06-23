@@ -42,7 +42,6 @@ from .diagnostics import (
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
-    ExpectedImageArg,
     ExpectedPathArg,
     FetchError,
     ImageSuggested,
@@ -837,25 +836,6 @@ class JSONVisitor:
                         )
                     )
 
-        elif name == "cardgroup-card":
-            image_argument = options.get("image", None)
-
-            if image_argument is None:
-                self.diagnostics.append(
-                    ExpectedImageArg(
-                        f'"{name}" expected an image argument', util.get_line(node)
-                    )
-                )
-                return doc
-
-            try:
-                static_asset = self.add_static_asset(image_argument, upload=True)
-                self.pending.append(PendingFigure(doc, static_asset))
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(image_argument, err.strerror, util.get_line(node))
-                )
-
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -877,7 +857,7 @@ class JSONVisitor:
                             image_argument, err.strerror, util.get_line(node)
                         )
                     )
-        elif key in {"landing:card"}:
+        elif key in {"mongodb:card"}:
             image_argument = options.get("icon")
 
             if image_argument:
