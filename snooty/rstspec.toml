@@ -601,6 +601,18 @@ example = """.. related::
    * https://url-of-related-article}
 """
 
+##### Guides (LEGACY - do not deprecate until removed in dependent docs repos)
+[directive.hlist]
+content_type = "list"
+options.columns = "nonnegative_integer"
+
+[directive.blockquote]
+help = """A block of content which is quoted from another source."""
+content_type = "block"
+# example = """.. blockquote::
+#    ${0: quoted content}
+# """
+
 ##### Internal "mongodb" directives
 [directive."mongodb:button"]
 help = "Make a button."
