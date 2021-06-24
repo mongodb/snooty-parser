@@ -1284,7 +1284,7 @@ type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/%s"}
 type = {link = "https://docs.mongodb.com/realm-sdks/java/latest/kotlin-extensions/%s"}
 
 [role."kotlin-sdk"]
-type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/"}
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/%s"}
 
 [role."swift-sdk"]
 type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
