@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Remove landing domain and guides content (DOP-2215, #314)
+- YAML-generated steps now use the name `step-yaml` and `steps-yaml`
+  to disambugate from the new steps component (DOP-2249, #320)
+- Update Kotlin SDK extlinks.
+
+### Fixed
+
+- The `:limit:` role no longer renders in monospace (DOP-1735, #319)
 
 ## [v0.9.9] - 2021-06-07
 
