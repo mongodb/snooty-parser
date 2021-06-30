@@ -71,6 +71,16 @@ class FileId(PurePosixPath):
         fileid = self.with_name(self.PAT_FILE_EXTENSIONS.sub("", self.name))
         return fileid.as_posix()
 
+    def as_dirhtml(self) -> str:
+        """Return a path string usable for referring to this page under the dirhtml static
+        site convention."""
+
+        # The project root is special
+        if self == FileId("index.txt"):
+            return ""
+
+        return self.without_known_suffix + "/"
+
 
 @dataclass
 class Node:
