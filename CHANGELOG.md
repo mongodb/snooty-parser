@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.10.3] - 2021-06-30
+
 ### Fixed
 
 - Correctly generate intersphinx inventory entries for targets defined on the root page (DOP-2292, #326)
