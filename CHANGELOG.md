@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Correctly generate intersphinx inventory entries for targets defined on the root page (DOP-2292, #326)
+- Report invalid extlink definitions on startup
+
 ## [v0.10.2] - 2021-06-24
 
 ### Fixed
