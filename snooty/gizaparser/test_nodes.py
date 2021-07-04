@@ -3,6 +3,7 @@ from pathlib import Path, PurePath
 from typing import Dict, List, Optional
 
 from ..diagnostics import Diagnostic
+from ..n import FileId
 from ..types import ProjectConfig
 from . import nodes
 from .release import GizaReleaseSpecificationCategory
@@ -82,8 +83,8 @@ def test_inheritance() -> None:
     )
 
     category: nodes.GizaCategory[TestNode] = nodes.GizaCategory(project_config)
-    category.add(Path("parent.yaml"), "", [parent])
-    category.add(Path("child.yaml"), "", [child])
+    category.add(FileId("parent.yaml"), Path("parent.yaml"), "", [parent])
+    category.add(FileId("child.yaml"), Path("child.yaml"), "", [child])
 
     reified_diagnostics: List[Diagnostic] = []
     reified_child = category.reify(child, reified_diagnostics, set(), set())
@@ -113,8 +114,8 @@ def test_reify_all_files() -> None:
         category = GizaReleaseSpecificationCategory(project_config)
         all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
 
-        extracts, text, diagnostics = category.parse(test_path)
-        category.add(test_path, text, extracts)
+        fileid, extracts, text, diagnostics = category.parse(test_path)
+        category.add(fileid, test_path, text, extracts)
         all_diagnostics[test_path] = diagnostics
 
         file_id, giza_node = next(category.reify_all_files(all_diagnostics))

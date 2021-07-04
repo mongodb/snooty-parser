@@ -5,6 +5,7 @@ from typing import Callable, List, MutableSequence, Optional, Sequence, Tuple, U
 from .. import n
 from ..diagnostics import Diagnostic
 from ..flutter import checked
+from ..n import FileId
 from ..page import Page
 from ..types import EmbeddedRstParser
 from .nodes import GizaCategory, HeadingMixin, Inheritable
@@ -115,7 +116,7 @@ def step_to_page(page: Page, step: Step, rst_parser: EmbeddedRstParser) -> n.Dir
 class GizaStepsCategory(GizaCategory[Step]):
     def parse(
         self, path: Path, text: Optional[str] = None
-    ) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
+    ) -> Tuple[FileId, Sequence[Step], str, List[Diagnostic]]:
         return parse(Step, path, self.project_config, text)
 
     def to_pages(
@@ -135,4 +136,5 @@ class GizaStepsCategory(GizaCategory[Step]):
         ]
         page.ast = n.Root((0,), [], source_fileid, {})
         page.ast.children.append(steps_directive)
+
         return [page]

@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from .. import n
 from ..diagnostics import Diagnostic, MissingRef
 from ..flutter import checked
+from ..n import FileId
 from ..page import Page
 from ..types import EmbeddedRstParser
 from .nodes import GizaCategory, Inheritable
@@ -43,8 +44,8 @@ class ReleaseSpecification(Inheritable):
 class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
     def parse(
         self, path: Path, text: Optional[str] = None
-    ) -> Tuple[Sequence[ReleaseSpecification], str, List[Diagnostic]]:
-        nodes, text, diagnostics = parse(
+    ) -> Tuple[FileId, Sequence[ReleaseSpecification], str, List[Diagnostic]]:
+        fileid, nodes, text, diagnostics = parse(
             ReleaseSpecification, path, self.project_config, text
         )
 
@@ -56,7 +57,7 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
         release_specifications = [
             node for node in nodes if node.ref or report_missing_ref(node)
         ]
-        return release_specifications, text, diagnostics
+        return fileid, release_specifications, text, diagnostics
 
     def to_pages(
         self,

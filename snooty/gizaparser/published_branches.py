@@ -81,10 +81,7 @@ class PublishedBranches:
 def parse_published_branches(
     path: Path, project_config: ProjectConfig, text: Optional[str] = None
 ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
-    try:
-        published_branches, _, diagnostics = parse(
-            PublishedBranches, path, project_config, text
-        )
-        return published_branches[0], diagnostics
-    except IndexError:
-        return None, diagnostics
+    fileid, published_branches, _, diagnostics = parse(
+        PublishedBranches, path, project_config, text
+    )
+    return published_branches[0], diagnostics

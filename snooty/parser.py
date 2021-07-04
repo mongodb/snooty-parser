@@ -1239,15 +1239,17 @@ class _Project:
             pages.append(page)
             diagnostics[path] = page_diagnostics
         elif ext == ".yaml" and prefix in self.yaml_mapping:
-            file_id = os.path.basename(path)
+            fileid = self.config.get_fileid(path)
             giza_category = self.yaml_mapping[prefix]
-            needs_rebuild = set((file_id,)).union(
+            needs_rebuild = set((fileid,)).union(
                 *(
-                    category.dg.predecessors(file_id)
+                    category.dg.predecessors(fileid)
                     for category in self.yaml_mapping.values()
                 )
             )
-            logger.debug("needs_rebuild: %s", ",".join(needs_rebuild))
+            logger.debug(
+                "needs_rebuild: %s", ",".join((f.as_posix() for f in needs_rebuild))
+            )
             for file_id in needs_rebuild:
                 file_diagnostics: List[Diagnostic] = []
                 try:
@@ -1256,7 +1258,7 @@ class _Project:
                     logging.warn("No file found in registry: %s", file_id)
                     continue
 
-                steps, text, parse_diagnostics = giza_category.parse(
+                fileid, steps, text, parse_diagnostics = giza_category.parse(
                     path, optional_text
                 )
                 file_diagnostics.extend(parse_diagnostics)
@@ -1273,7 +1275,7 @@ class _Project:
                         EmbeddedRstParser(self.config, page, file_diagnostics),
                     )
 
-                giza_category.add(path, text, steps)
+                giza_category.add(fileid, path, text, steps)
                 pages = giza_category.to_pages(
                     giza_node.path, create_page, giza_node.data
                 )
@@ -1294,9 +1296,9 @@ class _Project:
         self.backend.flush()
 
     def delete(self, path: PurePath) -> None:
-        file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
-            del giza_category[file_id]
+            fileid = self.config.get_fileid(path)
+            del giza_category[fileid]
 
         self.backend.on_delete(self.config.get_fileid(path), self.build_identifiers)
 
@@ -1330,9 +1332,9 @@ class _Project:
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Parsing %s YAML", prefix)
             for path in categorized[prefix]:
-                steps, text, diagnostics = giza_category.parse(path)
+                fileid, steps, text, diagnostics = giza_category.parse(path)
                 all_yaml_diagnostics[path] = diagnostics
-                giza_category.add(path, text, steps)
+                giza_category.add(fileid, path, text, steps)
 
         # Now that all of our YAML files are loaded, generate a page for each one
         for prefix, giza_category in self.yaml_mapping.items():

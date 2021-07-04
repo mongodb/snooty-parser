@@ -17,8 +17,8 @@ def test_extract() -> None:
     parent_path = root_path.joinpath(Path("source/includes/extracts-test-parent.yaml"))
 
     def add_main_file() -> List[Diagnostic]:
-        extracts, text, parse_diagnostics = category.parse(path)
-        category.add(path, text, extracts)
+        fileid, extracts, text, parse_diagnostics = category.parse(path)
+        category.add(fileid, path, text, extracts)
         assert len(parse_diagnostics) == 1
         assert parse_diagnostics[0].severity == Diagnostic.Level.error
         assert parse_diagnostics[0].start == (21, 0)
@@ -26,8 +26,8 @@ def test_extract() -> None:
         return parse_diagnostics
 
     def add_parent_file() -> List[Diagnostic]:
-        extracts, text, parse_diagnostics = category.parse(parent_path)
-        category.add(parent_path, text, extracts)
+        fileid, extracts, text, parse_diagnostics = category.parse(parent_path)
+        category.add(fileid, parent_path, text, extracts)
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 1
         return parse_diagnostics
