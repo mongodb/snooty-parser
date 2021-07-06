@@ -1043,7 +1043,7 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."node-api-4.0"]
 help = """Link to a page in Node.js driver V4.0's API reference."""
-type = {link = "https://mongodb.github.io/node-mongodb-native/4.0%s"}
+type = {link = "https://mongodb.github.io/node-mongodb-native/4.0/%s"}
 
 [role."node-api-3.6"]
 help = """Link to a page in Node.js driver V3.6's API reference."""
