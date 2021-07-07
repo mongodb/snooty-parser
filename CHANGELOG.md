@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Correctly report line numbers within directive contents (DOP-2300).
+
 ## [v0.10.3] - 2021-06-30
 
 ### Fixed
