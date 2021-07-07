@@ -3,7 +3,7 @@
 SYSTEM_PYTHON=$(shell which python3)
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
 VERSION=$(shell git describe --tags)
-PUSH_TO=$(shell git remote -v | grep -m1 -E 'github.com:|/mongodb/snooty-parser.git' | cut -f 1)
+PUSH_TO=$(shell git remote -v | grep -m1 -E 'github.com(:|/)mongodb/snooty-parser.git' | cut -f 1)
 PACKAGE_NAME=snooty-${VERSION}-${PLATFORM}.zip
 export SOURCE_DATE_EPOCH = $(shell date +%s)
 
