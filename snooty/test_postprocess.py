@@ -1364,6 +1364,280 @@ A Heading
         )
 
 
+def test_banner_postprocess_multiple_pages_one_banner() -> None:
+    # Banners should apply to any pages whose source paths match our glob pattern in targets
+    # and should be prepended to the first section of a page which contains a header
+    # if no suitable section can be found, the banner should prepend to the top of the page
+    with make_test(
+        {
+            Path(
+                "source/test/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/test/page2.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/how-to/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
+title = "MongoDB title"
+
+[[banners]]
+targets = ["test/*.txt"]
+variant = "info"
+value = "This product is deprecated"
+            """,
+        }
+    ) as result:
+        page1 = result.pages[FileId("test/page1.txt")]
+        diagnostics = result.diagnostics[FileId("test/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page1.ast,
+            """
+<root fileid="test/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page2 = result.pages[FileId("test/page2.txt")]
+        diagnostics = result.diagnostics[FileId("test/page2.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page2.ast,
+            """
+<root fileid="test/page2.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page3 = result.pages[FileId("how-to/page1.txt")]
+        diagnostics = result.diagnostics[FileId("how-to/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page3.ast,
+            """
+<root fileid="how-to/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+
+
+def test_banner_postprocess_multiple_banners() -> None:
+    with make_test(
+        {
+            Path(
+                "source/test/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/guide/page2.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/how-to/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
+title = "MongoDB title"
+
+[[banners]]
+targets = ["test/*.txt"]
+variant = "info"
+value = "This product is deprecated"
+
+[[banners]]
+targets = ["guide/*.txt"]
+variant = "warning"
+value = "This product is out of date"
+            """,
+        }
+    ) as result:
+        page1 = result.pages[FileId("test/page1.txt")]
+        diagnostics = result.diagnostics[FileId("test/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page1.ast,
+            """
+<root fileid="test/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page2 = result.pages[FileId("guide/page2.txt")]
+        diagnostics = result.diagnostics[FileId("test/page2.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page2.ast,
+            """
+<root fileid="guide/page2.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="warning">
+<text>This product is out of date</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page3 = result.pages[FileId("how-to/page1.txt")]
+        diagnostics = result.diagnostics[FileId("how-to/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page3.ast,
+            """
+<root fileid="how-to/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+
+
 def test_monospace_limit_fix() -> None:
     with make_test(
         {

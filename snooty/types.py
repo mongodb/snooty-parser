@@ -96,6 +96,20 @@ class StaticAsset:
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
 
 
+@dataclass
+class ParsedBannerConfig:
+    targets: List[str]
+    node: n.Directive
+
+
+@checked
+@dataclass
+class BannerConfig:
+    targets: List[str]
+    variant: str = field(default="info")
+    value: str = field(default="")
+
+
 @checked
 @dataclass
 class ManPageConfig:
@@ -119,6 +133,9 @@ class ProjectConfig:
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
+    banners: List[BannerConfig] = field(default_factory=list)
+    # banner_nodes contains parsed banner nodes with target data
+    banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)

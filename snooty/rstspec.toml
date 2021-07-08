@@ -4,6 +4,7 @@ version = 0
 [enum]
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
+banner_variant = ["info", "warning", "danger"]
 card_layout = ["default", "carousel"]
 card_style = ["default", "compact", "extra-compact"]
 card_type = ["small", "large"]
@@ -614,6 +615,16 @@ content_type = "block"
 # """
 
 ##### Internal "mongodb" directives
+[directive."mongodb:banner"]
+help = """A skinny admonition, meant for alerts or smaller notifications."""
+content_type = "block"
+options.variant = "banner_variant"
+example = """.. banner::
+   :variant: ${1: warning (Optional)}
+
+   ${2:banner content}
+"""
+
 [directive."mongodb:button"]
 help = "Make a button."
 example = """.. button:: ${1: string}
