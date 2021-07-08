@@ -66,9 +66,9 @@ from .page import Page, PendingTask
 from .postprocess import DevhubPostprocessor, Postprocessor
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
-    BannerInstantiated,
     BuildIdentifierSet,
     FileId,
+    ParsedBannerConfig,
     ProjectConfig,
     SerializableType,
     StaticAsset,
@@ -1185,16 +1185,15 @@ class _Project:
             if banner.value:
 
                 options = {"variant": banner.variant}
-                banner_node = BannerInstantiated(
+                banner_node = ParsedBannerConfig(
                     banner.targets,
                     n.Directive((-1,), [], "mongodb", "banner", [], options),
                 )
 
                 page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)
-                banner_node.node.children = [
-                    util.fast_deep_copy(child) for child in page.ast.children
-                ]
-                self.config.banner_nodes.append(banner_node)
+                banner_node.node.children = page.ast.children
+                if banner_node.node.children:
+                    self.config.banner_nodes.append(banner_node)
                 if banner_diagnostics:
                     backend.on_diagnostics(
                         self.config.get_fileid(self.config.config_path),

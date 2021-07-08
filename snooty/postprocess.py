@@ -42,7 +42,7 @@ from .diagnostics import (
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
-from .types import BannerInstantiated, FileId, ProjectConfig, SerializableType
+from .types import FileId, ParsedBannerConfig, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -551,7 +551,7 @@ class BannerHandler:
     """Traverse a series of pages matching specified targets in Snooty.toml
     and append Banner directive nodes"""
 
-    def __init__(self, banners: List[BannerInstantiated], root: Path) -> None:
+    def __init__(self, banners: List[ParsedBannerConfig], root: Path) -> None:
         self.banners = banners
         self.root = root
 
@@ -593,9 +593,8 @@ class BannerHandler:
     def __page_target_match(
         self, targets: List[str], page: Page, fileid: FileId
     ) -> bool:
-        """Check if page matches target specified, but always return false for includes"""
-        if fileid.suffix != ".txt":
-            return False
+        """Check if page matches target specified, but assert to ensure this does not run on includes"""
+        assert fileid.suffix == ".txt"
 
         page_path_relative_to_source = page.source_path.relative_to(
             self.root / "source"
@@ -609,16 +608,16 @@ class BannerHandler:
     def __call__(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attach a banner as specified throughout project for target pages"""
         for banner in self.banners:
-            if not banner.node.children or not self.__page_target_match(
-                banner.targets, page, fileid_stack.current
-            ):
+            if not self.__page_target_match(banner.targets, page, fileid_stack.current):
                 continue
 
             banner_parent = self.__find_target_insertion_node(page.ast)
             if isinstance(banner_parent, n.Parent):
                 target_insertion = self.__determine_banner_index(banner_parent)
                 assert banner_parent is not None
-                banner_parent.children.insert(target_insertion, banner.node)
+                banner_parent.children.insert(
+                    target_insertion, util.fast_deep_copy(banner.node)
+                )
 
 
 class IAHandler:
