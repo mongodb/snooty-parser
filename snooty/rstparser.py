@@ -533,7 +533,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
         # Parse the content
         self.state.nested_parse(
-            self.content, self.state_machine.line_offset, node, match_titles=True
+            self.content, self.content_offset, node, match_titles=True
         )
 
         return [node]
@@ -557,7 +557,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             content_lines = prepare_viewlist(self.arguments[0])
             self.state.nested_parse(
                 docutils.statemachine.ViewList(content_lines, source=self.arguments[0]),
-                self.state_machine.line_offset,
+                self.content_offset,
                 node,
                 match_titles=True,
             )
@@ -757,7 +757,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
         content_lines = prepare_viewlist(child.content)
         self.state.nested_parse(
             docutils.statemachine.ViewList(content_lines, source=source),
-            self.state_machine.line_offset,
+            self.content_offset,
             node,
             match_titles=True,
         )
@@ -826,7 +826,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
 
         if self.content:
             self.state.nested_parse(
-                self.content, self.state_machine.line_offset, node, match_titles=True
+                self.content, self.content_offset, node, match_titles=True
             )
 
         return [node]
@@ -1063,11 +1063,6 @@ def register_spec_with_docutils(
     """Register all of the definitions in the spec with docutils, overwriting the previous
     call to this function. This function should only be called once in the
     process lifecycle."""
-
-    from .legacy_guides import LegacyGuideDirective, LegacyGuideIndexDirective
-
-    SPECIAL_DIRECTIVE_HANDLERS["guide"] = LegacyGuideDirective
-    SPECIAL_DIRECTIVE_HANDLERS["guide-index"] = LegacyGuideIndexDirective
 
     builder = Registry.Builder()
     directives = list(spec.directive.items())

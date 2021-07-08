@@ -1,12 +1,10 @@
-:template: landing
-
 ==============================
-Landing Domain Directive Tests
+MongoDB Domain Directive Tests
 ==============================
 
 .. introduction::
 
-   This test project tests all directives exclusive to the landing domain, which is used for docs-landing and product landing pages.
+   This test project tests directives exclusive to the mongodb domain, which is used for mongodb-specific directives.
 
 .. button:: Button text
    :uri: /path/to/download
@@ -43,10 +41,6 @@ Landing Domain Directive Tests
 
       Paragraph.
 
-.. cta::
-
-   :manual:`Read the Introduction to MongoDB </introduction>`
-
 .. kicker:: A kicker is a subheader above a main header
 
 .. procedure::
@@ -62,3 +56,7 @@ Landing Domain Directive Tests
       Paragraph.
 
       :ref:`To learn more, see Import and Export Data<Import and Export Data>`
+
+.. cta::
+
+   :manual:`Read the Introduction to MongoDB </introduction>`

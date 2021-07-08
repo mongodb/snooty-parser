@@ -126,3 +126,25 @@ def test_bad_version() -> None:
         [meta]
         version = 1"""
         )
+
+
+def test_bad_link() -> None:
+    with pytest.raises(ValueError):
+        specparser.Spec.loads(
+            """
+[meta]
+version = 0
+
+[role."kotlin-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/kotlin/latest/"}"""
+        )
+
+    with pytest.raises(ValueError):
+        specparser.Spec.loads(
+            """
+[meta]
+version = 0
+
+[role."kotlin-sdk"]
+type = {link = "https://docs.mongodb.com/realm-sdks/%s/kotlin/latest/%s"}"""
+        )

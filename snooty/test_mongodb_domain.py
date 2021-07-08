@@ -13,14 +13,16 @@ from .util_test import check_ast_testing_string
 def backend() -> Backend:
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {}
-    with Project(Path("test_data/test_landing"), backend, build_identifiers) as project:
+    with Project(
+        Path("test_data/test_mongodb_domain"), backend, build_identifiers
+    ) as project:
         project.build()
 
     return backend
 
 
-# Test all directives exclusive to the landing domain
-def test_landing_directives(backend: Backend) -> None:
+# Test all directives exclusive to the mongodb domain
+def test_mongodb_directives(backend: Backend) -> None:
     page_id = FileId("index.txt")
     page = backend.pages[page_id]
     assert len(page.static_assets) == 1
@@ -32,9 +34,9 @@ def test_landing_directives(backend: Backend) -> None:
     introduction = section.children[1]
     check_ast_testing_string(
         introduction,
-        """<directive domain="landing" name="introduction">
+        """<directive domain="mongodb" name="introduction">
             <paragraph><text>
-            This test project tests all directives exclusive to the landing domain, which is used for docs-landing and product landing pages.
+            This test project tests directives exclusive to the mongodb domain, which is used for mongodb-specific directives.
             </text></paragraph>
         </directive>""",
     )
@@ -42,7 +44,7 @@ def test_landing_directives(backend: Backend) -> None:
     button = section.children[2]
     check_ast_testing_string(
         button,
-        """<directive domain="landing" name="button" uri="/path/to/download">
+        """<directive domain="mongodb" name="button" uri="/path/to/download">
             <text>Button text</text></directive>""",
     )
 
@@ -51,37 +53,31 @@ def test_landing_directives(backend: Backend) -> None:
     assert len(card_group.children) == 3
     check_ast_testing_string(
         card_group,
-        """<directive domain="landing" name="card-group" columns="3" style="compact" layout="carousel">
-            <directive domain="landing" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/pink.png" icon-alt="Alt text" tag="server" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+        """<directive domain="mongodb" name="card-group" columns="3" style="compact" layout="carousel">
+            <directive domain="mongodb" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/pink.png" icon-alt="Alt text" tag="server" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Download and install the MongoDB database on your own\ninfrastructure.</text></paragraph>
             </directive>
-            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
-            <directive domain="landing" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
         </directive>""",
     )
 
-    cta = section.children[4]
-    check_ast_testing_string(
-        cta,
-        """<directive domain="landing" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction/"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
-    )
-
-    kicker = section.children[5]
+    kicker = section.children[4]
     check_ast_testing_string(
         kicker,
-        """<directive domain="landing" name="kicker"><text>A kicker is a subheader above a main header</text></directive>""",
+        """<directive domain="mongodb" name="kicker"><text>A kicker is a subheader above a main header</text></directive>""",
     )
 
-    procedure = section.children[6]
+    procedure = section.children[5]
     check_ast_testing_string(
         procedure,
         """
-        <directive domain="landing" name="procedure">
-            <directive domain="landing" name="step">
+        <directive domain="mongodb" name="procedure">
+            <directive domain="mongodb" name="step">
                 <text>Connect to Your Deployment</text>
                 <paragraph><text>Paragraph.</text></paragraph>
                 <paragraph>
@@ -90,7 +86,7 @@ def test_landing_directives(backend: Backend) -> None:
                     </ref_role>
                 </paragraph>
             </directive>
-            <directive domain="landing" name="step">
+            <directive domain="mongodb" name="step">
                 <text>Import Your Data</text>
                 <paragraph><text>Paragraph.</text></paragraph>
                 <paragraph>
@@ -100,4 +96,10 @@ def test_landing_directives(backend: Backend) -> None:
                 </paragraph>
             </directive>
         </directive>""",
+    )
+
+    cta = section.children[6]
+    check_ast_testing_string(
+        cta,
+        """<directive domain="mongodb" name="cta"><paragraph><reference refuri="https://docs.mongodb.com/manual/introduction/"><text>Read the Introduction to MongoDB</text></reference></paragraph></directive>""",
     )

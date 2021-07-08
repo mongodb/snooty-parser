@@ -140,7 +140,7 @@ class TargetDatabase:
                 continue
 
             definition = definitions[0]
-            uri = definition.fileid.without_known_suffix + "/"
+            uri = definition.fileid.as_dirhtml()
             dispname: Optional[str] = "".join(
                 node.get_text() for node in definition.title
             )

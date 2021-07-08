@@ -145,6 +145,24 @@ def test_targets() -> None:
         "std-option-mongosqld.--maxVarcharLength",
     )
 
+    db.define_local_target(
+        "std",
+        "label",
+        ["a-label-on-index"],
+        FileId("index.txt"),
+        [n.Text(span=(7,), value="A Label on Index")],
+        "std-label-a-label-on-index",
+    )
+
+    db.define_local_target(
+        "std",
+        "label",
+        ["a-label-on-index-2"],
+        FileId("reference/index.txt"),
+        [n.Text(span=(7,), value="A Label on Index 2")],
+        "std-label-a-label-on-index-2",
+    )
+
     inventory = db.generate_inventory("")
     inventory = Inventory.parse("", inventory.dumps("", ""))
     assert inventory.targets == {
@@ -155,7 +173,23 @@ def test_targets() -> None:
             uri_base="reference/mongosqld/#std-option-mongosqld.--maxVarcharLength",
             uri="reference/mongosqld/#std-option-mongosqld.--maxVarcharLength",
             display_name="mongosqld --maxVarcharLength",
-        )
+        ),
+        "std:label:a-label-on-index": TargetDefinition(
+            name="a-label-on-index",
+            role=("std", "label"),
+            priority=-1,
+            uri_base="#std-label-a-label-on-index",
+            uri="#std-label-a-label-on-index",
+            display_name="A Label on Index",
+        ),
+        "std:label:a-label-on-index-2": TargetDefinition(
+            name="a-label-on-index-2",
+            role=("std", "label"),
+            priority=-1,
+            uri_base="reference/index/#std-label-a-label-on-index-2",
+            uri="reference/index/#std-label-a-label-on-index-2",
+            display_name="A Label on Index 2",
+        ),
     }
 
 

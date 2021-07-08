@@ -1,6 +1,13 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches:
+    - master
+    - 'v[0-9]*'
+    tags:
+    - 'v[0-9]*'
+  pull_request:
 
 jobs:
   test:

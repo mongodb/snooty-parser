@@ -70,6 +70,12 @@ class LinkRoleType:
     ensure_trailing_slash: Optional[bool]
     format: Set[FormattingType] = field(default_factory=set)
 
+    def __post_init__(self) -> None:
+        if self.link.count("%s") != 1:
+            raise ValueError(
+                f"Link definitions in rstspec.toml need to contain a single '%s' placeholder: {self.link}"
+            )
+
 
 @checked
 @dataclass

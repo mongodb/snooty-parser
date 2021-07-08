@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.10.4] - 2021-07-07
+
+### Fixed
+
+- Correctly report line numbers within directive contents (DOP-2300).
+
+## [v0.10.3] - 2021-06-30
+
+### Fixed
+
+- Correctly generate intersphinx inventory entries for targets defined on the root page (DOP-2292, #326)
+- Report invalid extlink definitions on startup
+
+## [v0.10.2] - 2021-06-24
+
+### Fixed
+
+- Restore hlist and blockquote directives.
+
+## [v0.10.1] - 2021-06-24
+
+### Fixed
+
+- Fix typo in Kotlin SDK extlink.
+
+## [v0.10.0] - 2021-06-24
+
+### Changed
+
+- Remove landing domain and guides content (DOP-2215, #314)
+- YAML-generated steps now use the name `step-yaml` and `steps-yaml`
+  to disambugate from the new steps component (DOP-2249, #320)
+- Update Kotlin SDK extlinks.
+
+### Fixed
+
+- The `:limit:` role no longer renders in monospace (DOP-1735, #319)
+
 ## [v0.9.9] - 2021-06-07
 
 ### Added
