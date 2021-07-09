@@ -48,6 +48,10 @@ def test_quiz() -> None:
                 <text>MongoDB University</text>
                 <paragraph><text>Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice</text></paragraph>
             </directive>
+            <directive name="quizchoice" domain="mongodb" istrue="True">
+                <text>All of the Above</text>
+                <paragraph><text>Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.</text></paragraph>
+            </directive>
         </directive>
         </root>""",
     )

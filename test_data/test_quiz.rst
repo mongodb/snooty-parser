@@ -10,3 +10,8 @@
    .. quizchoice:: MongoDB University
 
       Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice
+
+   .. quizchoice:: All of the Above
+      :istrue:
+
+      Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.

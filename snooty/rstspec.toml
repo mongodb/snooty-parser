@@ -710,11 +710,11 @@ options.quizid = {type = "string", required = true}
 content_type = "block"
 help = "A possible quiz answer and an explanation to be displayed after submission"
 example = """ .. quizchoice:: ${1:string}
-   ${2:isTrue: (flag)}
+   :isTrue:
 
    ${3:string}"""
 argument_type = "string"
-options.isTrue = "flag"
+options.istrue = "flag"
 
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
