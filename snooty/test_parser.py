@@ -28,6 +28,19 @@ ROOT_PATH = Path("test_data")
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
 
+def test_quiz() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test_quiz.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+    print(page.ast)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test_quiz.rst">
+        <directive name="quiz" domain="mongodb" quizid="mongoacc1"> </directive>
+        </root>""",
+    )
 
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
