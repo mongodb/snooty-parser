@@ -40,6 +40,14 @@ def test_quiz() -> None:
         """<root fileid="test_quiz.rst">
         <directive name="quiz" domain="mongodb" quizid="mongoacc1">
             <paragraph><text>With my MongoDB account, I can now access?</text></paragraph>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB Atlas</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB Atlas isn’t the right answer choice</text></paragraph>
+            </directive>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB University</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice</text></paragraph>
+            </directive>
         </directive>
         </root>""",
     )
