@@ -34,7 +34,6 @@ def test_quiz() -> None:
     parser = rstparser.Parser(project_config, JSONVisitor)
     page, diagnostics = parse_rst(parser, tabs_path, None)
     page.finish(diagnostics)
-    print(page.ast)
     check_ast_testing_string(
         page.ast,
         """<root fileid="test_quiz.rst">
