@@ -814,29 +814,6 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
                 return doc
 
-            fileid, path = util.reroot_path(
-                FileId(argument_text), self.docpath, self.project_config.source_path
-            )
-
-            # Validate if file exists
-            if not path.is_file():
-                # Check if file is snooty-generated
-                if (
-                    fileid.match("steps/*.rst")
-                    or fileid.match("extracts/*.rst")
-                    or fileid.match("release/*.rst")
-                    or fileid == FileId("includes/hash.rst")
-                ):
-                    pass
-                else:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            argument_text,
-                            os.strerror(errno.ENOENT),
-                            util.get_line(node),
-                        )
-                    )
-
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]

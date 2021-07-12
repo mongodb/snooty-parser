@@ -5,6 +5,7 @@ from pathlib import Path
 
 from . import diagnostics
 from .diagnostics import (
+    CannotOpenFile,
     DuplicateDirective,
     ExpectedTabs,
     InvalidChild,
@@ -1156,6 +1157,21 @@ Paragraph
             )
             == 3
         ), "Should raise 3 diagnostics"
+
+
+def test_failed_include() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. include:: /includes/steps/steps-foo.rst
+"""
+        }
+    ) as result:
+        assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
+            CannotOpenFile
+        ]
 
 
 def test_named_references() -> None:

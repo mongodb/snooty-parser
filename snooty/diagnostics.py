@@ -1,5 +1,5 @@
 import enum
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from . import n
@@ -315,7 +315,7 @@ class CannotOpenFile(Diagnostic):
 
     def __init__(
         self,
-        path: Path,
+        path: PurePath,
         reason: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,

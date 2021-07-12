@@ -1,4 +1,5 @@
 import collections
+import errno
 import logging
 import os.path
 import sys
@@ -6,6 +7,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -25,6 +27,7 @@ from typing import (
 from . import n, specparser, util
 from .diagnostics import (
     AmbiguousTarget,
+    CannotOpenFile,
     Diagnostic,
     DuplicateDirective,
     ExpectedPathArg,
@@ -273,6 +276,11 @@ class IncludeHandler(Handler):
 
             # End if we can't find a file
             if include_fileid is None:
+                self.context.diagnostics[fileid_stack.current].append(
+                    CannotOpenFile(
+                        PurePath(include_slug), os.strerror(errno.ENOENT), node.span[0]
+                    )
+                )
                 return
 
         include_page = self.pages.get(include_fileid)
