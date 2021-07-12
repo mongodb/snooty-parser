@@ -67,6 +67,7 @@ from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     BuildIdentifierSet,
     FileId,
+    ParsedBannerConfig,
     ProjectConfig,
     SerializableType,
     StaticAsset,
@@ -1158,6 +1159,26 @@ class _Project:
                 )
 
         self.config.substitution_nodes = substitution_nodes
+
+        # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
+        for banner in self.config.banners:
+            if banner.value:
+
+                options = {"variant": banner.variant}
+                banner_node = ParsedBannerConfig(
+                    banner.targets,
+                    n.Directive((-1,), [], "mongodb", "banner", [], options),
+                )
+
+                page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)
+                banner_node.node.children = page.ast.children
+                if banner_node.node.children:
+                    self.config.banner_nodes.append(banner_node)
+                if banner_diagnostics:
+                    backend.on_diagnostics(
+                        self.config.get_fileid(self.config.config_path),
+                        banner_diagnostics,
+                    )
 
         username = getpass.getuser()
         try:

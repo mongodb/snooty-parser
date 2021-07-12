@@ -810,6 +810,34 @@ def test_admonition_deprecated() -> None:
     )
 
 
+def test_banner() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. banner:: 
+    :variant: warning
+
+    Content
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    print(page.ast)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="banner" variant="warning">
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        </root>""",
+    )
+
+
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -2679,3 +2707,37 @@ def test_escape() -> None:
     <paragraph><substitution_reference name="adl"></substitution_reference><text>ss</text></paragraph>
 </root>""",
     )
+
+
+def test_directive_line_offset() -> None:
+    """Ensure that line numbers are correctly tracked inside of directives."""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r""".. _kotlin-multiplatform-install:
+
+========================================
+Install Realm - Kotlin Multiplatform SDK
+========================================
+
+.. default-domain:: mongodb
+
+Prerequisites
+-------------
+
+.. warning::
+
+   You can track an issue with line numbers in :github:`this GitHub issue
+   <https://github.com/mongodb/snooty-parser/pull/328>`__.
+
+.. include:: /includes/steps/install-kotlin-multiplatform.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert diagnostics[0].start[0] == 13

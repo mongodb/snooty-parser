@@ -6,6 +6,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -41,7 +42,7 @@ from .diagnostics import (
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
-from .types import FileId, ProjectConfig, SerializableType
+from .types import FileId, ParsedBannerConfig, ProjectConfig, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -546,6 +547,79 @@ class HeadingHandler:
             )
 
 
+class BannerHandler:
+    """Traverse a series of pages matching specified targets in Snooty.toml
+    and append Banner directive nodes"""
+
+    def __init__(self, banners: List[ParsedBannerConfig], root: Path) -> None:
+        self.banners = banners
+        self.root = root
+
+    def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
+        """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
+        no 'section' is found within the first 50 nodes."""
+        queue: List[n.Node] = list(node.children)
+        curr_iteration = 0
+        max_iteration = 50
+
+        insertion_node = None
+
+        while queue and curr_iteration < max_iteration:
+            candidate = queue.pop(0)
+            if candidate.type == "section":
+                insertion_node = candidate
+                break
+            if isinstance(candidate, n.Parent):
+                queue.extend(candidate.children)
+
+            curr_iteration += 1
+        return insertion_node
+
+    def __determine_banner_index(self, node: n.Parent[n.Node]) -> int:
+        """Determine if there's a heading within the first level of the target insertion node's children.
+        If so, return the index position after the first detected heading. Otherwise, return 0."""
+        return (
+            next(
+                (
+                    idx
+                    for idx, child in enumerate(node.children)
+                    if isinstance(child, n.Heading)
+                ),
+                0,
+            )
+            + 1
+        )
+
+    def __page_target_match(
+        self, targets: List[str], page: Page, fileid: FileId
+    ) -> bool:
+        """Check if page matches target specified, but assert to ensure this does not run on includes"""
+        assert fileid.suffix == ".txt"
+
+        page_path_relative_to_source = page.source_path.relative_to(
+            self.root / "source"
+        )
+
+        for target in targets:
+            if page_path_relative_to_source.match(target):
+                return True
+        return False
+
+    def __call__(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """Attach a banner as specified throughout project for target pages"""
+        for banner in self.banners:
+            if not self.__page_target_match(banner.targets, page, fileid_stack.current):
+                continue
+
+            banner_parent = self.__find_target_insertion_node(page.ast)
+            if isinstance(banner_parent, n.Parent):
+                target_insertion = self.__determine_banner_index(banner_parent)
+                assert banner_parent is not None
+                banner_parent.children.insert(
+                    target_insertion, util.fast_deep_copy(banner.node)
+                )
+
+
 class IAHandler:
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -714,6 +788,9 @@ class Postprocessor:
         tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
         contents_handler = ContentsHandler(self.diagnostics)
         self.heading_handler = HeadingHandler(self.targets)
+        banner_handler = BannerHandler(
+            self.project_config.banner_nodes, self.project_config.root
+        )
 
         self.run_event_parser(
             [
@@ -732,6 +809,7 @@ class Postprocessor:
                 (EventParser.PAGE_START_EVENT, option_handler.reset),
                 (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
                 (EventParser.PAGE_START_EVENT, contents_handler.reset),
+                (EventParser.PAGE_START_EVENT, banner_handler),
                 (EventParser.PAGE_END_EVENT, contents_handler.finalize_headings),
                 (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
                 (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
@@ -1365,7 +1443,6 @@ class DevhubPostprocessor(Postprocessor):
 
         if page_groups:
             document.update({"pageGroups": page_groups})
-
         return document, self.diagnostics
 
     def reset_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:

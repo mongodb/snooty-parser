@@ -12,3 +12,8 @@ blank = ""
 [deprecated_versions]
 manual = ["v2.2", "v2.4", "v2.6", "v3.0", "v3.2", "v3.4"]
 mms = ["v1.1", "v1.2", "v1.3"]
+
+[[banners]]
+targets = ["*/get-started/*.txt"]
+variant = "info"
+value = "This product is deprecated"
