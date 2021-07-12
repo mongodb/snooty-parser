@@ -721,7 +721,7 @@ options.quizid = {type = "string", required = true}
 content_type = "block"
 help = "A possible quiz answer and an explanation to be displayed after submission"
 example = """ .. quizchoice:: ${1:string}
-   :isTrue:
+   :istrue:
 
    ${3:string}"""
 argument_type = "string"
