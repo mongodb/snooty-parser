@@ -28,6 +28,7 @@ ROOT_PATH = Path("test_data")
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
 
+
 def test_quiz() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_quiz.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -54,6 +55,7 @@ def test_quiz() -> None:
         </directive>
         </root>""",
     )
+
 
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
