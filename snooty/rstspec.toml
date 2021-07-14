@@ -707,6 +707,26 @@ example = """.. procedure::
 ${0: Steps content}"""
 content_type = "block"
 
+[directive."mongodb:quiz"]
+content_type = "block"
+help = "Embed a quiz with a question argument, using the quizchoice directive to construct answer options."
+example = """.. quiz:: 
+  :quiz-id: ${1:string}
+   
+   ${2:string}"""
+argument_type = "string"
+options.quiz-id = {type = "string", required = true}
+
+[directive."mongodb:quizchoice"]
+content_type = "block"
+help = "A possible quiz answer and an explanation to be displayed after submission"
+example = """ .. quizchoice:: ${1:string}
+   :is-true:
+
+   ${3:string}"""
+argument_type = "string"
+options.is-true = "flag"
+
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
 example = """.. step:: ${0: Step's headline string}
