@@ -1,5 +1,5 @@
 .. quiz::
-   :quizid: mongoacc1
+   :quiz-id: mongoacc1
 
    With my MongoDB account, I can now access?
    
@@ -12,6 +12,6 @@
       Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice
 
    .. quizchoice:: All of the Above
-      :istrue:
+      :is-true:
 
       Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.

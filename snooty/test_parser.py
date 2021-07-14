@@ -38,7 +38,7 @@ def test_quiz() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test_quiz.rst">
-        <directive name="quiz" domain="mongodb" quizid="mongoacc1">
+        <directive name="quiz" domain="mongodb" quiz-id="mongoacc1">
             <paragraph><text>With my MongoDB account, I can now access?</text></paragraph>
             <directive name="quizchoice" domain="mongodb">
                 <text>MongoDB Atlas</text>
@@ -48,7 +48,7 @@ def test_quiz() -> None:
                 <text>MongoDB University</text>
                 <paragraph><text>Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice</text></paragraph>
             </directive>
-            <directive name="quizchoice" domain="mongodb" istrue="True">
+            <directive name="quizchoice" domain="mongodb" is-true="True">
                 <text>All of the Above</text>
                 <paragraph><text>Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.</text></paragraph>
             </directive>

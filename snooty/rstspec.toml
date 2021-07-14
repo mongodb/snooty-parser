@@ -711,21 +711,21 @@ content_type = "block"
 content_type = "block"
 help = "Embed a quiz with a question argument, using the quizchoice directive to construct answer options."
 example = """.. quiz:: 
-  :quizid: ${1:string}
+  :quiz-id: ${1:string}
    
    ${2:string}"""
 argument_type = "string"
-options.quizid = {type = "string", required = true}
+options.quiz-id = {type = "string", required = true}
 
 [directive."mongodb:quizchoice"]
 content_type = "block"
 help = "A possible quiz answer and an explanation to be displayed after submission"
 example = """ .. quizchoice:: ${1:string}
-   :istrue:
+   :is-true:
 
    ${3:string}"""
 argument_type = "string"
-options.istrue = "flag"
+options.is-true = "flag"
 
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
