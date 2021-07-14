@@ -29,6 +29,34 @@ ROOT_PATH = Path("test_data")
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
 
 
+def test_quiz() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test_quiz.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test_quiz.rst">
+        <directive name="quiz" domain="mongodb" quiz-id="mongoacc1">
+            <paragraph><text>With my MongoDB account, I can now access?</text></paragraph>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB Atlas</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB Atlas isn’t the right answer choice</text></paragraph>
+            </directive>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB University</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice</text></paragraph>
+            </directive>
+            <directive name="quizchoice" domain="mongodb" is-true="True">
+                <text>All of the Above</text>
+                <paragraph><text>Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.</text></paragraph>
+            </directive>
+        </directive>
+        </root>""",
+    )
+
+
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
