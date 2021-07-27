@@ -824,10 +824,12 @@ help = """Add metadata to the site for SEO."""
 options.keywords = "string"
 options.description = "string"
 options.robots = "string"
+options.canonical = "uri"
 example = """.. meta::
    :keywords: ${1:string}
    :description: ${2:string}
    :robots: ${3:string}
+   :canonical: ${4: full url, not relative}
 """
 
 [directive.topic]
