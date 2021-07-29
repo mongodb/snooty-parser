@@ -246,6 +246,13 @@ class SubstitutionReference(InlineParent):
 
 
 @dataclass
+class BlockSubstitutionReference(Parent[Node]):
+    __slots__ = ("name",)
+    type = "substitution_reference"
+    name: str
+
+
+@dataclass
 class Root(Parent[Node]):
     __slots__ = ("fileid", "options")
     type = "root"

@@ -362,7 +362,22 @@ class JSONVisitor:
             except IndexError:
                 pass
         elif isinstance(node, docutils.nodes.substitution_reference):
-            self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
+            if (
+                isinstance(node.parent, docutils.nodes.paragraph)
+                and len(node.parent.children) == 1
+            ):
+                self.state.pop()
+                # top_of_state = self.state[-1]
+                # assert isinstance(top_of_state, n.Parent)
+                block_substitution_node = n.BlockSubstitutionReference(
+                    (line,), [], node["refname"]
+                )
+                self.state.append(block_substitution_node)
+                # top_of_state.children.append(block_substitution_node)
+            else:
+                self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
+
+            raise docutils.nodes.SkipChildren()
         elif isinstance(node, docutils.nodes.footnote):
             # Autonumbered footnotes do not have a refname
             name = node["names"] if "names" in node else None

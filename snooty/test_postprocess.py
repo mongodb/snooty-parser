@@ -11,6 +11,7 @@ from .diagnostics import (
     InvalidIAEntry,
     MissingTab,
     MissingTocTreeEntry,
+    SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
 )
@@ -1156,6 +1157,144 @@ Paragraph
             )
             == 3
         ), "Should raise 3 diagnostics"
+
+
+def test_replacements() -> None:
+    with make_test(
+        {
+            # Correctly handles inline replacement
+            Path(
+                "source/inline.txt"
+            ): """
+.. include:: /includes/replacement-inline.rst
+
+   .. replacement:: i-hope
+
+      Yes
+
+   .. replacement:: maybe
+
+      Yes
+""",
+            Path(
+                "source/includes/replacement-inline.rst"
+            ): """
+Do we correctly handle replacing inline values? |i-hope| we do.
+""",
+            # Correctly handles own-paragraph replacement
+            Path(
+                "source/block.txt"
+            ): """
+.. include:: /includes/replacement-block.rst
+
+   .. replacement:: code
+
+      .. code-block:: python
+
+         mongo --port 27017
+""",
+            Path(
+                "source/includes/replacement-block.rst"
+            ): """
+The following should be a code block:
+
+|code|
+""",
+        },
+    ) as result:
+
+        active_file = "inline.txt"
+        assert not result.diagnostics[FileId(active_file)]
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="inline.txt">
+    <directive name="include">
+        <text>/includes/replacement-inline.rst</text>
+        <directive name="replacement"><text>i-hope</text><paragraph><text>Yes</text></paragraph></directive>
+        <directive name="replacement"><text>maybe</text><paragraph><text>Yes</text></paragraph></directive>
+        <root fileid="includes/replacement-inline.rst">
+            <paragraph>
+                <text>Do we correctly handle replacing inline values? </text>
+                <substitution_reference name="i-hope"><text>Yes</text></substitution_reference>
+                <text> we do.</text>
+            </paragraph>
+        </root>
+    </directive>
+</root>
+""",
+        )
+
+        active_file = "block.txt"
+        assert not result.diagnostics[FileId(active_file)]
+        page = result.pages[FileId(active_file)]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="block.txt">
+    <directive name="include">
+        <text>/includes/replacement-block.rst</text>
+        <directive name="replacement"><text>code</text><code lang="python" copyable="True">
+            mongo --port 27017
+        </code></directive>
+        <root fileid="includes/replacement-block.rst">
+            <paragraph>
+                <text>The following should be a code block:</text>
+            </paragraph>
+            <substitution_reference name="code">
+                <code lang="python" copyable="True">
+                    mongo --port 27017
+                </code>
+            </substitution_reference>
+        </root>
+    </directive>
+</root>
+""",
+        )
+
+
+def test_replacements_scope() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/a.txt"
+            ): """
+.. include:: /includes/b.rst
+
+   .. replacement:: foo
+
+      foo
+
+   .. replacement:: bar
+
+      bar
+""",
+            Path(
+                "source/includes/b.rst"
+            ): """
+.. include:: /includes/c.rst
+
+   .. replacement:: foo
+
+      foo
+""",
+            Path(
+                "source/includes/c.rst"
+            ): """
+|foo|
+
+|bar|
+""",
+        },
+    ) as result:
+        print(result.diagnostics)
+        assert not result.diagnostics[FileId("includes/b.rst")]
+        assert not result.diagnostics[FileId("includes/a.txt")]
+        assert [type(x) for x in result.diagnostics[FileId("includes/c.rst")]] == [
+            SubstitutionRefError
+        ]
 
 
 def test_named_references() -> None:

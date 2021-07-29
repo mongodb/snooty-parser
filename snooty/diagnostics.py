@@ -63,6 +63,9 @@ class Diagnostic:
         diag["message"] = self.message
         return diag
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.message)}, {repr(self.start)})"
+
 
 class UnexpectedIndentation(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
@@ -187,6 +190,19 @@ class InvalidLiteralInclude(Diagnostic):
 
 class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
+
+
+class InvalidContextError(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "Cannot substitute block elements into an inline context", start, end
+        )
 
 
 class ConstantNotDeclared(Diagnostic):

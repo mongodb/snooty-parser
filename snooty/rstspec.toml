@@ -172,6 +172,7 @@ example = """.. contents:: ${1:string}
 [directive.include]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
+content_type = "string"
 options.start-after = "string"
 options.end-before = "string"
 example = """.. include:: ${1:/includes/file.rst}
@@ -200,6 +201,14 @@ example = """..literalinclude:: ${1:/path/to/file.js}
    :dedent:
    :emphasize-lines:
    :lines:}
+"""
+
+[directive.replacement]
+help = """Specify replacements for variables in a shared content item."""
+argument_type = "str"
+content_type = "block"
+example = """.. replacement:: ${1:variable name}
+   ${2:Content with which to replace variable}
 """
 
 [directive.figure]
@@ -710,10 +719,10 @@ content_type = "block"
 [directive."mongodb:quiz"]
 content_type = "block"
 help = "Embed a quiz with a question argument, using the quizchoice directive to construct answer options."
-example = """.. quiz:: 
+example = """.. quiz::
   :quiz-id: ${1:string}
   :quiz-date: ${2:string}
-  
+
    ${3:string}"""
 argument_type = "string"
 options.quiz-id = {type = "string", required = true}

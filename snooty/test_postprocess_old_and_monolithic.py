@@ -549,25 +549,21 @@ def test_substitutions(backend: Backend) -> None:
     page_id = FileId("circular.txt")
 
     diagnostics = backend.diagnostics[page_id]
-    assert len(diagnostics) == 4
+    assert len(diagnostics) == 15
 
     ast = backend.pages[page_id].ast
     assert isinstance(ast, n.Root)
     paragraph = ast.children[2]
-    assert isinstance(paragraph, n.Paragraph)
-    substitution_reference = paragraph.children[0]
-    check_ast_testing_string(
-        substitution_reference,
-        """<substitution_reference name="operation"><substitution_reference name="add"></substitution_reference></substitution_reference>""",
-    )
+    assert isinstance(paragraph, n.BlockSubstitutionReference)
+    assert not paragraph.children
 
     paragraph = ast.children[7]
-    assert isinstance(paragraph, n.Paragraph)
-    substitution_reference = paragraph.children[0]
-    check_ast_testing_string(
-        substitution_reference,
-        """<substitution_reference name="baz"><substitution_reference name="foo"></substitution_reference></substitution_reference>""",
-    )
+    assert isinstance(paragraph, n.BlockSubstitutionReference)
+    assert not paragraph.children
+    # check_ast_testing_string(
+    #     substitution_reference,
+    #     """<substitution_reference name="baz"><substitution_reference name="foo"></substitution_reference></substitution_reference>""",
+    # )
 
     paragraph = ast.children[3]
     assert isinstance(paragraph, n.Paragraph)
