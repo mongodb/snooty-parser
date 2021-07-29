@@ -20,6 +20,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 
 from . import n, specparser, util
@@ -89,8 +90,24 @@ def deep_copy_position(source: n.Node, dest: n.Node) -> None:
             deep_copy_position(source, child)
 
 
+def extract_inline(node: n.Node) -> Optional[n.InlineNode]:
+    """Reach into a node and see if it's trivally transformable into an inline context
+    without losing anything aside from a wrapping Paragraph."""
+    if isinstance(node, n.InlineNode):
+        return node
+
+    if (
+        isinstance(node, n.Paragraph)
+        and len(node.children) == 1
+        and isinstance(node.children[0], n.InlineNode)
+    ):
+        return node.children[0]
+
+    return None
+
+
 class Context:
-    """Store and refer to instances of a type by that type. This allows referring to
+    """Store and refer to an instance of a type by that type. This allows referring to
     arbitrary data stores in a type-safe way."""
 
     __slots__ = ("_ctx", "diagnostics", "pages")
@@ -253,14 +270,14 @@ class IncludeHandler(Handler):
         return nodes[start_index : end_index + 1], any_start, any_end
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "include":
+            return
+
         def get_include_argument(node: n.Directive) -> str:
             """Get filename of include"""
             argument_list = node.argument
             assert len(argument_list) > 0
             return argument_list[0].value
-
-        if not isinstance(node, n.Directive) or not node.name == "include":
-            return
 
         argument = get_include_argument(node)
         include_slug = clean_slug(argument)
@@ -315,7 +332,7 @@ class IncludeHandler(Handler):
                     )
                 )
 
-        node.children = deep_copy_children
+        node.children.extend(deep_copy_children)
 
 
 class NamedReferenceHandlerPass1(Handler):
@@ -802,7 +819,16 @@ class SubstitutionHandler(Handler):
         super().__init__(context)
         self.project_config = context[ProjectConfig]
         self.substitution_definitions: Dict[str, MutableSequence[n.InlineNode]] = {}
-        self.unreplaced_nodes: List[Tuple[n.SubstitutionReference, int]] = []
+        self.include_replacement_definitions: List[
+            Dict[str, MutableSequence[n.Node]]
+        ] = []
+        self.unreplaced_nodes: List[
+            Tuple[
+                Union[n.SubstitutionReference, n.BlockSubstitutionReference],
+                FileId,
+                int,
+            ]
+        ] = []
         self.seen_definitions: Optional[Set[str]] = None
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -812,58 +838,64 @@ class SubstitutionHandler(Handler):
         If not, save this node to be populated at the end of the page.
         """
 
-        try:
-            line = node.span[0]
-            if isinstance(node, n.SubstitutionDefinition):
-                self.substitution_definitions[node.name] = node.children
-                self.seen_definitions = set()
-            elif isinstance(node, n.SubstitutionReference):
-                # Get substitution from page. If not found, attempt to source from snooty.toml. Otherwise, save substitution to be populated at the end of page
-                substitution = self.substitution_definitions.get(
-                    node.name
-                ) or self.project_config.substitution_nodes.get(node.name)
+        if isinstance(node, n.Directive):
+            if node.name != "include":
+                return
 
-                if (
-                    self.seen_definitions is not None
-                    and node.name in self.seen_definitions
-                ):
-                    # Catch circular substitution
-                    del self.substitution_definitions[node.name]
-                    node.children = []
-                    self.context.diagnostics[fileid_stack.current].append(
-                        SubstitutionRefError(
-                            f'Circular substitution definition referenced: "{node.name}"',
-                            line,
-                        )
-                    )
-                elif substitution is not None:
-                    node.children = substitution
-                else:
-                    # Save node in order to populate it at the end of the page
-                    self.unreplaced_nodes.append((node, line))
+            definitions: Dict[str, MutableSequence[n.Node]] = {}
+            self.include_replacement_definitions.append(definitions)
+            for replacement_directive in node.get_child_of_type(n.Directive):
+                if replacement_directive.name != "replacement":
+                    continue
 
-                if self.seen_definitions is not None:
-                    self.seen_definitions.add(node.name)
-        except KeyError:
-            # If node does not contain "name" field, it is a duplicate substitution definition.
-            # An error has already been thrown for this on parse, so pass.
-            pass
+                arg = "".join(
+                    x.get_text() for x in replacement_directive.argument
+                ).strip()
+                definitions[arg] = util.fast_deep_copy(replacement_directive.children)
+
+        elif isinstance(node, n.SubstitutionDefinition):
+            self.substitution_definitions[node.name] = node.children
+            self.seen_definitions = set()
+
+        elif isinstance(node, n.SubstitutionReference):
+            inline_substitution = self.search_inline(node, fileid_stack)
+            if inline_substitution is not None:
+                node.children = inline_substitution
+            else:
+                # Save node in order to populate it at the end of the page
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
+
+            if self.seen_definitions is not None:
+                self.seen_definitions.add(node.name)
+
+        elif isinstance(node, n.BlockSubstitutionReference):
+            block_substitution = self.search_block(node, fileid_stack)
+            if block_substitution is not None:
+                node.children = block_substitution
+            else:
+                # Save node in order to populate it at the end of the page
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
+
+            if self.seen_definitions is not None:
+                self.seen_definitions.add(node.name)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.SubstitutionDefinition):
             self.seen_definitions = None
+        elif isinstance(node, n.Directive) and node.name == "include":
+            self.include_replacement_definitions.pop()
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
 
         Clear definitions and unreplaced nodes for the next page.
         """
-        for node, line in self.unreplaced_nodes:
+        for node, fileid, line in self.unreplaced_nodes:
             substitution = self.substitution_definitions.get(node.name)
             if substitution is not None:
                 node.children = substitution
             else:
-                self.context.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid].append(
                     SubstitutionRefError(
                         f'Substitution reference could not be replaced: "|{node.name}|"',
                         line,
@@ -871,7 +903,67 @@ class SubstitutionHandler(Handler):
                 )
 
         self.substitution_definitions = {}
+        self.include_replacement_definitions = []
         self.unreplaced_nodes = []
+
+    def search_inline(
+        self, node: n.SubstitutionReference, fileid_stack: FileIdStack
+    ) -> Optional[MutableSequence[n.InlineNode]]:
+        result = self._search(node, fileid_stack)
+        if result is None:
+            return None
+
+        substitution: Optional[MutableSequence[n.InlineNode]] = [
+            y for y in (extract_inline(x) for x in result) if y is not None
+        ]
+
+        return substitution
+
+    def search_block(
+        self, node: n.BlockSubstitutionReference, fileid_stack: FileIdStack
+    ) -> Optional[MutableSequence[n.Node]]:
+        result = self._search(node, fileid_stack)
+        if result is None:
+            return None
+
+        # If we're injecting inline nodes, wrap them in a paragraph
+        return [n.Paragraph(node.span, [el]) if isinstance(el, n.InlineNode) else el for el in result]  # type: ignore
+
+    def _search(
+        self,
+        node: Union[n.BlockSubstitutionReference, n.SubstitutionReference],
+        fileid_stack: FileIdStack,
+    ) -> Optional[Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]]]:
+        name = node.name
+
+        # Detect substitution loop
+        if self.seen_definitions is not None and name in self.seen_definitions:
+            # Catch circular substitution
+            try:
+                del self.substitution_definitions[name]
+            except KeyError:
+                pass
+            self.context.diagnostics[fileid_stack.current].append(
+                SubstitutionRefError(
+                    f'Circular substitution definition referenced: "{name}"',
+                    node.span[0],
+                )
+            )
+            return None
+
+        # Resolution order: include parameters, definitions from page, definitions from snooty.toml
+        # First, check if there are any parameters provided by our immediate parent
+        try:
+            return util.fast_deep_copy(self.include_replacement_definitions[-1][name])
+        except (IndexError, KeyError):
+            pass
+
+        # Now try to get a substitution from page.
+        substitution = self.substitution_definitions.get(
+            name
+        ) or self.project_config.substitution_nodes.get(name)
+
+        return util.fast_deep_copy(substitution)
 
 
 class AddTitlesToLabelTargetsHandler(Handler):
