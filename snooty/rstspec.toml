@@ -713,6 +713,7 @@ help = "Embed a quiz with a question argument, using the quizchoice directive to
 example = """.. quiz:: 
   :quiz-id: ${1:string}
   :quiz-date: ${2:string}
+  
    ${3:string}"""
 argument_type = "string"
 options.quiz-id = {type = "string", required = true}

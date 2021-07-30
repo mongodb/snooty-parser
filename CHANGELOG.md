@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.0] - 2021-07-14
+
+### Added
+
+- Directive for banner support (DOP-1573, #308)
+
 ## [v0.10.4] - 2021-07-07
 
 ### Fixed
