@@ -38,7 +38,7 @@ def test_quiz() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test_quiz.rst">
-        <directive name="quiz" domain="mongodb" quiz-id="mongoacc1">
+        <directive name="quiz" domain="mongodb" quiz-id="mongoacc1" quiz-date="2021-06-21">
             <paragraph><text>With my MongoDB account, I can now access?</text></paragraph>
             <directive name="quizchoice" domain="mongodb">
                 <text>MongoDB Atlas</text>
