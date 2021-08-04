@@ -8,6 +8,7 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedTabs,
     InvalidChild,
+    InvalidContextError,
     InvalidIAEntry,
     MissingTab,
     MissingTocTreeEntry,
@@ -1294,6 +1295,53 @@ def test_replacements_scope() -> None:
         assert not result.diagnostics[FileId("includes/a.txt")]
         assert [type(x) for x in result.diagnostics[FileId("includes/c.rst")]] == [
             SubstitutionRefError
+        ]
+
+
+def test_replacement_context() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/a.txt"
+            ): """
+.. include:: /includes/b.rst
+
+   .. replacement:: two-paragraphs
+
+      foo
+
+      bar
+
+   .. replacement:: a-codeblock
+
+      .. code-block:: sh
+
+         ls
+""",
+            Path(
+                "source/includes/b.rst"
+            ): """
+Block in Inline Contexts
+------------------------
+
+test |two-paragraphs|
+
+test |a-codeblock|
+
+Block in Block Contexts
+-----------------------
+
+|two-paragraphs|
+
+|a-codeblock|
+""",
+        },
+    ) as result:
+        assert [type(x) for x in result.diagnostics[FileId("includes/b.rst")]] == [
+            InvalidContextError,
+            InvalidContextError,
+            SubstitutionRefError,
+            SubstitutionRefError,
         ]
 
 

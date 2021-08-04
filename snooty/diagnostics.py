@@ -197,12 +197,16 @@ class InvalidContextError(Diagnostic):
 
     def __init__(
         self,
+        name: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            "Cannot substitute block elements into an inline context", start, end
+            f"Cannot substitute block elements into an inline context: |{name}|",
+            start,
+            end,
         )
+        self.name = name
 
 
 class ConstantNotDeclared(Diagnostic):
