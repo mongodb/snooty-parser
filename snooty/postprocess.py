@@ -21,6 +21,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 from . import n, specparser, util
@@ -31,6 +32,7 @@ from .diagnostics import (
     ExpectedPathArg,
     ExpectedTabs,
     InvalidChild,
+    InvalidContextError,
     InvalidIAEntry,
     InvalidInclude,
     InvalidTocTree,
@@ -90,18 +92,22 @@ def deep_copy_position(source: n.Node, dest: n.Node) -> None:
             deep_copy_position(source, child)
 
 
-def extract_inline(node: n.Node) -> Optional[n.InlineNode]:
+def extract_inline(
+    nodes: Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]]
+) -> Optional[MutableSequence[n.InlineNode]]:
     """Reach into a node and see if it's trivally transformable into an inline context
     without losing anything aside from a wrapping Paragraph."""
-    if isinstance(node, n.InlineNode):
-        return node
+    if all(isinstance(node, n.InlineNode) for node in nodes):
+        return cast(MutableSequence[n.InlineNode], nodes)
 
+    node = nodes[0]
     if (
-        isinstance(node, n.Paragraph)
+        len(nodes) == 1
+        and isinstance(node, n.Paragraph)
         and len(node.children) == 1
         and isinstance(node.children[0], n.InlineNode)
     ):
-        return node.children[0]
+        return [node.children[0]]
 
     return None
 
@@ -332,6 +338,12 @@ class IncludeHandler(Handler):
                     )
                 )
 
+        # This is a bit sketchy, but retain replacement directives for replacement processing later
+        node.children = [
+            child
+            for child in node.children
+            if isinstance(child, n.Directive) and child.name == "replacement"
+        ]
         node.children.extend(deep_copy_children)
 
 
@@ -851,7 +863,7 @@ class SubstitutionHandler(Handler):
                 arg = "".join(
                     x.get_text() for x in replacement_directive.argument
                 ).strip()
-                definitions[arg] = util.fast_deep_copy(replacement_directive.children)
+                definitions[arg] = replacement_directive.children
 
         elif isinstance(node, n.SubstitutionDefinition):
             self.substitution_definitions[node.name] = node.children
@@ -913,9 +925,17 @@ class SubstitutionHandler(Handler):
         if result is None:
             return None
 
-        substitution: Optional[MutableSequence[n.InlineNode]] = [
-            y for y in (extract_inline(x) for x in result) if y is not None
-        ]
+        # Ensure that we're only attempting to insert a single inline element. Otherwise,
+        # it's not clear what the writer would want.
+        substitution = extract_inline(result)
+        if not substitution or len(substitution) != len(result):
+            self.context.diagnostics[fileid_stack.current].append(
+                InvalidContextError(
+                    node.name,
+                    node.span[0],
+                )
+            )
+            return None
 
         return substitution
 
