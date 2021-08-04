@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.1] - 2021-08-04
+
 ### Added
 
 - `java-docs-4.3` extlink (#337)
