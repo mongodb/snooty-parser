@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Quiz widget! (DOP-2319 #333 DOP-2354, DOP-2354 #334)
+
 ## [v0.11.1] - 2021-08-04
 
 ### Added
