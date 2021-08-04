@@ -208,6 +208,7 @@ help = """Specify replacements for variables in a shared content item."""
 argument_type = "str"
 content_type = "block"
 example = """.. replacement:: ${1:variable name}
+
    ${2:Content with which to replace variable}
 """
 
