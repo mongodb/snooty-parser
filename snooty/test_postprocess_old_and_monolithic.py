@@ -560,10 +560,6 @@ def test_substitutions(backend: Backend) -> None:
     paragraph = ast.children[7]
     assert isinstance(paragraph, n.BlockSubstitutionReference)
     assert not paragraph.children
-    # check_ast_testing_string(
-    #     substitution_reference,
-    #     """<substitution_reference name="baz"><substitution_reference name="foo"></substitution_reference></substitution_reference>""",
-    # )
 
     paragraph = ast.children[3]
     assert isinstance(paragraph, n.Paragraph)
