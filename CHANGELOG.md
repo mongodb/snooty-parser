@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `java-docs-4.3` extlink (#337)
+
 ## [v0.11.0] - 2021-07-14
 
 ### Added
