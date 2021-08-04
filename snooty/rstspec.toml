@@ -1088,6 +1088,10 @@ type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/
 help = """Link to the Java driver's documentation."""
 type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/%s"}
 
+[role."java-docs-4.3"]
+help = """Link to the Java driver's documentation."""
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.3/%s"}
+
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
 type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/driver-reactive/%s"}
