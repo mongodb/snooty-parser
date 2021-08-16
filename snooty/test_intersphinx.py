@@ -14,7 +14,7 @@ from .util_test import make_test
 
 TESTING_CACHE_DIR = Path(".intersphinx_cache")
 INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"
-EXPECTED_INVENTORY_FILENAME = "docsmongodbcommanualobjectsinv"
+EXPECTED_INVENTORY_FILENAME = r"https%3A%2F%2Fdocs.mongodb.com%2Fmanual%2Fobjects.inv"
 INVENTORY_PATH = TESTING_CACHE_DIR.joinpath(EXPECTED_INVENTORY_FILENAME)
 
 # Skip footnote labels during validation. Yes, these are all labels created

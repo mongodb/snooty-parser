@@ -1,15 +1,21 @@
+import datetime
 import logging
 import os
 import pickle
 import re
 import sys
+import tempfile
 import time
+import urllib.parse
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
+from email.utils import formatdate
 from pathlib import Path, PurePath, PurePosixPath
+from time import mktime
 from typing import (
     Callable,
+    ClassVar,
     Container,
     Counter,
     Dict,
@@ -25,6 +31,7 @@ from typing import (
 
 import docutils.nodes
 import docutils.parsers.rst.directives
+import requests
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
@@ -291,3 +298,59 @@ class PerformanceLogger:
 
 
 PerformanceLogger._singleton = PerformanceLogger()
+
+
+class HTTPCache:
+    _singleton: ClassVar[Optional["HTTPCache"]] = None
+    DEFAULT_CACHE_DIR: ClassVar[Path] = Path.home().joinpath(".cache", "snooty")
+
+    @classmethod
+    def get(cls) -> "HTTPCache":
+        if cls._singleton is None:
+            cls._singleton = cls()
+
+        return cls._singleton
+
+    def __init__(self, cache_dir: Optional[Path] = None) -> None:
+        self.cache_dir = self.DEFAULT_CACHE_DIR if not cache_dir else cache_dir
+
+    def __getitem__(self, url: str) -> bytes:
+        logger.debug(f"Fetching: {url}")
+
+        # Make our user's cache directory if it doesn't exist
+        filename = urllib.parse.quote(url, safe="")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        inventory_path = self.cache_dir.joinpath(filename)
+
+        # Only re-request if more than an hour old
+        request_headers: Dict[str, str] = {}
+        mtime: Optional[datetime.datetime] = None
+        try:
+            mtime = datetime.datetime.fromtimestamp(inventory_path.stat().st_mtime)
+        except FileNotFoundError:
+            pass
+
+        if mtime is not None:
+            if (datetime.datetime.now() - mtime) < datetime.timedelta(hours=1):
+                request_headers["If-Modified-Since"] = formatdate(
+                    mktime(mtime.timetuple()), usegmt=True
+                )
+
+        res = requests.get(url, headers=request_headers)
+
+        res.raise_for_status()
+        if res.status_code == 304:
+            return inventory_path.read_bytes()
+
+        # Atomically (re)write the cache file entry
+        try:
+            tempf = tempfile.NamedTemporaryFile(dir=self.cache_dir)
+            tempf.write(res.content)
+            os.replace(tempf.name, inventory_path)
+        finally:
+            try:
+                tempf.close()
+            except FileNotFoundError:
+                pass
+
+        return res.content
