@@ -10,6 +10,7 @@ import re
 import subprocess
 import threading
 import time
+import urllib.parse
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -22,6 +23,7 @@ from typing import (
     List,
     MutableSequence,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -31,6 +33,7 @@ from typing import (
 import docutils.nodes
 import docutils.utils
 import networkx
+import requests.exceptions
 import watchdog.events
 from typing_extensions import Protocol
 from yaml import safe_load
@@ -40,6 +43,7 @@ from .builders import man
 from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
+    ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
     ExpectedPathArg,
@@ -172,6 +176,10 @@ class JSONVisitor:
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
+
+        # It's possible for pages to synthetically create other pages that don't
+        # exist in the filesystem
+        self.synthetic_pages: Dict[FileId, str] = {}
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
@@ -852,6 +860,35 @@ class JSONVisitor:
                         )
                     )
 
+        elif name == "sharedinclude":
+            if argument_text is None:
+                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                return doc
+
+            if self.project_config.sharedinclude_root is None:
+                self.diagnostics.append(
+                    ConfigurationProblem(
+                        "To use sharedinclude, you must provide a 'sharedinclude_root' option in snooty.toml",
+                        util.get_line(node),
+                    )
+                )
+                return doc
+
+            url = urllib.parse.urljoin(
+                self.project_config.sharedinclude_root, argument_text
+            )
+            try:
+                response = util.HTTPCache.get()[url]
+            except requests.exceptions.RequestException as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, str(err), util.get_line(node))
+                )
+                return doc
+
+            new_fileid = FileId("sharedinclude").joinpath(argument_text)
+            doc.argument = [n.Text((line,), new_fileid.as_posix())]
+            self.synthetic_pages[new_fileid] = str(response, "utf-8")
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -972,7 +1009,7 @@ class InlineJSONVisitor(JSONVisitor):
 
 def parse_rst(
     parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
-) -> Tuple[Page, List[Diagnostic]]:
+) -> Sequence[Tuple[Page, List[Diagnostic]]]:
     visitor, text = parser.parse(path, text)
 
     top_of_state = visitor.state[-1]
@@ -980,7 +1017,19 @@ def parse_rst(
     page = Page.create(path, None, text, top_of_state)
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending
-    return (page, visitor.diagnostics)
+    result = [(page, visitor.diagnostics)]
+
+    # Pages can create additional pages that are not "real" filesystem artifacts
+    for synthetic_page, synthetic_page_text in visitor.synthetic_pages.items():
+        result.extend(
+            parse_rst(
+                parser,
+                parser.project_config.source_path.joinpath(synthetic_page),
+                synthetic_page_text,
+            )
+        )
+
+    return result
 
 
 @dataclass
@@ -1162,7 +1211,8 @@ class _Project:
         inline_parser = rstparser.Parser(self.config, InlineJSONVisitor)
         substitution_nodes: Dict[str, List[n.InlineNode]] = {}
         for k, v in self.config.substitutions.items():
-            page, substitution_diagnostics = parse_rst(inline_parser, root, v)
+            # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
+            page, substitution_diagnostics = parse_rst(inline_parser, root, v)[0]
             substitution_nodes[k] = list(
                 deepcopy(child) for child in page.ast.children  # type: ignore
             )
@@ -1185,7 +1235,10 @@ class _Project:
                     n.Directive((-1,), [], "mongodb", "banner", [], options),
                 )
 
-                page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)
+                # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
+                page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)[
+                    0
+                ]
                 banner_node.node.children = page.ast.children
                 if banner_node.node.children:
                     self.config.banner_nodes.append(banner_node)
@@ -1271,9 +1324,9 @@ class _Project:
         _, ext = os.path.splitext(path)
         pages: List[Page] = []
         if ext in RST_EXTENSIONS:
-            page, page_diagnostics = parse_rst(self.parser, path, optional_text)
-            pages.append(page)
-            diagnostics[path] = page_diagnostics
+            for page, page_diagnostics in parse_rst(self.parser, path, optional_text):
+                pages.append(page)
+                diagnostics[path] = page_diagnostics
         elif ext == ".yaml" and prefix in self.yaml_mapping:
             file_id = os.path.basename(path)
             giza_category = self.yaml_mapping[prefix]
@@ -1346,8 +1399,9 @@ class _Project:
                 paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
                 logger.debug("Processing rst files")
                 results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-                for page, diagnostics in results:
-                    self._page_updated(page, diagnostics)
+                for sequence in results:
+                    for page, diagnostics in sequence:
+                        self._page_updated(page, diagnostics)
             finally:
                 # We cannot use the multiprocessing.Pool context manager API due to the following:
                 # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
