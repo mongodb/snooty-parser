@@ -4,7 +4,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 
 import toml
 from typing_extensions import Protocol
@@ -22,6 +22,7 @@ from .n import SerializableType as ST
 
 SerializableType = ST
 FileId = FD
+FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
 BuildIdentifierSet = Dict[str, Optional[str]]
@@ -139,6 +140,7 @@ class ProjectConfig:
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
+    sharedinclude_root: Optional[str] = field(default=None)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
     substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)

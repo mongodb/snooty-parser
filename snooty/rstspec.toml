@@ -180,6 +180,12 @@ example = """.. include:: ${1:/includes/file.rst}
    :end-before: ${3:text to end before (Optional}}
 """
 
+[directive.sharedinclude]
+argument_type = "string"
+content_type = "string"
+example = """.. sharedinclude:: ${1:/test/sample-item.rst}
+"""
+
 [directive.literalinclude]
 help = """Include a file as a block of code."""
 inherit = "include"

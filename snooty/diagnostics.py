@@ -607,3 +607,7 @@ class InvalidChild(Diagnostic, MakeCorrectionMixin):
 
     def did_you_mean(self) -> List[str]:
         return [f".. {self.suggestion}::"]
+
+
+class ConfigurationProblem(Diagnostic):
+    severity = Diagnostic.Level.error

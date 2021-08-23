@@ -19,9 +19,9 @@ from .diagnostics import (
     UnknownTabID,
     UnknownTabset,
 )
-from .parser import InlineJSONVisitor, JSONVisitor, parse_rst
+from .parser import InlineJSONVisitor, JSONVisitor
 from .types import ProjectConfig
-from .util_test import ast_to_testing_string, check_ast_testing_string
+from .util_test import ast_to_testing_string, check_ast_testing_string, parse_rst
 
 ROOT_PATH = Path("test_data")
 
@@ -821,7 +821,7 @@ def test_banner() -> None:
         parser,
         path,
         """
-.. banner:: 
+.. banner::
     :variant: warning
 
     Content

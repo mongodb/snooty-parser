@@ -2,9 +2,9 @@ from pathlib import Path
 
 from . import rstparser
 from .diagnostics import ExpectedPathArg
-from .parser import JSONVisitor, parse_rst
+from .parser import JSONVisitor
 from .types import ProjectConfig
-from .util_test import check_ast_testing_string
+from .util_test import check_ast_testing_string, parse_rst
 
 ROOT_PATH = Path("test_data")
 

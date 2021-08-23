@@ -7,13 +7,14 @@ import textwrap
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
-from . import n
+from . import n, rstparser
 from .diagnostics import Diagnostic
 from .page import Page
-from .parser import Project
+from .parser import JSONVisitor, Project
+from .parser import parse_rst as parse_rst_multi
 from .types import BuildIdentifierSet, FileId, SerializableType
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
@@ -222,3 +223,9 @@ def make_test(files: Dict[Path, str], name: str = "") -> Iterator[BackendTestRes
         project.build()
 
     yield backend
+
+
+def parse_rst(
+    parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
+) -> Tuple[Page, List[Diagnostic]]:
+    return parse_rst_multi(parser, path, text)[0]

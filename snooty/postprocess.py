@@ -276,7 +276,10 @@ class IncludeHandler(Handler):
         return nodes[start_index : end_index + 1], any_start, any_end
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or node.name != "include":
+        if not isinstance(node, n.Directive) or node.name not in {
+            "include",
+            "sharedinclude",
+        }:
             return
 
         def get_include_argument(node: n.Directive) -> str:
@@ -294,7 +297,9 @@ class IncludeHandler(Handler):
             include_slug = argument.strip("/")
             include_fileid = self.slug_fileid_mapping.get(include_slug)
 
-            # End if we can't find a file
+            # XXX: End if we can't find a file. Diagnostic SHOULD have already been raised,
+            # but it isn't necessarily possible to say for sure. Validation should be moved
+            # here.
             if include_fileid is None:
                 return
 
@@ -851,7 +856,7 @@ class SubstitutionHandler(Handler):
         """
 
         if isinstance(node, n.Directive):
-            if node.name != "include":
+            if node.name not in {"include", "sharedinclude"}:
                 return
 
             definitions: Dict[str, MutableSequence[n.Node]] = {}
@@ -894,7 +899,10 @@ class SubstitutionHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.SubstitutionDefinition):
             self.seen_definitions = None
-        elif isinstance(node, n.Directive) and node.name == "include":
+        elif isinstance(node, n.Directive) and node.name in {
+            "include",
+            "sharedinclude",
+        }:
             self.include_replacement_definitions.pop()
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
