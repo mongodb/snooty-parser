@@ -1857,3 +1857,97 @@ Title
 <text>a test of a limit</text>
 </ref_role></paragraph></section></root>""",
         )
+
+
+def test_block_substitutions_in_lists() -> None:
+    # There were some subtle issues with inserting a BlockSubstitutionReference instead of a paragraph
+    # node that led to a ListItemNode living *outside* of the ListNode. Test that case.
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. |checkmark| unicode:: U+2713
+
+.. list-table::
+   :header-rows: 1
+
+   * - Col 1
+     - Col 2
+
+   * - :readconcern:`"majority"`
+     - |checkmark|
+
+   * - :readconcern:`"majority"`
+     - |checkmark|
+"""
+        }
+    ) as result:
+        print(ast_to_testing_string(result.pages[FileId("index.txt")].ast))
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <substitution_definition name="checkmark">
+        <text>✓</text>
+    </substitution_definition>
+    <directive name="list-table" header-rows="1">
+        <list enumtype="unordered">
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <text>Col 1</text>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <paragraph>
+                            <text>Col 2</text>
+                        </paragraph>
+                    </listItem>
+                </list>
+            </listItem>
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <ref_role domain="mongodb" name="readconcern" target="readconcern.&quot;majority&quot;">
+                                <literal>
+                                    <text>"majority"</text>
+                                </literal>
+                            </ref_role>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <substitution_reference name="checkmark">
+                            <paragraph>
+                                <text>✓</text>
+                            </paragraph>
+                        </substitution_reference>
+                    </listItem>
+                </list>
+            </listItem>
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <ref_role domain="mongodb" name="readconcern" target="readconcern.&quot;majority&quot;">
+                                <literal>
+                                    <text>"majority"</text>
+                                </literal>
+                            </ref_role>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <substitution_reference name="checkmark">
+                            <paragraph>
+                                <text>✓</text>
+                            </paragraph>
+                        </substitution_reference>
+                    </listItem>
+                </list>
+            </listItem>
+        </list>
+    </directive>
+</root>""",
+        )

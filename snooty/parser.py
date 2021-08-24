@@ -78,6 +78,16 @@ NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
 
+def eligable_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> bool:
+    """Test if a docutils node should emit a BlockSubstitutionReference *instead* of a normal
+    Paragraph."""
+    return (
+        isinstance(node, docutils.nodes.paragraph)
+        and len(node.children) == 1
+        and isinstance(node.children[0], docutils.nodes.substitution_reference)
+    )
+
+
 def bundle(
     filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
 ) -> bytes:
@@ -340,6 +350,9 @@ class JSONVisitor:
                 )
             )
         elif isinstance(node, docutils.nodes.list_item):
+            assert isinstance(
+                self.state[-1], n.ListNode
+            ), "Attempting to place a list item in a non-list context"
             self.state.append(n.ListNodeItem((line,), []))
         elif isinstance(node, docutils.nodes.title):
             # Attach an anchor ID to this section
@@ -362,22 +375,22 @@ class JSONVisitor:
             except IndexError:
                 pass
         elif isinstance(node, docutils.nodes.substitution_reference):
-            if (
-                isinstance(node.parent, docutils.nodes.paragraph)
-                and len(node.parent.children) == 1
+            if node.parent and eligable_for_paragraph_to_block_substitution(
+                node.parent
             ):
-                self.state.pop()
-                # top_of_state = self.state[-1]
-                # assert isinstance(top_of_state, n.Parent)
                 block_substitution_node = n.BlockSubstitutionReference(
                     (line,), [], node["refname"]
                 )
                 self.state.append(block_substitution_node)
-                # top_of_state.children.append(block_substitution_node)
             else:
                 self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
 
             raise docutils.nodes.SkipChildren()
+        elif isinstance(node, docutils.nodes.paragraph):
+            if eligable_for_paragraph_to_block_substitution(node):
+                # We don't want a paragraph node here: instead, we'll (next) create a BlockSubstitutionReference node
+                raise docutils.nodes.SkipDeparture()
+            self.state.append(n.Paragraph((line,), []))
         elif isinstance(node, docutils.nodes.footnote):
             # Autonumbered footnotes do not have a refname
             name = node["names"] if "names" in node else None
@@ -390,8 +403,6 @@ class JSONVisitor:
             self.state.append(n.FootnoteReference((line,), [], node["ids"][0], refname))
         elif isinstance(node, docutils.nodes.section):
             self.state.append(n.Section((line,), []))
-        elif isinstance(node, docutils.nodes.paragraph):
-            self.state.append(n.Paragraph((line,), []))
         elif isinstance(node, rstparser.directive_argument):
             self.state.append(n.DirectiveArgument((line,), []))
         elif isinstance(node, docutils.nodes.term):
@@ -419,7 +430,7 @@ class JSONVisitor:
             raise docutils.nodes.SkipNode()
         elif isinstance(node, rstparser.snooty_diagnostic):
             self.diagnostics.append(node["diagnostic"])
-            return
+            raise docutils.nodes.SkipNode()
         else:
             lineno = util.get_line(node)
             raise NotImplementedError(
@@ -431,7 +442,6 @@ class JSONVisitor:
             return
 
         popped = self.state.pop()
-
         top_of_state = self.state[-1]
 
         if isinstance(popped, _DefinitionListTerm):
