@@ -10,7 +10,7 @@ home-page = "https://github.com/mongodb/snooty-parser"
 classifiers = ["License :: OSI Approved :: Apache Software License"]
 requires-python = "~= 3.7"
 requires = [
-    "pymongo[srv,tls] ~= 3.11.1",
+    "pymongo[srv,tls] >= 3.11.1, < 4",
     "docutils ~= 0.16",
     "watchdog ~= 1.0",
     "requests ~= 2.24",
