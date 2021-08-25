@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add version 5.0 to mongo-web-shell directive (DOP-2356)
+
 ## [v0.11.2] - 2021-08-04
 
 ### Added
