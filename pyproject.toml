@@ -19,7 +19,7 @@ requires = [
     "typing-extensions >= 3.7",
     "python-jsonrpc-server ~= 0.3.4",
     "fett ~= 0.3.2",
-    "networkx ~= 2.4",
+    "networkx >= 2.4, < 3",
     "docopt ~= 0.6.2"
 ]
 
