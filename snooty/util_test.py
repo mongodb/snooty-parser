@@ -42,7 +42,9 @@ def toctree_to_testing_string(ast: Any) -> str:
     ]
 
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
-    attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
+    attrs = " ".join(
+        '{}="{}"'.format(k, escape(str(v), {'"': "&quot;"})) for k, v in attr_pairs
+    )
     contents = (
         escape(value)
         if value
@@ -84,7 +86,9 @@ def ast_to_testing_string(ast: Any) -> str:
     ]
 
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
-    attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
+    attrs = " ".join(
+        '{}="{}"'.format(k, escape(str(v), {'"': "&quot;"})) for k, v in attr_pairs
+    )
     contents = (
         escape(value)
         if value

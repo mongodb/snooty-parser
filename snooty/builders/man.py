@@ -256,6 +256,11 @@ class SnootyToTroffTree:
     ) -> List[ManNode]:
         return self.children(node.children)
 
+    def handle_BlockSubstitutionReference(
+        self, node: n.BlockSubstitutionReference
+    ) -> List[ManNode]:
+        return self.children(node.children)
+
     def handle_Root(self, node: n.Root) -> List[ManNode]:
         return self.children(node.children)
 
