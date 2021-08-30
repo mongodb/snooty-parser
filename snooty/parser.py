@@ -78,7 +78,7 @@ NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
 
-def eligable_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> bool:
+def eligible_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> bool:
     """Test if a docutils node should emit a BlockSubstitutionReference *instead* of a normal
     Paragraph."""
     return (
@@ -375,7 +375,7 @@ class JSONVisitor:
             except IndexError:
                 pass
         elif isinstance(node, docutils.nodes.substitution_reference):
-            if node.parent and eligable_for_paragraph_to_block_substitution(
+            if node.parent and eligible_for_paragraph_to_block_substitution(
                 node.parent
             ):
                 block_substitution_node = n.BlockSubstitutionReference(
@@ -387,7 +387,7 @@ class JSONVisitor:
 
             raise docutils.nodes.SkipChildren()
         elif isinstance(node, docutils.nodes.paragraph):
-            if eligable_for_paragraph_to_block_substitution(node):
+            if eligible_for_paragraph_to_block_substitution(node):
                 # We don't want a paragraph node here: instead, we'll (next) create a BlockSubstitutionReference node
                 raise docutils.nodes.SkipDeparture()
             self.state.append(n.Paragraph((line,), []))
