@@ -49,19 +49,15 @@ def test_option_flag() -> None:
 
 
 def test_get_files() -> None:
-    assert set(util.get_files(PurePath("test_data"), (".toml",))) == {
-        Path("test_data/test_gizaparser/snooty.toml"),
-        Path("test_data/bad_project/snooty.toml"),
-        Path("test_data/empty_project/snooty.toml"),
-        Path("test_data/test_project/snooty.toml"),
-        Path("test_data/test_postprocessor/snooty.toml"),
-        Path("test_data/merge_conflict/snooty.toml"),
-        Path("test_data/test_project_embedding_includes/snooty.toml"),
-        Path("test_data/get-preview/snooty.toml"),
-        Path("test_data/test_devhub/snooty.toml"),
-        Path("test_data/test_intersphinx/snooty.toml"),
-        Path("test_data/test_mongodb_domain/snooty.toml"),
-        Path("test_data/test_parser_failure/snooty.toml"),
+    # The test_data/getfiles path tests how we handle symbolic links. To wit,
+    # we ensure that we don't fail on loops; files with the same inode only
+    # report once; and that we enter symlinks.
+
+    assert set(util.get_files(Path("test_data/getfiles/files1"), (".toml",))) == {
+        Path("test_data/getfiles/files1/1.toml"),
+        Path("test_data/getfiles/files1/2.toml"),
+        Path("test_data/getfiles/files1/files2/subdirectory/4.toml"),
+        Path("test_data/getfiles/files1/files2/3.toml"),
     }
 
 
