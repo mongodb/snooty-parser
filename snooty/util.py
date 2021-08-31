@@ -23,6 +23,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Set,
     TextIO,
     Tuple,
     TypeVar,
@@ -60,10 +61,17 @@ def reroot_path(
     return rel_fn, project_root.joinpath(rel_fn).resolve()
 
 
-def get_files(root: PurePath, extensions: Container[str]) -> Iterator[Path]:
+def get_files(root: Path, extensions: Container[str]) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
-    only filenames with the given extensions."""
-    for base, dirs, files in os.walk(root):
+    only filenames with the given extensions. Symlinks are followed, but
+    any given concrete directory is only scanned once."""
+    seen: Set[Path] = set()
+
+    for base, dirs, files in os.walk(root, followlinks=True):
+        dirs_set = set(Path(d).resolve() for d in dirs)
+        dirs[:] = [d.name for d in (dirs_set - seen)]
+        seen.update(dirs_set)
+
         for name in files:
             ext = os.path.splitext(name)[1]
             if ext not in extensions:

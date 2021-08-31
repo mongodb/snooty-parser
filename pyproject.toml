@@ -49,3 +49,9 @@ multi_line_output = 3
 python_version = "3.7"
 mypy_path = "stubs"
 strict_equality = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "snooty",
+    "tools",
+]
