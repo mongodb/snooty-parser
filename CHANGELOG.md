@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.3] - 2021-08-25
+
+### Added
+
+- Add version 5.0 to mongo-web-shell directive (DOP-2356)
+
+## [v0.11.2] - 2021-08-04
+
+### Added
+
+- Quiz widget! (DOP-2319 #333 DOP-2354, DOP-2354 #334)
+
+## [v0.11.1] - 2021-08-04
+
+### Added
+
+- `java-docs-4.3` extlink (#337)
+
 ## [v0.11.0] - 2021-07-14
 
 ### Added
