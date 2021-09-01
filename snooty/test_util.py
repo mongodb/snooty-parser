@@ -50,15 +50,21 @@ def test_option_flag() -> None:
 
 def test_get_files() -> None:
     # The test_data/getfiles path tests how we handle symbolic links. To wit,
-    # we ensure that we don't fail on loops; files with the same inode only
-    # report once; and that we enter symlinks.
+    # we ensure that we don't fail on loops; files with the same resolved path
+    # only report once; and that we enter symlinks.
 
-    assert set(util.get_files(Path("test_data/getfiles/files1"), (".toml",))) == {
+    reference_set = {
         Path("test_data/getfiles/files1/1.toml"),
         Path("test_data/getfiles/files1/2.toml"),
-        Path("test_data/getfiles/files1/files2/subdirectory/4.toml"),
-        Path("test_data/getfiles/files1/files2/3.toml"),
+        Path("test_data/getfiles/files1/loop1/loop1.toml"),
+        Path("test_data/getfiles/files1/loop2/loop2.toml"),
     }
+
+    # Either subdirectory or dup are acceptable, but not both
+    assert set(util.get_files(Path("test_data/getfiles/files1"), (".toml",))) in [
+        reference_set.union({Path("test_data/getfiles/files1/subdirectory/5.toml")}),
+        reference_set.union({Path("test_data/getfiles/files1/dup/5.toml")}),
+    ]
 
 
 def test_add_doc_target_ext() -> None:

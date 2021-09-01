@@ -1406,7 +1406,9 @@ class _Project:
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
             try:
-                paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
+                paths = util.get_files(
+                    self.config.source_path, RST_EXTENSIONS, self.config.root
+                )
                 logger.debug("Processing rst files")
                 results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
                 for sequence in results:
@@ -1421,7 +1423,9 @@ class _Project:
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
-        for path in util.get_files(self.config.source_path, (".yaml",)):
+        for path in util.get_files(
+            self.config.source_path, (".yaml",), self.config.root
+        ):
             prefix = get_giza_category(path)
             if prefix in self.yaml_mapping:
                 categorized[prefix].append(path)

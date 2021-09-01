@@ -61,15 +61,48 @@ def reroot_path(
     return rel_fn, project_root.joinpath(rel_fn).resolve()
 
 
-def get_files(root: Path, extensions: Container[str]) -> Iterator[Path]:
+def is_relative_to(a: Path, b: Path) -> bool:
+    try:
+        a.relative_to(b)
+        return True
+    except ValueError:
+        return False
+
+
+def get_files(
+    root: Path, extensions: Container[str], must_be_relative_to: Optional[Path] = None
+) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
     only filenames with the given extensions. Symlinks are followed, but
-    any given concrete directory is only scanned once."""
+    any given concrete directory is only scanned once.
+
+    By default, directories above the given root in the filesystem are not
+    scanned, but this can be overridden with the must_be_relative_to parameter."""
+    root_resolved = root.resolve()
     seen: Set[Path] = set()
 
+    if must_be_relative_to is None:
+        must_be_relative_to = root_resolved
+
     for base, dirs, files in os.walk(root, followlinks=True):
-        dirs_set = set(Path(d).resolve() for d in dirs)
-        dirs[:] = [d.name for d in (dirs_set - seen)]
+        base_resolved = Path(base).resolve()
+        if not is_relative_to(base_resolved, must_be_relative_to):
+            # Prevent a race between our checking if a symlink is valid, and our
+            # actually entering it.
+            continue
+
+        # Preserve both the actual resolved path and the directory name
+        dirs_set = dict(((base_resolved.joinpath(d).resolve(), d) for d in dirs))
+
+        # Only recurse into directories which are within our prefix
+        dirs[:] = [
+            d_name
+            for d_path, d_name in ((k, v) for k, v in dirs_set.items() if k not in seen)
+            if is_relative_to(
+                base_resolved.joinpath(d_path).resolve(), must_be_relative_to
+            )
+        ]
+
         seen.update(dirs_set)
 
         for name in files:
@@ -77,7 +110,10 @@ def get_files(root: Path, extensions: Container[str]) -> Iterator[Path]:
             if ext not in extensions:
                 continue
 
-            yield Path(os.path.join(base, name))
+            path = Path(os.path.join(base, name))
+            # Detect and ignore symlinks outside of our jail
+            if is_relative_to(path.resolve(), must_be_relative_to):
+                yield path
 
 
 def get_line(node: docutils.nodes.Node) -> int:
