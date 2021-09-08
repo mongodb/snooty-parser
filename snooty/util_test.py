@@ -6,7 +6,7 @@ import tempfile
 import textwrap
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
@@ -202,7 +202,9 @@ class BackendTestResults:
 
 
 @contextlib.contextmanager
-def make_test(files: Dict[Path, str], name: str = "") -> Iterator[BackendTestResults]:
+def make_test(
+    files: Dict[PurePath, str], name: str = ""
+) -> Iterator[BackendTestResults]:
     """Create a temporary test project with the given files."""
     need_to_make_snooty_toml = Path("snooty.toml") not in files
     if need_to_make_snooty_toml:

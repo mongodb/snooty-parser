@@ -190,7 +190,7 @@ class ProjectConfig:
         constants: Dict[str, object] = {}
         all_diagnostics: List[Diagnostic] = []
         for k, v in self.constants.items():
-            result, diagnostics = self.substitute(str(v))
+            result, diagnostics = self._substitute(str(v), constants)
             all_diagnostics.extend(diagnostics)
             constants[k] = result
 
@@ -213,8 +213,10 @@ class ProjectConfig:
 
         return (text, diagnostics)
 
-    def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
-        """Substitute all placeholders within a string."""
+    @staticmethod
+    def _substitute(
+        source: str, constants: Dict[str, object]
+    ) -> Tuple[str, List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         def handle_match(match: Match[str]) -> str:
@@ -222,7 +224,7 @@ class ProjectConfig:
             configuration. Log a warning if it's not defined."""
             variable_name = match.group(1)
             try:
-                return str(self.constants[variable_name])
+                return str(constants[variable_name])
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
                 diagnostics.append(ConstantNotDeclared(variable_name, lineno))
@@ -231,3 +233,7 @@ class ProjectConfig:
             return "\u200b"
 
         return PAT_VARIABLE.sub(handle_match, source), diagnostics
+
+    def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
+        """Substitute all placeholders within a string."""
+        return self._substitute(source, self.constants)
