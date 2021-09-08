@@ -3,7 +3,7 @@ import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import DefaultDict, Dict, List
 
 from . import n
@@ -12,7 +12,7 @@ from .page import Page
 from .parser import Project
 from .types import BuildIdentifierSet, FileId, ProjectConfig, SerializableType
 from .util import ast_dive
-from .util_test import check_ast_testing_string
+from .util_test import check_ast_testing_string, make_test
 
 build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "789"}
 
@@ -215,3 +215,30 @@ def test_start_from_child_directory() -> None:
         Path("test_data/test_project/source/images"), backend, build_identifiers
     )
     assert project.config.root == Path("test_data/test_project").absolute()
+
+
+def test_recursive_source_constants() -> None:
+    with make_test(
+        {
+            PurePath(
+                "snooty.toml"
+            ): """
+name = "recursive_source_constants"
+
+[constants]
+major-version = 4
+minor-version = 3
+patch-version = 2
+version = "{+major-version+}.{+minor-version+}"
+full-version = "{+version+}.{+patch-version+}"
+""",
+            PurePath("source/index.txt"): """{+full-version+}""",
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("index.txt")]
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt"><paragraph><text>4.3.2</text></paragraph></root>
+""",
+        )
