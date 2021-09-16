@@ -710,6 +710,88 @@ class BannerHandler(Handler):
                 )
 
 
+class ChaptersHandler(Handler):
+    """Construct an array of chapters that contains their respective guides."""
+
+    class ChapterData(NamedTuple):
+        description: str
+        guides: List[str]
+        title: Sequence[n.InlineNode]
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.chapters: List[ChaptersHandler.ChapterData] = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        def handleChapter(
+            chapter: n.Directive,
+        ) -> Optional[ChaptersHandler.ChapterData]:
+            guides: List[str] = []
+
+            for child in chapter.get_child_of_type(n.Directive):
+                if not child.name == "guide":
+                    # Handle error; a chapter should only contain guides
+                    continue
+                guide_slug = clean_slug(child.argument[0].get_text())
+                guides.append(guide_slug)
+
+            description = chapter.options.get("description")
+            title = chapter.argument
+
+            if not (description and title):
+                return None
+
+            chapterData = ChaptersHandler.ChapterData(
+                description,
+                guides,
+                title,
+            )
+
+            return chapterData
+
+        def handleInclude(node: n.Directive) -> List[ChaptersHandler.ChapterData]:
+            if len(node.children) == 1:
+                root = node.children[0]
+                if isinstance(root, n.Root):
+                    chapterData = handleChapters(root)
+
+            return chapterData
+
+        def handleChapters(
+            chapters: n.Parent[n.Node],
+        ) -> List[ChaptersHandler.ChapterData]:
+            chapterDataList: List[ChaptersHandler.ChapterData] = []
+
+            for child in chapters.get_child_of_type(n.Directive):
+                if child.name == "chapter":
+                    print(child)
+                    chapterData = handleChapter(child)
+                    if chapterData:
+                        chapterDataList.append(chapterData)
+                # Provide support for using an include for multiple chapters on a separate file
+                elif child.name == "include":
+                    chapterDataList.extend(handleInclude(child))
+                else:
+                    # Handle error; chapters should only contain chapters
+                    continue
+
+            return chapterDataList
+
+        if isinstance(node, n.Directive) and node.name == "chapters":
+            chapterDataList = handleChapters(node)
+            print("len(chapterDataList)")
+            print(len(chapterDataList))
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        pass
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -1173,6 +1255,7 @@ class Postprocessor:
             TabsSelectorHandler,
             ContentsHandler,
             BannerHandler,
+            ChaptersHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
