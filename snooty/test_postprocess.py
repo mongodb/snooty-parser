@@ -488,10 +488,10 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'MongoDB Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="shell"><text>Mongo Shell</text>
+<directive name="tab" tabid="shell"><text>MongoDB Shell</text>
 <paragraph><text>Shell</text></paragraph>
 </directive>
 <directive name="tab" tabid="python"><text>Python</text>

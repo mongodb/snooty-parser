@@ -1588,7 +1588,7 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
-  {id = "shell", title = "Mongo Shell"},
+  {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
