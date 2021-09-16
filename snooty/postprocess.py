@@ -713,19 +713,14 @@ class BannerHandler(Handler):
 class ChaptersHandler(Handler):
     """Construct an array of chapters that contains their respective guides."""
 
-    class ChapterData(NamedTuple):
-        description: str
-        guides: List[str]
-        title: Sequence[n.InlineNode]
-
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.chapters: List[ChaptersHandler.ChapterData] = []
+        self.chapters: List[n.SerializedNode] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         def handleChapter(
             chapter: n.Directive,
-        ) -> Optional[ChaptersHandler.ChapterData]:
+        ) -> Optional[n.SerializedNode]:
             guides: List[str] = []
 
             for child in chapter.get_child_of_type(n.Directive):
@@ -741,15 +736,15 @@ class ChaptersHandler(Handler):
             if not (description and title):
                 return None
 
-            chapterData = ChaptersHandler.ChapterData(
-                description,
-                guides,
-                title,
-            )
+            chapterData: n.SerializedNode = {
+                "description": description,
+                "title": [node.serialize() for node in title],
+                "guides": guides,
+            }
 
             return chapterData
 
-        def handleInclude(node: n.Directive) -> List[ChaptersHandler.ChapterData]:
+        def handleInclude(node: n.Directive) -> List[n.SerializedNode]:
             if len(node.children) == 1:
                 root = node.children[0]
                 if isinstance(root, n.Root):
@@ -759,8 +754,8 @@ class ChaptersHandler(Handler):
 
         def handleChapters(
             chapters: n.Parent[n.Node],
-        ) -> List[ChaptersHandler.ChapterData]:
-            chapterDataList: List[ChaptersHandler.ChapterData] = []
+        ) -> List[n.SerializedNode]:
+            chapterDataList: List[n.SerializedNode] = []
 
             for child in chapters.get_child_of_type(n.Directive):
                 if child.name == "chapter":
@@ -778,9 +773,11 @@ class ChaptersHandler(Handler):
             return chapterDataList
 
         if isinstance(node, n.Directive) and node.name == "chapters":
-            chapterDataList = handleChapters(node)
-            print("len(chapterDataList)")
-            print(len(chapterDataList))
+            if self.chapters:
+                # Handle error; there should only be one chapters directive in the guides repo
+                return
+
+            self.chapters = handleChapters(node)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         pass
@@ -788,8 +785,14 @@ class ChaptersHandler(Handler):
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         pass
 
-    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        pass
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:        
+        if not self.chapters:
+            return
+
+        if isinstance(page.ast, n.Root) and page.output_filename == "index.txt":
+            page.ast.options["chapters"] = self.chapters
+            print("Exiting")
+            print(page.ast.options)
 
 
 class IAHandler(Handler):
