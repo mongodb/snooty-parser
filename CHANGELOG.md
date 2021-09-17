@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `replacement` and `sharedinclude` directives to support shared content work (DOP-2377, DOP-2376).
+
+### Changed
+
+- Symbolic links are now followed while scanning for content, as long as they do not go above snooty.toml in the filesystem hierarchy (DOP-2415, DOP-2430).
+
+### Fixed
+
+- Source constants no longer fail to recursively evaluate.
+
 ## [v0.11.3] - 2021-08-25
 
 ### Added
