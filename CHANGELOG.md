@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.4] - 2021-09-17
+
 ### Added
 
 - The `replacement` and `sharedinclude` directives to support shared content work (DOP-2377, DOP-2376).
