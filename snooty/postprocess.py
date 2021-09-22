@@ -722,6 +722,8 @@ class GuidesHandler(Handler):
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         def handleChapter(chapter: n.Directive) -> None:
+            """Saves a chapter's data into the handler's dictionary of chapters"""
+
             guides: List[str] = []
 
             for child in chapter.get_child_of_type(n.Directive):
@@ -784,12 +786,16 @@ class GuidesHandler(Handler):
                 )
 
         def handleInclude(node: n.Directive) -> None:
+            """Looks for chapters nested within include directives."""
+
             if len(node.children) == 1:
                 root = node.children[0]
                 if isinstance(root, n.Root):
                     handleChapters(root)
 
         def handleChapters(chapters: n.Parent[n.Node]) -> None:
+            """Handles the nested directives found under the chapters directive."""
+
             line = chapters.span[0]
 
             for child in chapters.get_child_of_type(n.Directive):

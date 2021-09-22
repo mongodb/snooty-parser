@@ -150,12 +150,6 @@ Page One Title
 
 
 def test_chapters() -> None:
-    # Test that chapters array is generated
-    # Maybe test alongside ^ that it appears in metadata document
-    # Test that chapters on other page are not saved
-    # Test that chapters with non-chapter directive error
-    # Test that chapter with non-guide directive error
-
     # Chapters are generated properly and page ast should look as expected
     with make_test(
         {
