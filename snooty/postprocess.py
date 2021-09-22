@@ -27,15 +27,18 @@ from typing import (
 from . import n, specparser, util
 from .diagnostics import (
     AmbiguousTarget,
+    ChapterAlreadyExists,
     Diagnostic,
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    InvalidChapter,
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
     InvalidInclude,
     InvalidTocTree,
+    MissingChild,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -710,89 +713,115 @@ class BannerHandler(Handler):
                 )
 
 
-class ChaptersHandler(Handler):
-    """Construct an array of chapters that contains their respective guides."""
+class GuidesHandler(Handler):
+    """Constructs a dictionary of chapters and their data and returns metadata on individual guides."""
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.chapters: List[n.SerializedNode] = []
+        self.chapters: Dict[str, n.SerializedNode] = {}
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        def handleChapter(
-            chapter: n.Directive,
-        ) -> Optional[n.SerializedNode]:
+        def handleChapter(chapter: n.Directive) -> None:
             guides: List[str] = []
 
             for child in chapter.get_child_of_type(n.Directive):
                 if not child.name == "guide":
-                    # Handle error; a chapter should only contain guides
+                    # Chapter directives should contain only guide directives
+                    line = chapter.span[0]
+                    self.context.diagnostics[fileid_stack.current].append(
+                        InvalidChild(child.name, "chapter", "guide", line, None)
+                    )
                     continue
-                guide_slug = clean_slug(child.argument[0].get_text())
+
+                guide_argument = child.argument
+                if not guide_argument:
+                    self.context.diagnostics[fileid_stack.current].append(
+                        ExpectedPathArg(child.name, child.span[0])
+                    )
+                    continue
+
+                guide_slug = clean_slug(guide_argument[0].get_text())
                 guides.append(guide_slug)
 
-            description = chapter.options.get("description")
-            title = chapter.argument
+            line = chapter.span[0]
 
-            if not (description and title):
-                return None
+            # A chapter should always have at least one guide
+            if len(guides) < 1:
+                self.context.diagnostics[fileid_stack.current].append(
+                    MissingChild("chapter", "guide", line)
+                )
+
+            # DocUtilsParseError will be appeneded if there is no description
+            description = chapter.options.get("description")
+            title_argument = chapter.argument
+
+            if not title_argument:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidChapter("Title argument is empty.", line)
+                )
+                return
+
+            title = title_argument[0].get_text()
+
+            if not title:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidChapter(
+                        "Invalid title argument. The title should be plain text.", line
+                    )
+                )
 
             chapterData: n.SerializedNode = {
+                "chapterNumber": len(self.chapters) + 1,
                 "description": description,
-                "title": [node.serialize() for node in title],
                 "guides": guides,
             }
 
-            return chapterData
+            if not self.chapters.get(title):
+                self.chapters[title] = chapterData
+            else:
+                self.context.diagnostics[fileid_stack.current].append(
+                    ChapterAlreadyExists(title, line)
+                )
 
-        def handleInclude(node: n.Directive) -> List[n.SerializedNode]:
+        def handleInclude(node: n.Directive) -> None:
             if len(node.children) == 1:
                 root = node.children[0]
                 if isinstance(root, n.Root):
-                    chapterData = handleChapters(root)
+                    handleChapters(root)
 
-            return chapterData
-
-        def handleChapters(
-            chapters: n.Parent[n.Node],
-        ) -> List[n.SerializedNode]:
-            chapterDataList: List[n.SerializedNode] = []
+        def handleChapters(chapters: n.Parent[n.Node]) -> None:
+            line = chapters.span[0]
 
             for child in chapters.get_child_of_type(n.Directive):
                 if child.name == "chapter":
-                    print(child)
-                    chapterData = handleChapter(child)
-                    if chapterData:
-                        chapterDataList.append(chapterData)
+                    handleChapter(child)
                 # Provide support for using an include for multiple chapters on a separate file
                 elif child.name == "include":
-                    chapterDataList.extend(handleInclude(child))
+                    handleInclude(child)
                 else:
-                    # Handle error; chapters should only contain chapters
+                    # Chapters directive should contain only chapter directives
+                    self.context.diagnostics[fileid_stack.current].append(
+                        InvalidChild(child.name, "chapters", "chapter", line)
+                    )
                     continue
 
-            return chapterDataList
+            if not self.chapters:
+                self.context.diagnostics[fileid_stack.current].append(
+                    MissingChild("chapters", "chapter", line)
+                )
 
-        if isinstance(node, n.Directive) and node.name == "chapters":
+        if (
+            isinstance(node, n.Directive)
+            and node.name == "chapters"
+            and fileid_stack.current.as_posix() == "index.txt"
+        ):
             if self.chapters:
-                # Handle error; there should only be one chapters directive in the guides repo
                 return
 
-            self.chapters = handleChapters(node)
+            handleChapters(node)
 
-    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        pass
-
-    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        pass
-
-    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:        
-        if not self.chapters:
-            return
-
-        if isinstance(page.ast, n.Root) and page.output_filename == "index.txt":
-            page.ast.options["chapters"] = self.chapters
-            print("Exiting")
-            print(page.ast.options)
+            print("handled?")
+            print(self.chapters)
 
 
 class IAHandler(Handler):
@@ -1258,7 +1287,7 @@ class Postprocessor:
             TabsSelectorHandler,
             ContentsHandler,
             BannerHandler,
-            ChaptersHandler,
+            GuidesHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
@@ -1348,6 +1377,12 @@ class Postprocessor:
 
         if iatree:
             document["iatree"] = iatree
+
+        chapters = context[GuidesHandler].chapters
+        if chapters:
+            document["chapters"] = chapters
+            print("document_chapters")
+            print(document["chapters"])
 
         return document
 
@@ -1712,6 +1747,7 @@ class DevhubPostprocessor(Postprocessor):
             TabsSelectorHandler,
             ContentsHandler,
             BannerHandler,
+            GuidesHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2, DevhubHandler],

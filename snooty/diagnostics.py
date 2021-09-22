@@ -611,3 +611,44 @@ class InvalidChild(Diagnostic, MakeCorrectionMixin):
 
 class ConfigurationProblem(Diagnostic):
     severity = Diagnostic.Level.error
+
+
+class ChapterAlreadyExists(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        chapterName: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'Chapter "{chapterName}" already exists', start, end)
+
+
+class InvalidChapter(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        message: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Invalid chapter: {message}", start, end)
+
+
+class MissingChild(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        directive: str,
+        expectedChild: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f'Directive "{directive}" expects at least one child of type "{expectedChild}"; found 0',
+            start,
+            end,
+        )
