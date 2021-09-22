@@ -820,9 +820,6 @@ class GuidesHandler(Handler):
 
             handleChapters(node)
 
-            print("handled?")
-            print(self.chapters)
-
 
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
@@ -1381,8 +1378,6 @@ class Postprocessor:
         chapters = context[GuidesHandler].chapters
         if chapters:
             document["chapters"] = chapters
-            print("document_chapters")
-            print(document["chapters"])
 
         return document
 
