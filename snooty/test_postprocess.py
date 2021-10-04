@@ -258,10 +258,15 @@ Guides
 
       .. guide:: /path/to/guide2.txt
    
-   .. chapter::
-      :description: No title! Error! Also no guides
+   .. chapter:: No Guides
+      :description: No guides
     
    .. guide:: /path/to/guide3.txt
+
+   .. chapter::
+      :description: No title
+
+      .. guide:: /path/to/guide4.txt
 
    .. chapter:: Invalid nested chapter
       :description: Also no guides found
@@ -269,7 +274,7 @@ Guides
       .. chapter:: Should throw error
          :description: Whoops
 
-         .. guide:: /path/to/guide4.txt
+         .. guide:: /path/to/guide5.txt
             """,
         }
     ) as result:
@@ -277,8 +282,8 @@ Guides
         assert len(diagnostics) == 6
         assert isinstance(diagnostics[0], DocUtilsParseError)
         assert isinstance(diagnostics[1], MissingChild)
-        assert isinstance(diagnostics[2], InvalidChapter)
-        assert isinstance(diagnostics[3], InvalidChild)
+        assert isinstance(diagnostics[2], InvalidChild)
+        assert isinstance(diagnostics[3], InvalidChapter)
         assert isinstance(diagnostics[4], InvalidChild)
         assert isinstance(diagnostics[5], MissingChild)
 

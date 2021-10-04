@@ -754,10 +754,11 @@ class GuidesHandler(Handler):
         line = chapter.span[0]
 
         # A chapter should always have at least one guide
-        if not len(guides):
+        if not guides:
             self.context.diagnostics[current_file].append(
                 MissingChild("chapter", "guide", line)
             )
+            return
 
         title_argument = chapter.argument
         if not title_argument:
