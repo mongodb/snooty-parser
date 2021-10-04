@@ -720,111 +720,115 @@ class GuidesHandler(Handler):
         super().__init__(context)
         self.chapters: Dict[str, n.SerializedNode] = {}
 
-    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        def handleChapter(chapter: n.Directive) -> None:
-            """Saves a chapter's data into the handler's dictionary of chapters"""
+    def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
+        """Saves a chapter's data into the handler's dictionary of chapters"""
 
-            guides: List[str] = []
+        guides: List[str] = []
 
-            for child in chapter.get_child_of_type(n.Directive):
-                if not child.name == "guide":
-                    # Chapter directives should contain only guide directives
-                    line = chapter.span[0]
-                    self.context.diagnostics[fileid_stack.current].append(
-                        InvalidChild(child.name, "chapter", "guide", line, None)
-                    )
-                    continue
-
-                guide_argument = child.argument
-                if not guide_argument:
-                    self.context.diagnostics[fileid_stack.current].append(
-                        ExpectedPathArg(child.name, child.span[0])
-                    )
-                    continue
-
-                guide_slug = clean_slug(guide_argument[0].get_text())
-                guides.append(guide_slug)
-
-            line = chapter.span[0]
-
-            # A chapter should always have at least one guide
-            if len(guides) < 1:
-                self.context.diagnostics[fileid_stack.current].append(
-                    MissingChild("chapter", "guide", line)
+        for child in chapter.get_child_of_type(n.Directive):
+            if child.name != "guide":
+                # Chapter directives should contain only guide directives
+                line = chapter.span[0]
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(child.name, "chapter", "guide", line, None)
                 )
+                continue
 
-            # DocUtilsParseError will be appeneded if there is no description
-            description = chapter.options.get("description")
-            title_argument = chapter.argument
-
-            if not title_argument:
-                self.context.diagnostics[fileid_stack.current].append(
-                    InvalidChapter("Title argument is empty.", line)
+            guide_argument = child.argument
+            if not guide_argument:
+                self.context.diagnostics[current_file].append(
+                    ExpectedPathArg(child.name, child.span[0])
                 )
-                return
+                continue
 
-            title = title_argument[0].get_text()
+            guide_slug = clean_slug(guide_argument[0].get_text())
+            guides.append(guide_slug)
 
-            if not title:
-                self.context.diagnostics[fileid_stack.current].append(
-                    InvalidChapter(
-                        "Invalid title argument. The title should be plain text.", line
-                    )
+        line = chapter.span[0]
+
+        # A chapter should always have at least one guide
+        if not len(guides):
+            self.context.diagnostics[current_file].append(
+                MissingChild("chapter", "guide", line)
+            )
+
+        # DocUtilsParseError will be appended if there is no description
+        description = chapter.options.get("description")
+        title_argument = chapter.argument
+
+        if not title_argument:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter("Title argument is empty.", line)
+            )
+            return
+
+        title = title_argument[0].get_text()
+
+        if not title:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
                 )
+            )
 
-            chapterData: n.SerializedNode = {
-                "chapterNumber": len(self.chapters) + 1,
-                "description": description,
-                "guides": guides,
-            }
+        chapterData: n.SerializedNode = {
+            "chapterNumber": len(self.chapters) + 1,
+            "description": description,
+            "guides": guides,
+        }
 
-            if not self.chapters.get(title):
-                self.chapters[title] = chapterData
+        if not self.chapters.get(title):
+            self.chapters[title] = chapterData
+        else:
+            self.context.diagnostics[current_file].append(
+                ChapterAlreadyExists(title, line)
+            )
+
+    def __handle_include(self, node: n.Directive, current_file: FileId) -> None:
+        """Looks for chapters nested within include directives."""
+
+        if len(node.children) == 1:
+            root = node.children[0]
+            if isinstance(root, n.Root):
+                self.__handle_chapters(root, current_file)
+
+    def __handle_chapters(
+        self, chapters: n.Parent[n.Node], current_file: FileId
+    ) -> None:
+        """Handles the nested directives found under the chapters directive."""
+
+        line = chapters.span[0]
+
+        for child in chapters.get_child_of_type(n.Directive):
+            if child.name == "chapter":
+                self.__handle_chapter(child, current_file)
+            # Provide support for using an include for multiple chapters on a separate file
+            elif child.name == "include":
+                self.__handle_include(child, current_file)
             else:
-                self.context.diagnostics[fileid_stack.current].append(
-                    ChapterAlreadyExists(title, line)
+                # Chapters directive should contain only chapter directives
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(child.name, "chapters", "chapter", line)
                 )
+                continue
 
-        def handleInclude(node: n.Directive) -> None:
-            """Looks for chapters nested within include directives."""
+        if not self.chapters:
+            self.context.diagnostics[current_file].append(
+                MissingChild("chapters", "chapter", line)
+            )
 
-            if len(node.children) == 1:
-                root = node.children[0]
-                if isinstance(root, n.Root):
-                    handleChapters(root)
-
-        def handleChapters(chapters: n.Parent[n.Node]) -> None:
-            """Handles the nested directives found under the chapters directive."""
-
-            line = chapters.span[0]
-
-            for child in chapters.get_child_of_type(n.Directive):
-                if child.name == "chapter":
-                    handleChapter(child)
-                # Provide support for using an include for multiple chapters on a separate file
-                elif child.name == "include":
-                    handleInclude(child)
-                else:
-                    # Chapters directive should contain only chapter directives
-                    self.context.diagnostics[fileid_stack.current].append(
-                        InvalidChild(child.name, "chapters", "chapter", line)
-                    )
-                    continue
-
-            if not self.chapters:
-                self.context.diagnostics[fileid_stack.current].append(
-                    MissingChild("chapters", "chapter", line)
-                )
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        current_file: FileId = fileid_stack.current
 
         if (
             isinstance(node, n.Directive)
             and node.name == "chapters"
-            and fileid_stack.current.as_posix() == "index.txt"
+            and current_file.as_posix() == "index.txt"
         ):
             if self.chapters:
                 return
 
-            handleChapters(node)
+            self.__handle_chapters(node, current_file)
 
 
 class IAHandler(Handler):
