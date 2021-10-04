@@ -2,14 +2,19 @@
    Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path
+from typing import Any, Dict, cast
 
 from . import diagnostics
 from .diagnostics import (
+    ChapterAlreadyExists,
+    DocUtilsParseError,
     DuplicateDirective,
     ExpectedTabs,
+    InvalidChapter,
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
+    MissingChild,
     MissingTab,
     MissingTocTreeEntry,
     SubstitutionRefError,
@@ -142,6 +147,187 @@ Page One Title
 </toctree>
 """,
         )
+
+
+def test_chapters() -> None:
+    # Chapters are generated properly and page ast should look as expected
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+    .. chapter:: Atlas
+        :description: This is the description for the Atlas chapter.
+        :image: /images/atlas.png
+
+        .. guide:: /path/to/guide1.txt
+        .. guide:: /path/to/guide2.txt
+
+    .. include:: /chapters/crud.rst
+            """,
+            Path(
+                "source/chapters/crud.rst"
+            ): """
+.. chapter:: CRUD
+    :description: This is the description for the CRUD chapter.
+    :image: /images/crud.png
+
+    .. guide:: /path/to/guide3.txt
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ]
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+	<section>
+		<heading id="guides">
+			<text>Guides</text>
+		</heading>
+		<directive domain="mongodb" name="chapters">
+			<directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." image="/images/atlas.png">
+				<text>Atlas</text>
+				<directive domain="mongodb" name="guide">
+					<text>/path/to/guide1.txt</text>
+				</directive>
+				<directive domain="mongodb" name="guide">
+					<text>/path/to/guide2.txt</text>
+				</directive>
+			</directive>
+			<directive name="include">
+				<text>/chapters/crud.rst</text>
+				<root fileid="chapters/crud.rst">
+					<directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter." image="/images/crud.png">
+						<text>CRUD</text>
+						<directive domain="mongodb" name="guide">
+							<text>/path/to/guide3.txt</text>
+						</directive>
+					</directive>
+				</root>
+			</directive>
+		</directive>
+	</section>
+</root>
+            """,
+        )
+        chapters = cast(Dict[str, Any], result.metadata["chapters"])
+        assert len(chapters) == 2
+        assert (
+            chapters["Atlas"]["description"]
+            == "This is the description for the Atlas chapter."
+        )
+        assert chapters["Atlas"]["guides"] == ["path/to/guide1", "path/to/guide2"]
+        assert chapters["Atlas"]["chapter_number"] == 1
+        assert (
+            chapters["CRUD"]["description"]
+            == "This is the description for the CRUD chapter."
+        )
+        assert chapters["CRUD"]["guides"] == ["path/to/guide3"]
+        assert chapters["CRUD"]["chapter_number"] == 2
+
+    # Diagnostic errors reported
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+   .. chapter:: Missing Description
+      :image: /images/atlas.png
+
+      .. guide:: /path/to/guide1.txt
+
+   .. chapter:: Good Chapter Here
+      :description: The description exists! No errors
+      :image: /images/description.png
+
+      .. guide:: /path/to/guide2.txt
+   
+   .. chapter:: No Guides
+      :description: No guides
+    
+   .. guide:: /path/to/guide3.txt
+
+   .. chapter::
+      :description: No title
+
+      .. guide:: /path/to/guide4.txt
+
+   .. chapter:: Invalid nested chapter
+      :description: Also no guides found
+
+      .. chapter:: Should throw error
+         :description: Whoops
+
+         .. guide:: /path/to/guide5.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 6
+        assert isinstance(diagnostics[0], DocUtilsParseError)
+        assert isinstance(diagnostics[1], MissingChild)
+        assert isinstance(diagnostics[2], InvalidChild)
+        assert isinstance(diagnostics[3], InvalidChapter)
+        assert isinstance(diagnostics[4], InvalidChild)
+        assert isinstance(diagnostics[5], MissingChild)
+
+    # Test missing directives in "chapters" directive
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], MissingChild)
+
+    # Test duplicate chapters
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. chapters::
+   
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide1.txt
+  
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide1.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], ChapterAlreadyExists)
 
 
 # ensure that broken links still generate titles

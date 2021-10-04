@@ -683,6 +683,27 @@ example = """.. card-group::
    ${0: Card content}
 """
 
+[directive."mongodb:chapter"]
+help = "A container for a group of MongoDB guides."
+example = """.. chapter:: ${1: string}
+   :description: ${2: string}
+   :image: ${3: /path/to/image.png}
+
+   ${0: chapter content}
+"""
+argument_type = "string"
+content_type = "block"
+options.description = {type = "string", required = true}
+options.image = ["path", "uri"]
+
+[directive."mongodb:chapters"]
+help = "A container for a group of chapter directives."
+example = """.. chapters::
+   
+   ${0: chapters content}
+"""
+content_type = "block"
+
 [directive."mongodb:cta"]
 help = "Call to action directing users to a new part of the site"
 example = """..cta::
@@ -690,6 +711,12 @@ example = """..cta::
    ${0::manual:`Read the Introduction to MongoDB </introduction>`}
 """
 content_type = "block"
+
+[directive."mongodb:guide"]
+help = "Denotes a guide page."
+example = """.. guide:: ${0: /path/to/guide.txt}"""
+argument_type = ["path", "uri"]
+content_type = "string"
 
 [directive."mongodb:introduction"]
 content_type = "block"
