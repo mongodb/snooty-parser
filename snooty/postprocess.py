@@ -6,6 +6,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import asdict, dataclass
 from typing import (
     Any,
     Callable,
@@ -716,9 +717,15 @@ class BannerHandler(Handler):
 class GuidesHandler(Handler):
     """Constructs a dictionary of chapters and their data and returns metadata on individual guides."""
 
+    @dataclass
+    class ChapterData:
+        chapter_number: int
+        description: Optional[str]
+        guides: List[str]
+
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.chapters: Dict[str, n.SerializedNode] = {}
+        self.chapters: Dict[str, GuidesHandler.ChapterData] = {}
 
     def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
         """Saves a chapter's data into the handler's dictionary of chapters"""
@@ -752,10 +759,7 @@ class GuidesHandler(Handler):
                 MissingChild("chapter", "guide", line)
             )
 
-        # DocUtilsParseError will be appended if there is no description
-        description = chapter.options.get("description")
         title_argument = chapter.argument
-
         if not title_argument:
             self.context.diagnostics[current_file].append(
                 InvalidChapter("Title argument is empty.", line)
@@ -763,22 +767,23 @@ class GuidesHandler(Handler):
             return
 
         title = title_argument[0].get_text()
-
         if not title:
             self.context.diagnostics[current_file].append(
                 InvalidChapter(
                     "Invalid title argument. The title should be plain text.", line
                 )
             )
+            return
 
-        chapterData: n.SerializedNode = {
-            "chapterNumber": len(self.chapters) + 1,
-            "description": description,
-            "guides": guides,
-        }
+        # DocUtilsParseError will be appended to diagnostics if there is no description
+        description = chapter.options.get("description")
+        if not description:
+            return
 
         if not self.chapters.get(title):
-            self.chapters[title] = chapterData
+            self.chapters[title] = GuidesHandler.ChapterData(
+                len(self.chapters) + 1, description, guides
+            )
         else:
             self.context.diagnostics[current_file].append(
                 ChapterAlreadyExists(title, line)
@@ -1387,7 +1392,7 @@ class Postprocessor:
 
         chapters = context[GuidesHandler].chapters
         if chapters:
-            document["chapters"] = chapters
+            document["chapters"] = {k: asdict(v) for k, v in chapters.items()}
 
         return document
 

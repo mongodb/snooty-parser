@@ -227,13 +227,13 @@ Guides
             == "This is the description for the Atlas chapter."
         )
         assert chapters["Atlas"]["guides"] == ["path/to/guide1", "path/to/guide2"]
-        assert chapters["Atlas"]["chapterNumber"] == 1
+        assert chapters["Atlas"]["chapter_number"] == 1
         assert (
             chapters["CRUD"]["description"]
             == "This is the description for the CRUD chapter."
         )
         assert chapters["CRUD"]["guides"] == ["path/to/guide3"]
-        assert chapters["CRUD"]["chapterNumber"] == 2
+        assert chapters["CRUD"]["chapter_number"] == 2
 
     # Diagnostic errors reported
     with make_test(
