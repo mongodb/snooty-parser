@@ -55,7 +55,8 @@ ${4:   :align:
 
 """
 
-[directive."ecosystem:landing-page-tiles"]
+# Intended for use on the ecosystem landing page only
+[directive."mongodb:drivers-index-tiles"]
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
