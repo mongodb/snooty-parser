@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.5] - 2021-10-06
+
+### Changed
+
+- DOP-2332: tab drivers Mongo Shell -> MongoDB Shell
+
 ## [v0.11.4] - 2021-09-17
 
 ### Added
