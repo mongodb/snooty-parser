@@ -738,12 +738,53 @@ class GuidesHandler(Handler):
             GuidesHandler.GuideData
         )
 
+    def __get_guides(
+        self, chapter: n.Directive, chapter_title: str, current_file: FileId
+    ) -> List[str]:
+        """Returns the eligible guides that belong to a given chapter"""
+
+        guides: List[str] = []
+
+        for child in chapter.get_child_of_type(n.Directive):
+            line = child.span[0]
+
+            if child.name != "guide":
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(child.name, "chapter", "guide", line, None)
+                )
+                continue
+
+            guide_argument = child.argument
+            if not guide_argument:
+                self.context.diagnostics[current_file].append(
+                    ExpectedPathArg(child.name, line)
+                )
+                continue
+
+            guide_slug = clean_slug(guide_argument[0].get_text())
+
+            current_guide_data = self.guides[guide_slug]
+            if current_guide_data.chapter_name:
+                self.context.diagnostics[current_file].append(
+                    GuideAlreadyHasChapter(
+                        guide_slug,
+                        current_guide_data.chapter_name,
+                        chapter_title,
+                        line,
+                    )
+                )
+                continue
+            else:
+                current_guide_data.chapter_name = chapter_title
+
+            guides.append(guide_slug)
+
+        return guides
+
     def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
         """Saves a chapter's data into the handler's dictionary of chapters"""
 
-        guides: List[str] = []
         line = chapter.span[0]
-
         title_argument = chapter.argument
         if not len(title_argument) == 1:
             self.context.diagnostics[current_file].append(
@@ -767,40 +808,7 @@ class GuidesHandler(Handler):
         if not description:
             return
 
-        for child in chapter.get_child_of_type(n.Directive):
-            if child.name != "guide":
-                # Chapter directives should contain only guide directives
-                line = chapter.span[0]
-                self.context.diagnostics[current_file].append(
-                    InvalidChild(child.name, "chapter", "guide", line, None)
-                )
-                continue
-
-            guide_argument = child.argument
-            if not guide_argument:
-                self.context.diagnostics[current_file].append(
-                    ExpectedPathArg(child.name, child.span[0])
-                )
-                continue
-
-            guide_slug = clean_slug(guide_argument[0].get_text())
-
-            current_guide_data = self.guides[guide_slug]
-            if current_guide_data.chapter_name:
-                self.context.diagnostics[current_file].append(
-                    GuideAlreadyHasChapter(
-                        guide_slug,
-                        current_guide_data.chapter_name,
-                        title,
-                        child.span[0],
-                    )
-                )
-                continue
-            else:
-                current_guide_data.chapter_name = title
-
-            guides.append(guide_slug)
-
+        guides: List[str] = self.__get_guides(chapter, title, current_file)
         # A chapter should always have at least one guide
         if not guides:
             self.context.diagnostics[current_file].append(
