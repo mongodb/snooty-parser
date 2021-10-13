@@ -6,7 +6,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import (
     Any,
     Callable,
@@ -728,8 +728,17 @@ class GuidesHandler(Handler):
     class GuideData:
         chapter_name: str = ""
         completion_time: int = 0
-        description: Optional[MutableSequence[n.Node]] = None
-        title: Optional[MutableSequence[n.Node]] = None
+        description: MutableSequence[n.Node] = field(default_factory=list)
+        title: Sequence[n.InlineNode] = field(default_factory=list)
+
+        def serialize(self) -> n.SerializedNode:
+            result: n.SerializedNode = {
+                "chapter_name": self.chapter_name,
+                "completion_time": self.completion_time,
+                "description": [node.serialize() for node in self.description],
+                "title": [node.serialize() for node in self.title],
+            }
+            return result
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -1669,13 +1678,11 @@ class Postprocessor:
 
         guides = context[GuidesHandler].guides
         if guides:
-            slug_title_mapping: Dict[str, Any] = cast(
-                Dict[str, Any], document["slugToTitle"]
-            )
+            slug_title_mapping = context[HeadingHandler].slug_title_mapping
             for slug, title in slug_title_mapping.items():
                 if slug in guides:
                     guides[slug].title = title
-            document["guides"] = {k: asdict(v) for k, v in guides.items()}
+            document["guides"] = {k: v.serialize() for k, v in guides.items()}
 
 
 def pre_order(node: Dict[str, Any], order: List[str]) -> None:
