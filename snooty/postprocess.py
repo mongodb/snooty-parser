@@ -33,6 +33,7 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
@@ -723,14 +724,48 @@ class GuidesHandler(Handler):
         description: Optional[str]
         guides: List[str]
 
+    @dataclass
+    class GuideData:
+        chapter_name: str = ""
+        completion_time: int = 0
+        description: Optional[MutableSequence[n.Node]] = None
+        title: Optional[MutableSequence[n.Node]] = None
+
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.chapters: Dict[str, GuidesHandler.ChapterData] = {}
+        self.guides: Dict[str, GuidesHandler.GuideData] = defaultdict(
+            GuidesHandler.GuideData
+        )
 
     def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
         """Saves a chapter's data into the handler's dictionary of chapters"""
 
         guides: List[str] = []
+        line = chapter.span[0]
+
+        title_argument = chapter.argument
+        if not len(title_argument) == 1:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
+                )
+            )
+            return
+
+        title = title_argument[0].get_text()
+        if not title:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
+                )
+            )
+            return
+
+        # DocUtilsParseError will be appended to diagnostics if there is no description
+        description = chapter.options.get("description")
+        if not description:
+            return
 
         for child in chapter.get_child_of_type(n.Directive):
             if child.name != "guide":
@@ -749,36 +784,28 @@ class GuidesHandler(Handler):
                 continue
 
             guide_slug = clean_slug(guide_argument[0].get_text())
-            guides.append(guide_slug)
 
-        line = chapter.span[0]
+            current_guide_data = self.guides[guide_slug]
+            if current_guide_data.chapter_name:
+                self.context.diagnostics[current_file].append(
+                    GuideAlreadyHasChapter(
+                        guide_slug,
+                        current_guide_data.chapter_name,
+                        title,
+                        child.span[0],
+                    )
+                )
+                continue
+            else:
+                current_guide_data.chapter_name = title
+
+            guides.append(guide_slug)
 
         # A chapter should always have at least one guide
         if not guides:
             self.context.diagnostics[current_file].append(
                 MissingChild("chapter", "guide", line)
             )
-            return
-
-        title_argument = chapter.argument
-        if not title_argument:
-            self.context.diagnostics[current_file].append(
-                InvalidChapter("Title argument is empty.", line)
-            )
-            return
-
-        title = title_argument[0].get_text()
-        if not title:
-            self.context.diagnostics[current_file].append(
-                InvalidChapter(
-                    "Invalid title argument. The title should be plain text.", line
-                )
-            )
-            return
-
-        # DocUtilsParseError will be appended to diagnostics if there is no description
-        description = chapter.options.get("description")
-        if not description:
             return
 
         if not self.chapters.get(title):
@@ -825,16 +852,25 @@ class GuidesHandler(Handler):
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         current_file: FileId = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
 
-        if (
-            isinstance(node, n.Directive)
-            and node.name == "chapters"
-            and current_file.as_posix() == "index.txt"
-        ):
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name == "chapters" and current_file.as_posix() == "index.txt":
             if self.chapters:
                 return
-
             self.__handle_chapters(node, current_file)
+        elif node.name == "time":
+            if not node.argument:
+                return
+            try:
+                completion_time = int(node.argument[0].get_text())
+                self.guides[current_slug].completion_time = completion_time
+            except ValueError:
+                pass
+        elif node.name == "short-description":
+            self.guides[current_slug].description = node.children
 
 
 class IAHandler(Handler):
@@ -1391,9 +1427,7 @@ class Postprocessor:
         if iatree:
             document["iatree"] = iatree
 
-        chapters = context[GuidesHandler].chapters
-        if chapters:
-            document["chapters"] = {k: asdict(v) for k, v in chapters.items()}
+        cls.add_guides_metadata(context, document)
 
         return document
 
@@ -1615,6 +1649,25 @@ class Postprocessor:
 
         pre_order(tree, order)
         return order
+
+    @staticmethod
+    def add_guides_metadata(
+        context: Context, document: Dict[str, SerializableType]
+    ) -> None:
+        """Adds the guides-related metadata to the project's metadata document"""
+        chapters = context[GuidesHandler].chapters
+        if chapters:
+            document["chapters"] = {k: asdict(v) for k, v in chapters.items()}
+
+        guides = context[GuidesHandler].guides
+        if guides:
+            slug_title_mapping: Dict[str, Any] = cast(
+                Dict[str, Any], document["slugToTitle"]
+            )
+            for slug, title in slug_title_mapping.items():
+                if slug in guides:
+                    guides[slug].title = title
+            document["guides"] = {k: asdict(v) for k, v in guides.items()}
 
 
 def pre_order(node: Dict[str, Any], order: List[str]) -> None:

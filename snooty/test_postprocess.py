@@ -10,6 +10,7 @@ from .diagnostics import (
     DocUtilsParseError,
     DuplicateDirective,
     ExpectedTabs,
+    GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
@@ -149,7 +150,7 @@ Page One Title
         )
 
 
-def test_chapters() -> None:
+def test_guides() -> None:
     # Chapters are generated properly and page ast should look as expected
     with make_test(
         {
@@ -234,6 +235,51 @@ Guides
         )
         assert chapters["CRUD"]["guides"] == ["path/to/guide3"]
         assert chapters["CRUD"]["chapter_number"] == 2
+
+    # Guides metadata is added to the project's metadata document
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+    .. chapter:: Atlas
+        :description: This is the description for the Atlas chapter.
+        :image: /images/atlas.png
+
+        .. guide:: /path/to/guide1.txt
+            """,
+            Path(
+                "source/path/to/guide1.txt"
+            ): """
+=======
+Guide 1
+=======
+
+.. time:: 20
+.. short-description::
+
+   This is guide 1.
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ]
+        guides = cast(Dict[str, Any], result.metadata["guides"])
+        assert len(guides) == 1
+
+        test_guide_data = guides["path/to/guide1"]
+        assert test_guide_data["completion_time"] == 20
+        assert test_guide_data["title"][0]["value"] == "Guide 1"
+        test_guide_description = test_guide_data["description"][0]["children"][0]
+        assert test_guide_description["value"] == "This is guide 1."
+        assert test_guide_data["chapter_name"] == "Atlas"
 
     # Diagnostic errors reported
     with make_test(
@@ -321,13 +367,38 @@ Guides
    .. chapter:: Test
       :description: This is a chapter
 
-      .. guide:: /path/to/guide1.txt
+      .. guide:: /path/to/guide2.txt
             """,
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], ChapterAlreadyExists)
+
+    # Test adding 1 guide to multiple children
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. chapters::
+
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide1.txt
+   
+   .. chapter:: Test: The Sequel
+      :description: This is another chapter
+
+      .. guide:: /path/to/guide1.txt
+      .. guide:: /path/to/guide2.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], GuideAlreadyHasChapter)
 
 
 # ensure that broken links still generate titles
