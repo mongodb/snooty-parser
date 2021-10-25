@@ -740,6 +740,20 @@ class GuidesHandler(Handler):
             }
             return result
 
+    def add_guides_metadata(
+        self, context: Context, document: Dict[str, SerializableType]
+    ) -> None:
+        """Adds the guides-related metadata to the project's metadata document"""
+        if self.chapters:
+            document["chapters"] = {k: asdict(v) for k, v in self.chapters.items()}
+
+        if self.guides:
+            slug_title_mapping = context[HeadingHandler].slug_title_mapping
+            for slug, title in slug_title_mapping.items():
+                if slug in self.guides:
+                    self.guides[slug].title = title
+            document["guides"] = {k: v.serialize() for k, v in self.guides.items()}
+
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.chapters: Dict[str, GuidesHandler.ChapterData] = {}
@@ -795,7 +809,7 @@ class GuidesHandler(Handler):
 
         line = chapter.span[0]
         title_argument = chapter.argument
-        if not len(title_argument) == 1:
+        if len(title_argument) != 1:
             self.context.diagnostics[current_file].append(
                 InvalidChapter(
                     "Invalid title argument. The title should be plain text.", line
@@ -868,13 +882,13 @@ class GuidesHandler(Handler):
             )
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        current_file: FileId = fileid_stack.current
-        current_slug = clean_slug(current_file.without_known_suffix)
-
         if not isinstance(node, n.Directive):
             return
 
-        if node.name == "chapters" and current_file.as_posix() == "index.txt":
+        current_file: FileId = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
+
+        if node.name == "chapters" and current_file == FileId("index.txt"):
             if self.chapters:
                 return
             self.__handle_chapters(node, current_file)
@@ -1444,7 +1458,7 @@ class Postprocessor:
         if iatree:
             document["iatree"] = iatree
 
-        cls.add_guides_metadata(context, document)
+        context[GuidesHandler].add_guides_metadata(context, document)
 
         return document
 
@@ -1666,23 +1680,6 @@ class Postprocessor:
 
         pre_order(tree, order)
         return order
-
-    @staticmethod
-    def add_guides_metadata(
-        context: Context, document: Dict[str, SerializableType]
-    ) -> None:
-        """Adds the guides-related metadata to the project's metadata document"""
-        chapters = context[GuidesHandler].chapters
-        if chapters:
-            document["chapters"] = {k: asdict(v) for k, v in chapters.items()}
-
-        guides = context[GuidesHandler].guides
-        if guides:
-            slug_title_mapping = context[HeadingHandler].slug_title_mapping
-            for slug, title in slug_title_mapping.items():
-                if slug in guides:
-                    guides[slug].title = title
-            document["guides"] = {k: v.serialize() for k, v in guides.items()}
 
 
 def pre_order(node: Dict[str, Any], order: List[str]) -> None:
