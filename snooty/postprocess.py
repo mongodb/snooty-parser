@@ -740,15 +740,13 @@ class GuidesHandler(Handler):
             }
             return result
 
-    def add_guides_metadata(
-        self, context: Context, document: Dict[str, SerializableType]
-    ) -> None:
+    def add_guides_metadata(self, document: Dict[str, SerializableType]) -> None:
         """Adds the guides-related metadata to the project's metadata document"""
         if self.chapters:
             document["chapters"] = {k: asdict(v) for k, v in self.chapters.items()}
 
         if self.guides:
-            slug_title_mapping = context[HeadingHandler].slug_title_mapping
+            slug_title_mapping = self.context[HeadingHandler].slug_title_mapping
             for slug, title in slug_title_mapping.items():
                 if slug in self.guides:
                     self.guides[slug].title = title
@@ -1458,7 +1456,7 @@ class Postprocessor:
         if iatree:
             document["iatree"] = iatree
 
-        context[GuidesHandler].add_guides_metadata(context, document)
+        context[GuidesHandler].add_guides_metadata(document)
 
         return document
 
