@@ -618,11 +618,11 @@ class ChapterAlreadyExists(Diagnostic):
 
     def __init__(
         self,
-        chapterName: str,
+        chapter_name: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f'Chapter "{chapterName}" already exists', start, end)
+        super().__init__(f'Chapter "{chapter_name}" already exists', start, end)
 
 
 class InvalidChapter(Diagnostic):
@@ -643,12 +643,30 @@ class MissingChild(Diagnostic):
     def __init__(
         self,
         directive: str,
-        expectedChild: str,
+        expected_child: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f'Directive "{directive}" expects at least one child of type "{expectedChild}"; found 0',
+            f'Directive "{directive}" expects at least one child of type "{expected_child}"; found 0',
+            start,
+            end,
+        )
+
+
+class GuideAlreadyHasChapter(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        guide_slug: str,
+        assigned_chapter: str,
+        target_chapter: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Cannot add guide "{guide_slug}" to chapter "{target_chapter}" because the guide is already assigned to chapter "{assigned_chapter}\"""",
             start,
             end,
         )

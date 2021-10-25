@@ -6,7 +6,7 @@ import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import (
     Any,
     Callable,
@@ -33,6 +33,7 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
@@ -723,19 +724,52 @@ class GuidesHandler(Handler):
         description: Optional[str]
         guides: List[str]
 
+    @dataclass
+    class GuideData:
+        chapter_name: str = ""
+        completion_time: int = 0
+        description: MutableSequence[n.Node] = field(default_factory=list)
+        title: Sequence[n.InlineNode] = field(default_factory=list)
+
+        def serialize(self) -> n.SerializedNode:
+            result: n.SerializedNode = {
+                "chapter_name": self.chapter_name,
+                "completion_time": self.completion_time,
+                "description": [node.serialize() for node in self.description],
+                "title": [node.serialize() for node in self.title],
+            }
+            return result
+
+    def add_guides_metadata(self, document: Dict[str, SerializableType]) -> None:
+        """Adds the guides-related metadata to the project's metadata document"""
+        if self.chapters:
+            document["chapters"] = {k: asdict(v) for k, v in self.chapters.items()}
+
+        if self.guides:
+            slug_title_mapping = self.context[HeadingHandler].slug_title_mapping
+            for slug, title in slug_title_mapping.items():
+                if slug in self.guides:
+                    self.guides[slug].title = title
+            document["guides"] = {k: v.serialize() for k, v in self.guides.items()}
+
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.chapters: Dict[str, GuidesHandler.ChapterData] = {}
+        self.guides: Dict[str, GuidesHandler.GuideData] = defaultdict(
+            GuidesHandler.GuideData
+        )
 
-    def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
-        """Saves a chapter's data into the handler's dictionary of chapters"""
+    def __get_guides(
+        self, chapter: n.Directive, chapter_title: str, current_file: FileId
+    ) -> List[str]:
+        """Returns the eligible guides that belong to a given chapter"""
 
         guides: List[str] = []
 
         for child in chapter.get_child_of_type(n.Directive):
+            line = child.span[0]
+
             if child.name != "guide":
-                # Chapter directives should contain only guide directives
-                line = chapter.span[0]
                 self.context.diagnostics[current_file].append(
                     InvalidChild(child.name, "chapter", "guide", line, None)
                 )
@@ -744,26 +778,40 @@ class GuidesHandler(Handler):
             guide_argument = child.argument
             if not guide_argument:
                 self.context.diagnostics[current_file].append(
-                    ExpectedPathArg(child.name, child.span[0])
+                    ExpectedPathArg(child.name, line)
                 )
                 continue
 
             guide_slug = clean_slug(guide_argument[0].get_text())
+
+            current_guide_data = self.guides[guide_slug]
+            if current_guide_data.chapter_name:
+                self.context.diagnostics[current_file].append(
+                    GuideAlreadyHasChapter(
+                        guide_slug,
+                        current_guide_data.chapter_name,
+                        chapter_title,
+                        line,
+                    )
+                )
+                continue
+            else:
+                current_guide_data.chapter_name = chapter_title
+
             guides.append(guide_slug)
 
+        return guides
+
+    def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
+        """Saves a chapter's data into the handler's dictionary of chapters"""
+
         line = chapter.span[0]
-
-        # A chapter should always have at least one guide
-        if not guides:
-            self.context.diagnostics[current_file].append(
-                MissingChild("chapter", "guide", line)
-            )
-            return
-
         title_argument = chapter.argument
-        if not title_argument:
+        if len(title_argument) != 1:
             self.context.diagnostics[current_file].append(
-                InvalidChapter("Title argument is empty.", line)
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
+                )
             )
             return
 
@@ -779,6 +827,14 @@ class GuidesHandler(Handler):
         # DocUtilsParseError will be appended to diagnostics if there is no description
         description = chapter.options.get("description")
         if not description:
+            return
+
+        guides: List[str] = self.__get_guides(chapter, title, current_file)
+        # A chapter should always have at least one guide
+        if not guides:
+            self.context.diagnostics[current_file].append(
+                MissingChild("chapter", "guide", line)
+            )
             return
 
         if not self.chapters.get(title):
@@ -824,17 +880,26 @@ class GuidesHandler(Handler):
             )
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        current_file: FileId = fileid_stack.current
+        if not isinstance(node, n.Directive):
+            return
 
-        if (
-            isinstance(node, n.Directive)
-            and node.name == "chapters"
-            and current_file.as_posix() == "index.txt"
-        ):
+        current_file: FileId = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
+
+        if node.name == "chapters" and current_file == FileId("index.txt"):
             if self.chapters:
                 return
-
             self.__handle_chapters(node, current_file)
+        elif node.name == "time":
+            if not node.argument:
+                return
+            try:
+                completion_time = int(node.argument[0].get_text())
+                self.guides[current_slug].completion_time = completion_time
+            except ValueError:
+                pass
+        elif node.name == "short-description":
+            self.guides[current_slug].description = node.children
 
 
 class IAHandler(Handler):
@@ -1391,9 +1456,7 @@ class Postprocessor:
         if iatree:
             document["iatree"] = iatree
 
-        chapters = context[GuidesHandler].chapters
-        if chapters:
-            document["chapters"] = {k: asdict(v) for k, v in chapters.items()}
+        context[GuidesHandler].add_guides_metadata(document)
 
         return document
 

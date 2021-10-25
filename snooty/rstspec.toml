@@ -719,6 +719,14 @@ example = """.. guide:: ${0: /path/to/guide.txt}"""
 argument_type = ["path", "uri"]
 content_type = "string"
 
+[directive."mongodb:guide-next"]
+help = "A section that directs users to what they should do next after reading a guide"
+example = """.. guide-next:: ${0: string}
+   ${1: content}
+"""
+argument_type = "string"
+content_type = "block"
+
 [directive."mongodb:introduction"]
 content_type = "block"
 
@@ -773,12 +781,24 @@ example = """ .. quizchoice:: ${1:string}
 argument_type = "string"
 options.is-true = "flag"
 
+[directive."mongodb:short-description"]
+help = "A description or preview of what the content will be about."
+content_type = "block"
+example = """.. short-description::
+   ${0: content}
+"""
+
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
 example = """.. step:: ${0: Step's headline string}
 ${1: Step content}"""
 argument_type = "string"
 content_type = "block"
+
+[directive."mongodb:time"]
+help = "The amount of time that it would take to go through the guide content in minutes."
+argument_type = {type = "nonnegative_integer", required = true}
+example = """.. time:: 15"""
 
 ###### Misc.
 [directive.atf-image]
