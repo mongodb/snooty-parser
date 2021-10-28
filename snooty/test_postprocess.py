@@ -165,7 +165,6 @@ Guides
 
     .. chapter:: Atlas
         :description: This is the description for the Atlas chapter.
-        :image: /images/atlas.png
 
         .. guide:: /path/to/guide1.txt
         .. guide:: /path/to/guide2.txt
@@ -177,7 +176,6 @@ Guides
             ): """
 .. chapter:: CRUD
     :description: This is the description for the CRUD chapter.
-    :image: /images/crud.png
 
     .. guide:: /path/to/guide3.txt
             """,
@@ -196,7 +194,7 @@ Guides
 			<text>Guides</text>
 		</heading>
 		<directive domain="mongodb" name="chapters">
-			<directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." image="/images/atlas.png">
+			<directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter.">
 				<text>Atlas</text>
 				<directive domain="mongodb" name="guide">
 					<text>/path/to/guide1.txt</text>
@@ -208,7 +206,7 @@ Guides
 			<directive name="include">
 				<text>/chapters/crud.rst</text>
 				<root fileid="chapters/crud.rst">
-					<directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter." image="/images/crud.png">
+					<directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter.">
 						<text>CRUD</text>
 						<directive domain="mongodb" name="guide">
 							<text>/path/to/guide3.txt</text>
@@ -250,7 +248,6 @@ Guides
 
     .. chapter:: Atlas
         :description: This is the description for the Atlas chapter.
-        :image: /images/atlas.png
 
         .. guide:: /path/to/guide1.txt
             """,
@@ -294,13 +291,11 @@ Guides
 .. chapters::
 
    .. chapter:: Missing Description
-      :image: /images/atlas.png
 
       .. guide:: /path/to/guide1.txt
 
    .. chapter:: Good Chapter Here
       :description: The description exists! No errors
-      :image: /images/description.png
 
       .. guide:: /path/to/guide2.txt
    

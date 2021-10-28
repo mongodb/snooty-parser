@@ -2743,3 +2743,64 @@ Prerequisites
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert diagnostics[0].start[0] == 13
+
+
+def test_chapter() -> None:
+    """Test chapter directive"""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test good chapter with image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+      :image: /test_parser/sample.png
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Test good chapter without image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Test chapter with incorrect image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+      :image: /fake-image.png
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
