@@ -22,12 +22,12 @@ jobs:
         python-version: '3.8'
         architecture: 'x64'
     - name: Run tests
-      run: make test
+      run: python3 ci.py test
       env:
         FLIT_ROOT_INSTALL: "1"
     - name: Build package
       id: build_package
-      run: make package
+      run: python3 ci.py package
     - name: Upload package
       uses: actions/upload-artifact@v1
       with:

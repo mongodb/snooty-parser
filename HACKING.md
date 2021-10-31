@@ -96,7 +96,7 @@ pytest snooty/test_<file>.py
 
 ### Code Coverage
 
-Install [Coverage](https://coverage.readthedocs.io/en/v4.5.x/). After running tests via `make format test`, run:
+Install [Coverage](https://coverage.readthedocs.io/en/v4.5.x/). After running tests via `./ci.py format test`, run:
 
 ```shell
 coverage html
@@ -120,10 +120,10 @@ To release snooty, do the following:
 
 2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date.
 
-3. Run `make cut-release BUMP_TO_VERSION="<new_version>"`.
+3. Run `./ci.py cut-release BUMP_TO_VERSION="<new_version>"`.
 
    The new version number should follow [semantic versioning](https://semver.org):
-   `MAJOR.MINOR.PATCH`. For example, `make cut-release BUMP_TO_VERSION="0.1.2"`.
+   `MAJOR.MINOR.PATCH`. For example, `./ci.py cut-release BUMP_TO_VERSION="0.1.2"`.
    Refer to `snooty/__init__.py` for the current version number.
 
    This will create a new tag named `v<new_version>` and push it to your origin,
@@ -132,7 +132,7 @@ To release snooty, do the following:
    a new release should be created with binaries for supported platforms.
 
    You can instruct the `cut-release` target to avoid pushing the tag by passing the
-   `PUSH_TO=""` option. For example, `make cut-release BUMP_TO_VERSION="0.1.2" PUSH_TO=""`.
+   `PUSH_TO=""` option. For example, `./ci.py cut-release BUMP_TO_VERSION="0.1.2" PUSH_TO=""`.
 
 4. Go to <https://github.com/mongodb/snooty-parser/releases/> to locate the newly-created
    release.
