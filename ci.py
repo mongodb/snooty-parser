@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import datetime
 import glob
 import os
@@ -113,8 +113,8 @@ def ensure_venv() -> None:
         pass
 
     venv.create(".venv", with_pip=True)
-    run_in_venv(["python3", "-m", "pip", "install", "--upgrade", "pip"])
-    run_in_venv(["python3", "-m", "pip", "install", "flit"])
+    run_in_venv(["python", "-m", "pip", "install", "--upgrade", "pip"])
+    run_in_venv(["python", "-m", "pip", "install", "flit"])
     run_in_venv(["flit", "install", "-s", "--deps=develop"])
     VENV_EXISTS_PATH.touch()
 
@@ -122,23 +122,23 @@ def ensure_venv() -> None:
 def cmd_lint() -> None:
     """Run all linting"""
     ensure_venv()
-    run_in_venv(["python3", "-m", "mypy", "--strict", "snooty", "tools", "ci.py"])
-    run_in_venv(["python3", "-m", "pyflakes", "snooty", "tools", "ci.py"])
-    run_in_venv(["python3", "-m", "black", "snooty", "tools", "ci.py", "--check"])
+    run_in_venv(["python", "-m", "mypy", "--strict", "snooty", "tools", "ci.py"])
+    run_in_venv(["python", "-m", "pyflakes", "snooty", "tools", "ci.py"])
+    run_in_venv(["python", "-m", "black", "snooty", "tools", "ci.py", "--check"])
     subprocess.check_call([SYSTEM_PYTHON, "tools/lint_changelog.py", "CHANGELOG.md"])
 
 
 def cmd_format() -> None:
     """Format source code with black"""
     ensure_venv()
-    run_in_venv(["python3", "-m", "isort", "snooty", "tools", "ci.py"])
-    run_in_venv(["python3", "-m", "black", "snooty", "tools", "ci.py"])
+    run_in_venv(["python", "-m", "isort", "snooty", "tools", "ci.py"])
+    run_in_venv(["python", "-m", "black", "snooty", "tools", "ci.py"])
 
 
 def cmd_test() -> None:
     """Run unit tests"""
     ensure_venv()
-    run_in_venv(["python3", "-X", "dev", "-m", "pytest", "--cov=snooty"])
+    run_in_venv(["python", "-X", "dev", "-m", "pytest", "--cov=snooty"])
 
 
 def cmd_clean() -> None:
@@ -193,7 +193,7 @@ def cmd_performance_report() -> None:
         subprocess.check_call(["git", "fetch"], cwd=".docs")
         subprocess.check_call(["git", "reset", "--hard", DOCS_COMMIT], cwd=".docs")
 
-    run_in_venv(["python3", "-m", "snooty.performance_report", ".docs"])
+    run_in_venv(["python", "-m", "snooty.performance_report", ".docs"])
 
 
 def cmd_package(sign: bool = False) -> None:
@@ -216,7 +216,7 @@ def cmd_package(sign: bool = False) -> None:
         f.write("from snooty import main; main.main()\n")
 
     run_in_venv(
-        ["python3", "-m", "PyInstaller", "-n", "snooty", "snootycli.py"],
+        ["python", "-m", "PyInstaller", "-n", "snooty", "snootycli.py"],
         deterministic=True,
     )
     os.unlink("snootycli.py")
