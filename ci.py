@@ -237,7 +237,7 @@ def cmd_package(sign: bool = False) -> None:
 
     # Ensure that the generated binary runs
     subprocess.check_call(["./dist/snooty/snooty", "--help"])
-    print(f"::set-output name=package_filename::${PACKAGE_NAME.name}")
+    print(f"::set-output name=package_filename::{PACKAGE_NAME.name}")
 
     if sign:
         subprocess.check_call(
@@ -272,7 +272,7 @@ def cmd_cut_release() -> None:
             "tag",
             "-s",
             "-m",
-            f"Release v${BUMP_TO_VERSION}" f"v${BUMP_TO_VERSION}",
+            f"Release v{BUMP_TO_VERSION}" f"v{BUMP_TO_VERSION}",
         ]
     )
 
@@ -282,7 +282,7 @@ def cmd_cut_release() -> None:
         re.M,
     )
     if push_to:
-        subprocess.check_call(["git", "push", push_to[1], f"v${BUMP_TO_VERSION}"])
+        subprocess.check_call(["git", "push", push_to[1], f"v{BUMP_TO_VERSION}"])
 
     # Make a post-release version bump
     subprocess.check_call([SYSTEM_PYTHON, "tools/bump_version.py", "dev"])
@@ -294,7 +294,7 @@ def cmd_cut_release() -> None:
         "Creating the release may now take several minutes. Check https://github.com/mongodb/snooty-parser/actions for status."
     )
     print(
-        "Release will be created at: https://github.com/mongodb/snooty-parser/releases/tag/v${BUMP_TO_VERSION}"
+        "Release will be created at: https://github.com/mongodb/snooty-parser/releases/tag/v{BUMP_TO_VERSION}"
     )
 
 
