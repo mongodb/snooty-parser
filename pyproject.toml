@@ -11,7 +11,7 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 requires-python = "~= 3.7"
 requires = [
     "pymongo[srv,tls] >= 3.11.1, < 4",
-    "docutils ~= 0.16",
+    "docutils >= 0.16, < 0.18",
     "watchdog ~= 1.0",
     "requests ~= 2.24",
     "toml ~= 0.10",
