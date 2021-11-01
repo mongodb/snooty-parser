@@ -1,9 +1,9 @@
 import hashlib
 import logging
-import os.path
+import posixpath
 import re
 from dataclasses import dataclass, field
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 
 import toml
@@ -158,11 +158,9 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
-        print(path, self.source_path)
-        print(os.path.relpath(path, self.source_path))
-        result = PurePath(os.path.relpath(path, self.source_path))
-        # Ensure that we transform any Windows-style paths into a Posix-style FileId
-        return FileId(*result.parts)
+        return FileId(
+            posixpath.relpath(PurePosixPath(path), PurePosixPath(self.source_path))
+        )
 
     @classmethod
     def open(cls, root: Path) -> Tuple["ProjectConfig", List[Diagnostic]]:
