@@ -158,6 +158,8 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
+        print(path, self.source_path)
+        print(os.path.relpath(path, self.source_path))
         result = PurePath(os.path.relpath(path, self.source_path))
         # Ensure that we transform any Windows-style paths into a Posix-style FileId
         return FileId(*result.parts)
