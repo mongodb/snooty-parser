@@ -388,9 +388,11 @@ class HTTPCache:
 
         # Atomically (re)write the cache file entry
         try:
-            tempf = tempfile.NamedTemporaryFile(dir=self.cache_dir)
+            tempf = tempfile.NamedTemporaryFile(dir=self.cache_dir, delete=False)
             tempf.write(res.content)
+            tempf.close()
             os.replace(tempf.name, inventory_path)
+            assert not Path(tempf.name).exists()
         finally:
             try:
                 tempf.close()
