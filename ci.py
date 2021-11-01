@@ -137,6 +137,7 @@ def cmd_format() -> None:
 
 def cmd_test() -> None:
     """Run unit tests"""
+    ensure_venv()
     run_in_venv(["python3", "-X", "dev", "-m", "pytest", "--cov=snooty"])
 
 
@@ -197,6 +198,8 @@ def cmd_performance_report() -> None:
 
 def cmd_package(sign: bool = False) -> None:
     """Generate a binary package"""
+
+    ensure_venv()
 
     try:
         shutil.rmtree("snooty.dist")
