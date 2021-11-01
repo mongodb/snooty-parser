@@ -233,7 +233,7 @@ def cmd_package(sign: bool = False) -> None:
     Path("dist/snooty/.EXISTS").touch()
 
     # Normalize the mtime, and zip in sorted order
-    build_zipfile(Path("dist"), PACKAGE_NAME)
+    build_zipfile(Path("dist"), Path("dist") / PACKAGE_NAME)
 
     # Ensure that the generated binary runs
     subprocess.check_call(["./dist/snooty/snooty", "--help"])
