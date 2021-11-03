@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- External link roles for the k8s migration (DOP-2556).
+- `rust-async` and `rust-sync` driver tabs.
+- Directives and metadata for upcoming guides work.
+
+### Changed
+
+- Docutils 0.18 is explicitly unsupported for the moment.
+
 ## [v0.11.5] - 2021-10-06
 
 ### Changed
