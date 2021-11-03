@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.6] - 2021-11-03
+
 ### Added
 
 - External link roles for the k8s migration (DOP-2556).
