@@ -1434,6 +1434,27 @@ type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 [role."xamarin"]
 type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 
+[role."k8sdocs"]
+type = {link = "https://kubernetes.io/docs%s"}
+
+[role."gopkg"]
+type = {link = "https://godoc.org%s"}
+
+[role."osi"]
+type = {link = "https://opensource.org%s"}
+
+[role."osil"]
+type = {link = "https://opensource.org/licenses/%s"}
+
+[role."tldrl"]
+type = {link = "https://www.tldrlegal.com/l/%s"}
+
+[role."q-mdb"]
+type = {link = "https://quay.io/mongodb%s"}
+
+[role."qr-mdb"]
+type = {link = "https://quay.io/repository/mongodb%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
