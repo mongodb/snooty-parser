@@ -632,13 +632,7 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
-            try:
-                static_asset = self.add_static_asset(argument_text, upload=True)
-                self.pending.append(PendingFigure(doc, static_asset))
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
-                )
+            self.validate_and_add_asset(doc, argument_text, line)
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -899,6 +893,11 @@ class JSONVisitor:
             doc.argument = [n.Text((line,), new_fileid.as_posix())]
             self.synthetic_pages[new_fileid] = str(response, "utf-8")
 
+        elif name == "chapter":
+            image_argument = options.get("image")
+            if image_argument:
+                self.validate_and_add_asset(doc, image_argument, line)
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -911,30 +910,26 @@ class JSONVisitor:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
             else:
-                try:
-                    static_asset = self.add_static_asset(image_argument, upload=True)
-                    self.pending.append(PendingFigure(doc, static_asset))
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            image_argument, err.strerror, util.get_line(node)
-                        )
-                    )
+                self.validate_and_add_asset(doc, image_argument, line)
+
         elif key in {"mongodb:card"}:
             image_argument = options.get("icon")
 
             if image_argument:
-                try:
-                    static_asset = self.add_static_asset(image_argument, upload=True)
-                    self.pending.append(PendingFigure(doc, static_asset))
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            image_argument, err.strerror, util.get_line(node)
-                        )
-                    )
+                self.validate_and_add_asset(doc, image_argument, line)
 
         return doc
+
+    def validate_and_add_asset(
+        self, doc: n.Directive, image_argument: str, line: int
+    ) -> None:
+        try:
+            static_asset = self.add_static_asset(image_argument, upload=True)
+            self.pending.append(PendingFigure(doc, static_asset))
+        except OSError as err:
+            self.diagnostics.append(
+                CannotOpenFile(Path(image_argument), err.strerror, line)
+            )
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
