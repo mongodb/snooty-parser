@@ -198,7 +198,7 @@ options.copyable = "boolean"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
-options.lines = "linenos"
+options.lineno-start = "nonnegative_integer"
 example = """..literalinclude:: ${1:/path/to/file.js}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
@@ -207,7 +207,7 @@ example = """..literalinclude:: ${1:/path/to/file.js}
    :caption:
    :dedent:
    :emphasize-lines:
-   :lines:}
+   :lineno-start:}
 """
 
 [directive.replacement]

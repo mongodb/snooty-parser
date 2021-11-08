@@ -263,6 +263,7 @@ class JSONVisitor:
                 node["emphasize_lines"] if "emphasize_lines" in node else None,
                 node.astext(),
                 node["linenos"],
+                node["lineno_start"] if "lineno_start" in node else None,
             )
             top_of_state = self.state[-1]
             assert isinstance(top_of_state, n.Parent)
@@ -823,6 +824,9 @@ class JSONVisitor:
             copyable = "copyable" not in options or options["copyable"] == "True"
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
+            lineno_start = (
+                options["lineno-start"] if "lineno-start" in options else None
+            )
 
             code = n.Code(
                 span,
@@ -832,6 +836,7 @@ class JSONVisitor:
                 emphasize_lines,
                 selected_content,
                 linenos,
+                lineno_start,
             )
 
             doc.children.append(code)

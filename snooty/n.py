@@ -150,7 +150,15 @@ class InlineNode(Node):
 
 @dataclass
 class Code(Node):
-    __slots__ = ("lang", "caption", "copyable", "emphasize_lines", "value", "linenos")
+    __slots__ = (
+        "lang",
+        "caption",
+        "copyable",
+        "emphasize_lines",
+        "value",
+        "linenos",
+        "lineno_start",
+    )
     type = "code"
     lang: Optional[str]
     caption: Optional[str]
@@ -158,6 +166,7 @@ class Code(Node):
     emphasize_lines: Optional[Sequence[Tuple[int, int]]]
     value: str
     linenos: bool
+    lineno_start: Optional[int]
 
 
 @dataclass
