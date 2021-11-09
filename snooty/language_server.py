@@ -254,7 +254,6 @@ class WorkspaceEntry:
 class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def __init__(self, rx: BinaryIO, tx: BinaryIO) -> None:
         self.backend = Backend(self)
-        self.project: Optional[Project] = None
         self.workspace: Dict[str, WorkspaceEntry] = {}
         self.diagnostics: Dict[PurePath, List[Diagnostic]] = {}
 
@@ -265,6 +264,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         )
         self._shutdown = False
         self._debouncer = Debouncer()
+
+        self.project: Optional[Project] = None
+        self._project_lock = threading.Lock()
 
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
@@ -281,13 +283,14 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.backend.pending_diagnostics.clear()
 
     def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
-        if not self.project:
-            return
-
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
 
-        self.project.update(page_path, change)
+        with self._project_lock:
+            if not self.project:
+                return
+
+            self.project.update(page_path, change)
 
     def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[fileid] = diagnostics

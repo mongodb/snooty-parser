@@ -1351,6 +1351,12 @@ class RefsHandler(Handler):
         node.children = [deepcopy(node) for node in title]
 
 
+class PostprocessorResult(NamedTuple):
+    pages: Dict[FileId, Page]
+    metadata: Dict[str, SerializableType]
+    diagnostics: Dict[FileId, List[Diagnostic]]
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -1380,12 +1386,10 @@ class Postprocessor:
         self.targets = targets
         self.pending_program: Optional[SerializableType] = None
 
-    def run(
-        self, pages: Dict[FileId, Page]
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+    def run(self, pages: Dict[FileId, Page]) -> PostprocessorResult:
         """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
-            return {}, {}
+            return PostprocessorResult({}, {}, {})
 
         self.pages = pages
         context = Context(pages)
@@ -1422,7 +1426,7 @@ class Postprocessor:
 
         document = self.generate_metadata(context)
         self.finalize(context, document)
-        return document, context.diagnostics
+        return PostprocessorResult(self.pages, document, context.diagnostics)
 
     def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
         pass

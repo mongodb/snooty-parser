@@ -66,7 +66,7 @@ from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .openapi import OpenAPI
 from .page import Page, PendingTask
-from .postprocess import DevhubPostprocessor, Postprocessor
+from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     BuildIdentifierSet,
@@ -1128,7 +1128,7 @@ class PageDatabase:
     def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
         self.postprocessor_factory = postprocessor_factory
         self.parsed: Dict[FileId, Page] = {}
-        self.__postprocessed: Dict[FileId, Page] = {}
+        self.__cached = PostprocessorResult({}, {}, {})
         self.__changed_pages: Set[FileId] = set()
 
     def __setitem__(self, key: FileId, value: Page) -> None:
@@ -1145,7 +1145,7 @@ class PageDatabase:
     def __getitem__(self, key: FileId) -> Page:
         """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
         assert not self.__changed_pages
-        return self.__postprocessed[key]
+        return self.__cached.pages[key]
 
     def __contains__(self, key: FileId) -> bool:
         """Check if a given page exists in the parsed set."""
@@ -1154,19 +1154,19 @@ class PageDatabase:
     def values(self) -> Iterable[Page]:
         """Iterate over postprocessed pages."""
         assert not self.__changed_pages
-        return self.__postprocessed.values()
+        return self.__cached.pages.values()
 
     def items(self) -> Iterable[Tuple[FileId, Page]]:
         """Iterate over the postprocessed (FileId, Page) set."""
         assert not self.__changed_pages
-        return self.__postprocessed.items()
+        return self.__cached.pages.items()
 
     def flush(
         self,
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+    ) -> PostprocessorResult:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
         if not self.__changed_pages:
-            return {}, {}
+            return self.__cached
 
         postprocessor = self.postprocessor_factory()
 
@@ -1174,12 +1174,12 @@ class PageDatabase:
             copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
 
         with util.PerformanceLogger.singleton().start("postprocessing"):
-            post_metadata, post_diagnostics = postprocessor.run(copied_pages)
+            result = postprocessor.run(copied_pages)
 
-        self.__postprocessed = postprocessor.pages
+        self.__cached = result
         self.__changed_pages.clear()
 
-        return post_metadata, post_diagnostics
+        return result
 
 
 class _Project:
@@ -1319,10 +1319,10 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
-        post_metadata, post_diagnostics = self.pages.flush()
-        for fileid, diagnostics in post_diagnostics.items():
+        result = self.pages.flush()
+        for fileid, diagnostics in result.diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
-        page = self.pages[fileid]
+        page = result.pages[fileid]
 
         assert isinstance(page.ast, n.Parent)
         return page.ast
@@ -1474,7 +1474,7 @@ class _Project:
                     )
 
         if postprocess:
-            post_metadata, post_diagnostics = self.pages.flush()
+            postprocessor_result = self.pages.flush()
 
             static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
@@ -1521,12 +1521,12 @@ class _Project:
                         ],
                     )
 
-            post_metadata["static_files"] = static_files
-            for fileid, diagnostics in post_diagnostics.items():
+            postprocessor_result.metadata["static_files"] = static_files
+            for fileid, diagnostics in postprocessor_result.diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
             self.backend.on_update_metadata(
-                self.prefix, self.build_identifiers, post_metadata
+                self.prefix, self.build_identifiers, postprocessor_result.metadata
             )
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
