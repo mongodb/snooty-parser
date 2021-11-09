@@ -6,7 +6,6 @@ import threading
 import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -16,9 +15,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
+    Tuple,
     TypeVar,
     Union,
-    cast,
 )
 
 import pyls_jsonrpc.dispatchers
@@ -36,29 +36,6 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
 PARENT_PROCESS_WATCH_INTERVAL_SECONDS = 60
 logger = logging.getLogger(__name__)
-
-
-class debounce:
-    def __init__(self, wait: float) -> None:
-        self.wait = wait
-
-    def __call__(self, fn: _F) -> _F:
-        wait = self.wait
-
-        @wraps(fn)
-        def debounced(*args: Any, **kwargs: Any) -> Any:
-            def action() -> None:
-                fn(*args, **kwargs)
-
-            try:
-                getattr(debounced, "debounce_timer").cancel()
-            except AttributeError:
-                pass
-            timer = threading.Timer(wait, action)
-            setattr(debounced, "debounce_timer", timer)
-            timer.start()
-
-        return cast(_F, debounced)
 
 
 @checked
@@ -214,6 +191,21 @@ class Backend:
         pass
 
 
+class Debouncer:
+    def __init__(self) -> None:
+        self.timers: Sequence[threading.Timer] = []
+
+    def run(self, events: Sequence[Tuple[float, Callable[[], None]]]) -> None:
+        self.stop()
+        self.timers = [threading.Timer(ev[0], ev[1]) for ev in events]
+        for timer in self.timers:
+            timer.start()
+
+    def stop(self) -> None:
+        for timer in self.timers:
+            timer.cancel()
+
+
 class DiagnosticSeverity(enum.IntEnum):
     """The Language Server Protocol's DiagnosticSeverity namespace enumeration.
     See: https://microsoft.github.io/language-server-protocol/specification#diagnostic"""
@@ -272,6 +264,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             self, self._jsonrpc_stream_writer.write
         )
         self._shutdown = False
+        self._debouncer = Debouncer()
 
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
@@ -455,7 +448,6 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.workspace[item.uri] = entry
         self.update_file(page_path, item.text)
 
-    @debounce(0.2)
     def m_text_document__did_change(
         self, textDocument: SerializableType, contentChanges: SerializableType
     ) -> None:
@@ -468,7 +460,8 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
         )
-        self.update_file(page_path, change.text)
+
+        self._debouncer.run([(0.1, lambda: self.update_file(page_path, change.text))])
 
     def m_text_document__did_close(self, textDocument: SerializableType) -> None:
         if not self.project:
@@ -484,6 +477,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
     def m_exit(self, **_kwargs: object) -> None:
         self._endpoint.shutdown()
+        self._debouncer.stop()
         if self.project:
             self.project.stop_monitoring()
 

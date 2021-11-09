@@ -47,9 +47,13 @@ class LSPDiagnostic:
 def test_debounce() -> None:
     bounces = [0]
 
-    @language_server.debounce(0.1)
+    debouncer = language_server.Debouncer()
+
     def inc() -> None:
-        bounces[0] += 1
+        def _inc() -> None:
+            bounces[0] += 1
+
+        debouncer.run([(0.1, _inc)])
 
     inc()
     inc()
@@ -58,6 +62,7 @@ def test_debounce() -> None:
     time.sleep(0.2)
     inc()
 
+    debouncer.stop()
     assert bounces[0] == 1
 
 
