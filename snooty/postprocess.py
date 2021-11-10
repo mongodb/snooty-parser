@@ -1,4 +1,5 @@
 import collections
+import errno
 import logging
 import os.path
 import sys
@@ -28,6 +29,7 @@ from typing import (
 from . import n, specparser, util
 from .diagnostics import (
     AmbiguousTarget,
+    CannotOpenFile,
     ChapterAlreadyExists,
     Diagnostic,
     DuplicateDirective,
@@ -302,10 +304,16 @@ class IncludeHandler(Handler):
             include_slug = argument.strip("/")
             include_fileid = self.slug_fileid_mapping.get(include_slug)
 
-            # XXX: End if we can't find a file. Diagnostic SHOULD have already been raised,
-            # but it isn't necessarily possible to say for sure. Validation should be moved
-            # here.
             if include_fileid is None:
+                # sharedinclude diagnostics have already been raised in the JSONVisitor
+                if node.name != "sharedinclude":
+                    self.context.diagnostics[fileid_stack.current].append(
+                        CannotOpenFile(
+                            FileId(include_slug),
+                            os.strerror(errno.ENOENT),
+                            node.span[0],
+                        )
+                    )
                 return
 
         include_page = self.pages.get(include_fileid)

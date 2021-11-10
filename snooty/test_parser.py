@@ -763,28 +763,6 @@ def test_include() -> None:
         </root>""",
     )
 
-    # Test generated include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/steps/generated-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-
-    # Test bad include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/fake-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
-
 
 def test_admonition() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
