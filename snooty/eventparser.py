@@ -1,9 +1,11 @@
+import threading
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import n
 from .page import Page
 from .types import FileId
+from .util import CancelledException
 
 
 class FileIdStack:
@@ -42,9 +44,10 @@ class EventParser:
     OBJECT_START_EVENT = "object_start"
     OBJECT_END_EVENT = "object_end"
 
-    def __init__(self) -> None:
+    def __init__(self, cancellation_token: threading.Event) -> None:
         self._event_listeners: Dict[str, List[Callable[..., None]]] = defaultdict(list)
         self.fileid_stack = FileIdStack()
+        self.cancellation_token = cancellation_token
 
     def add_event_listener(self, event: str, listener: Callable[..., None]) -> None:
         """Add a listener to be called when a particular type of event occurs"""
@@ -64,6 +67,9 @@ class EventParser:
     def consume(self, d: Iterable[Tuple[FileId, Page]]) -> None:
         """Initializes a parse on the provided key-value map of pages"""
         for filename, page in d:
+            if self.cancellation_token.is_set():
+                raise CancelledException()
+
             self.fire_page(self.PAGE_START_EVENT, FileIdStack([filename]), page)
             self._iterate(page.ast, filename)
             self.fire_page(self.PAGE_END_EVENT, FileIdStack([filename]), page)

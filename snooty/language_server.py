@@ -285,7 +285,6 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
-
         with self._project_lock:
             if not self.project:
                 return

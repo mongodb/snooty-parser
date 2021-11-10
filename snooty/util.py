@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import datetime
 import logging
 import os
 import pickle
+import queue
 import re
 import sys
 import tempfile
@@ -20,6 +23,7 @@ from typing import (
     Container,
     Counter,
     Dict,
+    Generic,
     Hashable,
     Iterator,
     List,
@@ -28,6 +32,7 @@ from typing import (
     TextIO,
     Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -44,6 +49,7 @@ from .types import FileId
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
+_R = TypeVar("_R")
 PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
@@ -420,3 +426,73 @@ class HTTPCache:
                 pass
 
         return res.content
+
+
+class CancelledException(Exception):
+    pass
+
+
+class WorkerLauncher(Generic[_T, _R]):
+    """Concurrency abstraction that launches a thread with a specific callable, passing in a
+    cancellation Event and a user-supplied argument. The callable's return value is fed into
+    a results Queue.
+
+    The input argument is cloned using pickle before launch, and so does not need to be protected.
+
+    If the run() method is called while the thread is ongoing, it is cancelled (and blocks until
+    the worker raises WorkerCanceled) and restarted.
+
+    This class's methods are thread-safe"""
+
+    def __init__(
+        self,
+        name: str,
+        target: Callable[[threading.Event, _T], _R],
+    ) -> None:
+        self.name = name
+        self.target = target
+
+        self._lock = threading.Lock()
+        self.__thread: Optional[threading.Thread] = None
+        self.__cancel = threading.Event()
+
+    def run(self, arg: _T) -> queue.Queue[Union[_R, CancelledException]]:
+        """Cancel any current thread of execution; block until it is cancelled; and re-launch the worker."""
+        self.cancel()
+
+        result_queue: queue.Queue[Union[_R, CancelledException]] = queue.Queue(1)
+
+        def inner() -> None:
+            try:
+                result = self.target(self.__cancel, arg)
+
+                # This is only going to happen if the callable never checks the cancelation Event
+                if self.__cancel.is_set():
+                    raise CancelledException()
+
+                result_queue.put(result)
+            except CancelledException as cancelled:
+                result_queue.put(cancelled)
+
+        thread = threading.Thread(name=self.name, target=inner, daemon=True)
+        with self._lock:
+            self.__thread = thread
+        thread.start()
+
+        return result_queue
+
+    def run_and_wait(self, arg: _T) -> _R:
+        result = self.run(arg).get()
+        if isinstance(result, CancelledException):
+            raise result
+
+        return result
+
+    def cancel(self) -> None:
+        """Instruct the worker to raise WorkerCanceled and abort execution."""
+        with self._lock:
+            if self.__thread and self.__thread.is_alive():
+                self.__cancel.set()
+                self.__thread.join()
+
+        self.__cancel.clear()

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import errno
 import getpass
@@ -6,6 +8,7 @@ import json
 import logging
 import multiprocessing
 import os
+import queue
 import re
 import subprocess
 import threading
@@ -1104,18 +1107,45 @@ class ProjectBackend(Protocol):
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline
     is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
-    pages can be accessed."""
+    pages can be accessed.
+
+    All methods are thread-safe, but data returned should not be mutated by more than one
+    thread."""
 
     def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
+        self._lock = threading.Lock()
+
         self.postprocessor_factory = postprocessor_factory
         self.parsed: Dict[FileId, Page] = {}
         self.__cached = PostprocessorResult({}, {}, {})
         self.__changed_pages: Set[FileId] = set()
 
+        def start(
+            cancellation_token: threading.Event,
+            args: Tuple[Postprocessor, Dict[FileId, Page]],
+        ) -> PostprocessorResult:
+            with self._lock:
+                if not self.__changed_pages:
+                    return self.__cached
+
+            with util.PerformanceLogger.singleton().start("postprocessing"):
+                result = args[0].run(args[1], cancellation_token)
+
+            with self._lock:
+                self.__cached = result
+                self.__changed_pages.clear()
+
+            return result
+
+        self.worker: util.WorkerLauncher[
+            Tuple[Postprocessor, Dict[FileId, Page]], PostprocessorResult
+        ] = util.WorkerLauncher("postprocessor", start)
+
     def __setitem__(self, key: FileId, value: Page) -> None:
         """Set a raw parsed page."""
-        self.parsed[key] = value
-        self.__changed_pages.add(key)
+        with self._lock:
+            self.parsed[key] = value
+            self.__changed_pages.add(key)
 
     def get(self, key: FileId) -> Optional[Page]:
         try:
@@ -1125,41 +1155,32 @@ class PageDatabase:
 
     def __getitem__(self, key: FileId) -> Page:
         """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
-        assert not self.__changed_pages
-        return self.__cached.pages[key]
+        with self._lock:
+            assert not self.__changed_pages
+            return self.__cached.pages[key]
 
     def __contains__(self, key: FileId) -> bool:
         """Check if a given page exists in the parsed set."""
-        return key in self.parsed
-
-    def values(self) -> Iterable[Page]:
-        """Iterate over postprocessed pages."""
-        assert not self.__changed_pages
-        return self.__cached.pages.values()
-
-    def items(self) -> Iterable[Tuple[FileId, Page]]:
-        """Iterate over the postprocessed (FileId, Page) set."""
-        assert not self.__changed_pages
-        return self.__cached.pages.items()
+        with self._lock:
+            return key in self.parsed
 
     def flush(
         self,
-    ) -> PostprocessorResult:
+    ) -> queue.Queue[Union[PostprocessorResult, util.CancelledException]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
-        if not self.__changed_pages:
-            return self.__cached
-
         postprocessor = self.postprocessor_factory()
 
-        with util.PerformanceLogger.singleton().start("copy"):
-            copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
+        with self._lock:
+            with util.PerformanceLogger.singleton().start("copy"):
+                copied_pages = {
+                    k: util.fast_deep_copy(v) for k, v in self.parsed.items()
+                }
+        return self.worker.run((postprocessor, copied_pages))
 
-        with util.PerformanceLogger.singleton().start("postprocessing"):
-            result = postprocessor.run(copied_pages)
-
-        self.__cached = result
-        self.__changed_pages.clear()
-
+    def flush_and_wait(self) -> PostprocessorResult:
+        result = self.flush().get()
+        if isinstance(result, util.CancelledException):
+            raise result
         return result
 
 
@@ -1300,7 +1321,9 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
-        result = self.pages.flush()
+        result = self.pages.flush().get()
+        if isinstance(result, util.CancelledException):
+            raise result
         for fileid, diagnostics in result.diagnostics.items():
             self.backend.on_diagnostics(fileid, diagnostics)
         page = result.pages[fileid]
@@ -1455,7 +1478,9 @@ class _Project:
                     )
 
         if postprocess:
-            postprocessor_result = self.pages.flush()
+            postprocessor_result = self.pages.flush().get()
+            if isinstance(postprocessor_result, util.CancelledException):
+                raise postprocessor_result
 
             static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
@@ -1464,7 +1489,7 @@ class _Project:
             }
 
             with util.PerformanceLogger.singleton().start("commit"):
-                for fileid, page in self.pages.items():
+                for fileid, page in postprocessor_result.pages.items():
                     self.backend.on_update(
                         self.prefix, self.build_identifiers, fileid, page
                     )

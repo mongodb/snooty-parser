@@ -3,6 +3,7 @@ import errno
 import logging
 import os.path
 import sys
+import threading
 import typing
 import urllib.parse
 from collections import defaultdict
@@ -1394,12 +1395,15 @@ class Postprocessor:
         self.targets = targets
         self.pending_program: Optional[SerializableType] = None
 
-    def run(self, pages: Dict[FileId, Page]) -> PostprocessorResult:
+    def run(
+        self, pages: Dict[FileId, Page], cancellation_token: threading.Event
+    ) -> PostprocessorResult:
         """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
             return PostprocessorResult({}, {}, {})
 
         self.pages = pages
+        self.cancellation_token = cancellation_token
         context = Context(pages)
         context.add(self.project_config)
         context.add(self.targets)
@@ -1479,7 +1483,7 @@ class Postprocessor:
         node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
         page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
-        event_parser = EventParser()
+        event_parser = EventParser(self.cancellation_token)
         for event, node_listener in node_listeners:
             event_parser.add_event_listener(event, node_listener)
 
