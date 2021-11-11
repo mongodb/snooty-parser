@@ -1237,6 +1237,9 @@ type = {link = "https://docs.mongodb.com/v4.4%s", ensure_trailing_slash = true}
 [role."v5.0"]
 type = {link = "https://docs.mongodb.com/v5.0%s", ensure_trailing_slash = true}
 
+[role."v5.1"]
+type = {link = "https://docs.mongodb.com/v5.1%s", ensure_trailing_slash = true}
+
 [role.website]
 help = """Link to a page in the MongoDB website."""
 type = {link = "https://www.mongodb.com%s?tck=docs"}
