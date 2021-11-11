@@ -1,8 +1,11 @@
+import os
 import sys
 import threading
 import time
 from pathlib import Path, PurePath, PurePosixPath
 from typing import Tuple
+
+import pytest
 
 from . import util
 
@@ -103,6 +106,10 @@ def test_make_id() -> None:
     assert util.make_html5_id("a test#") == "a-test-"
 
 
+@pytest.mark.skipif(
+    "GITHUB_RUN_ID" in os.environ,
+    reason="this test is timing-sensitive and doesn't work well in CI",
+)
 def test_worker() -> None:
     initial_switch_interval = sys.getswitchinterval()
 

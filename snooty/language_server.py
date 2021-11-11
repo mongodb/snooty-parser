@@ -193,17 +193,21 @@ class Backend:
 
 class Debouncer:
     def __init__(self) -> None:
+        self.lock = threading.Lock()
         self.timers: Sequence[threading.Timer] = []
 
     def run(self, events: Sequence[Tuple[float, Callable[[], None]]]) -> None:
         self.stop()
-        self.timers = [threading.Timer(ev[0], ev[1]) for ev in events]
-        for timer in self.timers:
-            timer.start()
+
+        with self.lock:
+            self.timers = [threading.Timer(ev[0], ev[1]) for ev in events]
+            for timer in self.timers:
+                timer.start()
 
     def stop(self) -> None:
-        for timer in self.timers:
-            timer.cancel()
+        with self.lock:
+            for timer in self.timers:
+                timer.cancel()
 
 
 class DiagnosticSeverity(enum.IntEnum):
@@ -270,6 +274,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
+        logger.info("listening")
 
     def notify_diagnostics(self) -> None:
         """Handle the backend notifying us that diagnostics are available to be pulled."""
@@ -321,6 +326,21 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         return "file://" + str(self.project.config.source_path.joinpath(fileid))
 
+    def postprocess(self) -> None:
+        with self._project_lock:
+            if self.project is None:
+                return
+            project = self.project
+
+        def inner() -> None:
+            try:
+                project.postprocess()
+            except util.CancelledException:
+                logger.info("Postprocessor cancelled")
+
+        # The postprocess method is intended to be thread-safe
+        threading.Thread(target=inner, daemon=True).start()
+
     def m_initialize(
         self,
         processId: Optional[int] = None,
@@ -334,7 +354,11 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
             # XXX: Disabling the postprocessor is temporary until we can test
             # its usage in the language server more extensively
+            logger.info("Parsing")
             self.project.build(postprocess=False)
+            logger.info("Postprocessing")
+            self.project.postprocess()
+            logger.info("Good to go!")
 
         if processId is not None:
 
@@ -351,7 +375,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
                 ).start()
 
             watching_thread = threading.Thread(
-                target=watch_parent_process, args=(processId,)
+                target=watch_parent_process, args=(processId,), daemon=True
             )
             watching_thread.daemon = True
             watching_thread.start()
@@ -440,6 +464,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         return fileid.without_known_suffix
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
+        logger.info("did_open")
         if not self.project:
             return
 
@@ -453,6 +478,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def m_text_document__did_change(
         self, textDocument: SerializableType, contentChanges: SerializableType
     ) -> None:
+        logger.info("did_change")
         if not self.project:
             return
 
@@ -463,9 +489,15 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
         )
 
-        self._debouncer.run([(0.1, lambda: self.update_file(page_path, change.text))])
+        self._debouncer.run(
+            [
+                (0.1, lambda: self.update_file(page_path, change.text)),
+                (1.0, self.postprocess),
+            ]
+        )
 
     def m_text_document__did_close(self, textDocument: SerializableType) -> None:
+        logger.info("did_close")
         if not self.project:
             return
 
