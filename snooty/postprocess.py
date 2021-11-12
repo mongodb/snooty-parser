@@ -723,6 +723,7 @@ class GuidesHandler(Handler):
         chapter_number: int
         description: Optional[str]
         guides: List[str]
+        icon: Optional[str]
 
     @dataclass
     class GuideData:
@@ -838,8 +839,9 @@ class GuidesHandler(Handler):
             return
 
         if not self.chapters.get(title):
+            icon = chapter.options.get("icon")
             self.chapters[title] = GuidesHandler.ChapterData(
-                len(self.chapters) + 1, description, guides
+                len(self.chapters) + 1, description, guides, icon
             )
         else:
             self.context.diagnostics[current_file].append(

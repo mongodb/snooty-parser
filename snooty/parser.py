@@ -903,6 +903,10 @@ class JSONVisitor:
             if image_argument:
                 self.validate_and_add_asset(doc, image_argument, line)
 
+            icon_argument = options.get("icon")
+            if icon_argument:
+                self.validate_and_add_asset(doc, icon_argument, line)
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]

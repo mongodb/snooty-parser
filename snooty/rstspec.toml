@@ -688,7 +688,8 @@ example = """.. card-group::
 help = "A container for a group of MongoDB guides."
 example = """.. chapter:: ${1: string}
    :description: ${2: string}
-   :image: ${3: /path/to/image.png}
+   :image: ${3: /path/to/image.png - the chapter card will use this}
+   :icon: ${4: /path/to/icon.png - the guides cards related to the chapter will use this}
 
    ${0: chapter content}
 """
@@ -696,6 +697,7 @@ argument_type = "string"
 content_type = "block"
 options.description = {type = "string", required = true}
 options.image = ["path", "uri"]
+options.icon = ["path", "uri"]
 
 [directive."mongodb:chapters"]
 help = "A container for a group of chapter directives."
