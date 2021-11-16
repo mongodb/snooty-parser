@@ -165,6 +165,7 @@ Guides
 
     .. chapter:: Atlas
         :description: This is the description for the Atlas chapter.
+        :icon: /path/to/icon.png
 
         .. guide:: /path/to/guide1.txt
         .. guide:: /path/to/guide2.txt
@@ -179,6 +180,7 @@ Guides
 
     .. guide:: /path/to/guide3.txt
             """,
+            Path("source/path/to/icon.png"): "",
         }
     ) as result:
         assert not [
@@ -189,33 +191,33 @@ Guides
             page.ast,
             """
 <root fileid="index.txt">
-	<section>
-		<heading id="guides">
-			<text>Guides</text>
-		</heading>
-		<directive domain="mongodb" name="chapters">
-			<directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter.">
-				<text>Atlas</text>
-				<directive domain="mongodb" name="guide">
-					<text>/path/to/guide1.txt</text>
-				</directive>
-				<directive domain="mongodb" name="guide">
-					<text>/path/to/guide2.txt</text>
-				</directive>
-			</directive>
-			<directive name="include">
-				<text>/chapters/crud.rst</text>
-				<root fileid="chapters/crud.rst">
-					<directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter.">
-						<text>CRUD</text>
-						<directive domain="mongodb" name="guide">
-							<text>/path/to/guide3.txt</text>
-						</directive>
-					</directive>
-				</root>
-			</directive>
-		</directive>
-	</section>
+    <section>
+        <heading id="guides">
+            <text>Guides</text>
+        </heading>
+        <directive domain="mongodb" name="chapters">
+            <directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." icon="/path/to/icon.png" checksum="0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8">
+                <text>Atlas</text>
+                <directive domain="mongodb" name="guide">
+                    <text>/path/to/guide1.txt</text>
+                </directive>
+                <directive domain="mongodb" name="guide">
+                    <text>/path/to/guide2.txt</text>
+                </directive>
+            </directive>
+            <directive name="include">
+                <text>/chapters/crud.rst</text>
+                <root fileid="chapters/crud.rst">
+                    <directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter.">
+                        <text>CRUD</text>
+                        <directive domain="mongodb" name="guide">
+                            <text>/path/to/guide3.txt</text>
+                        </directive>
+                    </directive>
+                </root>
+            </directive>
+        </directive>
+    </section>
 </root>
             """,
         )
@@ -227,12 +229,14 @@ Guides
         )
         assert chapters["Atlas"]["guides"] == ["path/to/guide1", "path/to/guide2"]
         assert chapters["Atlas"]["chapter_number"] == 1
+        assert chapters["Atlas"]["icon"] == "/path/to/icon.png"
         assert (
             chapters["CRUD"]["description"]
             == "This is the description for the CRUD chapter."
         )
         assert chapters["CRUD"]["guides"] == ["path/to/guide3"]
         assert chapters["CRUD"]["chapter_number"] == 2
+        assert chapters["CRUD"]["icon"] == None
 
     # Guides metadata is added to the project's metadata document
     with make_test(
