@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `v5.0` and `v5.1` extlinks for the server manual (#354, #356)
+- Support for the literalinclude `lineno-start` option (DOP-2562 #355)
+- Support for chapter `image` and `icon` options (DOP-2446 #351, DOP-2447 #357)
+
 ## [v0.11.6] - 2021-11-03
 
 ### Added
