@@ -29,7 +29,7 @@ from . import n, util
 from .diagnostics import Diagnostic
 from .flutter import check_type, checked
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, SerializableType
 
 _F = TypeVar("_F", bound=Callable[..., Any])
@@ -153,7 +153,7 @@ else:
             return True
 
 
-class Backend:
+class Backend(ProjectBackend):
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
         self.pending_diagnostics: DefaultDict[FileId, List[Diagnostic]] = defaultdict(
@@ -164,7 +164,11 @@ class Backend:
         pass
 
     def on_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
-        self.pending_diagnostics[fileid].extend(diagnostics)
+        self.pending_diagnostics[fileid] = diagnostics
+        self.server.notify_diagnostics()
+
+    def set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.pending_diagnostics[fileid] = diagnostics
         self.server.notify_diagnostics()
 
     def on_update(
@@ -185,7 +189,10 @@ class Backend:
         pass
 
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        pass
+        try:
+            del self.pending_diagnostics[page_id]
+        except KeyError:
+            pass
 
     def flush(self) -> None:
         pass

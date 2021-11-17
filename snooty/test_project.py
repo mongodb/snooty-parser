@@ -9,7 +9,7 @@ from typing import DefaultDict, Dict, List
 from . import n
 from .diagnostics import ConstantNotDeclared, Diagnostic, GitMergeConflictArtifactFound
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, ProjectConfig, SerializableType
 from .util import ast_dive
 from .util_test import check_ast_testing_string, make_test
@@ -18,7 +18,7 @@ build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "7
 
 
 @dataclass
-class Backend:
+class Backend(ProjectBackend):
     metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)

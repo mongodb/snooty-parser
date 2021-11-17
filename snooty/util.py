@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import io
 import logging
 import os
 import pickle
@@ -25,6 +26,7 @@ from typing import (
     Dict,
     Generic,
     Hashable,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -496,3 +498,32 @@ class WorkerLauncher(Generic[_T, _R]):
                 self.__thread.join()
 
         self.__cancel.clear()
+
+
+def bundle(
+    filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
+) -> bytes:
+    if filename.suffixes[-2:] == [".tar", ".gz"] or filename.suffixes[-1] == ".tar":
+        import tarfile
+
+        compression_flag = "gz" if filename.suffix == ".gz" else "::"
+
+        current_time = time.time()
+        output_file = io.BytesIO()
+        with tarfile.open(
+            None, f"w:{compression_flag}", output_file, format=tarfile.PAX_FORMAT
+        ) as tf:
+            for member_name, member_data in members:
+                if isinstance(member_data, str):
+                    member_data = bytes(member_data, "utf-8")
+                member_file = io.BytesIO(member_data)
+                tar_info = tarfile.TarInfo(name=member_name)
+                tar_info.size = len(member_data)
+                tar_info.mtime = int(current_time)
+                tar_info.mode = 0o644
+                tf.addfile(tar_info, member_file)
+
+        return output_file.getvalue()
+
+    else:
+        raise ValueError(f"Unknown bundling format: {filename.as_posix()}")

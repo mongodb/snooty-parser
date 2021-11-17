@@ -9,6 +9,7 @@ import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
+from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -28,6 +29,7 @@ from typing import (
 )
 
 from . import n, specparser, util
+from .builders import man
 from .diagnostics import (
     AmbiguousTarget,
     CannotOpenFile,
@@ -50,12 +52,13 @@ from .diagnostics import (
     SubstitutionRefError,
     TargetNotFound,
     UnnamedPage,
+    UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
 from .types import FileId, ProjectConfig, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS
+from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -1366,6 +1369,40 @@ class PostprocessorResult(NamedTuple):
     diagnostics: Dict[FileId, List[Diagnostic]]
 
 
+def build_manpages(context: Context) -> Dict[str, Union[str, bytes]]:
+    config = context[ProjectConfig]
+    result: Dict[str, Union[str, bytes]] = {}
+
+    # Build manpages
+    manpages: List[Tuple[str, str]] = []
+    for name, definition in config.manpages.items():
+        fileid = FileId(definition.file)
+        manpage_page = context.pages.get(fileid)
+        if not manpage_page:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(CannotOpenFile(PurePath(fileid), "Page not found", 0))
+            continue
+
+        for filename, rendered in man.render(
+            manpage_page, name, definition.title, definition.section
+        ).items():
+            manpages.append((filename.as_posix(), rendered))
+            result[filename.as_posix()] = rendered
+
+    if manpages and config.bundle.manpages:
+        try:
+            result[config.bundle.manpages] = bundle(
+                PurePath(config.bundle.manpages), manpages
+            )
+        except ValueError:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(UnsupportedFormat(config.bundle.manpages, (".tar", ".tar.gz"), 0))
+
+    return result
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -1475,6 +1512,9 @@ class Postprocessor:
             document["iatree"] = iatree
 
         context[GuidesHandler].add_guides_metadata(document)
+
+        manpages = build_manpages(context)
+        document["static_files"] = manpages
 
         return document
 

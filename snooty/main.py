@@ -36,7 +36,7 @@ from docopt import docopt
 from . import __version__, language_server
 from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
 
@@ -87,7 +87,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
             assert False
 
 
-class Backend:
+class Backend(ProjectBackend):
     def __init__(self) -> None:
         self.total_errors = 0
 
