@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.7] - 2021-11-17
+
 ### Added
 
 - Add `v5.0` and `v5.1` extlinks for the server manual (#354, #356)
