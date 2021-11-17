@@ -225,8 +225,8 @@ def make_test(
 
         backend = BackendTestResults()
 
-        project = Project(root, backend, {})
-        project.build()
+        with Project(root, backend, {}, watch=False) as project:
+            project.build()
 
     yield backend
 

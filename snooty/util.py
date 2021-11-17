@@ -5,6 +5,7 @@ import pickle
 import re
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 from collections import defaultdict
@@ -180,7 +181,7 @@ class FileWatcher:
             path = Path(event.src_path)
             if (
                 path.parent in self.directories
-                and path.name in self.directories[path.parent].filenames
+                and path.name in self.directories[path.parent]
             ):
                 self.on_event(event)
 
@@ -189,15 +190,31 @@ class FileWatcher:
         """Track files in a directory to watch. This reflects the underlying interface
         exposed by watchdog."""
 
-        filenames: Counter[str]
+        _filenames: Counter[str]
         watch_handle: watchdog.observers.api.ObservedWatch
 
         def __len__(self) -> int:
-            return len(self.filenames)
+            return len(self._filenames)
+
+        def increment(self, filename: str) -> None:
+            self._filenames[filename] += 1
+
+        def decrement(self, filename: str) -> None:
+            self._filenames[filename] -= 1
+
+        def __getitem__(self, filename: str) -> int:
+            return self._filenames[filename]
+
+        def __delitem__(self, filename: str) -> None:
+            del self._filenames[filename]
+
+        def __contains__(self, filename: str) -> bool:
+            return filename in self._filenames
 
     def __init__(
         self, on_event: Callable[[watchdog.events.FileSystemEvent], None]
     ) -> None:
+        self.lock = threading.Lock()
         self.observer = watchdog.observers.Observer()
         self.directories: Dict[Path, FileWatcher.AssetWatch] = {}
         self.handler = self.AssetChangedHandler(self.directories, on_event)
@@ -206,29 +223,33 @@ class FileWatcher:
         """Start reporting upon changes to a file."""
         directory = path.parent
         logger.debug("Starting watch: %s", path)
-        if directory in self.directories:
-            self.directories[directory].filenames[path.name] += 1
-            return
+        with self.lock:
+            if directory in self.directories:
+                self.directories[directory].increment(path.name)
+                return
 
-        watch = self.observer.schedule(self.handler, str(directory))
-        self.directories[directory] = self.AssetWatch(Counter({path.name: 1}), watch)
+            watch = self.observer.schedule(self.handler, str(directory))
+            self.directories[directory] = self.AssetWatch(
+                Counter({path.name: 1}), watch
+            )
 
     def end_watch(self, path: Path) -> None:
         """Stop watching a file."""
         directory = path.parent
-        if directory not in self.directories:
-            return
+        with self.lock:
+            if directory not in self.directories:
+                return
 
-        watch = self.directories[directory]
-        watch.filenames[path.name] -= 1
-        if watch.filenames[path.name] <= 0:
-            del watch.filenames[path.name]
+            watch = self.directories[directory]
+            watch.decrement(path.name)
+            if watch[path.name] <= 0:
+                del watch[path.name]
 
-        # If there are no files remaining in this watch directory, unwatch it.
-        if not watch.filenames:
-            self.observer.unschedule(watch.watch_handle)
-            logger.info("Stopping watch: %s", path)
-            del self.directories[directory]
+            # If there are no files remaining in this watch directory, unwatch it.
+            if len(watch) == 0:
+                self.observer.unschedule(watch.watch_handle)
+                logger.info("Stopping watch: %s", path)
+                del self.directories[directory]
 
     def start(self) -> None:
         """Start a thread watching for file changes."""
@@ -248,7 +269,8 @@ class FileWatcher:
         self.stop()
 
     def __len__(self) -> int:
-        return sum(len(w) for w in self.directories.values())
+        with self.lock:
+            return sum(len(w) for w in self.directories.values())
 
 
 def option_string(argument: Optional[str]) -> Optional[str]:
