@@ -1596,17 +1596,22 @@ class Project:
 
     This class's public methods are thread-safe."""
 
-    __slots__ = ("_project", "_lock", "_filesystem_watcher")
-
     def __init__(
-        self, root: Path, backend: ProjectBackend, build_identifiers: BuildIdentifierSet
+        self,
+        root: Path,
+        backend: ProjectBackend,
+        build_identifiers: BuildIdentifierSet,
+        watch: bool = True,
     ) -> None:
         self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
         self._project = _Project(
             root, backend, self._filesystem_watcher, build_identifiers
         )
         self._lock = threading.Lock()
-        self._filesystem_watcher.start()
+
+        self.watch = watch
+        if watch:
+            self._filesystem_watcher.start()
 
     @property
     def config(self) -> ProjectConfig:
@@ -1644,7 +1649,8 @@ class Project:
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""
-        self._filesystem_watcher.stop(join=True)
+        if self.watch:
+            self._filesystem_watcher.stop(join=True)
 
     def _on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         with self._lock:
