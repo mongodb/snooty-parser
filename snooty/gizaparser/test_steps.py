@@ -23,8 +23,8 @@ def test_step() -> None:
 
     all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
     for current_path in [path, child_path, grandchild_path]:
-        steps, text, parse_diagnostics = category.parse(current_path)
-        category.add(current_path, text, steps)
+        fileid, steps, text, parse_diagnostics = category.parse(current_path)
+        category.add(fileid, current_path, text, steps)
         if parse_diagnostics:
             all_diagnostics[path] = parse_diagnostics
 
@@ -142,6 +142,75 @@ replacement:
         page.ast,
         """
 <root fileid="includes/steps-configure-mcli-cm.yaml">
+    <directive name="steps-yaml">
+        <directive name="step-yaml">
+            <section>
+                <heading id="create-a-profile"><text>Create a profile.</text></heading>
+                <paragraph><text>foobar</text></paragraph>
+            </section>
+        </directive>
+    </directive>
+</root>
+""",
+    )
+
+
+def test_nonstandard_path() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/mcli/steps-configure-mcli.yaml"
+            ): """
+title: "Create a profile."
+stepnum: 0
+level: 4
+ref: create-profile
+replacement:
+  serviceOption: ""
+content: |
+
+  foo{{serviceOption}}
+...
+""",
+            Path(
+                "source/includes/steps-configure-mcli.yaml"
+            ): """
+title: "Create a profile."
+stepnum: 0
+level: 4
+ref: create-profile
+replacement:
+  serviceOption: ""
+content: |
+
+  foo baz{{serviceOption}}
+...
+""",
+            Path(
+                "source/includes/mcli/steps-configure-mcli-cm.yaml"
+            ): """
+stepnum: 1
+ref: create-profile-cm
+source:
+  file: "mcli/steps-configure-mcli.yaml"
+  ref: create-profile
+replacement:
+  serviceOption: "bar"
+...
+""",
+        }
+    ) as result:
+        assert all(not x for x in result.diagnostics.values())
+        assert set(result.pages.keys()) == {
+            FileId("includes/mcli/steps/configure-mcli-cm.rst"),
+            FileId("includes/mcli/steps/configure-mcli.rst"),
+            FileId("includes/steps/configure-mcli.rst"),
+        }
+        page = result.pages[FileId("includes/mcli/steps/configure-mcli-cm.rst")]
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="includes/mcli/steps-configure-mcli-cm.yaml">
     <directive name="steps-yaml">
         <directive name="step-yaml">
             <section>

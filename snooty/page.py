@@ -54,7 +54,7 @@ class Page:
         """Return a fictitious path (hopefully) uniquely identifying this output artifact."""
         if self.category:
             # Giza wrote out yaml file artifacts under a directory. e.g. steps-foo.yaml becomes
-            # steps/foo.rst
+            # steps/foo.rst)
             return self.source_path.parent.joinpath(
                 PurePath(self.category), self.output_filename
             )

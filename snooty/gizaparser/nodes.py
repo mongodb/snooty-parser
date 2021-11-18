@@ -35,12 +35,19 @@ from ..diagnostics import (
     UnknownSubstitution,
 )
 from ..flutter import checked
+from ..n import FileId
 from ..page import Page
 from ..types import EmbeddedRstParser, ProjectConfig
 
 _T = TypeVar("_T", str, object)
 PAT_SUBSTITUTION = re.compile(r"\{\{([\w-]+)\}\}")
 logger = logging.getLogger(__name__)
+
+
+def strip_includes(fileid: FileId) -> FileId:
+    if fileid.parts[0] == "includes":
+        return FileId(*fileid.parts[1:])
+    return fileid
 
 
 def substitute_text(
@@ -194,12 +201,12 @@ class GizaCategory(Generic[_I]):
     to transform a given path into Pages."""
 
     project_config: ProjectConfig
-    nodes: Dict[str, GizaFile[_I]] = field(default_factory=dict)
-    dg: "networkx.DiGraph[str]" = field(default_factory=networkx.DiGraph)
+    nodes: Dict[FileId, GizaFile[_I]] = field(default_factory=dict)
+    dg: "networkx.DiGraph[FileId]" = field(default_factory=networkx.DiGraph)
 
     def parse(
         self, path: Path, text: Optional[str] = None
-    ) -> Tuple[Sequence[_I], str, List[Diagnostic]]:
+    ) -> Tuple[FileId, Sequence[_I], str, List[Diagnostic]]:
         """Abstract method to parse Giza nodes out of YAML source text."""
         pass
 
@@ -212,10 +219,12 @@ class GizaCategory(Generic[_I]):
         """Abstract method to generate pages from a given set of Giza nodes."""
         pass
 
-    def add(self, path: Path, text: str, elements: Sequence[_I]) -> None:
+    def add(
+        self, fileid: FileId, path: Path, text: str, elements: Sequence[_I]
+    ) -> None:
         """Add a file with one or more Giza nodes."""
-        file_id = path.name
-        self.nodes[file_id] = GizaFile(path, text, elements)
+        fileid = strip_includes(fileid)
+        self.nodes[fileid] = GizaFile(path, text, elements)
 
         for element in elements:
             inherit = element.parent_information
@@ -223,7 +232,9 @@ class GizaCategory(Generic[_I]):
             if not inherit:
                 continue
 
-            self.dg.add_edge(file_id, inherit.file)
+            self.dg.add_edge(
+                fileid, self.project_config.get_fileid(PurePath(inherit.file))
+            )
 
     def reify(
         self,
@@ -237,8 +248,9 @@ class GizaCategory(Generic[_I]):
         parent_identifier = obj.parent_information
         parent: Optional[_I] = None
         if parent_identifier is not None:
+            fileid = FileId(parent_identifier.file)
             try:
-                parent_sequence = self.nodes[parent_identifier.file].data
+                parent_sequence = self.nodes[fileid].data
             except KeyError:
                 diagnostics.append(
                     CannotOpenFile(
@@ -319,10 +331,11 @@ class GizaCategory(Generic[_I]):
         return obj
 
     def reify_file_id(
-        self, file_id: str, diagnostics: Dict[PurePath, List[Diagnostic]]
+        self, fileid: FileId, diagnostics: Dict[PurePath, List[Diagnostic]]
     ) -> GizaFile[_I]:
         """Resolve inheritance and substitution in a Giza source file."""
-        node = self.nodes[file_id]
+        fileid = strip_includes(fileid)
+        node = self.nodes[fileid]
         refs: Set[str] = set()
         data = [
             self.reify(el, diagnostics.setdefault(node.path, []), refs, set())
@@ -333,31 +346,31 @@ class GizaCategory(Generic[_I]):
 
     def reify_all_files(
         self, diagnostics: Dict[PurePath, List[Diagnostic]]
-    ) -> Iterator[Tuple[str, GizaFile[_I]]]:
+    ) -> Iterator[Tuple[FileId, GizaFile[_I]]]:
         """Resolve inheritance and substitution in all source files within this category."""
 
-        refs_dict: Dict[str, Set[str]] = {}
+        refs_dict: Dict[FileId, Set[str]] = {}
 
-        for file_id, node in self.nodes.items():
-            if file_id not in refs_dict:
-                refs_dict[file_id] = set()
+        for fileid, node in self.nodes.items():
+            if fileid not in refs_dict:
+                refs_dict[fileid] = set()
 
             data = [
                 self.reify(
-                    el, diagnostics.setdefault(node.path, []), refs_dict[file_id], set()
+                    el, diagnostics.setdefault(node.path, []), refs_dict[fileid], set()
                 )
                 for el in node.data
             ]
-            yield file_id, dataclasses.replace(node, data=data)
+            yield fileid, dataclasses.replace(node, data=data)
 
     def __len__(self) -> int:
         """Return the number of nodes in this category."""
         return len(self.nodes)
 
-    def __delitem__(self, file_id: str) -> None:
+    def __delitem__(self, fileid: FileId) -> None:
         """Remove a file and any nodes it may have created."""
-        self.dg.remove_node(file_id)
-        del self.nodes[file_id]
+        self.dg.remove_node(fileid)
+        del self.nodes[fileid]
 
 
 @checked

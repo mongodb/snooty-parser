@@ -18,15 +18,15 @@ def test_release_specification() -> None:
     parent_path = root_path.joinpath(Path("source/includes/release-base.yaml"))
 
     def add_main_file() -> List[Diagnostic]:
-        extracts, text, parse_diagnostics = category.parse(path)
-        category.add(path, text, extracts)
+        fileid, extracts, text, parse_diagnostics = category.parse(path)
+        category.add(fileid, path, text, extracts)
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 2
         return parse_diagnostics
 
     def add_parent_file() -> List[Diagnostic]:
-        extracts, text, parse_diagnostics = category.parse(parent_path)
-        category.add(parent_path, text, extracts)
+        fileid, extracts, text, parse_diagnostics = category.parse(parent_path)
+        category.add(fileid, parent_path, text, extracts)
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 2
         return parse_diagnostics

@@ -9,6 +9,7 @@ from yaml.composer import Composer
 
 from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, UnmarshallingError
 from ..flutter import LoadError, check_type, mapping_dict
+from ..n import FileId
 from ..types import ProjectConfig, SerializableType
 
 _T = TypeVar("_T")
@@ -54,20 +55,21 @@ def load_yaml(
 
 def parse(
     ty: Type[_T], path: Path, project_config: ProjectConfig, text: Optional[str] = None
-) -> Tuple[List[_T], str, List[Diagnostic]]:
+) -> Tuple[FileId, List[_T], str, List[Diagnostic]]:
     diagnostics: List[Diagnostic] = []
     if text is None:
         text, diagnostics = project_config.read(path)
 
+    fileid = project_config.get_fileid(path)
     parsed_yaml, parse_diagnostic = load_yaml(path, text)
     if parse_diagnostic:
         diagnostics.append(parse_diagnostic)
-        return ([], text, diagnostics)
+        return (fileid, [], text, diagnostics)
 
     try:
         parsed = [check_type(ty, data) for data in parsed_yaml]
-        return parsed, text, diagnostics
+        return fileid, parsed, text, diagnostics
     except LoadError as err:
         mapping = err.bad_data if isinstance(err.bad_data, dict) else {}
         lineno = mapping._start_line if isinstance(mapping, mapping_dict) else 0
-        return [], text, diagnostics + [UnmarshallingError(str(err), lineno)]
+        return fileid, [], text, diagnostics + [UnmarshallingError(str(err), lineno)]

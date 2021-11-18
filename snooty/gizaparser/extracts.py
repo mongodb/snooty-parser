@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 from .. import n
 from ..diagnostics import Diagnostic, MissingRef
 from ..flutter import checked
+from ..n import FileId
 from ..page import Page
 from ..types import EmbeddedRstParser
 from .nodes import GizaCategory, HeadingMixin, Inheritable
@@ -32,8 +33,10 @@ class Extract(Inheritable, HeadingMixin):
 class GizaExtractsCategory(GizaCategory[Extract]):
     def parse(
         self, path: Path, text: Optional[str] = None
-    ) -> Tuple[Sequence[Extract], str, List[Diagnostic]]:
-        extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
+    ) -> Tuple[FileId, Sequence[Extract], str, List[Diagnostic]]:
+        fileid, extracts, text, diagnostics = parse(
+            Extract, path, self.project_config, text
+        )
 
         def report_missing_ref(extract: Extract) -> bool:
             diagnostics.append(MissingRef("extracts", extract.line))
@@ -45,7 +48,7 @@ class GizaExtractsCategory(GizaCategory[Extract]):
             for extract in extracts
             if extract.ref or report_missing_ref(extract)
         ]
-        return extracts, text, diagnostics
+        return fileid, extracts, text, diagnostics
 
     def to_pages(
         self,

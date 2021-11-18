@@ -7,7 +7,7 @@ from .parse import parse
 
 def test_invalid_yaml() -> None:
     project_config = ProjectConfig(Path("test_data"), "")
-    pages, text, diagnostics = parse(
+    fileid, pages, text, diagnostics = parse(
         Extract,
         Path(""),
         project_config,
