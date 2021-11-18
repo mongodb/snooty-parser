@@ -1087,7 +1087,7 @@ class PageDatabase:
 
         self.postprocessor_factory = postprocessor_factory
         self._parsed: Dict[FileId, Tuple[Page, FileId, List[Diagnostic]]] = {}
-        self.__cached = PostprocessorResult({}, {}, {})
+        self.__cached = PostprocessorResult({}, {}, {}, TargetDatabase())
         self.__changed_pages: Set[FileId] = set()
 
         def start(
@@ -1303,9 +1303,9 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets)
+            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
             if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets)
+            else Postprocessor(self.config, self.targets.copy_clean_slate())
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
@@ -1544,6 +1544,9 @@ class _Project:
         merged_diagnostics = self.pages.merge_diagnostics(
             result.diagnostics, self.initialization_diagnostics
         )
+
+        # Update our targets database
+        self.targets = result.targets
 
         logger.info("flush_and_wait() finished")
         with self._backend_lock:

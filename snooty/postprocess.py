@@ -1367,6 +1367,7 @@ class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
     diagnostics: Dict[FileId, List[Diagnostic]]
+    targets: TargetDatabase
 
 
 def build_manpages(context: Context) -> Dict[str, Union[str, bytes]]:
@@ -1437,7 +1438,7 @@ class Postprocessor:
     ) -> PostprocessorResult:
         """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
-            return PostprocessorResult({}, {}, {})
+            return PostprocessorResult({}, {}, {}, self.targets)
 
         self.pages = pages
         self.cancellation_token = cancellation_token
@@ -1475,7 +1476,9 @@ class Postprocessor:
 
         document = self.generate_metadata(context)
         self.finalize(context, document)
-        return PostprocessorResult(self.pages, document, context.diagnostics)
+        return PostprocessorResult(
+            self.pages, document, context.diagnostics, self.targets
+        )
 
     def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
         pass

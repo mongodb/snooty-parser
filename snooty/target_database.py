@@ -1,3 +1,4 @@
+import copy
 import enum
 import logging
 import threading
@@ -174,6 +175,12 @@ class TargetDatabase:
                     dispname,
                 )
             return intersphinx.Inventory(base_url, targets)
+
+    def copy_clean_slate(self) -> "TargetDatabase":
+        """Create a deep copy of this database that only inherits the intersphinx targets.
+        This is used for seeding the postprocessor."""
+        with self.lock:
+            return type(self)(copy.deepcopy(self.intersphinx_inventories))
 
     @classmethod
     def load(
