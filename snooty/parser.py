@@ -10,7 +10,7 @@ import re
 import subprocess
 import threading
 import time
-import urllib.parse
+import urllib
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -658,14 +658,26 @@ class JSONVisitor:
             uses_realm = options.get("uses-realm", False)
 
             if argument_text is None:
+                if uses_realm or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
+
                 # Check if argument is a url instead
                 url_argument = None
+                spec = None
                 try:
                     url_argument = argument[0].refuri
+                    with urllib.request.urlopen(url_argument) as url:
+                        spec = json.dumps(safe_load(url))
+                        spec_node = n.Text((line,), spec)
+                        doc.children.append(spec_node)
+                    return doc
                 except:
                     pass
-                if (url_argument is None and not uses_realm) or uses_rst:
+                if url_argument is None:
                     self.diagnostics.append(ExpectedPathArg(name, line))
+                elif spec is None:
+                    self.diagnostics.append(InvalidURL(line))
                 return doc
 
             if uses_realm:
