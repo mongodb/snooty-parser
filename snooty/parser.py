@@ -1092,14 +1092,22 @@ class PageDatabase:
 
         def start(
             cancellation_token: threading.Event,
-            args: Tuple[Postprocessor, Dict[FileId, Page]],
+            args: Postprocessor,
         ) -> PostprocessorResult:
             with self._lock:
                 if not self.__changed_pages:
                     return self.__cached
 
+                with util.PerformanceLogger.singleton().start("copy"):
+                    copied_pages = {}
+                    for k, v in self._parsed.items():
+                        if cancellation_token.is_set():
+                            raise util.CancelledException()
+
+                        copied_pages[k] = util.fast_deep_copy(v[0])
+
             with util.PerformanceLogger.singleton().start("postprocessing"):
-                result = args[0].run(args[1], cancellation_token)
+                result = args.run(copied_pages, cancellation_token)
 
             with self._lock:
                 self.__cached = result
@@ -1108,7 +1116,7 @@ class PageDatabase:
             return result
 
         self.worker: util.WorkerLauncher[
-            Tuple[Postprocessor, Dict[FileId, Page]], PostprocessorResult
+            Postprocessor, PostprocessorResult
         ] = util.WorkerLauncher("postprocessor", start)
 
     def __setitem__(
@@ -1171,19 +1179,16 @@ class PageDatabase:
     ) -> queue.Queue[Union[PostprocessorResult, util.CancelledException]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
         postprocessor = self.postprocessor_factory()
-
-        with self._lock:
-            with util.PerformanceLogger.singleton().start("copy"):
-                copied_pages = {
-                    k: util.fast_deep_copy(v[0]) for k, v in self._parsed.items()
-                }
-        return self.worker.run((postprocessor, copied_pages))
+        return self.worker.run(postprocessor)
 
     def flush_and_wait(self) -> PostprocessorResult:
         result = self.flush().get()
         if isinstance(result, util.CancelledException):
             raise result
         return result
+
+    def cancel(self) -> None:
+        self.worker.cancel()
 
 
 class _Project:
@@ -1537,6 +1542,9 @@ class _Project:
                     self.prefix, self.build_identifiers, postprocessor_result.metadata
                 )
 
+    def cancel_postprocessor(self) -> None:
+        self.pages.cancel()
+
     def postprocess(self) -> PostprocessorResult:
         logger.info("Starting self.pages.flush_and_wait()")
         result = self.pages.flush_and_wait()
@@ -1686,6 +1694,9 @@ class Project:
         # The postprocessor is the only method that is intended to be thread-safe without the
         # big project lock.
         self._project.postprocess()
+
+    def cancel_postprocessor(self) -> None:
+        self._project.cancel_postprocessor()
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""

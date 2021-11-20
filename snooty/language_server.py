@@ -301,6 +301,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             if not self.project:
                 return
 
+            self.project.cancel_postprocessor()
             self.project.update(page_path, change)
 
     def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
@@ -499,7 +500,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self._debouncer.run(
             [
                 (0.1, lambda: self.update_file(page_path, change.text)),
-                (1.0, self.postprocess),
+                (0.25, self.postprocess),
             ]
         )
 
