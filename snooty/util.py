@@ -527,3 +527,31 @@ def bundle(
 
     else:
         raise ValueError(f"Unknown bundling format: {filename.as_posix()}")
+
+
+class QueueDict(Generic[_K, _T]):
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._not_empty = threading.Condition(self._lock)
+        self._data: Dict[_K, _T] = {}
+
+    def put(
+        self, key: _K, value: _T, block: bool = True, timeout: Optional[float] = None
+    ) -> None:
+        with self._lock:
+            if key in self._data:
+                self._data[key] = value
+                return
+
+            self._data[key] = value
+            self._not_empty.notify()
+
+    def get(self, block: bool = True, timeout: Optional[float] = None) -> Tuple[_K, _T]:
+        with self._not_empty:
+            while not len(self._data):
+                self._not_empty.wait()
+
+            result = next(iter(self._data.items()))
+            del self._data[result[0]]
+
+        return result

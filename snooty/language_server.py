@@ -279,6 +279,22 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.project: Optional[Project] = None
         self._project_lock = threading.Lock()
 
+        self.pending_updates: util.QueueDict[Path, Optional[str]] = util.QueueDict()
+
+        def update_thread() -> None:
+            while True:
+                path, content = self.pending_updates.get()
+                with self._project_lock:
+                    if not self.project:
+                        return
+
+                    logger.info("Updating " + path.as_posix())
+                    self.project.update(path, content)
+
+        self.update_thread = threading.Thread(
+            target=update_thread, name="update-thread", daemon=True
+        )
+
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
         logger.info("listening")
@@ -297,12 +313,14 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
+
         with self._project_lock:
             if not self.project:
                 return
 
             self.project.cancel_postprocessor()
-            self.project.update(page_path, change)
+
+        self.pending_updates.put(page_path, change)
 
     def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[fileid] = diagnostics
@@ -344,7 +362,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             try:
                 project.postprocess()
             except util.CancelledException:
-                logger.info("Postprocessor cancelled")
+                pass
 
         # The postprocess method is intended to be thread-safe
         threading.Thread(target=inner, daemon=True).start()
@@ -360,13 +378,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             self.project = Project(root_path, self.backend, {})
             self.notify_diagnostics()
 
-            # XXX: Disabling the postprocessor is temporary until we can test
-            # its usage in the language server more extensively
             logger.info("Parsing")
             self.project.build(postprocess=False)
-            logger.info("Postprocessing")
-            self.project.postprocess()
-            logger.info("Good to go!")
+            self.update_thread.start()
+            self.postprocess()
 
         if processId is not None:
 
