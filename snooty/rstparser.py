@@ -31,7 +31,6 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
-from docutils.nodes import unescape
 from typing_extensions import Protocol
 
 from . import n, specparser, util
@@ -89,12 +88,22 @@ docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
 docutils.nodes.dupname = lambda node, name: None
 
 
+def unescape_backslashes(text: str) -> str:
+    """docutils replaces backslashes with null characters. Deal with this in
+    a fairly inane way that matches how backslashes seem to be used in our
+    corpus."""
+    return text.replace("\x00<", "<").replace("\x00>", ">").replace("\x00", "\\")
+
+
 def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
     match = PAT_EXPLICIT_TITLE.match(text)
-    if match:
-        return unescape(match["target"]), unescape(match["label"])
 
-    return (unescape(text), None)
+    if match:
+        return unescape_backslashes(match["target"]), unescape_backslashes(
+            match["label"]
+        )
+
+    return (unescape_backslashes(text), None)
 
 
 def strip_parameters(target: str) -> str:

@@ -302,10 +302,10 @@ Guides
       :description: The description exists! No errors
 
       .. guide:: /path/to/guide2.txt
-   
+
    .. chapter:: No Guides
       :description: No guides
-    
+
    .. guide:: /path/to/guide3.txt
 
    .. chapter::
@@ -357,12 +357,12 @@ Guides
                 "source/index.txt"
             ): """
 .. chapters::
-   
+
    .. chapter:: Test
       :description: This is a chapter
 
       .. guide:: /path/to/guide1.txt
-  
+
    .. chapter:: Test
       :description: This is a chapter
 
@@ -386,7 +386,7 @@ Guides
       :description: This is a chapter
 
       .. guide:: /path/to/guide1.txt
-   
+
    .. chapter:: Test: The Sequel
       :description: This is another chapter
 
@@ -2206,4 +2206,42 @@ def test_block_substitutions_in_lists() -> None:
         </list>
     </directive>
 </root>""",
+        )
+
+
+def test_targets_with_backslashes() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): r"""
+:phpmethod:`MongoDB\Database::listCollections()`
+:phpmethod:`foobar <MongoDB\Database::listCollections()>`
+
+.. phpmethod:: MongoDB\Database::listCollections()
+"""
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("index.txt")]
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            r"""
+<root fileid="index.txt">
+    <paragraph>
+        <ref_role domain="mongodb" name="phpmethod" target="phpmethod.MongoDB\Database::listCollections()" fileid="['index', 'mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--']">
+            <literal><text>MongoDB\Database::listCollections()</text></literal>
+        </ref_role>
+        <text> </text>
+        <ref_role domain="mongodb" name="phpmethod" target="phpmethod.MongoDB\Database::listCollections()" fileid="['index', 'mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--']">
+            <literal><text>foobar</text></literal>
+        </ref_role>
+    </paragraph>
+    <target domain="mongodb" name="phpmethod" html_id="mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--">
+        <directive_argument><literal><text>MongoDB\Database::listCollections()</text></literal></directive_argument>
+        <target_identifier ids="['phpmethod.MongoDB\\Database::listCollections()']">
+            <text>MongoDB\Database::listCollections()</text>
+        </target_identifier>
+    </target>
+</root>
+""",
         )
