@@ -720,13 +720,14 @@ class JSONVisitor:
 
             # Attempt to read the literally included file
             try:
-                with open(filepath) as file:
-                    text = file.read()
-
+                text = filepath.read_text(encoding="utf-8")
             except OSError as err:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, line)
                 )
+                return doc
+            except UnicodeDecodeError as err:
+                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
                 return doc
 
             lines = text.split("\n")
