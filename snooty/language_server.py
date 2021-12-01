@@ -289,7 +289,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
                         return
 
                     logger.info("Updating " + path.as_posix())
-                    self.project.update(path, content)
+                    try:
+                        self.project.update(path, content)
+                    except Exception as err:
+                        logger.exception(err)
 
         self.update_thread = threading.Thread(
             target=update_thread, name="update-thread", daemon=True

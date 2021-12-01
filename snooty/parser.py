@@ -1436,7 +1436,10 @@ class _Project:
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
-            del giza_category[file_id]
+            try:
+                del giza_category[file_id]
+            except KeyError:
+                pass
 
         fileid = self.config.get_fileid(path)
 
