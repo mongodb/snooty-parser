@@ -9,6 +9,7 @@ Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+  --no-caching              Disable HTTP response caching.
 
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
@@ -38,7 +39,7 @@ from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .page import Page
 from .parser import Project
 from .types import BuildIdentifierSet, FileId, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
+from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
@@ -276,6 +277,9 @@ def main() -> None:
     args = docopt(__doc__)
 
     logging.basicConfig(level=logging.INFO)
+
+    if args["--no-caching"]:
+        HTTPCache.initialize(False)
 
     logger.info(f"Snooty {__version__} starting")
 

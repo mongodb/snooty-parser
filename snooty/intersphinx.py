@@ -3,6 +3,7 @@
 
    This module is responsible for loading and parsing these inventories."""
 
+import datetime
 import logging
 import re
 import zlib
@@ -13,7 +14,6 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from .util import HTTPCache
 
 __all__ = ("TargetDefinition", "Inventory")
-DEFAULT_CACHE_DIR = Path.home().joinpath(".cache", "snooty")
 INVENTORY_PATTERN = re.compile(r"(?x)(.+?)\s+(\S*:\S*)\s+(-?\d+)\s(\S*)\s+(.*)")
 logger = logging.Logger(__name__)
 
@@ -140,11 +140,15 @@ class Inventory:
         return inventory
 
 
-def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
+def fetch_inventory(
+    url: str,
+    cache_dir: Optional[Path] = HTTPCache.DEFAULT_CACHE_DIR,
+    cache_interval: Optional[datetime.timedelta] = None,
+) -> Inventory:
     """Fetch an intersphinx inventory, or use a locally cached copy if it is still valid."""
     base_url = url.rsplit("/", 1)[0]
     base_url.rstrip("/")
     base_url += "/"
 
-    data = HTTPCache(cache_dir)[url]
+    data = HTTPCache(cache_dir).get(url, cache_interval)
     return Inventory.parse(base_url, data)
