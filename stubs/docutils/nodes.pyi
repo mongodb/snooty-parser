@@ -4,9 +4,6 @@ from typing import Any, Optional, List, Iterable, Union
 from typing_extensions import Protocol
 
 
-def unescape(text: str) -> str: ...
-
-
 def make_id(input_value: str) -> str: ...
 
 

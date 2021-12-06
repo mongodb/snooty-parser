@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.8] - 2021-12-01
+
+### Fixed
+
+- Do not crash if a literalinclude cannot be parsed as UTF-8 (DOP-2613).
+- Correctly handle docutils output when a ref role contains backslashes (DOP-2611).
+
 ## [v0.11.7] - 2021-11-17
 
 ### Added
