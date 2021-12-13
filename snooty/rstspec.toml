@@ -683,6 +683,10 @@ example = """.. guide-next:: ${0: string}
 argument_type = "string"
 content_type = "block"
 
+[directive."mongodb:instruqt"]
+content_type = "block"
+argument_type = "string"
+
 [directive."mongodb:introduction"]
 content_type = "block"
 
