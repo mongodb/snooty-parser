@@ -10,7 +10,7 @@ import re
 import subprocess
 import threading
 import time
-import urllib
+import urllib.parse
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
