@@ -1,9 +1,9 @@
 """Snooty.
 
 Usage:
-  snooty build <source-path> [<mongodb-url>] [--commit=<commit_hash> | (--commit=<commit_hash> --patch=<patch_id>)]
-  snooty watch <source-path>
-  snooty language-server
+  snooty build [--no-caching] <source-path> [<mongodb-url>] [--commit=<commit_hash> | (--commit=<commit_hash> --patch=<patch_id>)]
+  snooty watch [--no-caching] <source-path>
+  snooty [--no-caching] language-server
 
 Options:
   -h --help                 Show this screen.
