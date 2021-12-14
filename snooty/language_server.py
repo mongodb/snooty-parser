@@ -141,7 +141,6 @@ if sys.platform == "win32":
             return True
         return False
 
-
 else:
 
     def pid_exists(pid: int) -> bool:
