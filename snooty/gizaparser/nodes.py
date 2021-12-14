@@ -356,7 +356,10 @@ class GizaCategory(Generic[_I]):
 
     def __delitem__(self, file_id: str) -> None:
         """Remove a file and any nodes it may have created."""
-        self.dg.remove_node(file_id)
+        try:
+            self.dg.remove_node(file_id)
+        except networkx.exception.NetworkXError as err:
+            raise KeyError(file_id) from err
         del self.nodes[file_id]
 
 

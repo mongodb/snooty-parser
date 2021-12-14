@@ -1,6 +1,8 @@
+import os
 import shutil
 from pathlib import Path
 
+import requests
 from pytest import raises
 
 from . import n
@@ -12,7 +14,7 @@ from .test_project import Backend
 from .types import FileId
 from .util_test import make_test
 
-TESTING_CACHE_DIR = Path(".intersphinx_cache")
+TESTING_CACHE_DIR = Path(f".intersphinx_cache-{os.getpid()}")
 INVENTORY_URL = "https://docs.mongodb.com/manual/objects.inv"
 EXPECTED_INVENTORY_FILENAME = r"https%3A%2F%2Fdocs.mongodb.com%2Fmanual%2Fobjects.inv"
 INVENTORY_PATH = TESTING_CACHE_DIR.joinpath(EXPECTED_INVENTORY_FILENAME)
@@ -45,14 +47,28 @@ def test_fetch() -> None:
         assert INVENTORY_PATH.is_file()
         stat = INVENTORY_PATH.stat()
 
-        # Make sure that an immediate followup request does not change the mtime
-        fetch_inventory(INVENTORY_URL, TESTING_CACHE_DIR)
+        try:
+            original_requests_get = requests.get
+
+            def get_fail(*args: object, **kwargs: object) -> object:
+                assert False, "Made a get request but shouldn't have"
+
+            requests.get = get_fail  # type: ignore
+            # Make sure that an immediate followup request does not change the mtime
+            fetch_inventory(INVENTORY_URL, TESTING_CACHE_DIR)
+        finally:
+            requests.get = original_requests_get
+
         assert INVENTORY_PATH.is_file()
         stat2 = INVENTORY_PATH.stat()
-
         assert stat.st_mtime_ns == stat2.st_mtime_ns
     finally:
         shutil.rmtree(TESTING_CACHE_DIR, ignore_errors=True)
+
+    # Now try without caching
+    inventory = fetch_inventory(INVENTORY_URL, None)
+    assert inventory.base_url == "https://docs.mongodb.com/manual/"
+    assert len(inventory) > 1000
 
 
 def test_intersphinx_generation() -> None:
