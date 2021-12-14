@@ -1,5 +1,7 @@
+import copy
 import enum
 import logging
+import threading
 import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -48,48 +50,53 @@ class TargetDatabase:
         default_factory=lambda: defaultdict(list)
     )
 
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
     def __getitem__(self, key: str) -> Sequence["TargetDatabase.Result"]:
         key = normalize_target(key)
         results: List[TargetDatabase.Result] = []
 
-        # Check to see if the target is defined locally
-        try:
-            results.extend(
-                TargetDatabase.InternalResult(
-                    (fileid.without_known_suffix, html5_id),
-                    canonical_target_name,
-                    title,
-                )
-                for canonical_target_name, fileid, title, html5_id in self.local_definitions[
-                    key
-                ]
-            )
-        except KeyError:
-            pass
-
-        # Get URL from intersphinx inventories
-        for inventory in self.intersphinx_inventories.values():
-            entry = inventory.get(key)
-
-            # Sphinx, at least older versions, have a habit of lower-casing its intersphinx
-            # inventory sections. Try that.
-            if not entry:
-                entry = inventory.get(key.lower())
-
-            if entry:
-                base_url = inventory.base_url
-                url = urllib.parse.urljoin(base_url, entry.uri)
-
-                display_name = entry.display_name
-                if display_name is None:
-                    display_name = entry.name
-
-                    display_name = specparser.SPEC.strip_prefix_from_name(
-                        entry.domain_and_role, display_name
+        with self.lock:
+            # Check to see if the target is defined locally
+            try:
+                results.extend(
+                    TargetDatabase.InternalResult(
+                        (fileid.without_known_suffix, html5_id),
+                        canonical_target_name,
+                        title,
                     )
+                    for canonical_target_name, fileid, title, html5_id in self.local_definitions[
+                        key
+                    ]
+                )
+            except KeyError:
+                pass
 
-                title: List[n.InlineNode] = [n.Text((-1,), display_name)]
-                results.append(TargetDatabase.ExternalResult(url, entry.name, title))
+            # Get URL from intersphinx inventories
+            for inventory in self.intersphinx_inventories.values():
+                entry = inventory.get(key)
+
+                # Sphinx, at least older versions, have a habit of lower-casing its intersphinx
+                # inventory sections. Try that.
+                if not entry:
+                    entry = inventory.get(key.lower())
+
+                if entry:
+                    base_url = inventory.base_url
+                    url = urllib.parse.urljoin(base_url, entry.uri)
+
+                    display_name = entry.display_name
+                    if display_name is None:
+                        display_name = entry.name
+
+                        display_name = specparser.SPEC.strip_prefix_from_name(
+                            entry.domain_and_role, display_name
+                        )
+
+                    title: List[n.InlineNode] = [n.Text((-1,), display_name)]
+                    results.append(
+                        TargetDatabase.ExternalResult(url, entry.name, title)
+                    )
 
         return results
 
@@ -108,61 +115,72 @@ class TargetDatabase:
         # what gets resolved.
         canonical_target_name = max(targets, key=lambda x: x.count("."))
 
-        for target in targets:
-            target = normalize_target(target)
-            key = f"{domain}:{name}:{target}"
-            self.local_definitions[key].append(
-                TargetDatabase.LocalDefinition(
-                    canonical_target_name, pageid, title, html5_id
+        with self.lock:
+            for target in targets:
+                target = normalize_target(target)
+                key = f"{domain}:{name}:{target}"
+                self.local_definitions[key].append(
+                    TargetDatabase.LocalDefinition(
+                        canonical_target_name, pageid, title, html5_id
+                    )
                 )
-            )
 
     def reset(self, config: "ProjectConfig") -> Sequence[Tuple[str, str]]:
         """Reset this database to a "blank" state with intersphinx inventories defined by
         the given ProjectConfig instance."""
-        self.intersphinx_inventories.clear()
-        self.local_definitions.clear()
-
         failed_requests = []
         logger.debug("Loading %s intersphinx inventories", len(config.intersphinx))
+        fetched_inventories: Dict[str, intersphinx.Inventory] = {}
+
         for url in config.intersphinx:
             try:
-                self.intersphinx_inventories[url] = intersphinx.fetch_inventory(url)
+                fetched_inventories[url] = intersphinx.fetch_inventory(url)
             except requests.exceptions.RequestException as err:
                 failed_requests.append((url, str(err)))
+
+        with self.lock:
+            self.intersphinx_inventories = fetched_inventories
+            self.local_definitions.clear()
 
         return failed_requests
 
     def generate_inventory(self, base_url: str) -> intersphinx.Inventory:
         targets: Dict[str, intersphinx.TargetDefinition] = {}
-        for key, definitions in self.local_definitions.items():
-            if not definitions:
-                continue
+        with self.lock:
+            for key, definitions in self.local_definitions.items():
+                if not definitions:
+                    continue
 
-            definition = definitions[0]
-            uri = definition.fileid.as_dirhtml()
-            dispname: Optional[str] = "".join(
-                node.get_text() for node in definition.title
-            )
-            domain, role_name, name = key.split(":", 2)
+                definition = definitions[0]
+                uri = definition.fileid.as_dirhtml()
+                dispname: Optional[str] = "".join(
+                    node.get_text() for node in definition.title
+                )
+                domain, role_name, name = key.split(":", 2)
 
-            if not dispname:
-                dispname = None
+                if not dispname:
+                    dispname = None
 
-            base_uri = uri
-            if (domain, role_name) != ("std", "doc"):
-                base_uri += "#" + definition.html5_id
-                uri += "#" + definition.html5_id
+                base_uri = uri
+                if (domain, role_name) != ("std", "doc"):
+                    base_uri += "#" + definition.html5_id
+                    uri += "#" + definition.html5_id
 
-            targets[key] = intersphinx.TargetDefinition(
-                definition.canonical_name,
-                (domain, role_name),
-                -1,
-                base_uri,
-                uri,
-                dispname,
-            )
-        return intersphinx.Inventory(base_url, targets)
+                targets[key] = intersphinx.TargetDefinition(
+                    definition.canonical_name,
+                    (domain, role_name),
+                    -1,
+                    base_uri,
+                    uri,
+                    dispname,
+                )
+            return intersphinx.Inventory(base_url, targets)
+
+    def copy_clean_slate(self) -> "TargetDatabase":
+        """Create a deep copy of this database that only inherits the intersphinx targets.
+        This is used for seeding the postprocessor."""
+        with self.lock:
+            return type(self)(copy.deepcopy(self.intersphinx_inventories))
 
     @classmethod
     def load(

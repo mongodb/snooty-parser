@@ -9,7 +9,8 @@ from typing import DefaultDict, Dict, List
 from . import n
 from .diagnostics import ConstantNotDeclared, Diagnostic, GitMergeConflictArtifactFound
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
+from .target_database import TargetDatabase
 from .types import BuildIdentifierSet, FileId, ProjectConfig, SerializableType
 from .util import ast_dive
 from .util_test import check_ast_testing_string, make_test
@@ -18,7 +19,7 @@ build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "7
 
 
 @dataclass
-class Backend:
+class Backend(ProjectBackend):
     metadata: Dict[str, SerializableType] = field(default_factory=dict)
     pages: Dict[FileId, Page] = field(default_factory=dict)
     updates: List[FileId] = field(default_factory=list)
@@ -242,3 +243,26 @@ full-version = "{+version+}.{+patch-version+}"
 <root fileid="index.txt"><paragraph><text>4.3.2</text></paragraph></root>
 """,
         )
+
+
+def test_target_wipe() -> None:
+    backend = Backend()
+    with Project(
+        Path("test_data/test_postprocessor"), backend, {}, watch=False
+    ) as project:
+        project.build()
+        with project._lock:
+            query_result = project._project.targets["std:label:global-writes-zones"][0]
+            assert isinstance(query_result, TargetDatabase.InternalResult)
+            assert query_result.result[0] == "index"
+
+        project.update(
+            Path("test_data/test_postprocessor/source/index.txt").resolve(),
+            ".. _gooblygooblygoo:\n",
+        )
+        project.postprocess()
+        with project._lock:
+            assert not project._project.targets["std:label:global-writes-zones"]
+            query_result = project._project.targets["std:label:gooblygooblygoo"][0]
+            assert isinstance(query_result, TargetDatabase.InternalResult)
+            assert query_result.result[0] == "index"

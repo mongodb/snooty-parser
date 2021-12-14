@@ -6,7 +6,6 @@ import threading
 import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -16,9 +15,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
+    Tuple,
     TypeVar,
     Union,
-    cast,
 )
 
 import pyls_jsonrpc.dispatchers
@@ -29,36 +29,13 @@ from . import n, util
 from .diagnostics import Diagnostic
 from .flutter import check_type, checked
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, SerializableType
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str
 PARENT_PROCESS_WATCH_INTERVAL_SECONDS = 60
 logger = logging.getLogger(__name__)
-
-
-class debounce:
-    def __init__(self, wait: float) -> None:
-        self.wait = wait
-
-    def __call__(self, fn: _F) -> _F:
-        wait = self.wait
-
-        @wraps(fn)
-        def debounced(*args: Any, **kwargs: Any) -> Any:
-            def action() -> None:
-                fn(*args, **kwargs)
-
-            try:
-                getattr(debounced, "debounce_timer").cancel()
-            except AttributeError:
-                pass
-            timer = threading.Timer(wait, action)
-            setattr(debounced, "debounce_timer", timer)
-            timer.start()
-
-        return cast(_F, debounced)
 
 
 @checked
@@ -176,7 +153,7 @@ else:
             return True
 
 
-class Backend:
+class Backend(ProjectBackend):
     def __init__(self, server: "LanguageServer") -> None:
         self.server = server
         self.pending_diagnostics: DefaultDict[FileId, List[Diagnostic]] = defaultdict(
@@ -187,7 +164,11 @@ class Backend:
         pass
 
     def on_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
-        self.pending_diagnostics[fileid].extend(diagnostics)
+        self.pending_diagnostics[fileid] = diagnostics
+        self.server.notify_diagnostics()
+
+    def set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.pending_diagnostics[fileid] = diagnostics
         self.server.notify_diagnostics()
 
     def on_update(
@@ -208,10 +189,32 @@ class Backend:
         pass
 
     def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        pass
+        try:
+            del self.pending_diagnostics[page_id]
+        except KeyError:
+            pass
 
     def flush(self) -> None:
         pass
+
+
+class Debouncer:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.timers: Sequence[threading.Timer] = []
+
+    def run(self, events: Sequence[Tuple[float, Callable[[], None]]]) -> None:
+        self.stop()
+
+        with self.lock:
+            self.timers = [threading.Timer(ev[0], ev[1]) for ev in events]
+            for timer in self.timers:
+                timer.start()
+
+    def stop(self) -> None:
+        with self.lock:
+            for timer in self.timers:
+                timer.cancel()
 
 
 class DiagnosticSeverity(enum.IntEnum):
@@ -262,7 +265,6 @@ class WorkspaceEntry:
 class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def __init__(self, rx: BinaryIO, tx: BinaryIO) -> None:
         self.backend = Backend(self)
-        self.project: Optional[Project] = None
         self.workspace: Dict[str, WorkspaceEntry] = {}
         self.diagnostics: Dict[PurePath, List[Diagnostic]] = {}
 
@@ -272,9 +274,33 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             self, self._jsonrpc_stream_writer.write
         )
         self._shutdown = False
+        self._debouncer = Debouncer()
+
+        self.project: Optional[Project] = None
+        self._project_lock = threading.Lock()
+
+        self.pending_updates: util.QueueDict[Path, Optional[str]] = util.QueueDict()
+
+        def update_thread() -> None:
+            while True:
+                path, content = self.pending_updates.get()
+                with self._project_lock:
+                    if not self.project:
+                        return
+
+                    logger.info("Updating " + path.as_posix())
+                    try:
+                        self.project.update(path, content)
+                    except Exception as err:
+                        logger.exception(err)
+
+        self.update_thread = threading.Thread(
+            target=update_thread, name="update-thread", daemon=True
+        )
 
     def start(self) -> None:
         self._jsonrpc_stream_reader.listen(self._endpoint.consume)
+        logger.info("listening")
 
     def notify_diagnostics(self) -> None:
         """Handle the backend notifying us that diagnostics are available to be pulled."""
@@ -288,13 +314,16 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.backend.pending_diagnostics.clear()
 
     def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
-        if not self.project:
-            return
-
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
 
-        self.project.update(page_path, change)
+        with self._project_lock:
+            if not self.project:
+                return
+
+            self.project.cancel_postprocessor()
+
+        self.pending_updates.put(page_path, change)
 
     def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[fileid] = diagnostics
@@ -326,6 +355,21 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         return "file://" + str(self.project.config.source_path.joinpath(fileid))
 
+    def postprocess(self) -> None:
+        with self._project_lock:
+            if self.project is None:
+                return
+            project = self.project
+
+        def inner() -> None:
+            try:
+                project.postprocess()
+            except util.CancelledException:
+                pass
+
+        # The postprocess method is intended to be thread-safe
+        threading.Thread(target=inner, daemon=True).start()
+
     def m_initialize(
         self,
         processId: Optional[int] = None,
@@ -337,9 +381,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             self.project = Project(root_path, self.backend, {})
             self.notify_diagnostics()
 
-            # XXX: Disabling the postprocessor is temporary until we can test
-            # its usage in the language server more extensively
+            logger.info("Parsing")
             self.project.build(postprocess=False)
+            self.update_thread.start()
+            self.postprocess()
 
         if processId is not None:
 
@@ -356,7 +401,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
                 ).start()
 
             watching_thread = threading.Thread(
-                target=watch_parent_process, args=(processId,)
+                target=watch_parent_process, args=(processId,), daemon=True
             )
             watching_thread.daemon = True
             watching_thread.start()
@@ -445,6 +490,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         return fileid.without_known_suffix
 
     def m_text_document__did_open(self, textDocument: SerializableType) -> None:
+        logger.info("did_open")
         if not self.project:
             return
 
@@ -455,10 +501,10 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.workspace[item.uri] = entry
         self.update_file(page_path, item.text)
 
-    @debounce(0.2)
     def m_text_document__did_change(
         self, textDocument: SerializableType, contentChanges: SerializableType
     ) -> None:
+        logger.info("did_change")
         if not self.project:
             return
 
@@ -468,9 +514,16 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
         )
-        self.update_file(page_path, change.text)
+
+        self._debouncer.run(
+            [
+                (0.1, lambda: self.update_file(page_path, change.text)),
+                (0.25, self.postprocess),
+            ]
+        )
 
     def m_text_document__did_close(self, textDocument: SerializableType) -> None:
+        logger.info("did_close")
         if not self.project:
             return
 
@@ -484,6 +537,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
     def m_exit(self, **_kwargs: object) -> None:
         self._endpoint.shutdown()
+        self._debouncer.stop()
         if self.project:
             self.project.stop_monitoring()
 

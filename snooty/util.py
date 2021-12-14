@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import datetime
+import io
 import logging
 import os
 import pickle
+import queue
 import re
 import sys
 import tempfile
@@ -20,7 +24,9 @@ from typing import (
     Container,
     Counter,
     Dict,
+    Generic,
     Hashable,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -28,6 +34,7 @@ from typing import (
     TextIO,
     Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -44,6 +51,7 @@ from .types import FileId
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 _K = TypeVar("_K", bound=Hashable)
+_R = TypeVar("_R")
 PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
@@ -420,3 +428,130 @@ class HTTPCache:
                 pass
 
         return res.content
+
+
+class CancelledException(Exception):
+    pass
+
+
+class WorkerLauncher(Generic[_T, _R]):
+    """Concurrency abstraction that launches a thread with a specific callable, passing in a
+    cancellation Event and a user-supplied argument. The callable's return value is fed into
+    a results Queue.
+
+    The input argument is cloned using pickle before launch, and so does not need to be protected.
+
+    If the run() method is called while the thread is ongoing, it is cancelled (and blocks until
+    the worker raises WorkerCanceled) and restarted.
+
+    This class's methods are thread-safe"""
+
+    def __init__(
+        self,
+        name: str,
+        target: Callable[[threading.Event, _T], _R],
+    ) -> None:
+        self.name = name
+        self.target = target
+
+        self._lock = threading.Lock()
+        self.__thread: Optional[threading.Thread] = None
+        self.__cancel = threading.Event()
+
+    def run(self, arg: _T) -> queue.Queue[Union[_R, CancelledException]]:
+        """Cancel any current thread of execution; block until it is cancelled; and re-launch the worker."""
+        self.cancel()
+
+        result_queue: queue.Queue[Union[_R, CancelledException]] = queue.Queue(1)
+
+        def inner() -> None:
+            try:
+                result = self.target(self.__cancel, arg)
+
+                # This is only going to happen if the callable never checks the cancelation Event
+                if self.__cancel.is_set():
+                    raise CancelledException()
+
+                result_queue.put(result)
+            except CancelledException as cancelled:
+                result_queue.put(cancelled)
+
+        thread = threading.Thread(name=self.name, target=inner, daemon=True)
+        with self._lock:
+            self.__thread = thread
+        thread.start()
+
+        return result_queue
+
+    def run_and_wait(self, arg: _T) -> _R:
+        result = self.run(arg).get()
+        if isinstance(result, CancelledException):
+            raise result
+
+        return result
+
+    def cancel(self) -> None:
+        """Instruct the worker to raise WorkerCanceled and abort execution."""
+        with self._lock:
+            if self.__thread and self.__thread.is_alive():
+                self.__cancel.set()
+                self.__thread.join()
+
+        self.__cancel.clear()
+
+
+def bundle(
+    filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
+) -> bytes:
+    if filename.suffixes[-2:] == [".tar", ".gz"] or filename.suffixes[-1] == ".tar":
+        import tarfile
+
+        compression_flag = "gz" if filename.suffix == ".gz" else "::"
+
+        current_time = time.time()
+        output_file = io.BytesIO()
+        with tarfile.open(
+            None, f"w:{compression_flag}", output_file, format=tarfile.PAX_FORMAT
+        ) as tf:
+            for member_name, member_data in members:
+                if isinstance(member_data, str):
+                    member_data = bytes(member_data, "utf-8")
+                member_file = io.BytesIO(member_data)
+                tar_info = tarfile.TarInfo(name=member_name)
+                tar_info.size = len(member_data)
+                tar_info.mtime = int(current_time)
+                tar_info.mode = 0o644
+                tf.addfile(tar_info, member_file)
+
+        return output_file.getvalue()
+
+    else:
+        raise ValueError(f"Unknown bundling format: {filename.as_posix()}")
+
+
+class QueueDict(Generic[_K, _T]):
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._not_empty = threading.Condition(self._lock)
+        self._data: Dict[_K, _T] = {}
+
+    def put(
+        self, key: _K, value: _T, block: bool = True, timeout: Optional[float] = None
+    ) -> None:
+        with self._lock:
+            if key in self._data:
+                self._data[key] = value
+                return
+
+            self._data[key] = value
+            self._not_empty.notify()
+
+    def get(self, block: bool = True, timeout: Optional[float] = None) -> Tuple[_K, _T]:
+        with self._not_empty:
+            while not len(self._data):
+                self._not_empty.wait()
+
+            result = next(iter(self._data.items()))
+            del self._data[result[0]]
+
+        return result
