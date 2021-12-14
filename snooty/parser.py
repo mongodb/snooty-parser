@@ -637,7 +637,7 @@ class JSONVisitor:
                 spec = None
                 try:
                     url_argument = argument[0].refuri
-                    response = util.HTTPCache.get()[url_argument]
+                    response = util.HTTPCache.singleton().get(url_argument)
                     file_content = str(response, "utf-8")
                     spec = json.dumps(safe_load(file_content))
                     spec_node = n.Text((line,), spec)
