@@ -839,7 +839,7 @@ class JSONVisitor:
                 self.project_config.sharedinclude_root, argument_text
             )
             try:
-                response = util.HTTPCache.get()[url]
+                response = util.HTTPCache.singleton().get(url)
             except requests.exceptions.RequestException as err:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, str(err), util.get_line(node))

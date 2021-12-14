@@ -379,17 +379,34 @@ class HTTPCache:
     DEFAULT_CACHE_DIR: ClassVar[Path] = Path.home().joinpath(".cache", "snooty")
 
     @classmethod
-    def get(cls) -> "HTTPCache":
+    def initialize(cls, caching: bool = True) -> None:
+        cls._singleton = cls(cls.DEFAULT_CACHE_DIR if caching else None)
+
+    @classmethod
+    def singleton(cls) -> "HTTPCache":
         if cls._singleton is None:
-            cls._singleton = cls()
+            cls._singleton = cls(cls.DEFAULT_CACHE_DIR)
 
         return cls._singleton
 
-    def __init__(self, cache_dir: Optional[Path] = None) -> None:
-        self.cache_dir = self.DEFAULT_CACHE_DIR if not cache_dir else cache_dir
+    def __init__(self, cache_dir: Optional[Path]) -> None:
+        self.cache_dir = cache_dir
 
-    def __getitem__(self, url: str) -> bytes:
-        logger.debug(f"Fetching: {url}")
+    def get(
+        self, url: str, cache_interval: Optional[datetime.timedelta] = None
+    ) -> bytes:
+        logger.debug(
+            f"Fetching: {url} from cache_dir {self.cache_dir.as_posix() if self.cache_dir else '<no-cache>'}"
+        )
+
+        cache_interval = (
+            datetime.timedelta(hours=1) if cache_interval is None else cache_interval
+        )
+
+        if self.cache_dir is None:
+            res = requests.get(url)
+            res.raise_for_status()
+            return res.content
 
         # Make our user's cache directory if it doesn't exist
         filename = urllib.parse.quote(url, safe="")
@@ -405,10 +422,12 @@ class HTTPCache:
             pass
 
         if mtime is not None:
-            if (datetime.datetime.now() - mtime) < datetime.timedelta(hours=1):
-                request_headers["If-Modified-Since"] = formatdate(
-                    mktime(mtime.timetuple()), usegmt=True
-                )
+            if (datetime.datetime.now() - mtime) < cache_interval:
+                return inventory_path.read_bytes()
+
+            request_headers["If-Modified-Since"] = formatdate(
+                mktime(mtime.timetuple()), usegmt=True
+            )
 
         res = requests.get(url, headers=request_headers)
 
