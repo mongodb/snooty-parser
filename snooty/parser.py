@@ -624,16 +624,34 @@ class JSONVisitor:
         elif name == "openapi":
             # Parsing should be done by the OpenAPI renderer on the frontend by default
             uses_rst = options.get("uses-rst", False)
+            # The frontend will grab the file contents from Realm, using the argument as its key
+            uses_realm = options.get("uses-realm", False)
 
             if argument_text is None:
+                if uses_realm or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
+
                 # Check if argument is a url instead
                 url_argument = None
+                spec = None
                 try:
                     url_argument = argument[0].refuri
+                    response = util.HTTPCache.singleton().get(url_argument)
+                    file_content = str(response, "utf-8")
+                    spec = json.dumps(safe_load(file_content))
+                    spec_node = n.Text((line,), spec)
+                    doc.children.append(spec_node)
+                    return doc
                 except:
                     pass
-                if url_argument is None or uses_rst:
+                if url_argument is None:
                     self.diagnostics.append(ExpectedPathArg(name, line))
+                elif spec is None:
+                    self.diagnostics.append(InvalidURL(line))
+                return doc
+
+            if uses_realm:
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
