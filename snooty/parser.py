@@ -1567,7 +1567,7 @@ class _Project:
         self.pages.cancel()
 
     def postprocess(self) -> PostprocessorResult:
-        logger.info("Starting self.pages.flush_and_wait()")
+        logger.debug("Starting self.pages.flush_and_wait()")
         result = self.pages.flush_and_wait()
 
         merged_diagnostics = self.pages.merge_diagnostics(
@@ -1577,7 +1577,7 @@ class _Project:
         # Update our targets database
         self.targets = result.targets
 
-        logger.info("flush_and_wait() finished")
+        logger.debug("flush_and_wait() finished")
         with self._backend_lock:
             for fileid, diagnostics in result.diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
