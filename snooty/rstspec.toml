@@ -13,6 +13,7 @@ devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
 mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
 output_format = ["html"]
+procedure_styles = ["normal", "connected"]
 user_level = ["beginner", "intermediate", "advanced"]
 
 [directive.default-domain]
@@ -759,8 +760,11 @@ options.path = "string"
 [directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
 example = """.. procedure::
-${0: Steps content}"""
+   :style: ${0: string}
+
+${1: Steps content}"""
 content_type = "block"
+options.style = "procedure_styles"
 
 [directive."mongodb:quiz"]
 content_type = "block"

@@ -79,21 +79,27 @@ def test_mongodb_directives(backend: Backend) -> None:
         <directive domain="mongodb" name="procedure">
             <directive domain="mongodb" name="step">
                 <text>Connect to Your Deployment</text>
-                <paragraph><text>Paragraph.</text></paragraph>
-                <paragraph>
-                    <ref_role domain="std" name="label" target="Connect to MongoDB">
-                        <text>To learn more, see Connect to MongoDB</text>
-                    </ref_role>
-                </paragraph>
+                <section>
+                    <heading id="connect-to-your-deployment"><text>Connect to Your Deployment</text></heading>
+                    <paragraph><text>Paragraph.</text></paragraph>
+                    <paragraph>
+                        <ref_role domain="std" name="label" target="Connect to MongoDB">
+                            <text>To learn more, see Connect to MongoDB</text>
+                        </ref_role>
+                    </paragraph>
+                </section>
             </directive>
             <directive domain="mongodb" name="step">
                 <text>Import Your Data</text>
-                <paragraph><text>Paragraph.</text></paragraph>
-                <paragraph>
-                    <ref_role domain="std" name="label" target="Import and Export Data">
-                        <text>To learn more, see Import and Export Data</text>
-                    </ref_role>
-                </paragraph>
+                <section>
+                    <heading id="import-your-data"><text>Import Your Data</text></heading>
+                    <paragraph><text>Paragraph.</text></paragraph>
+                    <paragraph>
+                        <ref_role domain="std" name="label" target="Import and Export Data">
+                            <text>To learn more, see Import and Export Data</text>
+                        </ref_role>
+                    </paragraph>
+                </section>
             </directive>
         </directive>""",
     )
