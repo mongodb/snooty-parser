@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.10] - 2021-12-17
+
+## [v0.11.9] - 2021-12-15
+
+### Changed
+
+- The language server has had significant work to increase concurrency and reduce jank,
+  and now runs the postprocessor (DOP-2546, #358) bringing diagnostic parity with builds.
+
+  More work is planned, but this is a significant step forward, years in the making!
+
+- OpenAPI specs may now be fetched from realm (DOP-2533, #360) with the `:uses-realm:` option
+  on the `openapi` directive.
+
+- The `iOS SDK` Realm SDK tab has been retitled to `Swift SDK` courtesy of Chris Bush (#364).
+
+### Fixed
+
+- HTTP cache now avoids re-sending requests for an hour (#363)
+
 ## [v0.11.8] - 2021-12-01
 
 ### Fixed

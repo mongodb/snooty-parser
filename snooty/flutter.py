@@ -80,7 +80,7 @@ class _TypeThunk:
             # in the lambda is a ~~hack~~ to avoid messing up the variable binding.
             fields: Dict[str, _Field] = {
                 field.name: _Field(
-                    field.default_factory  # type: ignore
+                    field.default_factory
                     if field.default_factory is not MISSING  # type: ignore
                     else (
                         (make_factory(field.default))
