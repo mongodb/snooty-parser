@@ -81,6 +81,10 @@ class TargetDatabase:
                 if not entry:
                     entry = inventory.get(key.lower())
 
+                # FIXME: temporary until DOP-2345 is complete
+                if not entry and key.startswith("mongodb:php"):
+                    entry = inventory.get(key.replace("\\\\", "\\"))
+
                 if entry:
                     base_url = inventory.base_url
                     url = urllib.parse.urljoin(base_url, entry.uri)
