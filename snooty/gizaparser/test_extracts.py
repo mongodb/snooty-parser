@@ -1,7 +1,12 @@
 from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Tuple
 
-from ..diagnostics import Diagnostic, FailedToInheritRef
+from ..diagnostics import (
+    Diagnostic,
+    ErrorParsingYAMLFile,
+    FailedToInheritRef,
+    UnmarshallingError,
+)
 from ..page import Page
 from ..parser import EmbeddedRstParser
 from ..types import FileId, ProjectConfig
@@ -139,4 +144,78 @@ inherit:
         assert {k: [type(d) for d in v] for k, v in result.diagnostics.items()} == {
             FileId("includes/extracts-test2.yaml"): [FailedToInheritRef],
             FileId("includes/extracts-test1.yaml"): [FailedToInheritRef],
+        }
+
+
+def test_partial_unmarshaling_error() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/extracts-test1.yaml"
+            ): """
+ref: bypassDocumentValidation-db.collection.aggregate
+inherit:
+  ref: _bypassDocValidation
+  file: extracts-bypassDocumentValidation-base.yaml
+replacement:
+  role: ":method:`db.collection.aggregate()`"
+  interface: "method"
+post: |
+  Document validation only occurs if you are using the
+  :pipeline:`$out` operator in your aggregation operation.
+---
+ref: bypassDocumentValidation-aggregate
+content: "Okay"
+...
+"""
+        }
+    ) as result:
+        assert list(result.pages.keys()) == [
+            FileId("includes/extracts/bypassDocumentValidation-aggregate.rst")
+        ]
+        assert {k: [type(d) for d in v] for k, v in result.diagnostics.items()} == {
+            FileId("includes/extracts-test1.yaml"): [UnmarshallingError]
+        }
+
+
+def test_single_unmarshaling_error() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/extracts-test1.yaml"
+            ): """
+ref: bypassDocumentValidation-db.collection.aggregate
+inherit:
+  ref: _bypassDocValidation
+  file: extracts-bypassDocumentValidation-base.yaml
+replacement:
+  role: ":method:`db.collection.aggregate()`"
+  interface: "method"
+post: |
+  Document validation only occurs if you are using the
+  :pipeline:`$out` operator in your aggregation operation.
+...
+"""
+        }
+    ) as result:
+        assert list(result.pages.keys()) == []
+        assert {k: [type(d) for d in v] for k, v in result.diagnostics.items()} == {
+            FileId("includes/extracts-test1.yaml"): [UnmarshallingError]
+        }
+
+
+def test_parse_error() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/extracts-test1.yaml"
+            ): """
+ref: bypassDocumentValidation
+content: "not okay
+"""
+        }
+    ) as result:
+        assert list(result.pages.keys()) == []
+        assert {k: [type(d) for d in v] for k, v in result.diagnostics.items()} == {
+            FileId("includes/extracts-test1.yaml"): [ErrorParsingYAMLFile]
         }
