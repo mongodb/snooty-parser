@@ -1639,7 +1639,7 @@ class Postprocessor:
         # Base case: stop iterating over AST
         if not isinstance(ast, n.Parent):
             return
-        
+
         if isinstance(ast, n.TocTreeDirective):
             # Recursively build the tree for each toctree node in this entries list
             for entry in ast.entries:
@@ -1682,21 +1682,28 @@ class Postprocessor:
                             if title_nodes
                             else None
                         )
-                    
+
                     isSyncPillOn = False
 
                     # Check if tocicon is a page level option
-                    if (context.pages[FileId(slug_fileid)].ast.options):
-                        if ('tocicon' in context.pages[FileId(slug_fileid)].ast.options): 
-                            if (context.pages[FileId(slug_fileid)].ast.options['tocicon'] == 'sync'):
+                    if context.pages[FileId(slug_fileid)].ast.options:
+                        if "tocicon" in context.pages[FileId(slug_fileid)].ast.options:
+                            if (
+                                context.pages[FileId(slug_fileid)].ast.options[
+                                    "tocicon"
+                                ]
+                                == "sync"
+                            ):
                                 isSyncPillOn = True
-                                
+
                     toctree_node = {
                         "title": title,
                         "slug": "/" if slug == "index" else slug,
                         "children": [],
-                        "options": {"drawer": slug not in toc_landing_pages, 
-                        "tocicon": isSyncPillOn},
+                        "options": {
+                            "drawer": slug not in toc_landing_pages,
+                            "tocicon": isSyncPillOn,
+                        },
                     }
 
                     # Don't recurse on the index page
