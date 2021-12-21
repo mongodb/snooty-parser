@@ -64,10 +64,13 @@ def parse(
         diagnostics.append(parse_diagnostic)
         return ([], text, diagnostics)
 
-    try:
-        parsed = [check_type(ty, data) for data in parsed_yaml]
-        return parsed, text, diagnostics
-    except LoadError as err:
-        mapping = err.bad_data if isinstance(err.bad_data, dict) else {}
-        lineno = mapping._start_line if isinstance(mapping, mapping_dict) else 0
-        return [], text, diagnostics + [UnmarshallingError(str(err), lineno)]
+    parsed: List[_T] = []
+    for data in parsed_yaml:
+        try:
+            parsed.append(check_type(ty, data))
+        except LoadError as err:
+            mapping = err.bad_data if isinstance(err.bad_data, dict) else {}
+            lineno = mapping._start_line if isinstance(mapping, mapping_dict) else 0
+            diagnostics.append(UnmarshallingError(str(err), lineno))
+
+    return parsed, text, diagnostics

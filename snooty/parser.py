@@ -1105,6 +1105,7 @@ class PageDatabase:
 
         self.postprocessor_factory = postprocessor_factory
         self._parsed: Dict[FileId, Tuple[Page, FileId, List[Diagnostic]]] = {}
+        self._orphan_diagnostics: Dict[FileId, List[Diagnostic]] = {}
         self.__cached = PostprocessorResult({}, {}, {}, TargetDatabase())
         self.__changed_pages: Set[FileId] = set()
 
@@ -1137,6 +1138,13 @@ class PageDatabase:
             Postprocessor, PostprocessorResult
         ] = util.WorkerLauncher("postprocessor", start)
 
+    def set_orphan_diagnostics(self, key: FileId, value: List[Diagnostic]) -> None:
+        """Some diagnostics can't be associated with a parsed Page because of underlying
+        problems like invalid YAML syntax. These are orphan diagnostics, and we need
+        to track them too."""
+        with self._lock:
+            self._orphan_diagnostics[key] = value
+
     def __setitem__(
         self, key: FileId, value: Tuple[Page, FileId, List[Diagnostic]]
     ) -> None:
@@ -1164,7 +1172,15 @@ class PageDatabase:
 
     def __delitem__(self, key: FileId) -> None:
         with self._lock:
-            del self._parsed[key]
+            try:
+                del self._parsed[key]
+            except KeyError:
+                pass
+
+            try:
+                del self._orphan_diagnostics[key]
+            except KeyError:
+                pass
 
     def merge_diagnostics(
         self, *others: Dict[FileId, List[Diagnostic]]
@@ -1173,6 +1189,12 @@ class PageDatabase:
             result: Dict[FileId, List[Diagnostic]] = {
                 v[1]: list(v[2]) for v in self._parsed.values()
             }
+
+            for key, diagnostics in self._orphan_diagnostics.items():
+                if key in result:
+                    result[key].extend(diagnostics)
+                else:
+                    result[key] = list(diagnostics)
 
         all_keys: Set[FileId] = set()
         for other in others:
@@ -1501,11 +1523,13 @@ class _Project:
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Parsing %s YAML", prefix)
             for path in categorized[prefix]:
-                steps, text, diagnostics = giza_category.parse(path)
-                all_yaml_diagnostics[path] = diagnostics
-                giza_category.add(path, text, steps)
+                artifacts, text, diagnostics = giza_category.parse(path)
+                if diagnostics:
+                    all_yaml_diagnostics[path] = diagnostics
+                giza_category.add(path, text, artifacts)
 
         # Now that all of our YAML files are loaded, generate a page for each one
+        seen_paths: Set[Path] = set()
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Processing %s YAML: %d nodes", prefix, len(giza_category))
             for file_id, giza_node in giza_category.reify_all_files(
@@ -1531,9 +1555,18 @@ class _Project:
                 for page in giza_category.to_pages(
                     giza_node.path, create_page, giza_node.data
                 ):
+                    seen_paths.add(page.source_path)
                     self._page_updated(
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
+
+        # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
+        # any page.
+        for key in all_yaml_diagnostics:
+            if key not in seen_paths:
+                self.pages.set_orphan_diagnostics(
+                    self.config.get_fileid(key), all_yaml_diagnostics[key]
+                )
 
         if postprocess:
             postprocessor_result = self.postprocess()
