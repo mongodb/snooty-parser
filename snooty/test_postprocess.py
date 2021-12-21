@@ -478,11 +478,11 @@ def test_toctree_self_add() -> None:
             """
 <toctree slug="/">
     <title><text>untitled</text></title>
-    <toctree slug="page1" drawer="True" />
-    <toctree slug="/" drawer="True">
+    <toctree slug="page1" drawer="True" tocicon="False" />
+    <toctree slug="/" drawer="True" tocicon="False" >
         <title><text>Overview</text></title>
     </toctree>
-    <toctree slug="page2" drawer="True" />
+    <toctree slug="page2" drawer="True" tocicon="False" />
 </toctree>
 """,
         )

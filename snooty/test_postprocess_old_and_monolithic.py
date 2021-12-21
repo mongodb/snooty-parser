@@ -225,16 +225,16 @@ def test_toctree(backend: Backend) -> None:
         """
 <toctree slug="/">
     <title><text>MongoDB title</text></title>
-    <toctree slug="page1" drawer="True">
+    <toctree slug="page1" drawer="True" tocicon="False">
         <title><text>Print this heading</text></title>
     </toctree>
-    <toctree slug="page2" drawer="False">
+    <toctree slug="page2" drawer="False" tocicon="False">
         <title><text>Heading is not at the top for some reason</text></title>
         <toctree url="https://docs.mongodb.com/bi-connector/current/">
             <title><text>MongoDB Connector for Business Intelligence</text></title>
         </toctree>
-        <toctree slug="page3" drawer="False" />
-        <toctree slug="page4" drawer="True">
+        <toctree slug="page3" drawer="False" tocicon="False" />
+        <toctree slug="page4" drawer="True" tocicon="False" >
             <title><text>Page Four</text></title>
         </toctree>
     </toctree>
