@@ -2245,3 +2245,42 @@ def test_targets_with_backslashes() -> None:
 </root>
 """,
         )
+
+
+def test_target_quotes() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): r"""
+:writeconcern:`majority <\"majority\">`
+:writeconcern:`majority <"majority">`
+
+.. writeconcern:: "majority"
+"""
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("index.txt")]
+        print(ast_to_testing_string(result.pages[FileId("index.txt")].ast))
+
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+    <root fileid="index.txt">
+    <paragraph>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&quot;majority&quot;" fileid="['index', 'mongodb-writeconcern-writeconcern.-majority-']">
+            <literal><text>majority</text></literal>
+        </ref_role><text></text>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&quot;majority&quot;" fileid="['index', 'mongodb-writeconcern-writeconcern.-majority-']">
+            <literal><text>majority</text></literal>
+        </ref_role>
+    </paragraph>
+
+    <target domain="mongodb" name="writeconcern" html_id="mongodb-writeconcern-writeconcern.-majority-">
+        <directive_argument><literal><text>"majority"</text></literal></directive_argument>
+        <target_identifier ids="['writeconcern.&quot;majority&quot;']">
+            <text>"majority"</text>
+        </target_identifier>
+    </target>
+</root>""",
+        )

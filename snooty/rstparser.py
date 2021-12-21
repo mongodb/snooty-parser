@@ -92,7 +92,12 @@ def unescape_backslashes(text: str) -> str:
     """docutils replaces backslashes with null characters. Deal with this in
     a fairly inane way that matches how backslashes seem to be used in our
     corpus."""
-    return text.replace("\x00<", "<").replace("\x00>", ">").replace("\x00", "\\")
+    return (
+        text.replace("\x00<", "<")
+        .replace("\x00>", ">")
+        .replace('\x00"', '"')
+        .replace("\x00", "\\")
+    )
 
 
 def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
