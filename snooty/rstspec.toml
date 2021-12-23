@@ -702,7 +702,7 @@ options.icon = ["path", "uri"]
 [directive."mongodb:chapters"]
 help = "A container for a group of chapter directives."
 example = """.. chapters::
-   
+
    ${0: chapters content}
 """
 content_type = "block"
@@ -1341,16 +1341,16 @@ type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
-[role.wtdocs-v4.0]
+[role."wtdocs-v4.0"]
 type = {link = "http://source.wiredtiger.com/mongodb-4.0%s"}
 
-[role.wtdocs-v4.2]
+[role."wtdocs-v4.2"]
 type = {link = "http://source.wiredtiger.com/mongodb-4.2%s"}
 
-[role.wtdocs-v4.4]
+[role."wtdocs-v4.4"]
 type = {link = "http://source.wiredtiger.com/mongodb-4.4%s"}
 
-[role.wtdocs-v5.0]
+[role."wtdocs-v5.0"]
 type = {link = "http://source.wiredtiger.com/mongodb-5.0%s"}
 
 [role.spec]
