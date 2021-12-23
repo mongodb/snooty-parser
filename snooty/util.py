@@ -57,6 +57,12 @@ PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
 
+PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__
+assert PACKAGE_ROOT_STRING is not None
+PACKAGE_ROOT = Path(PACKAGE_ROOT_STRING).resolve().parent
+if PACKAGE_ROOT.is_file():
+    PACKAGE_ROOT = PACKAGE_ROOT.parent
+
 
 def reroot_path(
     filename: PurePosixPath, docpath: PurePath, project_root: Path

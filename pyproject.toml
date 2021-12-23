@@ -27,7 +27,7 @@ requires = [
 dev = [
     "black ~= 21.12b0",
     "pyflakes ~= 2.4",
-    "mypy ~= 0.920",
+    "mypy == 0.930",
     "pyinstaller ~= 4.7",
     "isort ~= 5.10.1",
     "types-requests ~= 2.26.1",

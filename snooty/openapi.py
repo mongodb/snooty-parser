@@ -149,7 +149,7 @@ Base URL
 .. code-block:: none
 
    {{ server.url }}
-   
+
 {{ server.description }}
 {{ end }}
 {{ end }}
@@ -183,7 +183,7 @@ Base URL
    {{ operation.cookie_parameters }}
 
    {{ if operation.requestBody }}
-   
+
    Request Body :required:`{{ operation.requestBody.required }}`
    *********************************
 
@@ -426,7 +426,7 @@ class OpenAPI:
 
                 stack.extend((cursor, subkey, x) for subkey, x in cursor.items())
             elif isinstance(cursor, list):
-                stack.extend((cursor, i, x) for i, x in enumerate(cursor))
+                stack.extend((cursor, i, x) for i, x in enumerate(cursor))  # type: ignore
 
         # Set up our operations
         for method, path, methods in self.resources():

@@ -39,15 +39,12 @@ from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .page import Page
 from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
+from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
-PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
-if PACKAGE_ROOT.is_file():
-    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 COLL_DOCUMENTS = "documents"
 COLL_METADATA = "metadata"
