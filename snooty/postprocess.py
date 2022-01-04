@@ -1683,27 +1683,22 @@ class Postprocessor:
                             else None
                         )
 
-                    isSyncPillOn = False
+                    toctree_node_options: Dict[str, Any] = {
+                        "drawer": slug not in toc_landing_pages
+                    }
 
                     # Check if tocicon is a page level option
                     if context.pages[FileId(slug_fileid)].ast.options:
                         if "tocicon" in context.pages[FileId(slug_fileid)].ast.options:
-                            if (
-                                context.pages[FileId(slug_fileid)].ast.options[
-                                    "tocicon"
-                                ]
-                                == "sync"
-                            ):
-                                isSyncPillOn = True
+                            toctree_node_options["tocicon"] = context.pages[
+                                FileId(slug_fileid)
+                            ].ast.options["tocicon"]
 
                     toctree_node = {
                         "title": title,
                         "slug": "/" if slug == "index" else slug,
                         "children": [],
-                        "options": {
-                            "drawer": slug not in toc_landing_pages,
-                            "tocicon": isSyncPillOn,
-                        },
+                        "options": toctree_node_options,
                     }
 
                     # Don't recurse on the index page
