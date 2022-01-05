@@ -1428,6 +1428,12 @@ type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
 [role."objc-sdk"]
 type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s"}
 
+[role."flutter-sdk"]
+type = {link = "https://pub.dev/documentation/realm/latest/%s"}
+
+[role."flutter"]
+type = {link = "https://docs.flutter.dev/%s"}
+
 [role."codesandbox"]
 type = {link = "https://codesandbox.io/%s"}
 
