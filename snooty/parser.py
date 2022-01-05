@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import collections
 import errno
 import getpass
-import io
 import json
 import logging
 import multiprocessing
 import os
+import queue
 import re
 import subprocess
 import threading
-import time
 import urllib.parse
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -35,11 +37,9 @@ import docutils.utils
 import networkx
 import requests.exceptions
 import watchdog.events
-from typing_extensions import Protocol
 from yaml import safe_load
 
 from . import gizaparser, n, rstparser, specparser, util
-from .builders import man
 from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
@@ -60,13 +60,12 @@ from .diagnostics import (
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
-    UnsupportedFormat,
 )
 from .gizaparser.nodes import GizaCategory
 from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .openapi import OpenAPI
 from .page import Page, PendingTask
-from .postprocess import DevhubPostprocessor, Postprocessor
+from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     BuildIdentifierSet,
@@ -90,35 +89,6 @@ def eligible_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> b
         and len(node.children) == 1
         and isinstance(node.children[0], docutils.nodes.substitution_reference)
     )
-
-
-def bundle(
-    filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
-) -> bytes:
-    if filename.suffixes[-2:] == [".tar", ".gz"] or filename.suffixes[-1] == ".tar":
-        import tarfile
-
-        compression_flag = "gz" if filename.suffix == ".gz" else "::"
-
-        current_time = time.time()
-        output_file = io.BytesIO()
-        with tarfile.open(
-            None, f"w:{compression_flag}", output_file, format=tarfile.PAX_FORMAT
-        ) as tf:
-            for member_name, member_data in members:
-                if isinstance(member_data, str):
-                    member_data = bytes(member_data, "utf-8")
-                member_file = io.BytesIO(member_data)
-                tar_info = tarfile.TarInfo(name=member_name)
-                tar_info.size = len(member_data)
-                tar_info.mtime = int(current_time)
-                tar_info.mode = 0o644
-                tf.addfile(tar_info, member_file)
-
-        return output_file.getvalue()
-
-    else:
-        raise ValueError(f"Unknown bundling format: {filename.as_posix()}")
 
 
 @dataclass
@@ -654,16 +624,34 @@ class JSONVisitor:
         elif name == "openapi":
             # Parsing should be done by the OpenAPI renderer on the frontend by default
             uses_rst = options.get("uses-rst", False)
+            # The frontend will grab the file contents from Realm, using the argument as its key
+            uses_realm = options.get("uses-realm", False)
 
             if argument_text is None:
+                if uses_realm or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
+
                 # Check if argument is a url instead
                 url_argument = None
+                spec = None
                 try:
                     url_argument = argument[0].refuri
+                    response = util.HTTPCache.singleton().get(url_argument)
+                    file_content = str(response, "utf-8")
+                    spec = json.dumps(safe_load(file_content))
+                    spec_node = n.Text((line,), spec)
+                    doc.children.append(spec_node)
+                    return doc
                 except:
                     pass
-                if url_argument is None or uses_rst:
+                if url_argument is None:
                     self.diagnostics.append(ExpectedPathArg(name, line))
+                elif spec is None:
+                    self.diagnostics.append(InvalidURL(line))
+                return doc
+
+            if uses_realm:
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
@@ -720,13 +708,14 @@ class JSONVisitor:
 
             # Attempt to read the literally included file
             try:
-                with open(filepath) as file:
-                    text = file.read()
-
+                text = filepath.read_text(encoding="utf-8")
             except OSError as err:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, line)
                 )
+                return doc
+            except UnicodeDecodeError as err:
+                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
                 return doc
 
             lines = text.split("\n")
@@ -850,25 +839,6 @@ class JSONVisitor:
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
-            # Validate if file exists
-            if not path.is_file():
-                # Check if file is snooty-generated
-                if (
-                    fileid.match("steps/*.rst")
-                    or fileid.match("extracts/*.rst")
-                    or fileid.match("release/*.rst")
-                    or fileid == FileId("includes/hash.rst")
-                ):
-                    pass
-                else:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            argument_text,
-                            os.strerror(errno.ENOENT),
-                            util.get_line(node),
-                        )
-                    )
-
         elif name == "sharedinclude":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
@@ -887,7 +857,7 @@ class JSONVisitor:
                 self.project_config.sharedinclude_root, argument_text
             )
             try:
-                response = util.HTTPCache.get()[url]
+                response = util.HTTPCache.singleton().get(url)
             except requests.exceptions.RequestException as err:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, str(err), util.get_line(node))
@@ -1088,11 +1058,14 @@ def get_giza_category(path: PurePath) -> str:
     return path.name.split("-", 1)[0]
 
 
-class ProjectBackend(Protocol):
+class ProjectBackend:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         ...
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        ...
+
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         ...
 
     def on_update(
@@ -1122,18 +1095,63 @@ class ProjectBackend(Protocol):
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline
     is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
-    pages can be accessed."""
+    pages can be accessed.
+
+    All methods are thread-safe, but data returned should not be mutated by more than one
+    thread."""
 
     def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
+        self._lock = threading.Lock()
+
         self.postprocessor_factory = postprocessor_factory
-        self.parsed: Dict[FileId, Page] = {}
-        self.__postprocessed: Dict[FileId, Page] = {}
+        self._parsed: Dict[FileId, Tuple[Page, FileId, List[Diagnostic]]] = {}
+        self._orphan_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+        self.__cached = PostprocessorResult({}, {}, {}, TargetDatabase())
         self.__changed_pages: Set[FileId] = set()
 
-    def __setitem__(self, key: FileId, value: Page) -> None:
+        def start(
+            cancellation_token: threading.Event,
+            args: Postprocessor,
+        ) -> PostprocessorResult:
+            with self._lock:
+                if not self.__changed_pages:
+                    return self.__cached
+
+                with util.PerformanceLogger.singleton().start("copy"):
+                    copied_pages = {}
+                    for k, v in self._parsed.items():
+                        if cancellation_token.is_set():
+                            raise util.CancelledException()
+
+                        copied_pages[k] = util.fast_deep_copy(v[0])
+
+            with util.PerformanceLogger.singleton().start("postprocessing"):
+                result = args.run(copied_pages, cancellation_token)
+
+            with self._lock:
+                self.__cached = result
+                self.__changed_pages.clear()
+
+            return result
+
+        self.worker: util.WorkerLauncher[
+            Postprocessor, PostprocessorResult
+        ] = util.WorkerLauncher("postprocessor", start)
+
+    def set_orphan_diagnostics(self, key: FileId, value: List[Diagnostic]) -> None:
+        """Some diagnostics can't be associated with a parsed Page because of underlying
+        problems like invalid YAML syntax. These are orphan diagnostics, and we need
+        to track them too."""
+        with self._lock:
+            self._orphan_diagnostics[key] = value
+
+    def __setitem__(
+        self, key: FileId, value: Tuple[Page, FileId, List[Diagnostic]]
+    ) -> None:
         """Set a raw parsed page."""
-        self.parsed[key] = value
-        self.__changed_pages.add(key)
+        with self._lock:
+            self._parsed[key] = value
+            self.__changed_pages.add(key)
 
     def get(self, key: FileId) -> Optional[Page]:
         try:
@@ -1143,42 +1161,74 @@ class PageDatabase:
 
     def __getitem__(self, key: FileId) -> Page:
         """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
-        assert not self.__changed_pages
-        return self.__postprocessed[key]
+        with self._lock:
+            assert not self.__changed_pages
+            return self.__cached.pages[key]
 
     def __contains__(self, key: FileId) -> bool:
         """Check if a given page exists in the parsed set."""
-        return key in self.parsed
+        with self._lock:
+            return key in self._parsed
 
-    def values(self) -> Iterable[Page]:
-        """Iterate over postprocessed pages."""
-        assert not self.__changed_pages
-        return self.__postprocessed.values()
+    def __delitem__(self, key: FileId) -> None:
+        with self._lock:
+            try:
+                del self._parsed[key]
+            except KeyError:
+                pass
 
-    def items(self) -> Iterable[Tuple[FileId, Page]]:
-        """Iterate over the postprocessed (FileId, Page) set."""
-        assert not self.__changed_pages
-        return self.__postprocessed.items()
+            try:
+                del self._orphan_diagnostics[key]
+            except KeyError:
+                pass
+
+    def merge_diagnostics(
+        self, *others: Dict[FileId, List[Diagnostic]]
+    ) -> Dict[FileId, List[Diagnostic]]:
+        with self._lock:
+            result: Dict[FileId, List[Diagnostic]] = {
+                v[1]: list(v[2]) for v in self._parsed.values()
+            }
+
+            for key, diagnostics in self._orphan_diagnostics.items():
+                if key in result:
+                    result[key].extend(diagnostics)
+                else:
+                    result[key] = list(diagnostics)
+
+        all_keys: Set[FileId] = set()
+        for other in others:
+            all_keys.update(other.keys())
+
+        for key in all_keys:
+            try:
+                lst = result[key]
+            except KeyError:
+                lst = []
+                result[key] = lst
+            for other in others:
+                try:
+                    lst.extend(other[key])
+                except KeyError:
+                    pass
+
+        return result
 
     def flush(
         self,
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+    ) -> queue.Queue[Union[PostprocessorResult, util.CancelledException]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
-        if not self.__changed_pages:
-            return {}, {}
-
         postprocessor = self.postprocessor_factory()
+        return self.worker.run(postprocessor)
 
-        with util.PerformanceLogger.singleton().start("copy"):
-            copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
+    def flush_and_wait(self) -> PostprocessorResult:
+        result = self.flush().get()
+        if isinstance(result, util.CancelledException):
+            raise result
+        return result
 
-        with util.PerformanceLogger.singleton().start("postprocessing"):
-            post_metadata, post_diagnostics = postprocessor.run(copied_pages)
-
-        self.__postprocessed = postprocessor.pages
-        self.__changed_pages.clear()
-
-        return post_metadata, post_diagnostics
+    def cancel(self) -> None:
+        self.worker.cancel()
 
 
 class _Project:
@@ -1198,20 +1248,35 @@ class _Project:
         root = self.config.root
 
         self.targets, failed_requests = TargetDatabase.load(self.config)
+        self.initialization_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(
+            list
+        )
 
         snooty_config_fileid = FileId(self.config.config_path.relative_to(root))
 
         if failed_requests:
+            fetch_diagnostics: List[Diagnostic] = [
+                FetchError(message, 0) for _, message in failed_requests
+            ]
+            self.initialization_diagnostics[snooty_config_fileid].extend(
+                fetch_diagnostics
+            )
             backend.on_diagnostics(
                 snooty_config_fileid,
-                [FetchError(message, 0) for _, message in failed_requests],
+                fetch_diagnostics,
             )
 
         if config_diagnostics:
+            self.initialization_diagnostics[snooty_config_fileid].extend(
+                config_diagnostics
+            )
             backend.on_diagnostics(snooty_config_fileid, config_diagnostics)
 
         self.parser = rstparser.Parser(self.config, JSONVisitor)
+
         self.backend = backend
+        self._backend_lock = threading.Lock()
+
         self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
 
@@ -1232,6 +1297,9 @@ class _Project:
             )
 
             if substitution_diagnostics:
+                self.initialization_diagnostics[snooty_config_fileid].extend(
+                    substitution_diagnostics
+                )
                 backend.on_diagnostics(
                     self.config.get_fileid(self.config.config_path),
                     substitution_diagnostics,
@@ -1257,6 +1325,9 @@ class _Project:
                 if banner_node.node.children:
                     self.config.banner_nodes.append(banner_node)
                 if banner_diagnostics:
+                    self.initialization_diagnostics[snooty_config_fileid].extend(
+                        banner_diagnostics
+                    )
                     backend.on_diagnostics(
                         self.config.get_fileid(self.config.config_path),
                         banner_diagnostics,
@@ -1277,27 +1348,31 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets)
+            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
             if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets)
+            else Postprocessor(self.config, self.targets.copy_clean_slate())
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
 
         published_branches, published_branches_diagnostics = self.get_parsed_branches()
-        if published_branches:
-            self.backend.on_update_metadata(
-                self.prefix,
-                self.build_identifiers,
-                {"publishedBranches": published_branches.serialize()},
-            )
+        with self._backend_lock:
+            if published_branches:
+                self.backend.on_update_metadata(
+                    self.prefix,
+                    self.build_identifiers,
+                    {"publishedBranches": published_branches.serialize()},
+                )
 
-        if published_branches_diagnostics:
-            backend.on_diagnostics(
-                self.config.get_fileid(self.config.config_path),
-                published_branches_diagnostics,
-            )
+            if published_branches_diagnostics:
+                self.initialization_diagnostics[snooty_config_fileid].extend(
+                    published_branches_diagnostics
+                )
+                backend.on_diagnostics(
+                    self.config.get_fileid(self.config.config_path),
+                    published_branches_diagnostics,
+                )
 
     def get_parsed_branches(
         self,
@@ -1318,11 +1393,8 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
-        post_metadata, post_diagnostics = self.pages.flush()
-        for fileid, diagnostics in post_diagnostics.items():
-            self.backend.on_diagnostics(fileid, diagnostics)
-        page = self.pages[fileid]
-
+        result = self.pages.flush_and_wait()
+        page = result.pages[fileid]
         assert isinstance(page.ast, n.Parent)
         return page.ast
 
@@ -1385,23 +1457,36 @@ class _Project:
         else:
             raise ValueError("Unknown file type: " + str(path))
 
-        for source_path, diagnostic_list in diagnostics.items():
-            self.backend.on_diagnostics(
-                self.config.get_fileid(source_path), diagnostic_list
-            )
+        with self._backend_lock:
+            for source_path, diagnostic_list in diagnostics.items():
+                self.backend.on_diagnostics(
+                    self.config.get_fileid(source_path), diagnostic_list
+                )
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
             fileid = self.config.get_fileid(page.fake_full_path())
-            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        self.backend.flush()
+            with self._backend_lock:
+                self.backend.on_update(
+                    self.prefix, self.build_identifiers, fileid, page
+                )
+
+            self.backend.flush()
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
-            del giza_category[file_id]
+            try:
+                del giza_category[file_id]
+            except KeyError:
+                pass
 
-        self.backend.on_delete(self.config.get_fileid(path), self.build_identifiers)
+        fileid = self.config.get_fileid(path)
+
+        with self._backend_lock:
+            self.backend.on_delete(fileid, self.build_identifiers)
+
+        del self.pages[fileid]
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
@@ -1438,11 +1523,13 @@ class _Project:
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Parsing %s YAML", prefix)
             for path in categorized[prefix]:
-                steps, text, diagnostics = giza_category.parse(path)
-                all_yaml_diagnostics[path] = diagnostics
-                giza_category.add(path, text, steps)
+                artifacts, text, diagnostics = giza_category.parse(path)
+                if diagnostics:
+                    all_yaml_diagnostics[path] = diagnostics
+                giza_category.add(path, text, artifacts)
 
         # Now that all of our YAML files are loaded, generate a page for each one
+        seen_paths: Set[Path] = set()
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Processing %s YAML: %d nodes", prefix, len(giza_category))
             for file_id, giza_node in giza_category.reify_all_files(
@@ -1468,12 +1555,21 @@ class _Project:
                 for page in giza_category.to_pages(
                     giza_node.path, create_page, giza_node.data
                 ):
+                    seen_paths.add(page.source_path)
                     self._page_updated(
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
+        # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
+        # any page.
+        for key in all_yaml_diagnostics:
+            if key not in seen_paths:
+                self.pages.set_orphan_diagnostics(
+                    self.config.get_fileid(key), all_yaml_diagnostics[key]
+                )
+
         if postprocess:
-            post_metadata, post_diagnostics = self.pages.flush()
+            postprocessor_result = self.postprocess()
 
             static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
@@ -1481,52 +1577,48 @@ class _Project:
                 )
             }
 
+            if "static_files" in postprocessor_result.metadata:
+                cast(
+                    Dict[str, Union[str, bytes]],
+                    postprocessor_result.metadata["static_files"],
+                ).update(static_files)
+
             with util.PerformanceLogger.singleton().start("commit"):
-                for fileid, page in self.pages.items():
-                    self.backend.on_update(
-                        self.prefix, self.build_identifiers, fileid, page
-                    )
-                self.backend.flush()
+                with self._backend_lock:
+                    for fileid, page in postprocessor_result.pages.items():
+                        self.backend.on_update(
+                            self.prefix, self.build_identifiers, fileid, page
+                        )
+                    self.backend.flush()
 
-            # Build manpages
-            manpages: List[Tuple[str, str]] = []
-            for name, definition in self.config.manpages.items():
-                fileid = FileId(definition.file)
-                manpage_page = self.pages.get(fileid)
-                if not manpage_page:
-                    self.backend.on_diagnostics(
-                        FileId(self.config.config_path.relative_to(self.config.root)),
-                        [CannotOpenFile(Path(fileid), "Page not found", 0)],
-                    )
-                    continue
-                for filename, rendered in man.render(
-                    manpage_page, name, definition.title, definition.section
-                ).items():
-                    manpages.append((filename.as_posix(), rendered))
-                    static_files[filename.as_posix()] = rendered
+            with self._backend_lock:
+                self.backend.on_update_metadata(
+                    self.prefix, self.build_identifiers, postprocessor_result.metadata
+                )
 
-            if manpages and self.config.bundle.manpages:
-                try:
-                    static_files[self.config.bundle.manpages] = bundle(
-                        PurePath(self.config.bundle.manpages), manpages
-                    )
-                except ValueError:
-                    self.backend.on_diagnostics(
-                        FileId(self.config.config_path.relative_to(self.config.root)),
-                        [
-                            UnsupportedFormat(
-                                self.config.bundle.manpages, (".tar", ".tar.gz"), 0
-                            )
-                        ],
-                    )
+    def cancel_postprocessor(self) -> None:
+        self.pages.cancel()
 
-            post_metadata["static_files"] = static_files
-            for fileid, diagnostics in post_diagnostics.items():
+    def postprocess(self) -> PostprocessorResult:
+        logger.debug("Starting self.pages.flush_and_wait()")
+        result = self.pages.flush_and_wait()
+
+        merged_diagnostics = self.pages.merge_diagnostics(
+            result.diagnostics, self.initialization_diagnostics
+        )
+
+        # Update our targets database
+        self.targets = result.targets
+
+        logger.debug("flush_and_wait() finished")
+        with self._backend_lock:
+            for fileid, diagnostics in result.diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
-            self.backend.on_update_metadata(
-                self.prefix, self.build_identifiers, post_metadata
-            )
+            for fileid, diagnostics in merged_diagnostics.items():
+                self.backend.set_diagnostics(fileid, diagnostics)
+
+        return result
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1541,7 +1633,7 @@ class _Project:
         logger.debug("Updated: %s", fileid)
 
         if fileid in self.pages:
-            old_page = self.pages.parsed[fileid]
+            old_page = self.pages._parsed[fileid][0]
             old_assets = old_page.static_assets
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
@@ -1571,10 +1663,15 @@ class _Project:
         )
 
         # Report to our backend
-        self.pages[fileid] = page
-        self.backend.on_diagnostics(
-            self.config.get_fileid(page.source_path), diagnostics
+        self.pages[fileid] = (
+            page,
+            self.config.get_fileid(page.source_path),
+            diagnostics,
         )
+        with self._backend_lock:
+            self.backend.on_diagnostics(
+                self.config.get_fileid(page.source_path), diagnostics
+            )
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
@@ -1646,6 +1743,14 @@ class Project:
         """Build the full project."""
         with self._lock:
             self._project.build(max_workers, postprocess)
+
+    def postprocess(self) -> None:
+        # The postprocessor is the only method that is intended to be thread-safe without the
+        # big project lock.
+        self._project.postprocess()
+
+    def cancel_postprocessor(self) -> None:
+        self._project.cancel_postprocessor()
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""

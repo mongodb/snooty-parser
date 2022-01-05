@@ -2,10 +2,8 @@
    directives and roles, and what types of data each should expect."""
 
 import dataclasses
-import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -29,10 +27,6 @@ from typing_extensions import Protocol
 
 from . import util
 from .flutter import check_type, checked
-
-PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
-if PACKAGE_ROOT.is_file():
-    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 #: Types of formatting that can be applied to a role.
 FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
@@ -399,5 +393,5 @@ class Spec:
             resolve_value(key, inheritable)
 
 
-GLOBAL_SPEC_PATH = PACKAGE_ROOT.joinpath("rstspec.toml")
+GLOBAL_SPEC_PATH = util.PACKAGE_ROOT.joinpath("rstspec.toml")
 SPEC = Spec.loads(GLOBAL_SPEC_PATH.read_text(encoding="utf-8"))

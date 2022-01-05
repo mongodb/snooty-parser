@@ -703,6 +703,20 @@ for (i = 0; i &lt; 10; i++) {
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+    # Test non-textual
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /compass-explain-plan-with-index-raw-json.png
+        """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert [(type(d), "utf-8" in d.message) for d in diagnostics] == [
+        (CannotOpenFile, True)
+    ]
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -748,28 +762,6 @@ def test_include() -> None:
         </directive>
         </root>""",
     )
-
-    # Test generated include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/steps/generated-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-
-    # Test bad include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/fake-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
 
 
 def test_admonition() -> None:

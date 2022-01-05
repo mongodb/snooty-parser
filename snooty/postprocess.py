@@ -1,12 +1,15 @@
 import collections
+import errno
 import logging
 import os.path
 import sys
+import threading
 import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
+from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -26,8 +29,10 @@ from typing import (
 )
 
 from . import n, specparser, util
+from .builders import man
 from .diagnostics import (
     AmbiguousTarget,
+    CannotOpenFile,
     ChapterAlreadyExists,
     Diagnostic,
     DuplicateDirective,
@@ -47,12 +52,13 @@ from .diagnostics import (
     SubstitutionRefError,
     TargetNotFound,
     UnnamedPage,
+    UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
 from .types import FileId, ProjectConfig, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS
+from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -302,10 +308,16 @@ class IncludeHandler(Handler):
             include_slug = argument.strip("/")
             include_fileid = self.slug_fileid_mapping.get(include_slug)
 
-            # XXX: End if we can't find a file. Diagnostic SHOULD have already been raised,
-            # but it isn't necessarily possible to say for sure. Validation should be moved
-            # here.
             if include_fileid is None:
+                # sharedinclude diagnostics have already been raised in the JSONVisitor
+                if node.name != "sharedinclude":
+                    self.context.diagnostics[fileid_stack.current].append(
+                        CannotOpenFile(
+                            FileId(include_slug),
+                            os.strerror(errno.ENOENT),
+                            node.span[0],
+                        )
+                    )
                 return
 
         include_page = self.pages.get(include_fileid)
@@ -1356,6 +1368,47 @@ class RefsHandler(Handler):
         node.children = [deepcopy(node) for node in title]
 
 
+class PostprocessorResult(NamedTuple):
+    pages: Dict[FileId, Page]
+    metadata: Dict[str, SerializableType]
+    diagnostics: Dict[FileId, List[Diagnostic]]
+    targets: TargetDatabase
+
+
+def build_manpages(context: Context) -> Dict[str, Union[str, bytes]]:
+    config = context[ProjectConfig]
+    result: Dict[str, Union[str, bytes]] = {}
+
+    # Build manpages
+    manpages: List[Tuple[str, str]] = []
+    for name, definition in config.manpages.items():
+        fileid = FileId(definition.file)
+        manpage_page = context.pages.get(fileid)
+        if not manpage_page:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(CannotOpenFile(PurePath(fileid), "Page not found", 0))
+            continue
+
+        for filename, rendered in man.render(
+            manpage_page, name, definition.title, definition.section
+        ).items():
+            manpages.append((filename.as_posix(), rendered))
+            result[filename.as_posix()] = rendered
+
+    if manpages and config.bundle.manpages:
+        try:
+            result[config.bundle.manpages] = bundle(
+                PurePath(config.bundle.manpages), manpages
+            )
+        except ValueError:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(UnsupportedFormat(config.bundle.manpages, (".tar", ".tar.gz"), 0))
+
+    return result
+
+
 class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
@@ -1386,13 +1439,14 @@ class Postprocessor:
         self.pending_program: Optional[SerializableType] = None
 
     def run(
-        self, pages: Dict[FileId, Page]
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+        self, pages: Dict[FileId, Page], cancellation_token: threading.Event
+    ) -> PostprocessorResult:
         """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
         if not pages:
-            return {}, {}
+            return PostprocessorResult({}, {}, {}, self.targets)
 
         self.pages = pages
+        self.cancellation_token = cancellation_token
         context = Context(pages)
         context.add(self.project_config)
         context.add(self.targets)
@@ -1427,7 +1481,9 @@ class Postprocessor:
 
         document = self.generate_metadata(context)
         self.finalize(context, document)
-        return document, context.diagnostics
+        return PostprocessorResult(
+            self.pages, document, context.diagnostics, self.targets
+        )
 
     def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
         pass
@@ -1465,6 +1521,9 @@ class Postprocessor:
 
         context[GuidesHandler].add_guides_metadata(document)
 
+        manpages = build_manpages(context)
+        document["static_files"] = manpages
+
         return document
 
     def run_event_parser(
@@ -1472,7 +1531,7 @@ class Postprocessor:
         node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
         page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
-        event_parser = EventParser()
+        event_parser = EventParser(self.cancellation_token)
         for event, node_listener in node_listeners:
             event_parser.add_event_listener(event, node_listener)
 

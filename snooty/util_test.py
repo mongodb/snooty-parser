@@ -13,7 +13,7 @@ from xml.sax.saxutils import escape
 from . import n, rstparser
 from .diagnostics import Diagnostic
 from .page import Page
-from .parser import JSONVisitor, Project
+from .parser import JSONVisitor, Project, ProjectBackend
 from .parser import parse_rst as parse_rst_multi
 from .types import BuildIdentifierSet, FileId, SerializableType
 
@@ -163,7 +163,7 @@ def check_ast_testing_string(ast: Any, testing_string: str) -> None:
     assert_etree_equals(evaluating_tree, correct_tree)
 
 
-class BackendTestResults:
+class BackendTestResults(ProjectBackend):
     """A utility class for tracking the output of a build in tests."""
 
     def __init__(self) -> None:
@@ -174,8 +174,8 @@ class BackendTestResults:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        self.diagnostics[path].extend(diagnostics)
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.diagnostics[path] = diagnostics
 
     def on_update(
         self,

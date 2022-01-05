@@ -702,7 +702,7 @@ options.icon = ["path", "uri"]
 [directive."mongodb:chapters"]
 help = "A container for a group of chapter directives."
 example = """.. chapters::
-   
+
    ${0: chapters content}
 """
 content_type = "block"
@@ -746,8 +746,9 @@ example = """.. mongo-web-shell::
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
-argument_type = ["path", "uri"]
+argument_type = ["path", "string", "uri"]
 options.uses-rst = "flag"
+options.uses-realm = "flag"
 
 [directive."mongodb:operation"]
 content_type = "block"
@@ -1340,6 +1341,18 @@ type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
+[role."wtdocs-v4.0"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.0%s"}
+
+[role."wtdocs-v4.2"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.2%s"}
+
+[role."wtdocs-v4.4"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.4%s"}
+
+[role."wtdocs-v5.0"]
+type = {link = "http://source.wiredtiger.com/mongodb-5.0%s"}
+
 [role.spec]
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
@@ -1728,7 +1741,7 @@ realm-sdks = [
   {id = "functions", title = "Functions"},
   {id = "json-expressions", title = "JSON Expressions"},
   {id = "graphql", title = "GraphQL"},
-  {id = "ios", title = "iOS SDK"},
+  {id = "ios", title = "Swift SDK"},
   {id = "android", title = "Android SDK"},
   {id = "dotnet", title = ".NET SDK"},
   {id = "xamarin", title = "Xamarin SDK"},
