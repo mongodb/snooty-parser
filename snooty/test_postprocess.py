@@ -453,6 +453,76 @@ The :parameter:`title` stuff works
         )
 
 
+# Test for toctree icon
+def test_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" tocicon="sync">
+    <section>
+        <heading id="collections">
+            <text>Collections </text>
+            <role name="icon" target="sync-pill"></role>
+        </heading>
+    </section>
+</root>
+""",
+        )
+
+
+def test_toctree_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/install.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """,
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+   :titlesonly:
+
+   Overview </index>
+   /install
+            """,
+        }
+    ) as result:
+        check_toctree_testing_string(
+            result.metadata["toctree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="/" drawer="True">
+        <title><text>Overview</text></title>
+    </toctree>
+    <toctree slug="install" drawer="True" tocicon="sync">
+        <title><text>Collections </text><role name="icon" target="sync-pill"></role></title>
+    </toctree>
+</toctree>
+""",
+        )
+
+
 # Ensure that "index.txt" can add itself to the toctree
 def test_toctree_self_add() -> None:
     with make_test(
@@ -479,7 +549,7 @@ def test_toctree_self_add() -> None:
 <toctree slug="/">
     <title><text>untitled</text></title>
     <toctree slug="page1" drawer="True" />
-    <toctree slug="/" drawer="True">
+    <toctree slug="/" drawer="True" >
         <title><text>Overview</text></title>
     </toctree>
     <toctree slug="page2" drawer="True" />

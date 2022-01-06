@@ -234,7 +234,7 @@ def test_toctree(backend: Backend) -> None:
             <title><text>MongoDB Connector for Business Intelligence</text></title>
         </toctree>
         <toctree slug="page3" drawer="False" />
-        <toctree slug="page4" drawer="True">
+        <toctree slug="page4" drawer="True" >
             <title><text>Page Four</text></title>
         </toctree>
     </toctree>
