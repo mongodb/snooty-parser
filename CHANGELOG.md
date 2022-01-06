@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Flutter link roles (#373).
+- Roles for different versions of WT docs (DOCS-14997).
+- Chapters are now given an appropriate HTML5 id (DOP-2505).
+
+### Fixed
+
+- Handle escaped double-quotes (DOP-2638).
+- Temporary workaround for PHP role intersphinx issues (DOP-2636).
+- Properly report diagnostics on YAML parsing and unmarshaling errors (DOP-2637).
+
 ## [v0.11.10] - 2021-12-17
 
 ## [v0.11.9] - 2021-12-15
