@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `tocicon` page option allows writers to attach an icon to a page in the site nav (DOP-2320, #367).
+
 ## [v0.11.11] - 2022-01-05
 
 ### Added
