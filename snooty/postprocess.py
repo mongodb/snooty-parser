@@ -1165,8 +1165,23 @@ class SubstitutionHandler(Handler):
         if result is None:
             return None
 
-        # If we're injecting inline nodes, wrap them in a paragraph
-        return [n.Paragraph(node.span, [el]) if isinstance(el, n.InlineNode) else el for el in result]  # type: ignore
+        # If we're injecting inline nodes, wrap them in a paragraph. Coalesce adjacent
+        # inline elements into a single paragraph.
+        output: List[n.Node] = []
+        current_paragraph: List[n.InlineNode] = []
+        for element in result:
+            if isinstance(element, n.InlineNode):
+                current_paragraph.append(element)
+            else:
+                if current_paragraph:
+                    output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+                    current_paragraph = []
+                output.append(element)
+
+        if current_paragraph:
+            output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+
+        return output
 
     def _search(
         self,
