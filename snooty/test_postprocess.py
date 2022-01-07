@@ -1581,6 +1581,58 @@ The following should be a code block:
 """,
         )
 
+    # Test replacements that have multiple inline elements: DOP-2620
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. binary:: mongod
+
+.. |both| replace:: Available for :binary:`~bin.mongod` only.
+
+|both|
+
+"""
+        }
+    ) as result:
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <target domain="mongodb" name="binary" html_id="mongodb-binary-bin.mongod">
+        <directive_argument>
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </directive_argument>
+        <target_identifier ids="['bin.mongod']">
+            <text>mongod</text>
+        </target_identifier>
+    </target>
+    <substitution_definition name="both">
+        <text>Available for </text>
+        <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </ref_role>
+        <text> only.</text>
+    </substitution_definition>
+    <substitution_reference name="both">
+        <paragraph>
+            <text>Available for </text>
+            <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+                <literal>
+                    <text>mongod</text>
+                </literal>
+            </ref_role>
+            <text> only.</text>
+        </paragraph>
+    </substitution_reference>
+</root>""",
+        )
+
 
 def test_replacements_scope() -> None:
     with make_test(
