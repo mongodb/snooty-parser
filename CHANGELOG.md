@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.11.13] - 2022-01-12
+
 ### Fixed
 
 - Substitutions containing multiple substitution elements no longer yields multiple paragraphs (DOP-2620).
