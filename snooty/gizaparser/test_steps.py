@@ -47,8 +47,8 @@ def test_step() -> None:
         pages[0].ast,
         """
 <root fileid="includes/steps-test.yaml">
-<directive name="steps-yaml">
-<directive name="step-yaml">
+<directive name="procedure" style="normal">
+<directive name="step">
     <section>
     <heading id="import-the-public-key-used-by-the-package-management-system">
         <text>Import the </text>
@@ -65,7 +65,7 @@ def test_step() -> None:
         <text>MongoDB public GPG Key</text></reference>
         <named_reference refname="MongoDB public GPG Key" refuri="https://www.mongodb.org/static/pgp/server-3.4.asc" />
     </paragraph></section></directive>
-<directive name="step-yaml">
+<directive name="step">
     <section>
     <heading id="create-a-etc-apt-sources-list-d-mongodb-org-3-4-list-file-for-mongodb">
         <text>Create a </text><literal><text>
@@ -81,7 +81,7 @@ def test_step() -> None:
         <paragraph><text>action-content</text></paragraph>
         <paragraph><text>action-post</text></paragraph>
     </section></section></directive>
-<directive name="step-yaml"><section>
+<directive name="step"><section>
     <heading id="reload-local-package-database">
         <text>Reload local package database.</text>
     </heading>
@@ -90,7 +90,7 @@ def test_step() -> None:
     </paragraph>
     <code copyable="True" lang="sh">sudo apt-get update\n</code>
     </section></directive>
-<directive name="step-yaml"><section>
+<directive name="step"><section>
     <heading id="install-the-mongodb-packages">
         <text>Install the MongoDB packages.</text>
     </heading>
@@ -142,8 +142,8 @@ replacement:
         page.ast,
         """
 <root fileid="includes/steps-configure-mcli-cm.yaml">
-    <directive name="steps-yaml">
-        <directive name="step-yaml">
+    <directive name="procedure" style="normal">
+        <directive name="step">
             <section>
                 <heading id="create-a-profile"><text>Create a profile.</text></heading>
                 <paragraph><text>foobar</text></paragraph>

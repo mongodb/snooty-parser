@@ -484,6 +484,9 @@ class JSONVisitor:
                 target.children = [identifier]
                 item.term.append(target)
 
+        elif isinstance(popped, n.Directive) and popped.name == "step":
+            popped.children = [n.Section((util.get_line(node),), popped.children)]  # type: ignore
+
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
         line = node.start[0]
@@ -867,6 +870,16 @@ class JSONVisitor:
             new_fileid = FileId("sharedinclude").joinpath(argument_text)
             doc.argument = [n.Text((line,), new_fileid.as_posix())]
             self.synthetic_pages[new_fileid] = str(response, "utf-8")
+
+        elif name == "step":
+            # Create heading for the step's argument, similar to titles of Giza/YAML steps
+            if argument:
+                argument_text = "".join(node.get_text() for node in argument)
+                heading_id = util.make_html5_id(argument_text.strip()).lower()
+
+                heading = n.Heading((line,), [], heading_id)
+                heading.children = argument
+                doc.children.insert(0, heading)
 
         elif name == "chapter":
             image_argument = options.get("image")
