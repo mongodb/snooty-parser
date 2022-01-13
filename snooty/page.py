@@ -28,7 +28,7 @@ class Page:
     source_path: Path
     output_filename: str
     source: str
-    ast: n.Parent[n.Node]
+    ast: n.Root
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
@@ -40,7 +40,7 @@ class Page:
         source_path: Path,
         output_filename: Optional[str],
         source: str,
-        ast: Optional[n.Parent[n.Node]] = None,
+        ast: Optional[n.Root] = None,
     ) -> "Page":
         if output_filename is None:
             output_filename = source_path.name

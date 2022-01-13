@@ -1010,7 +1010,7 @@ def parse_rst(
     visitor, text = parser.parse(path, text)
 
     top_of_state = visitor.state[-1]
-    assert isinstance(top_of_state, n.Parent)
+    assert isinstance(top_of_state, n.Root)
     page = Page.create(path, None, text, top_of_state)
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending

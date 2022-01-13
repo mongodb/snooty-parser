@@ -453,6 +453,76 @@ The :parameter:`title` stuff works
         )
 
 
+# Test for toctree icon
+def test_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" tocicon="sync">
+    <section>
+        <heading id="collections">
+            <text>Collections </text>
+            <role name="icon" target="sync-pill"></role>
+        </heading>
+    </section>
+</root>
+""",
+        )
+
+
+def test_toctree_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/install.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """,
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+   :titlesonly:
+
+   Overview </index>
+   /install
+            """,
+        }
+    ) as result:
+        check_toctree_testing_string(
+            result.metadata["toctree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="/" drawer="True">
+        <title><text>Overview</text></title>
+    </toctree>
+    <toctree slug="install" drawer="True" tocicon="sync">
+        <title><text>Collections </text><role name="icon" target="sync-pill"></role></title>
+    </toctree>
+</toctree>
+""",
+        )
+
+
 # Ensure that "index.txt" can add itself to the toctree
 def test_toctree_self_add() -> None:
     with make_test(
@@ -479,7 +549,7 @@ def test_toctree_self_add() -> None:
 <toctree slug="/">
     <title><text>untitled</text></title>
     <toctree slug="page1" drawer="True" />
-    <toctree slug="/" drawer="True">
+    <toctree slug="/" drawer="True" >
         <title><text>Overview</text></title>
     </toctree>
     <toctree slug="page2" drawer="True" />
@@ -1509,6 +1579,58 @@ The following should be a code block:
     </directive>
 </root>
 """,
+        )
+
+    # Test replacements that have multiple inline elements: DOP-2620
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. binary:: mongod
+
+.. |both| replace:: Available for :binary:`~bin.mongod` only.
+
+|both|
+
+"""
+        }
+    ) as result:
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <target domain="mongodb" name="binary" html_id="mongodb-binary-bin.mongod">
+        <directive_argument>
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </directive_argument>
+        <target_identifier ids="['bin.mongod']">
+            <text>mongod</text>
+        </target_identifier>
+    </target>
+    <substitution_definition name="both">
+        <text>Available for </text>
+        <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </ref_role>
+        <text> only.</text>
+    </substitution_definition>
+    <substitution_reference name="both">
+        <paragraph>
+            <text>Available for </text>
+            <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+                <literal>
+                    <text>mongod</text>
+                </literal>
+            </ref_role>
+            <text> only.</text>
+        </paragraph>
+    </substitution_reference>
+</root>""",
         )
 
 
