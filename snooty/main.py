@@ -18,6 +18,7 @@ Environment variables:
   SNOOTY_PERF_SUMMARY       0, 1 where 0 is default
 
 """
+import getpass
 import json
 import logging
 import multiprocessing
@@ -25,10 +26,13 @@ import os
 import sys
 import zipfile
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path, PurePath
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Union
 
 import bson
+import pymongo
+import tomli
 import watchdog.events
 import watchdog.observers
 from docopt import docopt
@@ -39,11 +43,17 @@ from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet
-from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
+from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
+SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
+
+COLL_DOCUMENTS = "documents"
+COLL_METADATA = "metadata"
+COLL_ASSETS = "assets"
+
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
 
 
@@ -82,6 +92,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 class Backend(ProjectBackend):
     def __init__(self) -> None:
         self.total_errors = 0
+        self.assets_written: Set[str] = set()
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -119,45 +130,6 @@ class Backend(ProjectBackend):
         if PARANOID_MODE:
             page.ast.verify()
 
-    def on_update_metadata(
-        self,
-        prefix: List[str],
-        build_identifiers: BuildIdentifierSet,
-        field: Dict[str, SerializableType],
-    ) -> None:
-        pass
-
-    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        pass
-
-    def flush(self) -> None:
-        pass
-
-
-class ZipBackend(Backend):
-    def __init__(self, zip: zipfile.ZipFile) -> None:
-        super(ZipBackend, self).__init__()
-        self.zip = zip
-        self.metadata: Dict[str, SerializableType] = {}
-        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
-        self.assets_written: Set[str] = set()
-
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        if not diagnostics:
-            return
-
-        super().on_diagnostics(path, diagnostics)
-        self.diagnostics[path].extend(diagnostics)
-
-    def on_update(
-        self,
-        prefix: List[str],
-        build_identifiers: BuildIdentifierSet,
-        page_id: FileId,
-        page: Page,
-    ) -> None:
-        super().on_update(prefix, build_identifiers, page_id, page)
-
         fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
 
         uploadable_assets = [
@@ -178,9 +150,7 @@ class ZipBackend(Backend):
         if page.query_fields:
             document.update({"query_fields": page.query_fields})
 
-        self.zip.writestr(
-            f"documents/{page_id.without_known_suffix}.bson", bson.encode(document)
-        )
+        self.handle_document(build_identifiers, page_id.without_known_suffix, document)
 
         for static_asset in uploadable_assets:
             checksum = static_asset.get_checksum()
@@ -188,7 +158,148 @@ class ZipBackend(Backend):
                 continue
 
             self.assets_written.add(checksum)
-            self.zip.writestr(f"assets/{checksum}", static_asset.data)
+            self.handle_asset(checksum, static_asset.data)
+
+    def on_update_metadata(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
+    ) -> None:
+        pass
+
+    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
+        pass
+
+    def flush(self) -> None:
+        pass
+
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        pass
+
+    def handle_asset(self, checksum: str, asset: Union[str, bytes]) -> None:
+        pass
+
+
+class MongoBackend(Backend):
+    def __init__(self, connection: pymongo.MongoClient) -> None:
+        super(MongoBackend, self).__init__()
+        self.client = connection
+        self.db = self._config_db()
+
+        self.pending_writes: Dict[
+            str, List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]]
+        ] = defaultdict(list)
+
+    def _config_db(self) -> str:
+        with PACKAGE_ROOT.joinpath("config.toml").open("rb") as f:
+            config = tomli.load(f)
+            db_name = config["environments"][SNOOTY_ENV]["db"]
+            assert isinstance(db_name, str)
+            return db_name
+
+    def on_update_metadata(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
+    ) -> None:
+        property_name = "/".join(prefix)
+
+        # Construct filter for retrieving build documents
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": property_name,
+            **self.construct_build_identifiers_filter(build_identifiers),
+        }
+
+        # Write to Atlas if field is not an empty dictionary
+        if field:
+            field["created_at"] = datetime.utcnow()
+            self.client[self.db][COLL_METADATA].update_one(
+                document_filter, {"$set": field}, upsert=True
+            )
+
+    def flush(self) -> None:
+        for collection_name, pending_writes in self.pending_writes.items():
+            self.client[self.db][collection_name].bulk_write(
+                pending_writes, ordered=False
+            )
+        self.pending_writes.clear()
+
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": fully_qualified_pageid,
+            **self.construct_build_identifiers_filter(build_identifiers),
+        }
+
+        self.pending_writes[COLL_DOCUMENTS].append(
+            pymongo.ReplaceOne(document_filter, document, upsert=True)
+        )
+
+    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
+        self.pending_writes[COLL_ASSETS].append(
+            pymongo.UpdateOne(
+                {"_id": checksum},
+                {
+                    "$setOnInsert": {
+                        "_id": checksum,
+                        "data": data,
+                    }
+                },
+                upsert=True,
+            )
+        )
+
+    @staticmethod
+    def construct_build_identifiers_filter(
+        build_identifiers: BuildIdentifierSet,
+    ) -> Dict[str, Union[str, Dict[str, Any]]]:
+        """Given a dictionary of build identifiers associated with build, construct
+        a filter to properly query MongoDB for associated documents.
+        """
+        return {
+            key: (value if value else {"$exists": False})
+            for (key, value) in build_identifiers.items()
+        }
+
+
+class ZipBackend(Backend):
+    def __init__(self, zip: zipfile.ZipFile) -> None:
+        super(ZipBackend, self).__init__()
+        self.zip = zip
+        self.metadata: Dict[str, SerializableType] = {}
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        self.assets_written: Set[str] = set()
+
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        if not diagnostics:
+            return
+
+        super().on_diagnostics(path, diagnostics)
+        self.diagnostics[path].extend(diagnostics)
+
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        self.zip.writestr(
+            f"documents/{fully_qualified_pageid}.bson", bson.encode(document)
+        )
+
+    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
+        self.zip.writestr(f"assets/{checksum}", data)
 
     def on_update_metadata(
         self,
@@ -255,10 +366,20 @@ def main() -> None:
         language_server.start()
         return
 
+    url = args["<mongodb-url>"]
     output_path = args["--output"]
-    zf = zipfile.ZipFile(output_path, mode="w") if output_path else None
 
-    backend = ZipBackend(zf) if zf is not None else Backend()
+    connection: Optional[pymongo.MongoClient] = None
+
+    if url:
+        connection = pymongo.MongoClient(url, password=getpass.getpass())
+        backend: Backend = MongoBackend(connection)
+    elif output_path:
+        zf = zipfile.ZipFile(output_path, mode="w")
+        backend = ZipBackend(zf)
+    else:
+        backend = Backend()
+
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
     project = Project(root_path, backend, _generate_build_identifiers(args))
@@ -285,6 +406,9 @@ def main() -> None:
     finally:
         if isinstance(backend, ZipBackend):
             backend.close()
+        elif connection:
+            print("Closing connection...")
+            connection.close()
 
     if args["build"] and backend.total_errors > 0:
         exit_code = (
