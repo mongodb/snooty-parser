@@ -8,7 +8,7 @@ from ..flutter import checked
 from ..page import Page
 from ..types import EmbeddedRstParser
 from .nodes import GizaCategory, HeadingMixin, Inheritable
-from .parse import parse
+from .parse import parse_and_filter_by_edition
 
 
 @checked
@@ -33,7 +33,9 @@ class GizaExtractsCategory(GizaCategory[Extract]):
     def parse(
         self, path: Path, text: Optional[str] = None
     ) -> Tuple[Sequence[Extract], str, List[Diagnostic]]:
-        extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
+        extracts, text, diagnostics = parse_and_filter_by_edition(
+            Extract, path, self.project_config, self.edition, text
+        )
 
         def report_missing_ref(extract: Extract) -> bool:
             diagnostics.append(MissingRef("extracts", extract.line))

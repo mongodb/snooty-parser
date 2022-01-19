@@ -12,7 +12,7 @@ ROOT_PATH = Path("test_data")
 def test_openapi_with_snooty() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
+    parser = rstparser.Parser(project_config, None, JSONVisitor)
 
     # Test using snooty parse
     page, diagnostics = parse_rst(
@@ -123,7 +123,7 @@ to find this value.</text></paragraph></listItem><listItem><list enumtype="unord
 def test_openapi_using_filepath() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
+    parser = rstparser.Parser(project_config, None, JSONVisitor)
 
     # Test default parse using file path
     page, diagnostics = parse_rst(
@@ -147,7 +147,7 @@ def test_openapi_using_filepath() -> None:
 def test_openapi_using_url() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
+    parser = rstparser.Parser(project_config, None, JSONVisitor)
 
     # Successful
     page, diagnostics = parse_rst(
@@ -183,7 +183,7 @@ def test_openapi_using_url() -> None:
 def test_openapi_using_realm() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
-    parser = rstparser.Parser(project_config, JSONVisitor)
+    parser = rstparser.Parser(project_config, None, JSONVisitor)
 
     page, diagnostics = parse_rst(
         parser,

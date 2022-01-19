@@ -10,8 +10,10 @@ from yaml.composer import Composer
 from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, UnmarshallingError
 from ..flutter import LoadError, check_type, mapping_dict
 from ..types import ProjectConfig, SerializableType
+from .nodes import Inheritable
 
 _T = TypeVar("_T")
+_I = TypeVar("_I", bound=Inheritable)
 logger = logging.getLogger(__name__)
 
 
@@ -74,3 +76,15 @@ def parse(
             diagnostics.append(UnmarshallingError(str(err), lineno))
 
     return parsed, text, diagnostics
+
+
+def parse_and_filter_by_edition(
+    ty: Type[_I],
+    path: Path,
+    project_config: ProjectConfig,
+    edition: Optional[str],
+    text: Optional[str] = None,
+) -> Tuple[List[_I], str, List[Diagnostic]]:
+    elements, text, diagnostics = parse(ty, path, project_config, text)
+    elements = [e for e in elements if e.edition is None or e.edition == edition]
+    return elements, text, diagnostics

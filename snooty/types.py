@@ -144,6 +144,7 @@ class ProjectConfig:
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
     bundle: BundleConfig = field(default_factory=lambda: BundleConfig())
+    editions: List[str] = field(default_factory=list)
 
     @property
     def source_path(self) -> Path:
@@ -236,6 +237,7 @@ class ProjectConfig:
 
 @dataclass
 class ProjectState:
+    edition: Optional[str]
     # banner_nodes contains parsed banner nodes with target data
     banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.

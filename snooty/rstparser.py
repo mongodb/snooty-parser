@@ -918,6 +918,7 @@ class Visitor(Protocol):
     def __init__(
         self,
         project_config: ProjectConfig,
+        edition: Optional[str],
         docpath: PurePath,
         document: docutils.nodes.document,
     ) -> None:
@@ -1173,11 +1174,15 @@ def register_spec_with_docutils(
 
 
 class Parser(Generic[_V]):
-    __slots__ = ("project_config", "visitor_class")
-
-    def __init__(self, project_config: ProjectConfig, visitor_class: Type[_V]) -> None:
+    def __init__(
+        self,
+        project_config: ProjectConfig,
+        edition: Optional[str],
+        visitor_class: Type[_V],
+    ) -> None:
         self.project_config = project_config
         self.visitor_class = visitor_class
+        self.edition = edition
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
         Registry.get(self.project_config.default_domain).activate()
@@ -1195,7 +1200,7 @@ class Parser(Generic[_V]):
 
         parser.parse(text, document)
 
-        visitor = self.visitor_class(self.project_config, path, document)
+        visitor = self.visitor_class(self.project_config, self.edition, path, document)
         visitor.add_diagnostics(diagnostics)
         document.walkabout(visitor)
         return visitor, text
