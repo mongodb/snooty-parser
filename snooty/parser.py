@@ -454,6 +454,9 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "tabs":
             self.validate_tabs_children(popped)
 
+        elif isinstance(popped, n.Directive) and popped.name == "io-code-block":
+            self.validate_io_code_block_children(popped)
+
         elif (
             isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
@@ -833,6 +836,81 @@ class JSONVisitor:
 
             doc.children.append(code)
 
+        elif name == "input" or name == "output":
+            if argument_text is not None:
+                _, filepath = util.reroot_path(
+                    FileId(argument_text), self.docpath, self.project_config.source_path
+                )
+
+                # Attempt to read the included file
+                try:
+                    text = filepath.read_text(encoding="utf-8")
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(argument_text, err.strerror, line)
+                    )
+                    return doc
+                except UnicodeDecodeError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(argument_text, str(err), line)
+                    )
+                    return doc
+
+                lines = text.split("\n")
+
+                def _locate_text(text: str) -> int:
+                    """
+                    Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                    add an InvalidLiteralInclude diagnostic.
+                    """
+                    assert isinstance(text, str)
+                    loc = next(
+                        (idx for idx, line in enumerate(lines) if text in line), -1
+                    )
+                    if loc < 0:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f'"{text}" not found in {filepath}', line
+                            )
+                        )
+                    return loc
+
+                len_file = len(lines)
+
+                emphasize_lines = None
+                if "emphasize-lines" in options:
+                    try:
+                        emphasize_lines = rstparser.parse_linenos(
+                            options["emphasize-lines"], len_file
+                        )
+                    except ValueError as err:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f"Invalid emphasize-lines specification caused: {err}",
+                                line,
+                            )
+                        )
+                span = (line,)
+                language = ""
+                selected_content = "\n".join(lines)
+                linenos = "linenos" in options
+                lineno_start = (
+                    options["lineno-start"] if "lineno-start" in options else None
+                )
+
+                code = n.Code(
+                    span,
+                    language,
+                    None,
+                    False,
+                    emphasize_lines,
+                    selected_content,
+                    linenos,
+                    lineno_start,
+                )
+
+                doc.children.append(code)
+
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
@@ -963,6 +1041,25 @@ class JSONVisitor:
                 continue
             new_children.append(child)
         node.children = new_children
+        return
+
+    def validate_io_code_block_children(self, node: n.Directive) -> None:
+        new_children: List[n.Node] = []
+        for child in node.children:
+            if isinstance(child, n.Directive):
+                for grandchild in child.children:
+                    if isinstance(grandchild, n.Code):
+                        grandchild.lang = node.argument[0].value
+                        grandchild.caption = (
+                            node.options["caption"]
+                            if "caption" in node.options
+                            else None
+                        )
+                        grandchild.copyable = (
+                            True if node.options["copyable"] else False
+                        )
+                        new_children.append(grandchild)
+
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
