@@ -470,6 +470,7 @@ content_type = "block"
 options.caption = "string"
 options.copyable = "boolean"
 options.class = "string"
+options.source = "uri"
 example = """.. io-code-block:: ${1:language}
    ${2::copyable: (bool)
    :caption: (string)

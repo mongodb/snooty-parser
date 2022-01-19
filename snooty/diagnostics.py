@@ -180,6 +180,19 @@ class ErrorParsingYAMLFile(Diagnostic):
         self.reason = reason
 
 
+class InvalidIOCodeBlock(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        msg: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"{name}" + " " + f"{msg}", start, end)
+
+
 class InvalidInclude(Diagnostic):
     severity = Diagnostic.Level.error
 

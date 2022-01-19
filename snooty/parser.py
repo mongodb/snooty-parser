@@ -50,10 +50,12 @@ from .diagnostics import (
     FetchError,
     ImageSuggested,
     InvalidField,
+    InvalidIOCodeBlock,
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
     MalformedGlossary,
+    MissingChild,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -1045,8 +1047,14 @@ class JSONVisitor:
 
     def validate_io_code_block_children(self, node: n.Directive) -> None:
         new_children: List[n.Node] = []
+        line = node.start[0]
+        expected_children = {"input", "output"}
+
+        # Add parent options to child nodes for input/output directives
         for child in node.children:
             if isinstance(child, n.Directive):
+                if child.name in expected_children:
+                    expected_children.remove(child.name)
                 for grandchild in child.children:
                     if isinstance(grandchild, n.Code):
                         grandchild.lang = node.argument[0].value
@@ -1056,9 +1064,26 @@ class JSONVisitor:
                             else None
                         )
                         grandchild.copyable = (
-                            True if node.options["copyable"] else False
+                            True
+                            if "copyable" in node.options and node.options["copyable"]
+                            else False
                         )
                         new_children.append(grandchild)
+            else:
+                self.diagnostics.append(
+                    InvalidIOCodeBlock(
+                        "io-code-block",
+                        f"expected input/output child directives, saw {child.type}",
+                        line,
+                    )
+                )
+
+        # Missing nested input and/or output directives
+        if len(expected_children) != 0:
+            for expected_child in expected_children:
+                self.diagnostics.append(
+                    MissingChild("io-code-block", expected_child, line)
+                )
 
         return
 

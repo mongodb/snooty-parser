@@ -341,6 +341,207 @@ def test_tabs_reorder() -> None:
     )
 
 
+def test_iocodeblock() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test a io-code-block with nested input/output directives with raw code content passed in
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: 
+
+      print('hello world')
+
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="io-code-block"><text>python</text>
+            <directive name="input"><code lang="python">print('hello world')</code></directive>
+            <directive name="output"><code lang="python">hello world</code></directive>
+        </directive>
+        </root>""",
+    )
+
+    # Test a io-code-block with nested input/output directives with file paths passed in
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: /test_parser/includes/sample_code.py
+
+   .. output:: /test_parser/includes/sample_code.py""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst"><directive name="io-code-block"><text>python</text><directive name="input"><text>/test_parser/includes/sample_code.py</text><code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+</code></directive><directive name="output"><text>/test_parser/includes/sample_code.py</text><code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+</code></directive></directive></root>
+""",
+    )
+
+    # Test an invalid <path/to/file> for nested directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: /test_parser/includes/nonexistent_file.py
+
+   .. output:: /test_parser/includes/sample_code.py
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst"><directive name="io-code-block"><text>python</text><directive name="input"><text>/test_parser/includes/nonexistent_file.py</text></directive><directive name="output"><text>/test_parser/includes/sample_code.py</text><code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+</code></directive></directive></root>""",
+    )
+
+    # Test a io-code-block with a missing input directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="io-code-block"><text>python</text>
+            <directive name="output"><code lang="python">hello world</code></directive>
+        </directive>
+        </root>""",
+    )
+
+    # Test a io-code-block with a missing output directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: 
+
+      print('hello world')""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="io-code-block"><text>python</text>
+            <directive name="input"><code lang="python">print('hello world')</code></directive>
+        </directive>
+        </root>""",
+    )
+
+    # Test parsing of emphasize-lines and linenos for input/output directives
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: 
+      :linenos:
+      :emphasize-lines: 1-2, 4
+
+      print('hello world1')
+      print('hello world2')
+      print('hello world3')
+      print('hello world4')
+
+   .. output::
+      :emphasize-lines: 3
+    
+      hello world1
+      hello world2
+      hello world3
+      hello world4""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst"><directive name="io-code-block"><text>python</text><directive name="input" linenos="True" emphasize-lines="1-2, 4"><code lang="python" emphasize_lines="[(1, 2), (4, 4)]" linenos="True">print('hello world1')
+print('hello world2')
+print('hello world3')
+print('hello world4')</code></directive><directive name="output" emphasize-lines="3"><code lang="python" emphasize_lines="[(3, 3)]">hello world1
+hello world2
+hello world3
+hello world4</code></directive></directive></root>""",
+    )
+
+    # Test a io-code-block with incorrect options linenos and emphasize-lines
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+   :emphasize-lines: 1-2
+
+   .. input:: 
+
+      print('hello world1')
+      print('hello world2')
+      print('hello world3')
+
+   .. output::
+    
+      hello world1
+      hello world2
+      hello world3""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
