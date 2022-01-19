@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `step` and `procedure` directives can now be styled and are used to help generate steps from YAML (DOP-2504).
+
 ## [v0.11.13] - 2022-01-12
 
 ### Fixed
