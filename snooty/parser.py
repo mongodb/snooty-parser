@@ -1046,45 +1046,66 @@ class JSONVisitor:
         return
 
     def validate_io_code_block_children(self, node: n.Directive) -> None:
+        # new_children should contain input and output directives
         new_children: List[n.Node] = []
         line = node.start[0]
         expected_children = {"input", "output"}
 
-        # Add parent options to child nodes for input/output directives
         for child in node.children:
             if isinstance(child, n.Directive):
                 if child.name in expected_children:
                     expected_children.remove(child.name)
-                for grandchild in child.children:
-                    if isinstance(grandchild, n.Code):
-                        grandchild.lang = node.argument[0].value
-                        grandchild.caption = (
-                            node.options["caption"]
-                            if "caption" in node.options
-                            else None
+                    # new_grandchildren should contain a Code node
+                    new_grandchildren: List[n.Node] = []
+
+                    # child Code nodes for input and output will inherit parent options
+                    for grandchild in child.children:
+                        if isinstance(grandchild, n.Code):
+                            grandchild.lang = node.argument[0].value
+                            grandchild.caption = (
+                                node.options["caption"]
+                                if "caption" in node.options
+                                else None
+                            )
+                            grandchild.copyable = (
+                                True
+                                if "copyable" in node.options
+                                and node.options["copyable"]
+                                else False
+                            )
+                            new_grandchildren.append(grandchild)
+                    child.children = new_grandchildren
+                    new_children.append(child)
+                else:
+                    # either duplicate input/output or invalid child is provided
+                    msg = f"already contains 1 {child.name} directive"
+                    if not (child.name == "input" or child.name == "output"):
+                        msg = f"does not accept child {child.name}"
+                    self.diagnostics.append(
+                        InvalidIOCodeBlock(
+                            msg,
+                            line,
                         )
-                        grandchild.copyable = (
-                            True
-                            if "copyable" in node.options and node.options["copyable"]
-                            else False
-                        )
-                        new_children.append(grandchild)
+                    )
+
             else:
                 self.diagnostics.append(
                     InvalidIOCodeBlock(
-                        "io-code-block",
                         f"expected input/output child directives, saw {child.type}",
                         line,
                     )
                 )
 
-        # Missing nested input and/or output directives
+        # handle missing nested input and/or output directives
         if len(expected_children) != 0:
             for expected_child in expected_children:
                 self.diagnostics.append(
                     MissingChild("io-code-block", expected_child, line)
                 )
+                if expected_child == "input":
+                    new_children = []
 
+        node.children = new_children
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:

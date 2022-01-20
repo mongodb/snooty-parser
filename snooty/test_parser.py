@@ -451,11 +451,7 @@ def test_iocodeblock() -> None:
 
     check_ast_testing_string(
         page.ast,
-        """<root fileid="test.rst">
-        <directive name="io-code-block"><text>python</text>
-            <directive name="output"><code lang="python">hello world</code></directive>
-        </directive>
-        </root>""",
+        """<root fileid="test.rst"><directive name="io-code-block"><text>python</text></directive></root>""",
     )
 
     # Test a io-code-block with a missing output directive
@@ -476,9 +472,66 @@ def test_iocodeblock() -> None:
         page.ast,
         """<root fileid="test.rst">
         <directive name="io-code-block"><text>python</text>
+            <directive name="input"><code lang="python">print('hello world')</code>
+            </directive>
+        </directive></root>""",
+    )
+
+    # Test a io-code-block with an invalid child directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   this is a paragraph
+   that should not be here
+
+   .. input:: 
+
+      print('hello world')""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="io-code-block"><text>python</text>
+            <directive name="input"><code lang="python">print('hello world')</code>
+            </directive>
+        </directive></root>""",
+    )
+
+    # Test a io-code-block with multiple valid input/output directives
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input:: 
+
+      print('hello world')
+
+   .. input:: 
+
+      print('hello world')
+      
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="io-code-block"><text>python</text>
             <directive name="input"><code lang="python">print('hello world')</code></directive>
-        </directive>
-        </root>""",
+            <directive name="output"><code lang="python">hello world</code></directive>
+        </directive></root>""",
     )
 
     # Test parsing of emphasize-lines and linenos for input/output directives

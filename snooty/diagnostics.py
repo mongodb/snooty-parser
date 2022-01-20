@@ -185,12 +185,11 @@ class InvalidIOCodeBlock(Diagnostic):
 
     def __init__(
         self,
-        name: str,
         msg: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"{name}" + " " + f"{msg}", start, end)
+        super().__init__(f'Directive "io-code-block" {msg}', start, end)
 
 
 class InvalidInclude(Diagnostic):
