@@ -135,15 +135,11 @@ class ProjectConfig:
     title: str = field(default="untitled")
     source: str = field(default="source")
     banners: List[BannerConfig] = field(default_factory=list)
-    # banner_nodes contains parsed banner nodes with target data
-    banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
     sharedinclude_root: Optional[str] = field(default=None)
     substitutions: Dict[str, str] = field(default_factory=dict)
-    # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
-    substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
@@ -171,9 +167,8 @@ class ProjectConfig:
                 with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
                     data = toml.load(f)
                     data["root"] = path
-                    result, parsed_diagnostics = check_type(
-                        ProjectConfig, data
-                    ).render_constants()
+                    result = check_type(ProjectConfig, data)
+                    parsed_diagnostics = result.__render_constants()
                     return result, parsed_diagnostics
             except FileNotFoundError:
                 pass
@@ -184,9 +179,9 @@ class ProjectConfig:
 
         return cls(root, name="unnamed"), diagnostics
 
-    def render_constants(self) -> Tuple["ProjectConfig", List[Diagnostic]]:
+    def __render_constants(self) -> List[Diagnostic]:
         if not self.constants:
-            return self, []
+            return []
         constants: Dict[str, object] = {}
         all_diagnostics: List[Diagnostic] = []
         for k, v in self.constants.items():
@@ -195,7 +190,7 @@ class ProjectConfig:
             constants[k] = result
 
         self.constants = constants
-        return self, all_diagnostics
+        return all_diagnostics
 
     def read(
         self, path: Path, text: Optional[str] = None
@@ -237,3 +232,11 @@ class ProjectConfig:
     def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
         """Substitute all placeholders within a string."""
         return self._substitute(source, self.constants)
+
+
+@dataclass
+class ProjectState:
+    # banner_nodes contains parsed banner nodes with target data
+    banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
+    # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
+    substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)

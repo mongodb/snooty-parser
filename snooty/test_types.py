@@ -14,7 +14,6 @@ def test_project() -> None:
         "invalid": "\u200b",
     }
 
-    assert project_config.substitution_nodes == {}
     assert project_config.substitutions == {"guides-short": "MongoDB Guides"}
 
     path = Path("test_data/empty_project")

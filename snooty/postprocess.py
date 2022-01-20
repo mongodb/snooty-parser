@@ -57,7 +57,7 @@ from .diagnostics import (
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
-from .types import FileId, ProjectConfig, SerializableType
+from .types import FileId, ProjectConfig, ProjectState, SerializableType
 from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
@@ -656,7 +656,7 @@ class BannerHandler(Handler):
     and append Banner directive nodes"""
 
     def __init__(self, context: Context) -> None:
-        self.banners = context[ProjectConfig].banner_nodes
+        self.banners = context[ProjectState].banner_nodes
         self.root = context[ProjectConfig].root
 
     def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
@@ -1210,9 +1210,9 @@ class SubstitutionHandler(Handler):
             pass
 
         # Now try to get a substitution from page.
-        substitution = self.substitution_definitions.get(
-            name
-        ) or self.project_config.substitution_nodes.get(name)
+        substitution = self.substitution_definitions.get(name) or self.context[
+            ProjectState
+        ].substitution_nodes.get(name)
 
         return util.fast_deep_copy(substitution)
 
@@ -1443,12 +1443,18 @@ class Postprocessor:
         [RefsHandler, NamedReferenceHandlerPass2],
     ]
 
-    def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
+    def __init__(
+        self,
+        project_config: ProjectConfig,
+        targets: TargetDatabase,
+        project_state: ProjectState,
+    ) -> None:
         self.project_config = project_config
         self.toctree: Dict[str, SerializableType] = {}
         self.pages: Dict[FileId, Page] = {}
         self.targets = targets
         self.pending_program: Optional[SerializableType] = None
+        self.project_state = project_state
 
     def run(
         self, pages: Dict[FileId, Page], cancellation_token: threading.Event
@@ -1462,6 +1468,7 @@ class Postprocessor:
         context = Context(pages)
         context.add(self.project_config)
         context.add(self.targets)
+        context.add(self.project_state)
 
         for project_pass in self.PASSES:
             instances = [ty(context) for ty in project_pass]

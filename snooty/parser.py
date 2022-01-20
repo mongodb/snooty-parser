@@ -72,6 +72,7 @@ from .types import (
     FileId,
     ParsedBannerConfig,
     ProjectConfig,
+    ProjectState,
     SerializableType,
     StaticAsset,
 )
@@ -1258,6 +1259,8 @@ class _Project:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
 
+        self.state = ProjectState()
+
         # We might have found the project in a parent directory. Use that.
         root = self.config.root
 
@@ -1319,7 +1322,7 @@ class _Project:
                     substitution_diagnostics,
                 )
 
-        self.config.substitution_nodes = substitution_nodes
+        self.state.substitution_nodes = substitution_nodes
 
         # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
         for banner in self.config.banners:
@@ -1337,7 +1340,7 @@ class _Project:
                 ]
                 banner_node.node.children = page.ast.children
                 if banner_node.node.children:
-                    self.config.banner_nodes.append(banner_node)
+                    self.state.banner_nodes.append(banner_node)
                 if banner_diagnostics:
                     self.initialization_diagnostics[snooty_config_fileid].extend(
                         banner_diagnostics
@@ -1362,9 +1365,11 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
+            lambda: DevhubPostprocessor(
+                self.config, self.targets.copy_clean_slate(), self.state
+            )
             if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets.copy_clean_slate())
+            else Postprocessor(self.config, self.targets.copy_clean_slate(), self.state)
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
