@@ -705,6 +705,43 @@ class JSONVisitor:
                 )
                 return doc
 
+        elif name == "input" or name == "output":
+            if argument_text is not None:
+                _, filepath = util.reroot_path(
+                    FileId(argument_text), self.docpath, self.project_config.source_path
+                )
+
+                # Attempt to read the literally included file
+                text = self.read_filepath_attempt(filepath, argument_text, line, doc)
+                lines = text.split("\n")
+                len_file = len(lines)
+
+                emphasize_lines = None
+                if "emphasize-lines" in options:
+                    emphasize_lines = self.validate_emphasize_lines(
+                        options, len_file, line
+                    )
+                span = (line,)
+                language = ""
+                selected_content = "\n".join(lines)
+                linenos = "linenos" in options
+                lineno_start = (
+                    options["lineno-start"] if "lineno-start" in options else None
+                )
+
+                code = n.Code(
+                    span,
+                    language,
+                    None,
+                    False,
+                    emphasize_lines,
+                    selected_content,
+                    linenos,
+                    lineno_start,
+                )
+
+                doc.children.append(code)
+
         elif name == "literalinclude":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, line))
@@ -715,37 +752,14 @@ class JSONVisitor:
             )
 
             # Attempt to read the literally included file
-            try:
-                text = filepath.read_text(encoding="utf-8")
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
-                )
-                return doc
-            except UnicodeDecodeError as err:
-                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
-                return doc
-
+            text = self.read_filepath_attempt(filepath, argument_text, line, doc)
             lines = text.split("\n")
-
-            def _locate_text(text: str) -> int:
-                """
-                Searches the literally-included file ('lines') for the specified text. If no such text is found,
-                add an InvalidLiteralInclude diagnostic.
-                """
-                assert isinstance(text, str)
-                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
-                if loc < 0:
-                    self.diagnostics.append(
-                        InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
-                    )
-                return loc
 
             # Locate the start_after query
             start_after = 0
             if "start-after" in options:
                 start_after_text = options["start-after"]
-                start_after = _locate_text(start_after_text)
+                start_after = self._locate_text(start_after_text)
                 # Only increment start_after if text is specified, to avoid capturing the start_after_text
                 start_after += 1
 
@@ -753,7 +767,7 @@ class JSONVisitor:
             end_before = len(lines)
             if "end-before" in options:
                 end_before_text = options["end-before"]
-                end_before = _locate_text(end_before_text)
+                end_before = self._locate_text(end_before_text)
 
             # Check that start_after_text precedes end_before_text (and end_before exists)
             if start_after >= end_before >= 0:
@@ -804,16 +818,7 @@ class JSONVisitor:
 
             emphasize_lines = None
             if "emphasize-lines" in options:
-                try:
-                    emphasize_lines = rstparser.parse_linenos(
-                        options["emphasize-lines"], len_file
-                    )
-                except ValueError as err:
-                    self.diagnostics.append(
-                        InvalidLiteralInclude(
-                            f"Invalid emphasize-lines specification caused: {err}", line
-                        )
-                    )
+                emphasize_lines = self.validate_emphasize_lines(options, len_file, line)
 
             span = (line,)
             language = options["language"] if "language" in options else ""
@@ -837,81 +842,6 @@ class JSONVisitor:
             )
 
             doc.children.append(code)
-
-        elif name == "input" or name == "output":
-            if argument_text is not None:
-                _, filepath = util.reroot_path(
-                    FileId(argument_text), self.docpath, self.project_config.source_path
-                )
-
-                # Attempt to read the included file
-                try:
-                    text = filepath.read_text(encoding="utf-8")
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(argument_text, err.strerror, line)
-                    )
-                    return doc
-                except UnicodeDecodeError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(argument_text, str(err), line)
-                    )
-                    return doc
-
-                lines = text.split("\n")
-
-                def _locate_text(text: str) -> int:
-                    """
-                    Searches the literally-included file ('lines') for the specified text. If no such text is found,
-                    add an InvalidLiteralInclude diagnostic.
-                    """
-                    assert isinstance(text, str)
-                    loc = next(
-                        (idx for idx, line in enumerate(lines) if text in line), -1
-                    )
-                    if loc < 0:
-                        self.diagnostics.append(
-                            InvalidLiteralInclude(
-                                f'"{text}" not found in {filepath}', line
-                            )
-                        )
-                    return loc
-
-                len_file = len(lines)
-
-                emphasize_lines = None
-                if "emphasize-lines" in options:
-                    try:
-                        emphasize_lines = rstparser.parse_linenos(
-                            options["emphasize-lines"], len_file
-                        )
-                    except ValueError as err:
-                        self.diagnostics.append(
-                            InvalidLiteralInclude(
-                                f"Invalid emphasize-lines specification caused: {err}",
-                                line,
-                            )
-                        )
-                span = (line,)
-                language = ""
-                selected_content = "\n".join(lines)
-                linenos = "linenos" in options
-                lineno_start = (
-                    options["lineno-start"] if "lineno-start" in options else None
-                )
-
-                code = n.Code(
-                    span,
-                    language,
-                    None,
-                    False,
-                    emphasize_lines,
-                    selected_content,
-                    linenos,
-                    lineno_start,
-                )
-
-                doc.children.append(code)
 
         elif name == "include":
             if argument_text is None:
@@ -992,6 +922,48 @@ class JSONVisitor:
 
         return doc
 
+    def validate_emphasize_lines(self, options: dict, len_file: int, line: int):
+        try:
+            emphasize_lines = rstparser.parse_linenos(
+                options["emphasize-lines"], len_file
+            )
+        except ValueError as err:
+            self.diagnostics.append(
+                InvalidLiteralInclude(
+                    f"Invalid emphasize-lines specification caused: {err}",
+                    line,
+                )
+            )
+        return emphasize_lines
+
+    def read_filepath_attempt(
+        self, filepath: Path, argument_text: str, line: int, doc: n.Directive
+    ):
+        try:
+            text = filepath.read_text(encoding="utf-8")
+        except OSError as err:
+            self.diagnostics.append(CannotOpenFile(argument_text, err.strerror, line))
+            return doc
+        except UnicodeDecodeError as err:
+            self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
+            return doc
+        return text
+
+    def _locate_text(
+        self, filepath: Path, lines: list[str], line: int, text: str
+    ) -> int:
+        """
+        Searches the literally-included file ('lines') for the specified text. If no such text is found,
+        add an InvalidLiteralInclude diagnostic.
+        """
+        assert isinstance(text, str)
+        loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
+        if loc < 0:
+            self.diagnostics.append(
+                InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
+            )
+        return loc
+
     def validate_and_add_asset(
         self, doc: n.Directive, image_argument: str, line: int
     ) -> None:
@@ -1054,12 +1026,14 @@ class JSONVisitor:
         for child in node.children:
             if isinstance(child, n.Directive):
                 if child.name in expected_children:
-                    expected_children.remove(child.name)
-                    # new_grandchildren should contain a Code node
                     new_grandchildren: List[n.Node] = []
 
-                    # child Code nodes for input and output will inherit parent options
-                    for grandchild in child.children:
+                    # Input or output should have 1 child Code node
+                    if len(child.children) == 1:
+                        expected_children.remove(child.name)
+
+                        # child nodes for input/output will inherit parent options
+                        grandchild = child.children[0]
                         if isinstance(grandchild, n.Code):
                             grandchild.lang = node.argument[0].value
                             grandchild.caption = (
@@ -1074,8 +1048,8 @@ class JSONVisitor:
                                 else False
                             )
                             new_grandchildren.append(grandchild)
-                    child.children = new_grandchildren
-                    new_children.append(child)
+                        child.children = new_grandchildren
+                        new_children.append(child)
                 else:
                     # either duplicate input/output or invalid child is provided
                     msg = f"already contains 1 {child.name} directive"
@@ -1087,7 +1061,6 @@ class JSONVisitor:
                             line,
                         )
                     )
-
             else:
                 self.diagnostics.append(
                     InvalidIOCodeBlock(
@@ -1097,7 +1070,7 @@ class JSONVisitor:
                 )
 
         # handle missing nested input and/or output directives
-        if len(expected_children) != 0:
+        if len(expected_children) != 0 or len(new_children) != 2:
             for expected_child in expected_children:
                 self.diagnostics.append(
                     MissingChild("io-code-block", expected_child, line)
