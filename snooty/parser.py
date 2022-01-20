@@ -705,24 +705,132 @@ class JSONVisitor:
                 )
                 return doc
 
-        elif name == "input" or name == "output":
+        elif name == "literalinclude" or name == "input" or name == "output":
+            if name == "literalinclude":
+                if argument_text is None:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
             if argument_text is not None:
                 _, filepath = util.reroot_path(
                     FileId(argument_text), self.docpath, self.project_config.source_path
                 )
 
                 # Attempt to read the literally included file
-                text = self.read_filepath_attempt(filepath, argument_text, line, doc)
+                try:
+                    text = filepath.read_text(encoding="utf-8")
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(argument_text, err.strerror, line)
+                    )
+                    return doc
+                except UnicodeDecodeError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(argument_text, str(err), line)
+                    )
+                    return doc
+
                 lines = text.split("\n")
+                # Capture the original file-length before splicing it
                 len_file = len(lines)
+
+                if name == "literalinclude":
+
+                    def _locate_text(text: str) -> int:
+                        """
+                        Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                        add an InvalidLiteralInclude diagnostic.
+                        """
+                        assert isinstance(text, str)
+                        loc = next(
+                            (idx for idx, line in enumerate(lines) if text in line), -1
+                        )
+                        if loc < 0:
+                            self.diagnostics.append(
+                                InvalidLiteralInclude(
+                                    f'"{text}" not found in {filepath}', line
+                                )
+                            )
+                        return loc
+
+                    # Locate the start_after query
+                    start_after = 0
+                    if "start-after" in options:
+                        start_after_text = options["start-after"]
+                        # start_after = self._locate_text(start_after_text, lines, line, text)
+                        start_after = _locate_text(start_after_text)
+                        # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                        start_after += 1
+
+                    # ...now locate the end_before query
+                    end_before = len(lines)
+                    if "end-before" in options:
+                        end_before_text = options["end-before"]
+                        # end_before = self._locate_text(end_before_text, lines, line, text)
+                        end_before = _locate_text(end_before_text)
+
+                    # Check that start_after_text precedes end_before_text (and end_before exists)
+                    if start_after >= end_before >= 0:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                                line,
+                            )
+                        )
+
+                    # If we failed to locate end_before text, default to the end-of-file
+                    if end_before == -1:
+                        end_before = len(lines)
+
+                    lines = lines[start_after:end_before]
+
+                    dedent = 0
+                    if "dedent" in options:
+                        # Dedent is specified as a flag
+                        if isinstance(options["dedent"], bool):
+                            # Deduce a reasonable dedent
+                            try:
+                                dedent = min(
+                                    len(line) - len(line.lstrip())
+                                    for line in lines
+                                    if len(line.lstrip()) > 0
+                                )
+                            except ValueError:
+                                # Handle the (unlikely) case where there are no non-empty lines
+                                dedent = 0
+                        # Dedent is specified as a nonnegative integer (number of characters):
+                        # Note: since boolean is a subtype of int, this conditonal must follow the
+                        # above bool-type conditional.
+                        elif isinstance(options["dedent"], int):
+                            dedent = options["dedent"]
+                        else:
+                            self.diagnostics.append(
+                                InvalidLiteralInclude(
+                                    f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                                    line,
+                                )
+                            )
+                            return doc
+
+                    lines = [line[dedent:] for line in lines]
 
                 emphasize_lines = None
                 if "emphasize-lines" in options:
-                    emphasize_lines = self.validate_emphasize_lines(
-                        options, len_file, line
-                    )
+                    try:
+                        emphasize_lines = rstparser.parse_linenos(
+                            options["emphasize-lines"], len_file
+                        )
+                    except ValueError as err:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f"Invalid emphasize-lines specification caused: {err}",
+                                line,
+                            )
+                        )
+
                 span = (line,)
-                language = ""
+                language = options["language"] if "language" in options else ""
+                caption = options["caption"] if "caption" in options else None
+                copyable = "copyable" not in options or options["copyable"] == "True"
                 selected_content = "\n".join(lines)
                 linenos = "linenos" in options
                 lineno_start = (
@@ -732,8 +840,8 @@ class JSONVisitor:
                 code = n.Code(
                     span,
                     language,
-                    None,
-                    False,
+                    caption,
+                    copyable,
                     emphasize_lines,
                     selected_content,
                     linenos,
@@ -741,107 +849,6 @@ class JSONVisitor:
                 )
 
                 doc.children.append(code)
-
-        elif name == "literalinclude":
-            if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
-                return doc
-
-            _, filepath = util.reroot_path(
-                FileId(argument_text), self.docpath, self.project_config.source_path
-            )
-
-            # Attempt to read the literally included file
-            text = self.read_filepath_attempt(filepath, argument_text, line, doc)
-            lines = text.split("\n")
-
-            # Locate the start_after query
-            start_after = 0
-            if "start-after" in options:
-                start_after_text = options["start-after"]
-                start_after = self._locate_text(start_after_text)
-                # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                start_after += 1
-
-            # ...now locate the end_before query
-            end_before = len(lines)
-            if "end-before" in options:
-                end_before_text = options["end-before"]
-                end_before = self._locate_text(end_before_text)
-
-            # Check that start_after_text precedes end_before_text (and end_before exists)
-            if start_after >= end_before >= 0:
-                self.diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
-                        line,
-                    )
-                )
-
-            # If we failed to locate end_before text, default to the end-of-file
-            if end_before == -1:
-                end_before = len(lines)
-
-            # Capture the original file-length before splicing it
-            len_file = len(lines)
-            lines = lines[start_after:end_before]
-
-            dedent = 0
-            if "dedent" in options:
-                # Dedent is specified as a flag
-                if isinstance(options["dedent"], bool):
-                    # Deduce a reasonable dedent
-                    try:
-                        dedent = min(
-                            len(line) - len(line.lstrip())
-                            for line in lines
-                            if len(line.lstrip()) > 0
-                        )
-                    except ValueError:
-                        # Handle the (unlikely) case where there are no non-empty lines
-                        dedent = 0
-                # Dedent is specified as a nonnegative integer (number of characters):
-                # Note: since boolean is a subtype of int, this conditonal must follow the
-                # above bool-type conditional.
-                elif isinstance(options["dedent"], int):
-                    dedent = options["dedent"]
-                else:
-                    self.diagnostics.append(
-                        InvalidLiteralInclude(
-                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
-                            line,
-                        )
-                    )
-                    return doc
-
-            lines = [line[dedent:] for line in lines]
-
-            emphasize_lines = None
-            if "emphasize-lines" in options:
-                emphasize_lines = self.validate_emphasize_lines(options, len_file, line)
-
-            span = (line,)
-            language = options["language"] if "language" in options else ""
-            caption = options["caption"] if "caption" in options else None
-            copyable = "copyable" not in options or options["copyable"] == "True"
-            selected_content = "\n".join(lines)
-            linenos = "linenos" in options
-            lineno_start = (
-                options["lineno-start"] if "lineno-start" in options else None
-            )
-
-            code = n.Code(
-                span,
-                language,
-                caption,
-                copyable,
-                emphasize_lines,
-                selected_content,
-                linenos,
-                lineno_start,
-            )
-
-            doc.children.append(code)
 
         elif name == "include":
             if argument_text is None:
@@ -921,48 +928,6 @@ class JSONVisitor:
                 self.validate_and_add_asset(doc, image_argument, line)
 
         return doc
-
-    def validate_emphasize_lines(self, options: dict, len_file: int, line: int):
-        try:
-            emphasize_lines = rstparser.parse_linenos(
-                options["emphasize-lines"], len_file
-            )
-        except ValueError as err:
-            self.diagnostics.append(
-                InvalidLiteralInclude(
-                    f"Invalid emphasize-lines specification caused: {err}",
-                    line,
-                )
-            )
-        return emphasize_lines
-
-    def read_filepath_attempt(
-        self, filepath: Path, argument_text: str, line: int, doc: n.Directive
-    ):
-        try:
-            text = filepath.read_text(encoding="utf-8")
-        except OSError as err:
-            self.diagnostics.append(CannotOpenFile(argument_text, err.strerror, line))
-            return doc
-        except UnicodeDecodeError as err:
-            self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
-            return doc
-        return text
-
-    def _locate_text(
-        self, filepath: Path, lines: list[str], line: int, text: str
-    ) -> int:
-        """
-        Searches the literally-included file ('lines') for the specified text. If no such text is found,
-        add an InvalidLiteralInclude diagnostic.
-        """
-        assert isinstance(text, str)
-        loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
-        if loc < 0:
-            self.diagnostics.append(
-                InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
-            )
-        return loc
 
     def validate_and_add_asset(
         self, doc: n.Directive, image_argument: str, line: int
