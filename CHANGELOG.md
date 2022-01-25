@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Using the `include` directive with no argument no longer cause a build hang (DOP-2696, #376, #377).
+
 ## [v0.12.0] - 2022-01-19
 
 ### Changed
