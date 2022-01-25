@@ -9,6 +9,7 @@ from .diagnostics import (
     ChapterAlreadyExists,
     DocUtilsParseError,
     DuplicateDirective,
+    ExpectedPathArg,
     ExpectedTabs,
     GuideAlreadyHasChapter,
     InvalidChapter,
@@ -1314,6 +1315,21 @@ A Heading
     </section>
 </section></root>""",
         )
+
+
+def test_missing_include_argument() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. include::
+""",
+        }
+    ) as result:
+        assert [type(d) for d in result.diagnostics[FileId("index.txt")]] == [
+            ExpectedPathArg
+        ]
 
 
 def test_include_subset() -> None:

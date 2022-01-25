@@ -293,13 +293,10 @@ class IncludeHandler(Handler):
         }:
             return
 
-        def get_include_argument(node: n.Directive) -> str:
-            """Get filename of include"""
-            argument_list = node.argument
-            assert len(argument_list) > 0
-            return argument_list[0].value
+        argument = "".join(arg.get_text() for arg in node.argument)
+        if not argument:
+            return
 
-        argument = get_include_argument(node)
         include_slug = clean_slug(argument)
         include_fileid = self.slug_fileid_mapping.get(include_slug)
         # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
