@@ -1,12 +1,15 @@
 """Parser for a TOML spec file containing definitions of all supported reStructuredText
    directives and roles, and what types of data each should expect."""
 
+from __future__ import annotations
+
 import dataclasses
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     FrozenSet,
     List,
@@ -271,6 +274,8 @@ class Spec:
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
     tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
 
+    SPEC: ClassVar[Optional[Spec]] = None
+
     @classmethod
     def loads(cls, data: str) -> "Spec":
         """Load a spec from a string."""
@@ -392,6 +397,16 @@ class Spec:
         for key, inheritable in inheritable_index.items():
             resolve_value(key, inheritable)
 
+    @classmethod
+    def initialize(cls, text: str) -> None:
+        cls.SPEC = Spec.loads(text)
 
-GLOBAL_SPEC_PATH = util.PACKAGE_ROOT.joinpath("rstspec.toml")
-SPEC = Spec.loads(GLOBAL_SPEC_PATH.read_text(encoding="utf-8"))
+    @classmethod
+    def get(cls) -> "Spec":
+        if cls.SPEC is None:
+            path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
+            cls.initialize(path.read_text(encoding="utf-8"))
+
+        spec = cls.SPEC
+        assert spec is not None
+        return spec

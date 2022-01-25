@@ -1,7 +1,7 @@
 """Snooty.
 
 Usage:
-  snooty build [--no-caching] <source-path> [<mongodb-url>] [--commit=<commit_hash> | (--commit=<commit_hash> --patch=<patch_id>)]
+  snooty build [--no-caching] <source-path> [<mongodb-url>] [options]
   snooty watch [--no-caching] <source-path>
   snooty [--no-caching] language-server
 
@@ -10,6 +10,7 @@ Options:
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
   --no-caching              Disable HTTP response caching.
+  --rstspec=<url>           Override the reStructuredText directive & role spec.
 
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
@@ -34,7 +35,7 @@ import watchdog.events
 import watchdog.observers
 from docopt import docopt
 
-from . import __version__, language_server
+from . import __version__, language_server, specparser
 from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .page import Page
 from .parser import Project, ProjectBackend
@@ -279,6 +280,15 @@ def main() -> None:
         HTTPCache.initialize(False)
 
     logger.info(f"Snooty {__version__} starting")
+
+    if args["--rstspec"]:
+        rstspec_path = args["--rstspec"]
+        if rstspec_path.startswith("https://") or rstspec_path.startswith("http://"):
+            rstspec_bytes = HTTPCache.singleton().get(args["--rstspec"])
+            rstspec_text = str(rstspec_bytes, "utf-8")
+        else:
+            rstspec_text = Path(rstspec_path).read_text(encoding="utf-8")
+        specparser.Spec.initialize(rstspec_text)
 
     if PARANOID_MODE:
         logger.info("Paranoid mode on")

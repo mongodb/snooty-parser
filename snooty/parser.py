@@ -492,7 +492,7 @@ class JSONVisitor:
         line = node.start[0]
         # retrieve dictionary associated with this specific tabset
         try:
-            tab_definitions_list = specparser.SPEC.tabs[tabset]
+            tab_definitions_list = specparser.Spec.get().tabs[tabset]
         except KeyError:
             self.diagnostics.append(UnknownTabset(tabset, line))
             return

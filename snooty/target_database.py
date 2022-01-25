@@ -56,6 +56,8 @@ class TargetDatabase:
         key = normalize_target(key)
         results: List[TargetDatabase.Result] = []
 
+        spec = specparser.Spec.get()
+
         with self.lock:
             # Check to see if the target is defined locally
             try:
@@ -93,7 +95,7 @@ class TargetDatabase:
                     if display_name is None:
                         display_name = entry.name
 
-                        display_name = specparser.SPEC.strip_prefix_from_name(
+                        display_name = spec.strip_prefix_from_name(
                             entry.domain_and_role, display_name
                         )
 
