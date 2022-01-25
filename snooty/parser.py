@@ -1229,15 +1229,16 @@ class PageDatabase:
 
     def flush(
         self,
-    ) -> queue.Queue[Union[PostprocessorResult, util.CancelledException]]:
+    ) -> queue.Queue[Tuple[Optional[PostprocessorResult], Optional[Exception]]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
         postprocessor = self.postprocessor_factory()
         return self.worker.run(postprocessor)
 
     def flush_and_wait(self) -> PostprocessorResult:
-        result = self.flush().get()
-        if isinstance(result, util.CancelledException):
-            raise result
+        result, exception = self.flush().get()
+        if exception:
+            raise exception
+        assert result is not None
         return result
 
     def cancel(self) -> None:
