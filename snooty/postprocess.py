@@ -1242,6 +1242,7 @@ class RefsHandler(Handler):
         super().__init__(context)
         self.project_config = context[ProjectConfig]
         self.targets = context[TargetDatabase]
+        self.spec = specparser.Spec.get()
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
@@ -1265,7 +1266,7 @@ class RefsHandler(Handler):
         if not target_candidates:
             # insert title and raise diagnostic
             line = node.span[0]
-            target_dict = specparser.SPEC.rstobject
+            target_dict = self.spec.rstobject
             target_key = f"{node.domain}:{node.name}"
             title = node.target
             # abstract title from node's target to insert into new text node
