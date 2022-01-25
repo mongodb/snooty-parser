@@ -483,11 +483,13 @@ class WorkerLauncher(Generic[_T, _R]):
         self.__thread: Optional[threading.Thread] = None
         self.__cancel = threading.Event()
 
-    def run(self, arg: _T) -> queue.Queue[Union[_R, CancelledException]]:
+    def run(self, arg: _T) -> queue.Queue[Tuple[Optional[_R], Optional[Exception]]]:
         """Cancel any current thread of execution; block until it is cancelled; and re-launch the worker."""
         self.cancel()
 
-        result_queue: queue.Queue[Union[_R, CancelledException]] = queue.Queue(1)
+        result_queue: queue.Queue[
+            Tuple[Optional[_R], Optional[Exception]]
+        ] = queue.Queue(1)
 
         def inner() -> None:
             try:
@@ -497,9 +499,9 @@ class WorkerLauncher(Generic[_T, _R]):
                 if self.__cancel.is_set():
                     raise CancelledException()
 
-                result_queue.put(result)
-            except CancelledException as cancelled:
-                result_queue.put(cancelled)
+                result_queue.put((result, None))
+            except Exception as exception:
+                result_queue.put((None, exception))
 
         thread = threading.Thread(name=self.name, target=inner, daemon=True)
         with self._lock:
@@ -509,11 +511,11 @@ class WorkerLauncher(Generic[_T, _R]):
         return result_queue
 
     def run_and_wait(self, arg: _T) -> _R:
-        result = self.run(arg).get()
-        if isinstance(result, CancelledException):
-            raise result
+        result, exception = self.run(arg).get()
+        if exception:
+            raise exception
 
-        return result
+        return cast(_R, result)
 
     def cancel(self) -> None:
         """Instruct the worker to raise WorkerCanceled and abort execution."""

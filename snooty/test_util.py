@@ -171,3 +171,15 @@ def test_worker() -> None:
 
     finally:
         sys.setswitchinterval(initial_switch_interval)
+
+
+def test_worker_that_fails() -> None:
+    class SomeException(Exception):
+        pass
+
+    def start(event: threading.Event, arg: object) -> None:
+        raise SomeException()
+
+    worker = util.WorkerLauncher("worker-test", start)
+    with pytest.raises(SomeException):
+        worker.run_and_wait(None)
