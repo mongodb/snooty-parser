@@ -4,7 +4,7 @@ version = 0
 [enum]
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
-banner_variant = ["info", "warning", "danger"]
+banner_variant = ["info", "warning", "danger", "cta-banner"]
 card_layout = ["default", "carousel"]
 card_style = ["default", "compact", "extra-compact"]
 card_type = ["small", "large"]
@@ -84,6 +84,15 @@ inherit = "admonition"
 example = """.. warning:: ${1:Title}
 
    ${2:Warning block content}
+"""
+
+[directive.cta-banner]
+content_type = "block"
+options.url = "uri"
+example = """.. cta-banner:
+   :url: https://university.mongodb.com/
+
+   ${2:Banner Text content}
 """
 
 [directive.important]
