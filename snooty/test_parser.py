@@ -915,9 +915,8 @@ def test_cta_banner() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="cta-banner" url="https://university.mongodb.com/">
-            <paragraph>
-            <text>If you prefer learning through videos, try this lesson on </text>
+        <directive domain="mongodb" name="cta-banner" url="https://university.mongodb.com/">
+            <paragraph><text>If you prefer learning through videos, try this lesson on </text>
             <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
             <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
             </paragraph>
@@ -938,14 +937,15 @@ def test_cta_banner() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
-
     check_ast_testing_string(
         page.ast,
-        """<root fileid="test.rst"><directive name="cta-banner">
-        <paragraph><text>If you prefer learning through videos, try this lesson on </text>
-        <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
-        <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
-        </paragraph></directive></root>""",
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="cta-banner">
+            <paragraph><text>If you prefer learning through videos, try this lesson on </text>
+            <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
+            <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
+            </paragraph>
+        </directive></root>""",
     )
 
 
