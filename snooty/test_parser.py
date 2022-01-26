@@ -892,6 +892,7 @@ def test_banner() -> None:
         </root>""",
     )
 
+
 def test_cta_banner() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -921,6 +922,7 @@ def test_cta_banner() -> None:
             </paragraph>
         </directive></root>""",
     )
+
 
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
