@@ -237,21 +237,6 @@ class MissingOption(Diagnostic):
         super().__init__("'.. option::' must follow '.. program::'", start, end)
 
 
-class MissingRequiredOption(Diagnostic):
-    severity = Diagnostic.Level.error
-
-    def __init__(
-        self,
-        name: str,
-        missing_option: str,
-        start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None,
-    ) -> None:
-        super().__init__(
-            f"{name} is missing required option {missing_option}", start, end
-        )
-
-
 class MissingRef(Diagnostic):
     severity = Diagnostic.Level.error
 
