@@ -54,6 +54,7 @@ from .diagnostics import (
     InvalidTableStructure,
     InvalidURL,
     MalformedGlossary,
+    MissingRequiredOption,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -607,6 +608,12 @@ class JSONVisitor:
                 return doc
 
             self.validate_and_add_asset(doc, argument_text, line)
+
+        elif name == "cta-banner":
+            if options is None:
+                self.diagnostics.append(
+                    MissingRequiredOption("cta-banner", "url", line)
+                )
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.

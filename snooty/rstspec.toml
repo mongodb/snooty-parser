@@ -88,8 +88,8 @@ example = """.. warning:: ${1:Title}
 
 [directive.cta-banner]
 content_type = "block"
-options.url = "uri"
-example = """.. cta-banner:
+options.url = { type = "uri", required = true }
+example = """.. cta-banner::
    :url: https://university.mongodb.com/
 
    ${2:Banner Text content}
