@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `mongodb:cta-banner` directive (DOP-2600, #380).
+
 ## [v0.12.1] - 2022-01-25
 
 ### Fixed
