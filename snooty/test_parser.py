@@ -893,6 +893,62 @@ def test_banner() -> None:
     )
 
 
+def test_cta_banner() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test valid cta-banner
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. cta-banner::
+   :url: https://university.mongodb.com/
+
+   If you prefer learning through videos, try this lesson on `MongoDB University 
+   <https://university.mongodb.com/>`_
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="cta-banner" url="https://university.mongodb.com/">
+            <paragraph><text>If you prefer learning through videos, try this lesson on </text>
+            <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
+            <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
+            </paragraph>
+        </directive></root>""",
+    )
+
+    # Test cta-banner without url option specified
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. cta-banner::
+
+   If you prefer learning through videos, try this lesson on `MongoDB University 
+   <https://university.mongodb.com/>`_
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="cta-banner">
+            <paragraph><text>If you prefer learning through videos, try this lesson on </text>
+            <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
+            <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
+            </paragraph>
+        </directive></root>""",
+    )
+
+
 def test_rst_replacement() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

@@ -643,6 +643,15 @@ example = """.. banner::
    ${2:banner content}
 """
 
+[directive."mongodb:cta-banner"]
+content_type = "block"
+options.url = { type = "uri", required = true }
+example = """.. cta-banner::
+   :url: https://university.mongodb.com/
+
+   ${2:Banner Text content}
+"""
+
 [directive."mongodb:button"]
 help = "Make a button."
 example = """.. button:: ${1: string}
