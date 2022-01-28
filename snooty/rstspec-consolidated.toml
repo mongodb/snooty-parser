@@ -1133,7 +1133,7 @@ type = {link = "https://account.mongodb.com/account%s"}
 
 [role.community-forum]
 help = "Link to the MongoDB Community Forums page."
-type = {link = "https://community.mongodb.com/%s"}
+type = {link = "https://www.mongodb.com/community/forums/%s"}
 
 [role.perl-api]
 help = "Link to a page in the Perl driver's CPAN API reference."
