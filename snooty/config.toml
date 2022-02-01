@@ -7,3 +7,9 @@
 
   [environments.production]
   db = "snooty_prod"
+
+  [environments.dotcomstg]
+  db = "snooty_dotcomstg"
+
+  [environments.dotcomprd]
+  db = "snooty_dotcomstg"
