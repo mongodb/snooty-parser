@@ -180,7 +180,7 @@ class ErrorParsingYAMLFile(Diagnostic):
         self.reason = reason
 
 
-class InvalidIOCodeBlock(Diagnostic):
+class InvalidDirectiveStructure(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(

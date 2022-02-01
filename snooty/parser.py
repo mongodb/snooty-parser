@@ -49,8 +49,8 @@ from .diagnostics import (
     ExpectedPathArg,
     FetchError,
     ImageSuggested,
+    InvalidDirectiveStructure,
     InvalidField,
-    InvalidIOCodeBlock,
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
@@ -457,7 +457,7 @@ class JSONVisitor:
             self.validate_tabs_children(popped)
 
         elif isinstance(popped, n.Directive) and popped.name == "io-code-block":
-            self.validate_io_code_block_children(popped)
+            self.diagnostics.extend(_validate_io_code_block_children(popped))
 
         elif (
             isinstance(popped, n.Directive)
@@ -710,145 +710,145 @@ class JSONVisitor:
                 if argument_text is None:
                     self.diagnostics.append(ExpectedPathArg(name, line))
                     return doc
-            if argument_text is not None:
-                _, filepath = util.reroot_path(
-                    FileId(argument_text), self.docpath, self.project_config.source_path
+            if argument_text is None:
+                return doc
+
+            _, filepath = util.reroot_path(
+                FileId(argument_text), self.docpath, self.project_config.source_path
+            )
+
+            # Attempt to read the literally included file
+            try:
+                text = filepath.read_text(encoding="utf-8")
+            except OSError as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, err.strerror, line)
                 )
+                return doc
+            except UnicodeDecodeError as err:
+                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
+                return doc
 
-                # Attempt to read the literally included file
-                try:
-                    text = filepath.read_text(encoding="utf-8")
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(argument_text, err.strerror, line)
+            lines = text.split("\n")
+            # Capture the original file-length before splicing it
+            len_file = len(lines)
+
+            if name == "literalinclude":
+
+                def _locate_text(text: str) -> int:
+                    """
+                    Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                    add an InvalidLiteralInclude diagnostic.
+                    """
+                    assert isinstance(text, str)
+                    loc = next(
+                        (idx for idx, line in enumerate(lines) if text in line), -1
                     )
-                    return doc
-                except UnicodeDecodeError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(argument_text, str(err), line)
-                    )
-                    return doc
-
-                lines = text.split("\n")
-                # Capture the original file-length before splicing it
-                len_file = len(lines)
-
-                if name == "literalinclude":
-
-                    def _locate_text(text: str) -> int:
-                        """
-                        Searches the literally-included file ('lines') for the specified text. If no such text is found,
-                        add an InvalidLiteralInclude diagnostic.
-                        """
-                        assert isinstance(text, str)
-                        loc = next(
-                            (idx for idx, line in enumerate(lines) if text in line), -1
-                        )
-                        if loc < 0:
-                            self.diagnostics.append(
-                                InvalidLiteralInclude(
-                                    f'"{text}" not found in {filepath}', line
-                                )
+                    if loc < 0:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f'"{text}" not found in {filepath}', line
                             )
-                        return loc
+                        )
+                    return loc
 
-                    # Locate the start_after query
-                    start_after = 0
-                    if "start-after" in options:
-                        start_after_text = options["start-after"]
-                        # start_after = self._locate_text(start_after_text, lines, line, text)
-                        start_after = _locate_text(start_after_text)
-                        # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                        start_after += 1
+                # Locate the start_after query
+                start_after = 0
+                if "start-after" in options:
+                    start_after_text = options["start-after"]
+                    # start_after = self._locate_text(start_after_text, lines, line, text)
+                    start_after = _locate_text(start_after_text)
+                    # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                    start_after += 1
 
-                    # ...now locate the end_before query
+                # ...now locate the end_before query
+                end_before = len(lines)
+                if "end-before" in options:
+                    end_before_text = options["end-before"]
+                    # end_before = self._locate_text(end_before_text, lines, line, text)
+                    end_before = _locate_text(end_before_text)
+
+                # Check that start_after_text precedes end_before_text (and end_before exists)
+                if start_after >= end_before >= 0:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                            line,
+                        )
+                    )
+
+                # If we failed to locate end_before text, default to the end-of-file
+                if end_before == -1:
                     end_before = len(lines)
-                    if "end-before" in options:
-                        end_before_text = options["end-before"]
-                        # end_before = self._locate_text(end_before_text, lines, line, text)
-                        end_before = _locate_text(end_before_text)
 
-                    # Check that start_after_text precedes end_before_text (and end_before exists)
-                    if start_after >= end_before >= 0:
+                lines = lines[start_after:end_before]
+
+                dedent = 0
+                if "dedent" in options:
+                    # Dedent is specified as a flag
+                    if isinstance(options["dedent"], bool):
+                        # Deduce a reasonable dedent
+                        try:
+                            dedent = min(
+                                len(line) - len(line.lstrip())
+                                for line in lines
+                                if len(line.lstrip()) > 0
+                            )
+                        except ValueError:
+                            # Handle the (unlikely) case where there are no non-empty lines
+                            dedent = 0
+                    # Dedent is specified as a nonnegative integer (number of characters):
+                    # Note: since boolean is a subtype of int, this conditonal must follow the
+                    # above bool-type conditional.
+                    elif isinstance(options["dedent"], int):
+                        dedent = options["dedent"]
+                    else:
                         self.diagnostics.append(
                             InvalidLiteralInclude(
-                                f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                                f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
                                 line,
                             )
                         )
+                        return doc
 
-                    # If we failed to locate end_before text, default to the end-of-file
-                    if end_before == -1:
-                        end_before = len(lines)
+                lines = [line[dedent:] for line in lines]
 
-                    lines = lines[start_after:end_before]
-
-                    dedent = 0
-                    if "dedent" in options:
-                        # Dedent is specified as a flag
-                        if isinstance(options["dedent"], bool):
-                            # Deduce a reasonable dedent
-                            try:
-                                dedent = min(
-                                    len(line) - len(line.lstrip())
-                                    for line in lines
-                                    if len(line.lstrip()) > 0
-                                )
-                            except ValueError:
-                                # Handle the (unlikely) case where there are no non-empty lines
-                                dedent = 0
-                        # Dedent is specified as a nonnegative integer (number of characters):
-                        # Note: since boolean is a subtype of int, this conditonal must follow the
-                        # above bool-type conditional.
-                        elif isinstance(options["dedent"], int):
-                            dedent = options["dedent"]
-                        else:
-                            self.diagnostics.append(
-                                InvalidLiteralInclude(
-                                    f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
-                                    line,
-                                )
-                            )
-                            return doc
-
-                    lines = [line[dedent:] for line in lines]
-
-                emphasize_lines = None
-                if "emphasize-lines" in options:
-                    try:
-                        emphasize_lines = rstparser.parse_linenos(
-                            options["emphasize-lines"], len_file
+            emphasize_lines = None
+            if "emphasize-lines" in options:
+                try:
+                    emphasize_lines = rstparser.parse_linenos(
+                        options["emphasize-lines"], len_file
+                    )
+                except ValueError as err:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(
+                            f"Invalid emphasize-lines specification caused: {err}",
+                            line,
                         )
-                    except ValueError as err:
-                        self.diagnostics.append(
-                            InvalidLiteralInclude(
-                                f"Invalid emphasize-lines specification caused: {err}",
-                                line,
-                            )
-                        )
+                    )
 
-                span = (line,)
-                language = options["language"] if "language" in options else ""
-                caption = options["caption"] if "caption" in options else None
-                copyable = "copyable" not in options or options["copyable"] == "True"
-                selected_content = "\n".join(lines)
-                linenos = "linenos" in options
-                lineno_start = (
-                    options["lineno-start"] if "lineno-start" in options else None
-                )
+            span = (line,)
+            language = options["language"] if "language" in options else ""
+            caption = options["caption"] if "caption" in options else None
+            copyable = "copyable" not in options or options["copyable"] == "True"
+            selected_content = "\n".join(lines)
+            linenos = "linenos" in options
+            lineno_start = (
+                options["lineno-start"] if "lineno-start" in options else None
+            )
 
-                code = n.Code(
-                    span,
-                    language,
-                    caption,
-                    copyable,
-                    emphasize_lines,
-                    selected_content,
-                    linenos,
-                    lineno_start,
-                )
+            code = n.Code(
+                span,
+                language,
+                caption,
+                copyable,
+                emphasize_lines,
+                selected_content,
+                linenos,
+                lineno_start,
+            )
 
-                doc.children.append(code)
+            doc.children.append(code)
 
         elif name == "include":
             if argument_text is None:
@@ -982,70 +982,6 @@ class JSONVisitor:
         node.children = new_children
         return
 
-    def validate_io_code_block_children(self, node: n.Directive) -> None:
-        # new_children should contain input and output directives
-        new_children: List[n.Node] = []
-        line = node.start[0]
-        expected_children = {"input", "output"}
-
-        for child in node.children:
-            if isinstance(child, n.Directive):
-                if child.name in expected_children:
-                    new_grandchildren: List[n.Node] = []
-
-                    # Input or output should have 1 child Code node
-                    if len(child.children) == 1:
-                        expected_children.remove(child.name)
-
-                        # child nodes for input/output will inherit parent options
-                        grandchild = child.children[0]
-                        if isinstance(grandchild, n.Code):
-                            grandchild.lang = node.argument[0].value
-                            grandchild.caption = (
-                                node.options["caption"]
-                                if "caption" in node.options
-                                else None
-                            )
-                            grandchild.copyable = (
-                                True
-                                if "copyable" in node.options
-                                and node.options["copyable"]
-                                else False
-                            )
-                            new_grandchildren.append(grandchild)
-                        child.children = new_grandchildren
-                        new_children.append(child)
-                else:
-                    # either duplicate input/output or invalid child is provided
-                    msg = f"already contains 1 {child.name} directive"
-                    if not (child.name == "input" or child.name == "output"):
-                        msg = f"does not accept child {child.name}"
-                    self.diagnostics.append(
-                        InvalidIOCodeBlock(
-                            msg,
-                            line,
-                        )
-                    )
-            else:
-                self.diagnostics.append(
-                    InvalidIOCodeBlock(
-                        f"expected input/output child directives, saw {child.type}",
-                        line,
-                    )
-                )
-
-        # handle missing nested input and/or output directives
-        if len(expected_children) != 0 or len(new_children) != 2:
-            for expected_child in expected_children:
-                self.diagnostics.append(
-                    MissingChild("io-code-block", expected_child, line)
-                )
-                if expected_child == "input":
-                    new_children = []
-
-        node.children = new_children
-        return
-
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(
             FileId(raw_path), self.docpath, self.project_config.source_path
@@ -1063,6 +999,73 @@ class JSONVisitor:
         visitor.static_assets = self.static_assets
         visitor.pending = self.pending
         return visitor
+
+
+"""Validates that a given io-code-block directive has 1 input and 1 output 
+child nodes, and copies the io-code-block's options into the options of the 
+underlying code nodes."""
+
+
+def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
+    # new_children should contain input and output directives
+    new_children: List[n.Node] = []
+    line = node.start[0]
+    expected_children = {"input", "output"}
+    diagnostics: List[Diagnostic] = []
+
+    for child in node.children:
+        if not isinstance(child, n.Directive):
+            diagnostics.append(
+                InvalidDirectiveStructure(
+                    f"expected input/output child directives, saw {child.type}",
+                    line,
+                )
+            )
+            continue
+
+        if child.name in expected_children:
+            new_grandchildren: List[n.Node] = []
+
+            # Input or output should have 1 child Code node
+            if len(child.children) == 1:
+                expected_children.remove(child.name)
+
+                # child nodes for input/output will inherit parent options
+                grandchild = child.children[0]
+                if isinstance(grandchild, n.Code):
+                    grandchild.lang = node.argument[0].value
+                    grandchild.caption = (
+                        node.options["caption"] if "caption" in node.options else None
+                    )
+                    grandchild.copyable = (
+                        True
+                        if "copyable" in node.options and node.options["copyable"]
+                        else False
+                    )
+                    new_grandchildren.append(grandchild)
+                child.children = new_grandchildren
+                new_children.append(child)
+        else:
+            # either duplicate input/output or invalid child is provided
+            msg = f"already contains an {child.name} directive"
+            if not (child.name == "input" or child.name == "output"):
+                msg = f"does not accept child {child.name}"
+            diagnostics.append(
+                InvalidDirectiveStructure(
+                    msg,
+                    line,
+                )
+            )
+
+    # handle missing nested input and/or output directives
+    if len(expected_children) != 0 or len(new_children) != 2:
+        for expected_child in expected_children:
+            diagnostics.append(MissingChild("io-code-block", expected_child, line))
+            if expected_child == "input":
+                new_children = []
+
+    node.children = new_children
+    return diagnostics
 
 
 class InlineJSONVisitor(JSONVisitor):
