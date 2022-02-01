@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An option to specify the location of an rstspec file to use (DOP-2649).
+- A new set of deploy environments.
+
 ## [v0.12.2] - 2022-01-27
 
 ### Added
