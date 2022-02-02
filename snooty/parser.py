@@ -850,6 +850,16 @@ class JSONVisitor:
 
             doc.children.append(code)
 
+        elif name == "io-code-block":
+            if argument_text is not None:
+                self.diagnostics.append(
+                    InvalidDirectiveStructure(
+                        f"did not expect an argument, language should be passed as an option to input/output directives",
+                        line,
+                    )
+                )
+                return doc
+
         elif name == "include":
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
@@ -1033,7 +1043,11 @@ def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
                 # child nodes for input/output will inherit parent options
                 grandchild = child.children[0]
                 if isinstance(grandchild, n.Code):
-                    grandchild.lang = node.argument[0].value
+                    grandchild.lang = (
+                        child.options["language"]
+                        if "language" in child.options
+                        else None
+                    )
                     grandchild.caption = (
                         node.options["caption"] if "caption" in node.options else None
                     )
