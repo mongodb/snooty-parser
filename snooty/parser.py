@@ -854,7 +854,7 @@ class JSONVisitor:
             if argument_text is not None:
                 self.diagnostics.append(
                     InvalidDirectiveStructure(
-                        f"did not expect an argument, language should be passed as an option to input/output directives",
+                        "did not expect an argument, language should be passed as an option to input/output directives",
                         line,
                     )
                 )
