@@ -470,13 +470,13 @@ options.caption = "string"
 options.copyable = "boolean"
 options.class = "string"
 options.source = "uri"
-example = """.. io-code-block::
-   ${2::copyable: (bool)
-   :caption: (string)
-   :class: (string)}
+# example = """.. io-code-block::
+#    ${2::copyable: (bool)
+#    :caption: (string)
+#    :class: (string)}
 
-   ${0:code input/code output content}
-"""
+#    ${0:code input/code output content}
+# """
 
 [directive.input]
 help = """The code content."""
@@ -485,22 +485,22 @@ content_type = "raw"
 options.language = "string"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
-example = """.. io-code-block::
-   .. input:: ${0:code output or </path/to/file>}
-      :language: ${1:language}
-      :emphasize-lines: (string)
-      :linenos: (flag)
-"""
+# example = """.. io-code-block::
+#    .. input:: ${0:code output or </path/to/file>}
+#       :language: ${1:language}
+#       :emphasize-lines: (string)
+#       :linenos: (flag)
+# """
 
 [directive.output]
 help = """The code output."""
 inherit = "input"
-example = """.. io-code-block::
-   .. output:: ${0:code output or </path/to/file>}
-      :language: ${1:language}
-      :emphasize-lines: (string)
-      :linenos: (flag)
-"""
+# example = """.. io-code-block::
+#    .. output:: ${0:code output or </path/to/file>}
+#       :language: ${1:language}
+#       :emphasize-lines: (string)
+#       :linenos: (flag)
+# """
 
 [directive.cssclass]
 help = """Add the given CSS class name to generated HTML of the contained (if content is given) or
