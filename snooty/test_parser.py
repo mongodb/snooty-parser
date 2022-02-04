@@ -376,7 +376,7 @@ def test_iocodeblock() -> None:
 </root>""",
     )
 
-    # Test a io-code-block with nested input/output directives with file paths passed in
+    # Test a io-code-block with nested input/output directives with <path/to/file> passed in
     page, diagnostics = parse_rst(
         parser,
         tabs_path,
@@ -440,9 +440,15 @@ def test_iocodeblock() -> None:
         """
 <root fileid="test.rst">
   <directive name="io-code-block">
-      <directive name="input"><code>print('hello world')</code></directive>
-      <directive name="output"><code>hello world</code></directive>
-</directive></root>""",
+      <text>python</text>
+      <directive name="input">
+          <code>print('hello world')</code>
+      </directive>
+      <directive name="output">
+          <code>hello world</code>
+      </directive>
+  </directive>
+</root>""",
     )
 
     # Test an invalid <path/to/file> for nested input directive
@@ -471,7 +477,7 @@ def test_iocodeblock() -> None:
         parser,
         tabs_path,
         """
-.. io-code-block:: python
+.. io-code-block::
 
    .. input:: /test_parser/includes/sample_code.py
       :language: python

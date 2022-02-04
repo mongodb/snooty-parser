@@ -465,6 +465,7 @@ example = """.. code:: ${1:language}
 
 [directive.io-code-block]
 help = """A block of code and its corresponding output to show the user."""
+argument_type = "string"
 content_type = "block"
 options.caption = "string"
 options.copyable = "boolean"
