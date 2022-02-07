@@ -1011,12 +1011,10 @@ class JSONVisitor:
         return visitor
 
 
-"""Validates that a given io-code-block directive has 1 input and 1 output 
-child nodes, and copies the io-code-block's options into the options of the 
-underlying code nodes."""
-
-
 def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
+    """Validates that a given io-code-block directive has 1 input and 1 output
+    child nodes, and copies the io-code-block's options into the options of the
+    underlying code nodes."""
     # new_children should contain input and output directives
     new_children: List[n.Node] = []
     line = node.start[0]
