@@ -646,8 +646,10 @@ example = """.. banner::
 [directive."mongodb:cta-banner"]
 content_type = "block"
 options.url = { type = "uri", required = true }
+options.icon = "string"
 example = """.. cta-banner::
    :url: https://university.mongodb.com/
+   :icon: ${1:Leafygreen icon}
 
    ${2:Banner Text content}
 """
