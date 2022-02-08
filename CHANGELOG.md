@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Implement input, output, and io-code-block directives (DOP-2651, #375).
+- Add an `icon` option to the `cta-banner` directive (DOP-2719, #382).
+
 ## [v0.12.4] - 2022-02-02
 
 ### Fixed
