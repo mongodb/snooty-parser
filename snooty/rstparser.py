@@ -809,6 +809,55 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
+class BaseCodeIODirective(docutils.parsers.rst.Directive):
+    """Special handling for code input/output directives.
+
+    These directives can either take in a filepath or raw code content. If a filepath
+    is present, this should be included in the `argument` field of the AST. If raw code
+    content is present, it should become the value of the child Code node.
+    """
+
+    optional_arguments = 1
+
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        copyable = "copyable" not in self.options or self.options["copyable"]
+        linenos = "linenos" in self.options
+
+        node = directive("", self.name)
+        node.document = self.state.document
+        node.source, node.line = source, line
+        node["options"] = self.options
+
+        if self.arguments:
+            title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
+            node.append(directive_argument(self.arguments[0], "", title_node))
+        else:
+            try:
+                n_lines = len(self.content)
+                emphasize_lines = parse_linenos(
+                    self.options.get("emphasize-lines", ""), n_lines
+                )
+            except ValueError as err:
+                error_node = self.state.document.reporter.error(
+                    str(err), line=self.lineno
+                )
+                return [error_node]
+
+            value = "\n".join(self.content)
+            child_code = code(value, value)
+            child_code["name"] = "code"
+            child_code["emphasize_lines"] = emphasize_lines
+            child_code["linenos"] = linenos
+            child_code["copyable"] = copyable
+
+            child_code.document = self.state.document
+            child_code.source, node.line = source, line
+            node.append(child_code)
+
+        return [node]
+
+
 class BaseVersionDirective(docutils.parsers.rst.Directive):
     """Special handling for version change directives.
 
@@ -1030,6 +1079,8 @@ class Registry:
 SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
     "code-block": BaseCodeDirective,
     "code": BaseCodeDirective,
+    "input": BaseCodeIODirective,
+    "output": BaseCodeIODirective,
     "sourcecode": BaseCodeDirective,
     "versionadded": BaseVersionDirective,
     "versionchanged": BaseVersionDirective,
