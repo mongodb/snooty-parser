@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.12.5] - 2022-02-08
+
 ### Added
 
 - Implement input, output, and io-code-block directives (DOP-2651, #375).
