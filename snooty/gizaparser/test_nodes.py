@@ -72,6 +72,7 @@ def test_inheritance() -> None:
         source=None,
         inherit=None,
         content="{{bar}}",
+        edition=None,
     )
     child = TestNode(
         ref="child",
@@ -79,6 +80,7 @@ def test_inheritance() -> None:
         source=nodes.Inherit("parent.yaml", "_parent"),
         inherit=None,
         content=None,
+        edition=None,
     )
 
     category: nodes.GizaCategory[TestNode] = nodes.GizaCategory(project_config)

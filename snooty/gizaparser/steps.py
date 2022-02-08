@@ -8,7 +8,7 @@ from ..flutter import checked
 from ..page import Page
 from ..types import EmbeddedRstParser
 from .nodes import GizaCategory, HeadingMixin, Inheritable
-from .parse import parse
+from .parse import parse_and_filter_by_edition
 
 
 @checked
@@ -75,7 +75,6 @@ class Step(Inheritable, HeadingMixin):
     pre: Optional[str]
     level: Optional[int]
     optional: Optional[bool]
-    edition: Union[List[str], str, None]
 
     action: Union[List[Action], Action, None]
 
@@ -117,7 +116,9 @@ class GizaStepsCategory(GizaCategory[Step]):
     def parse(
         self, path: Path, text: Optional[str] = None
     ) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
-        return parse(Step, path, self.project_config, text)
+        return parse_and_filter_by_edition(
+            Step, path, self.project_config, self.edition, text
+        )
 
     def to_pages(
         self,

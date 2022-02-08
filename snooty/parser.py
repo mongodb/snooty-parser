@@ -74,6 +74,7 @@ from .types import (
     FileId,
     ParsedBannerConfig,
     ProjectConfig,
+    ProjectState,
     SerializableType,
     StaticAsset,
 )
@@ -148,12 +149,14 @@ class JSONVisitor:
     def __init__(
         self,
         project_config: ProjectConfig,
+        edition: Optional[str],
         docpath: PurePath,
         document: docutils.nodes.document,
     ) -> None:
         self.project_config = project_config
         self.docpath = docpath
         self.document = document
+        self.edition = edition
         self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
@@ -254,6 +257,8 @@ class JSONVisitor:
             directive = self.handle_directive(node, line)
             if directive:
                 self.state.append(directive)
+            else:
+                raise docutils.nodes.SkipChildren()
         elif isinstance(node, docutils.nodes.Text):
             # docutils will inject \0000 characters into text nodes when there are escape characters
             text = str(node).replace("\x00", "")
@@ -684,6 +689,7 @@ class JSONVisitor:
                             page,
                             EmbeddedRstParser(
                                 self.project_config,
+                                self.edition,
                                 page,
                                 diagnostics.setdefault(filepath, []),
                             ),
@@ -931,11 +937,17 @@ class JSONVisitor:
             else:
                 self.validate_and_add_asset(doc, image_argument, line)
 
-        elif key in {"mongodb:card"}:
+        elif key == "mongodb:card":
             image_argument = options.get("icon")
 
             if image_argument:
                 self.validate_and_add_asset(doc, image_argument, line)
+        elif (
+            key in {":only", ":cond"}
+            and argument
+            and argument[0].get_text() != self.edition
+        ):
+            return None
 
         return doc
 
@@ -1004,7 +1016,9 @@ class JSONVisitor:
         self.diagnostics.extend(diagnostics)
 
     def __make_child_visitor(self) -> "JSONVisitor":
-        visitor = type(self)(self.project_config, self.docpath, self.document)
+        visitor = type(self)(
+            self.project_config, self.edition, self.docpath, self.document
+        )
         visitor.diagnostics = self.diagnostics
         visitor.static_assets = self.static_assets
         visitor.pending = self.pending
@@ -1127,16 +1141,15 @@ def parse_rst(
 
 @dataclass
 class EmbeddedRstParser:
-    __slots__ = ("project_config", "page", "diagnostics")
-
     project_config: ProjectConfig
+    edition: Optional[str]
     page: Page
     diagnostics: List[Diagnostic]
 
     def parse_block(self, rst: str, lineno: int) -> MutableSequence[n.Node]:
         # Crudely make docutils line numbers match
         text = "\n" * lineno + rst.strip()
-        parser = rstparser.Parser(self.project_config, JSONVisitor)
+        parser = rstparser.Parser(self.project_config, self.edition, JSONVisitor)
         visitor, _ = parser.parse(self.page.source_path, text)
         top_of_state = visitor.state[-1]
         children: MutableSequence[n.Node] = top_of_state.children  # type: ignore
@@ -1150,7 +1163,7 @@ class EmbeddedRstParser:
     def parse_inline(self, rst: str, lineno: int) -> MutableSequence[n.InlineNode]:
         # Crudely make docutils line numbers match
         text = "\n" * lineno + rst.strip()
-        parser = rstparser.Parser(self.project_config, InlineJSONVisitor)
+        parser = rstparser.Parser(self.project_config, self.edition, InlineJSONVisitor)
         visitor, _ = parser.parse(self.page.source_path, text)
         top_of_state = visitor.state[-1]
         children: MutableSequence[n.InlineNode] = top_of_state.children  # type: ignore
@@ -1354,6 +1367,8 @@ class _Project:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
 
+        self.state = ProjectState(None)
+
         # We might have found the project in a parent directory. Use that.
         root = self.config.root
 
@@ -1382,7 +1397,7 @@ class _Project:
             )
             backend.on_diagnostics(snooty_config_fileid, config_diagnostics)
 
-        self.parser = rstparser.Parser(self.config, JSONVisitor)
+        self.parser = rstparser.Parser(self.config, self.state.edition, JSONVisitor)
 
         self.backend = backend
         self._backend_lock = threading.Lock()
@@ -1397,7 +1412,9 @@ class _Project:
         }
 
         # For each repo-wide substitution, parse the string and save to our project config
-        inline_parser = rstparser.Parser(self.config, InlineJSONVisitor)
+        inline_parser = rstparser.Parser(
+            self.config, self.state.edition, InlineJSONVisitor
+        )
         substitution_nodes: Dict[str, List[n.InlineNode]] = {}
         for k, v in self.config.substitutions.items():
             # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
@@ -1415,7 +1432,7 @@ class _Project:
                     substitution_diagnostics,
                 )
 
-        self.config.substitution_nodes = substitution_nodes
+        self.state.substitution_nodes = substitution_nodes
 
         # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
         for banner in self.config.banners:
@@ -1433,7 +1450,7 @@ class _Project:
                 ]
                 banner_node.node.children = page.ast.children
                 if banner_node.node.children:
-                    self.config.banner_nodes.append(banner_node)
+                    self.state.banner_nodes.append(banner_node)
                 if banner_diagnostics:
                     self.initialization_diagnostics[snooty_config_fileid].extend(
                         banner_diagnostics
@@ -1458,9 +1475,11 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
+            lambda: DevhubPostprocessor(
+                self.config, self.targets.copy_clean_slate(), self.state
+            )
             if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets.copy_clean_slate())
+            else Postprocessor(self.config, self.targets.copy_clean_slate(), self.state)
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
@@ -1555,7 +1574,9 @@ class _Project:
                     )
                     return (
                         page,
-                        EmbeddedRstParser(self.config, page, file_diagnostics),
+                        EmbeddedRstParser(
+                            self.config, self.state.edition, page, file_diagnostics
+                        ),
                     )
 
                 giza_category.add(path, text, steps)
@@ -1657,6 +1678,7 @@ class _Project:
                         page,
                         EmbeddedRstParser(
                             self.config,
+                            self.state.edition,
                             page,
                             all_yaml_diagnostics.setdefault(giza_node.path, []),
                         ),

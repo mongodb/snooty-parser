@@ -33,7 +33,10 @@ def test_step() -> None:
 
     def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
         page = Page.create(path, filename, "")
-        return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
+        return (
+            page,
+            EmbeddedRstParser(project_config, None, page, all_diagnostics[path]),
+        )
 
     pages = category.to_pages(path, create_page, giza_node.data)
     assert [page.fake_full_path().as_posix() for page in pages] == [

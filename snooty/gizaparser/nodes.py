@@ -118,6 +118,8 @@ class Inheritable(Node):
     source: Optional[Inherit]
     inherit: Optional[Inherit]
 
+    edition: Optional[str]
+
     def get_ref(self) -> Optional[str]:
         """Try to find this node's ref name, looking at the inheritance stanza if needed."""
         if self.ref:
@@ -194,6 +196,7 @@ class GizaCategory(Generic[_I]):
     to transform a given path into Pages."""
 
     project_config: ProjectConfig
+    edition: Optional[str] = field(default=None)
     nodes: Dict[str, GizaFile[_I]] = field(default_factory=dict)
     dg: "networkx.DiGraph[str]" = field(default_factory=networkx.DiGraph)
 
