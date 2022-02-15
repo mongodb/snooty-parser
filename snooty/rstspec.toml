@@ -475,6 +475,7 @@ options.source = "uri"
 #    ${2::copyable: (bool)
 #    :caption: (string)
 #    :class: (string)}
+#    :source: ${1: URL to source code}
 
 #    ${0:code input/code output content}
 # """
@@ -496,11 +497,16 @@ options.linenos = "flag"
 [directive.output]
 help = """The code output."""
 inherit = "input"
+options.language = "string"
+options.emphasize-lines = "linenos"
+options.linenos = "flag"
+options.visible = "boolean"
 # example = """.. io-code-block::
 #    .. output:: ${0:code output or </path/to/file>}
 #       :language: ${1:language}
 #       :emphasize-lines: (string)
 #       :linenos: (flag)
+#       :visible: (bool)
 # """
 
 [directive.cssclass]
