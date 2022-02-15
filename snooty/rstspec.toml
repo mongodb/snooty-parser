@@ -496,7 +496,8 @@ options.linenos = "flag"
 
 [directive.output]
 help = """The code output."""
-inherit = "input"
+argument_type = ["path", "raw"]
+content_type = "raw"
 options.language = "string"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
