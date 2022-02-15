@@ -919,6 +919,11 @@ options.title = {required = true, type = "string"}
 options.image = {required = true, type = ["path", "uri"]}
 options.type = "string"
 
+[directive.video]
+help = "Embed a video in your article"
+argument_type = "uri"
+example = """.. video:: ${1: full video url}"""
+
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
 argument_type = "string"
