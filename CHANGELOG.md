@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.12.6] - 2022-02-24
+
 ### Added
 
 - An `visible` option to the `output` directive (DOP-2760, #385).
