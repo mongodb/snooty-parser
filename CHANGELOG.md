@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Removed published branches logic from parser; version information
+  will henceforth be sourced from Atlas (DOP-2243, #330)
+
 ## [v0.12.6] - 2022-02-24
 
 ### Added
