@@ -1,14 +1,16 @@
 """Snooty.
 
 Usage:
-  snooty build <source-path> [<mongodb-url>] [--commit=<commit_hash> | (--commit=<commit_hash> --patch=<patch_id>)]
-  snooty watch <source-path>
-  snooty language-server
+  snooty build [--no-caching] <source-path> [<mongodb-url>] [options]
+  snooty watch [--no-caching] <source-path>
+  snooty [--no-caching] language-server
 
 Options:
   -h --help                 Show this screen.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
+  --no-caching              Disable HTTP response caching.
+  --rstspec=<url>           Override the reStructuredText directive & role spec.
 
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
@@ -33,20 +35,17 @@ import watchdog.events
 import watchdog.observers
 from docopt import docopt
 
-from . import __version__, language_server
+from . import __version__, language_server, specparser
 from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .page import Page
-from .parser import Project
+from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, FileId, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS, PerformanceLogger
+from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
-PACKAGE_ROOT = Path(sys.modules["snooty"].__file__).resolve().parent
-if PACKAGE_ROOT.is_file():
-    PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 COLL_DOCUMENTS = "documents"
 COLL_METADATA = "metadata"
@@ -87,7 +86,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
             assert False
 
 
-class Backend:
+class Backend(ProjectBackend):
     def __init__(self) -> None:
         self.total_errors = 0
 
@@ -277,7 +276,19 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO)
 
+    if args["--no-caching"]:
+        HTTPCache.initialize(False)
+
     logger.info(f"Snooty {__version__} starting")
+
+    if args["--rstspec"]:
+        rstspec_path = args["--rstspec"]
+        if rstspec_path.startswith("https://") or rstspec_path.startswith("http://"):
+            rstspec_bytes = HTTPCache.singleton().get(args["--rstspec"])
+            rstspec_text = str(rstspec_bytes, "utf-8")
+        else:
+            rstspec_text = Path(rstspec_path).read_text(encoding="utf-8")
+        specparser.Spec.initialize(rstspec_text)
 
     if PARANOID_MODE:
         logger.info("Paranoid mode on")

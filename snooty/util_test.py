@@ -6,14 +6,15 @@ import tempfile
 import textwrap
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from pathlib import Path
-from typing import Any, Dict, Iterator, List
+from pathlib import Path, PurePath
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
-from . import n
+from . import n, rstparser
 from .diagnostics import Diagnostic
 from .page import Page
-from .parser import Project
+from .parser import JSONVisitor, Project, ProjectBackend
+from .parser import parse_rst as parse_rst_multi
 from .types import BuildIdentifierSet, FileId, SerializableType
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
@@ -41,7 +42,9 @@ def toctree_to_testing_string(ast: Any) -> str:
     ]
 
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
-    attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
+    attrs = " ".join(
+        '{}="{}"'.format(k, escape(str(v), {'"': "&quot;"})) for k, v in attr_pairs
+    )
     contents = (
         escape(value)
         if value
@@ -83,7 +86,9 @@ def ast_to_testing_string(ast: Any) -> str:
     ]
 
     attr_pairs.extend((k, v) for k, v in ast.get("options", {}).items())
-    attrs = " ".join('{}="{}"'.format(k, escape(str(v))) for k, v in attr_pairs)
+    attrs = " ".join(
+        '{}="{}"'.format(k, escape(str(v), {'"': "&quot;"})) for k, v in attr_pairs
+    )
     contents = (
         escape(value)
         if value
@@ -158,7 +163,7 @@ def check_ast_testing_string(ast: Any, testing_string: str) -> None:
     assert_etree_equals(evaluating_tree, correct_tree)
 
 
-class BackendTestResults:
+class BackendTestResults(ProjectBackend):
     """A utility class for tracking the output of a build in tests."""
 
     def __init__(self) -> None:
@@ -169,8 +174,8 @@ class BackendTestResults:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
 
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        self.diagnostics[path].extend(diagnostics)
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.diagnostics[path] = diagnostics
 
     def on_update(
         self,
@@ -197,7 +202,9 @@ class BackendTestResults:
 
 
 @contextlib.contextmanager
-def make_test(files: Dict[Path, str], name: str = "") -> Iterator[BackendTestResults]:
+def make_test(
+    files: Dict[PurePath, str], name: str = ""
+) -> Iterator[BackendTestResults]:
     """Create a temporary test project with the given files."""
     need_to_make_snooty_toml = Path("snooty.toml") not in files
     if need_to_make_snooty_toml:
@@ -218,7 +225,13 @@ def make_test(files: Dict[Path, str], name: str = "") -> Iterator[BackendTestRes
 
         backend = BackendTestResults()
 
-        project = Project(root, backend, {})
-        project.build()
+        with Project(root, backend, {}, watch=False) as project:
+            project.build()
 
     yield backend
+
+
+def parse_rst(
+    parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
+) -> Tuple[Page, List[Diagnostic]]:
+    return parse_rst_multi(parser, path, text)[0]

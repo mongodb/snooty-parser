@@ -1,11 +1,15 @@
 import collections
+import errno
 import logging
 import os.path
 import sys
+import threading
 import typing
 import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import asdict, dataclass, field
+from pathlib import PurePath
 from typing import (
     Any,
     Callable,
@@ -18,33 +22,46 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
 )
 
 from . import n, specparser, util
+from .builders import man
 from .diagnostics import (
     AmbiguousTarget,
+    CannotOpenFile,
+    ChapterAlreadyExists,
     Diagnostic,
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    GuideAlreadyHasChapter,
+    InvalidChapter,
     InvalidChild,
+    InvalidContextError,
     InvalidIAEntry,
     InvalidInclude,
     InvalidTocTree,
+    MissingChild,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
     SubstitutionRefError,
     TargetNotFound,
     UnnamedPage,
+    UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
 from .page import Page
 from .target_database import TargetDatabase
 from .types import FileId, ProjectConfig, SerializableType
-from .util import SOURCE_FILE_EXTENSIONS
+from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
+_T = TypeVar("_T")
 
 
 # XXX: The following two functions should probably be combined at some point
@@ -86,18 +103,81 @@ def deep_copy_position(source: n.Node, dest: n.Node) -> None:
             deep_copy_position(source, child)
 
 
-class ProgramOptionHandler:
+def extract_inline(
+    nodes: Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]]
+) -> Optional[MutableSequence[n.InlineNode]]:
+    """Reach into a node and see if it's trivally transformable into an inline context
+    without losing anything aside from a wrapping Paragraph."""
+    if all(isinstance(node, n.InlineNode) for node in nodes):
+        return cast(MutableSequence[n.InlineNode], nodes)
+
+    node = nodes[0]
+    if (
+        len(nodes) == 1
+        and isinstance(node, n.Paragraph)
+        and len(node.children) == 1
+        and isinstance(node.children[0], n.InlineNode)
+    ):
+        return [node.children[0]]
+
+    return None
+
+
+class Context:
+    """Store and refer to an instance of a type by that type. This allows referring to
+    arbitrary data stores in a type-safe way."""
+
+    __slots__ = ("_ctx", "diagnostics", "pages")
+
+    def __init__(self, pages: Dict[FileId, Page]) -> None:
+        self._ctx: Dict[type, object] = {}
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        self.pages = pages
+
+    def add(self, val: object) -> None:
+        """Add a given instance to this context. If an instance of the same type has
+        previously been added, it will be overwritten."""
+        self._ctx[type(val)] = val
+
+    def __getitem__(self, ty: Type[_T]) -> _T:
+        """Retrieve an instance of the given type. Raises KeyError if an instance
+        of this type has not previously been added."""
+        val = self._ctx[ty]
+        assert isinstance(val, ty)
+        return val
+
+
+class Handler:
+    """Base class for postprocessing event handlers."""
+
+    def __init__(self, context: Context) -> None:
+        self.context = context
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        pass
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        pass
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+
+class ProgramOptionHandler(Handler):
     """Handle the program & option rstobjects, using the last program target
     to populate option targets."""
 
-    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.pending_program: Optional[n.Target] = None
-        self.diagnostics = diagnostics
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.pending_program = None
 
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Target):
             return
 
@@ -107,7 +187,9 @@ class ProgramOptionHandler:
         elif identifier == "std:option":
             if not self.pending_program:
                 line = node.start[0]
-                self.diagnostics[fileid_stack.current].append(MissingOption(line))
+                self.context.diagnostics[fileid_stack.current].append(
+                    MissingOption(line)
+                )
                 return
             program_target = next(
                 self.pending_program.get_child_of_type(n.TargetIdentifier)
@@ -130,7 +212,7 @@ class ProgramOptionHandler:
             node.children.extend(new_identifiers)
 
 
-class IncludeHandler:
+class IncludeHandler(Handler):
     """Iterate over all pages to find include directives. When found, replace their
     `children` property with the contents of the include file.
     Because the include contents are added to the tree on which the event parser is
@@ -138,16 +220,13 @@ class IncludeHandler:
 
     def __init__(
         self,
-        diagnostics: Dict[FileId, List[Diagnostic]],
-        slug_fileid_mapping: Dict[str, FileId],
-        pages: Dict[FileId, Page],
+        context: Context,
     ) -> None:
-        self.diagnostics = diagnostics
-        self.slug_fileid_mapping = slug_fileid_mapping
-        self.pages = pages
-
-    def reset(self, fileid_stack: FileIdStack) -> None:
-        pass
+        super().__init__(context)
+        self.pages = context.pages
+        self.slug_fileid_mapping: Dict[str, FileId] = {
+            key.without_known_suffix: key for key in self.pages
+        }
 
     @staticmethod
     def is_bound(node: n.Node, search_text: Optional[str]) -> bool:
@@ -207,17 +286,17 @@ class IncludeHandler:
         # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
         return nodes[start_index : end_index + 1], any_start, any_end
 
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        def get_include_argument(node: n.Directive) -> str:
-            """Get filename of include"""
-            argument_list = node.argument
-            assert len(argument_list) > 0
-            return argument_list[0].value
-
-        if not isinstance(node, n.Directive) or not node.name == "include":
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name not in {
+            "include",
+            "sharedinclude",
+        }:
             return
 
-        argument = get_include_argument(node)
+        argument = "".join(arg.get_text() for arg in node.argument)
+        if not argument:
+            return
+
         include_slug = clean_slug(argument)
         include_fileid = self.slug_fileid_mapping.get(include_slug)
         # Some `include` FileIds in the mapping include file extensions (.yaml) and others do not
@@ -226,8 +305,16 @@ class IncludeHandler:
             include_slug = argument.strip("/")
             include_fileid = self.slug_fileid_mapping.get(include_slug)
 
-            # End if we can't find a file
             if include_fileid is None:
+                # sharedinclude diagnostics have already been raised in the JSONVisitor
+                if node.name != "sharedinclude":
+                    self.context.diagnostics[fileid_stack.current].append(
+                        CannotOpenFile(
+                            FileId(include_slug),
+                            os.strerror(errno.ENOENT),
+                            node.span[0],
+                        )
+                    )
                 return
 
         include_page = self.pages.get(include_fileid)
@@ -250,45 +337,57 @@ class IncludeHandler:
                     deep_copy_children, start_after_text, end_before_text
                 )
             except Exception as e:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidInclude(str(e), line)
                 )
             # Confirm that we found all specified text (with helpful diagnostic )message if not)
             msg = "Please be sure your text is a comment or label. Search is case-sensitive."
             if start_after_text and not any_start:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidInclude(
                         f"Could not find specified start-after text: '{start_after_text}'. {msg}",
                         line,
                     )
                 )
             if end_before_text and not any_end:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidInclude(
                         f"Could not find specified end-before text: '{end_before_text}'. {msg}",
                         line,
                     )
                 )
 
-        node.children = deep_copy_children
+        # This is a bit sketchy, but retain replacement directives for replacement processing later
+        node.children = [
+            child
+            for child in node.children
+            if isinstance(child, n.Directive) and child.name == "replacement"
+        ]
+        node.children.extend(deep_copy_children)
 
 
-class NamedReferenceHandler:
+class NamedReferenceHandlerPass1(Handler):
     """Identify non-anonymous hyperlinks (i.e. those defined with a single underscore) and save them according to {name: url}.
     Attach the associated URL to any uses of this named reference.
     """
 
-    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.named_references: Dict[str, str] = {}
-        self.diagnostics = diagnostics
 
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.NamedReference):
             return
 
         self.named_references[node.refname] = node.refuri
 
-    def populate(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+
+class NamedReferenceHandlerPass2(Handler):
+    """Identify non-anonymous hyperlinks (i.e. those defined with a single underscore) and save them according to {name: url}.
+    Attach the associated URL to any uses of this named reference.
+    """
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Reference):
             return
 
@@ -296,10 +395,12 @@ class NamedReferenceHandler:
             # Node is already populated with url; nothing to do
             return
 
-        refuri = self.named_references.get(node.refname)
+        refuri = self.context[NamedReferenceHandlerPass1].named_references.get(
+            node.refname
+        )
         if refuri is None:
             line = node.span[0]
-            self.diagnostics[fileid_stack.current].append(
+            self.context.diagnostics[fileid_stack.current].append(
                 TargetNotFound("extlink", node.refname, line)
             )
             return
@@ -307,7 +408,7 @@ class NamedReferenceHandler:
         node.refuri = refuri
 
 
-class ContentsHandler:
+class ContentsHandler(Handler):
     """Identify all headings on a given page. If a contents directive appears on the page, save list of headings as a page-level option."""
 
     class HeadingData(NamedTuple):
@@ -315,20 +416,20 @@ class ContentsHandler:
         id: str
         title: Sequence[n.InlineNode]
 
-    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.contents_depth = sys.maxsize
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.diagnostics = diagnostics
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings = []
 
-    def finalize_headings(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if not self.has_contents_directive:
             return
 
@@ -345,18 +446,14 @@ class ContentsHandler:
             if heading_list:
                 page.ast.options["headings"] = heading_list
 
-    def enter_section(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Section):
             self.current_depth += 1
+            return
 
-    def exit_section(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Section):
-            self.current_depth -= 1
-
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
@@ -374,43 +471,17 @@ class ContentsHandler:
                 ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
             )
 
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Section):
+            self.current_depth -= 1
 
-class TabsSelectorHandler:
-    def __init__(self, diagnostics: Dict[FileId, List[Diagnostic]]) -> None:
+
+class TabsSelectorHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
-        self.diagnostics = diagnostics
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.selectors = {}
-
-    def finalize_tabsets(self, fileid_stack: FileIdStack, page: Page) -> None:
-        if len(self.selectors) == 0:
-            return
-
-        for tabset_name, tabsets in self.selectors.items():
-            if len(tabsets) == 0:
-                # Warn if tabs-selector is used without corresponding tabset
-                self.diagnostics[fileid_stack.current].append(ExpectedTabs(0))
-                return
-            if not all(len(t) == len(tabsets[0]) for t in tabsets):
-                # If all tabsets are not the same length, identify tabs that do not appear in every tabset
-                tabset_sets = [set(t.keys()) for t in tabsets]
-                union = set.union(*tabset_sets)
-                intersection = set.intersection(*tabset_sets)
-                error_tabs = union - intersection
-                self.diagnostics[fileid_stack.current].append(MissingTab(error_tabs, 0))
-
-            if isinstance(page.ast, n.Root):
-                if not page.ast.options.get("selectors"):
-                    page.ast.options["selectors"] = {}
-
-                assert isinstance(page.ast.options["selectors"], Dict)
-                page.ast.options["selectors"][tabset_name] = {
-                    tabid: [node.serialize() for node in title]
-                    for tabid, title in tabsets[0].items()
-                }
-
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
 
@@ -425,7 +496,7 @@ class TabsSelectorHandler:
 
             # Avoid overwriting previously seen tabsets if another tabs-pillstrip directive is encountered
             if tabset_name in self.selectors:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
@@ -445,16 +516,46 @@ class TabsSelectorHandler:
             }
             self.selectors[tabset_name].append(tabs)
 
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.selectors = {}
 
-class TargetHandler:
-    def __init__(self, targets: TargetDatabase) -> None:
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if len(self.selectors) == 0:
+            return
+
+        for tabset_name, tabsets in self.selectors.items():
+            if len(tabsets) == 0:
+                # Warn if tabs-selector is used without corresponding tabset
+                self.context.diagnostics[fileid_stack.current].append(ExpectedTabs(0))
+                return
+            if not all(len(t) == len(tabsets[0]) for t in tabsets):
+                # If all tabsets are not the same length, identify tabs that do not appear in every tabset
+                tabset_sets = [set(t.keys()) for t in tabsets]
+                union = set.union(*tabset_sets)
+                intersection = set.intersection(*tabset_sets)
+                error_tabs = union - intersection
+                self.context.diagnostics[fileid_stack.current].append(
+                    MissingTab(error_tabs, 0)
+                )
+
+            if isinstance(page.ast, n.Root):
+                if not page.ast.options.get("selectors"):
+                    page.ast.options["selectors"] = {}
+
+                assert isinstance(page.ast.options["selectors"], Dict)
+                page.ast.options["selectors"][tabset_name] = {
+                    tabid: [node.serialize() for node in title]
+                    for tabid, title in tabsets[0].items()
+                }
+
+
+class TargetHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.target_counter: typing.Counter[str] = collections.Counter()
-        self.targets = targets
+        self.targets = context[TargetDatabase]
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.target_counter.clear()
-
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Target):
             return
 
@@ -495,17 +596,21 @@ class TargetHandler:
                 chosen_html_id,
             )
 
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.target_counter.clear()
 
-class HeadingHandler:
+
+class HeadingHandler(Handler):
     """Construct a slug-title mapping of all pages in property, and rewrite
     heading IDs so as to be unique."""
 
-    def __init__(self, targets: TargetDatabase) -> None:
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.heading_counter: typing.Counter[str] = collections.Counter()
-        self.targets = targets
+        self.targets = context[TargetDatabase]
         self.slug_title_mapping: Dict[str, Sequence[n.InlineNode]] = {}
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.heading_counter.clear()
 
     def get_title(self, slug: str) -> Optional[Sequence[n.InlineNode]]:
@@ -514,7 +619,7 @@ class HeadingHandler:
     def __contains__(self, slug: str) -> bool:
         return slug in self.slug_title_mapping
 
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Heading):
             return
 
@@ -546,7 +651,274 @@ class HeadingHandler:
             )
 
 
-class IAHandler:
+class BannerHandler(Handler):
+    """Traverse a series of pages matching specified targets in Snooty.toml
+    and append Banner directive nodes"""
+
+    def __init__(self, context: Context) -> None:
+        self.banners = context[ProjectConfig].banner_nodes
+        self.root = context[ProjectConfig].root
+
+    def __find_target_insertion_node(self, node: n.Parent[n.Node]) -> Optional[n.Node]:
+        """Search via BFS for the first 'section' from a root node, arbitrarily terminating early if
+        no 'section' is found within the first 50 nodes."""
+        queue: List[n.Node] = list(node.children)
+        curr_iteration = 0
+        max_iteration = 50
+
+        insertion_node = None
+
+        while queue and curr_iteration < max_iteration:
+            candidate = queue.pop(0)
+            if candidate.type == "section":
+                insertion_node = candidate
+                break
+            if isinstance(candidate, n.Parent):
+                queue.extend(candidate.children)
+
+            curr_iteration += 1
+        return insertion_node
+
+    def __determine_banner_index(self, node: n.Parent[n.Node]) -> int:
+        """Determine if there's a heading within the first level of the target insertion node's children.
+        If so, return the index position after the first detected heading. Otherwise, return 0."""
+        return (
+            next(
+                (
+                    idx
+                    for idx, child in enumerate(node.children)
+                    if isinstance(child, n.Heading)
+                ),
+                0,
+            )
+            + 1
+        )
+
+    def __page_target_match(
+        self, targets: List[str], page: Page, fileid: FileId
+    ) -> bool:
+        """Check if page matches target specified, but assert to ensure this does not run on includes"""
+        assert fileid.suffix == ".txt"
+
+        page_path_relative_to_source = page.source_path.relative_to(
+            self.root / "source"
+        )
+
+        for target in targets:
+            if page_path_relative_to_source.match(target):
+                return True
+        return False
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """Attach a banner as specified throughout project for target pages"""
+        for banner in self.banners:
+            if not self.__page_target_match(banner.targets, page, fileid_stack.current):
+                continue
+
+            banner_parent = self.__find_target_insertion_node(page.ast)
+            if isinstance(banner_parent, n.Parent):
+                target_insertion = self.__determine_banner_index(banner_parent)
+                assert banner_parent is not None
+                banner_parent.children.insert(
+                    target_insertion, util.fast_deep_copy(banner.node)
+                )
+
+
+class GuidesHandler(Handler):
+    """Constructs a dictionary of chapters and their data and returns metadata on individual guides."""
+
+    @dataclass
+    class ChapterData:
+        id: str
+        chapter_number: int
+        description: Optional[str]
+        guides: List[str]
+        icon: Optional[str]
+
+    @dataclass
+    class GuideData:
+        chapter_name: str = ""
+        completion_time: int = 0
+        description: MutableSequence[n.Node] = field(default_factory=list)
+        title: Sequence[n.InlineNode] = field(default_factory=list)
+
+        def serialize(self) -> n.SerializedNode:
+            result: n.SerializedNode = {
+                "chapter_name": self.chapter_name,
+                "completion_time": self.completion_time,
+                "description": [node.serialize() for node in self.description],
+                "title": [node.serialize() for node in self.title],
+            }
+            return result
+
+    def add_guides_metadata(self, document: Dict[str, SerializableType]) -> None:
+        """Adds the guides-related metadata to the project's metadata document"""
+        if self.chapters:
+            document["chapters"] = {k: asdict(v) for k, v in self.chapters.items()}
+
+        if self.guides:
+            slug_title_mapping = self.context[HeadingHandler].slug_title_mapping
+            for slug, title in slug_title_mapping.items():
+                if slug in self.guides:
+                    self.guides[slug].title = title
+            document["guides"] = {k: v.serialize() for k, v in self.guides.items()}
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.chapters: Dict[str, GuidesHandler.ChapterData] = {}
+        self.guides: Dict[str, GuidesHandler.GuideData] = defaultdict(
+            GuidesHandler.GuideData
+        )
+
+    def __get_guides(
+        self, chapter: n.Directive, chapter_title: str, current_file: FileId
+    ) -> List[str]:
+        """Returns the eligible guides that belong to a given chapter"""
+
+        guides: List[str] = []
+
+        for child in chapter.get_child_of_type(n.Directive):
+            line = child.span[0]
+
+            if child.name != "guide":
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(child.name, "chapter", "guide", line, None)
+                )
+                continue
+
+            guide_argument = child.argument
+            if not guide_argument:
+                self.context.diagnostics[current_file].append(
+                    ExpectedPathArg(child.name, line)
+                )
+                continue
+
+            guide_slug = clean_slug(guide_argument[0].get_text())
+
+            current_guide_data = self.guides[guide_slug]
+            if current_guide_data.chapter_name:
+                self.context.diagnostics[current_file].append(
+                    GuideAlreadyHasChapter(
+                        guide_slug,
+                        current_guide_data.chapter_name,
+                        chapter_title,
+                        line,
+                    )
+                )
+                continue
+            else:
+                current_guide_data.chapter_name = chapter_title
+
+            guides.append(guide_slug)
+
+        return guides
+
+    def __handle_chapter(self, chapter: n.Directive, current_file: FileId) -> None:
+        """Saves a chapter's data into the handler's dictionary of chapters"""
+
+        line = chapter.span[0]
+        title_argument = chapter.argument
+        if len(title_argument) != 1:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
+                )
+            )
+            return
+
+        title = title_argument[0].get_text()
+        if not title:
+            self.context.diagnostics[current_file].append(
+                InvalidChapter(
+                    "Invalid title argument. The title should be plain text.", line
+                )
+            )
+            return
+
+        # DocUtilsParseError will be appended to diagnostics if there is no description
+        description = chapter.options.get("description")
+        if not description:
+            return
+
+        guides: List[str] = self.__get_guides(chapter, title, current_file)
+        # A chapter should always have at least one guide
+        if not guides:
+            self.context.diagnostics[current_file].append(
+                MissingChild("chapter", "guide", line)
+            )
+            return
+
+        if not self.chapters.get(title):
+            icon = chapter.options.get("icon")
+            self.chapters[title] = GuidesHandler.ChapterData(
+                util.make_html5_id(title).lower(),
+                len(self.chapters) + 1,
+                description,
+                guides,
+                icon,
+            )
+        else:
+            self.context.diagnostics[current_file].append(
+                ChapterAlreadyExists(title, line)
+            )
+
+    def __handle_include(self, node: n.Directive, current_file: FileId) -> None:
+        """Looks for chapters nested within include directives."""
+
+        if len(node.children) == 1:
+            root = node.children[0]
+            if isinstance(root, n.Root):
+                self.__handle_chapters(root, current_file)
+
+    def __handle_chapters(
+        self, chapters: n.Parent[n.Node], current_file: FileId
+    ) -> None:
+        """Handles the nested directives found under the chapters directive."""
+
+        line = chapters.span[0]
+
+        for child in chapters.get_child_of_type(n.Directive):
+            if child.name == "chapter":
+                self.__handle_chapter(child, current_file)
+            # Provide support for using an include for multiple chapters on a separate file
+            elif child.name == "include":
+                self.__handle_include(child, current_file)
+            else:
+                # Chapters directive should contain only chapter directives
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(child.name, "chapters", "chapter", line)
+                )
+                continue
+
+        if not self.chapters:
+            self.context.diagnostics[current_file].append(
+                MissingChild("chapters", "chapter", line)
+            )
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive):
+            return
+
+        current_file: FileId = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
+
+        if node.name == "chapters" and current_file == FileId("index.txt"):
+            if self.chapters:
+                return
+            self.__handle_chapters(node, current_file)
+        elif node.name == "time":
+            if not node.argument:
+                return
+            try:
+                completion_time = int(node.argument[0].get_text())
+                self.guides[current_slug].completion_time = completion_time
+            except ValueError:
+                pass
+        elif node.name == "short-description":
+            self.guides[current_slug].description = node.children
+
+
+class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
     class IAData(NamedTuple):
@@ -572,19 +944,11 @@ class IAHandler:
 
             return result
 
-    def __init__(
-        self,
-        diagnostics: Dict[FileId, List[Diagnostic]],
-        heading_handler: HeadingHandler,
-    ) -> None:
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
-        self.diagnostics = diagnostics
-        self.heading_handler = heading_handler
 
-    def reset(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.ia = []
-
-    def __call__(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if (
             not isinstance(node, n.Directive)
             or not node.name == "ia"
@@ -593,7 +957,7 @@ class IAHandler:
             return
 
         if self.ia:
-            self.diagnostics[fileid_stack.current].append(
+            self.context.diagnostics[fileid_stack.current].append(
                 DuplicateDirective(node.name, node.start[0])
             )
             return
@@ -601,13 +965,13 @@ class IAHandler:
         for entry in node.get_child_of_type(n.Directive):
             if entry.name != "entry":
                 line = node.span[0]
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidChild(entry.name, "ia", "entry", line)
                 )
                 continue
 
             if not entry.options.get("url"):
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
                         "IA entry directives must include the :url: option",
                         node.span[0],
@@ -623,8 +987,8 @@ class IAHandler:
                 url = None
                 slug = entry.options.get("url")
 
-            if slug and not self.heading_handler.get_title(clean_slug(slug)):
-                self.diagnostics[fileid_stack.current].append(
+            if slug and not self.context[HeadingHandler].get_title(clean_slug(slug)):
+                self.context.diagnostics[fileid_stack.current].append(
                     MissingTocTreeEntry(slug, node.span[0])
                 )
                 continue
@@ -633,11 +997,11 @@ class IAHandler:
             if len(entry.argument) > 0:
                 title = entry.argument
             elif slug:
-                title = self.heading_handler.get_title(clean_slug(slug)) or []
+                title = self.context[HeadingHandler].get_title(clean_slug(slug)) or []
 
             project_name = entry.options.get("project-name")
             if project_name and not url:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
                         "IA entry directives with :project-name: option must include :url: option",
                         node.span[0],
@@ -646,7 +1010,7 @@ class IAHandler:
                 continue
 
             if url and not title:
-                self.diagnostics[fileid_stack.current].append(
+                self.context.diagnostics[fileid_stack.current].append(
                     InvalidIAEntry(
                         "IA entries to external URLs must include titles",
                         node.span[0],
@@ -664,7 +1028,10 @@ class IAHandler:
                 )
             )
 
-    def finalize_ia(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.ia = []
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if not self.ia:
             return
 
@@ -672,180 +1039,212 @@ class IAHandler:
             page.ast.options["ia"] = [entry.serialize() for entry in self.ia]
 
 
-class Postprocessor:
-    """Handles all postprocessing operations on parsed AST files.
-
-    The only method that should be called on an instance of Postprocessor is run(). This method
-    handles calling all other methods and ensures that parse operations are run in the correct order."""
-
-    def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
-        self.project_config = project_config
-        self.toctree: Dict[str, SerializableType] = {}
-        self.pages: Dict[FileId, Page] = {}
-        self.pending_targets: List[n.Node] = []
-        self.targets = targets
+class SubstitutionHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.project_config = context[ProjectConfig]
         self.substitution_definitions: Dict[str, MutableSequence[n.InlineNode]] = {}
-        self.unreplaced_nodes: List[Tuple[n.SubstitutionReference, int]] = []
-        self.seen_definitions: Optional[Set[str]] = None
-        self.toc_landing_pages = [
-            clean_slug(slug) for slug in project_config.toc_landing_pages
-        ]
-        self.pending_program: Optional[SerializableType] = None
-
-    def run(
-        self, pages: Dict[FileId, Page]
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
-        """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
-        if not pages:
-            return {}, {}
-
-        self.pages = pages
-        self.build_slug_fileid_mapping()
-        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
-
-        include_handler = IncludeHandler(
-            self.diagnostics, self.slug_fileid_mapping, self.pages
-        )
-        self.run_event_parser([(EventParser.OBJECT_START_EVENT, include_handler)])
-
-        self.handle_substitutions()
-
-        option_handler = ProgramOptionHandler(self.diagnostics)
-        tabs_selector_handler = TabsSelectorHandler(self.diagnostics)
-        contents_handler = ContentsHandler(self.diagnostics)
-        self.heading_handler = HeadingHandler(self.targets)
-
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, self.heading_handler),
-                (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (
-                    EventParser.OBJECT_START_EVENT,
-                    option_handler,
-                ),
-                (EventParser.OBJECT_START_EVENT, tabs_selector_handler),
-                (EventParser.OBJECT_START_EVENT, contents_handler.enter_section),
-                (EventParser.OBJECT_START_EVENT, contents_handler),
-                (EventParser.OBJECT_END_EVENT, contents_handler.exit_section),
-            ],
-            [
-                (EventParser.PAGE_START_EVENT, option_handler.reset),
-                (EventParser.PAGE_START_EVENT, tabs_selector_handler.reset),
-                (EventParser.PAGE_START_EVENT, contents_handler.reset),
-                (EventParser.PAGE_END_EVENT, contents_handler.finalize_headings),
-                (EventParser.PAGE_END_EVENT, tabs_selector_handler.finalize_tabsets),
-                (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
-            ],
-        )
-
-        target_handler = TargetHandler(self.targets)
-        named_reference_handler = NamedReferenceHandler(self.diagnostics)
-        ia_handler = IAHandler(self.diagnostics, self.heading_handler)
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, target_handler),
-                (EventParser.OBJECT_START_EVENT, named_reference_handler),
-                (EventParser.OBJECT_START_EVENT, ia_handler),
-            ],
-            [
-                (EventParser.PAGE_START_EVENT, target_handler.reset),
-                (EventParser.PAGE_START_EVENT, ia_handler.reset),
-                (EventParser.PAGE_END_EVENT, ia_handler.finalize_ia),
-            ],
-        )
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, self.handle_refs),
-                (EventParser.OBJECT_START_EVENT, named_reference_handler.populate),
+        self.include_replacement_definitions: List[
+            Dict[str, MutableSequence[n.Node]]
+        ] = []
+        self.unreplaced_nodes: List[
+            Tuple[
+                Union[n.SubstitutionReference, n.BlockSubstitutionReference],
+                FileId,
+                int,
             ]
-        )
-        document = self.generate_metadata()
+        ] = []
+        self.seen_definitions: Optional[Set[str]] = None
 
-        return document, self.diagnostics
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        """When a substitution is defined, add it to the page's index.
 
-    def generate_metadata(self) -> n.SerializedNode:
-        document: Dict[str, SerializableType] = {}
-        document["title"] = self.project_config.title
-        if self.project_config.deprecated_versions:
-            document["deprecated_versions"] = self.project_config.deprecated_versions
-        # Update metadata document with key-value pairs defined in event parser
-        document["slugToTitle"] = {
-            k: [node.serialize() for node in v]
-            for k, v in self.heading_handler.slug_title_mapping.items()
-        }
-        # Run postprocessing operations related to toctree and append to metadata document.
-        # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
-        iatree = self.build_iatree()
-        toctree = self.build_toctree()
-        if iatree and toctree.get("children"):
-            self.diagnostics[FileId("index.txt")].append(InvalidTocTree(0))
+        When a substitution is referenced, populate its children if possible.
+        If not, save this node to be populated at the end of the page.
+        """
 
-        tree = iatree or toctree
-        document.update(
-            {
-                "toctree": toctree,
-                "toctreeOrder": self.toctree_order(tree),
-                "parentPaths": self.breadcrumbs(tree),
-            }
-        )
+        if isinstance(node, n.Directive):
+            if node.name not in {"include", "sharedinclude"}:
+                return
 
-        if iatree:
-            document["iatree"] = iatree
+            definitions: Dict[str, MutableSequence[n.Node]] = {}
+            self.include_replacement_definitions.append(definitions)
+            for replacement_directive in node.get_child_of_type(n.Directive):
+                if replacement_directive.name != "replacement":
+                    continue
 
-        return document
+                arg = "".join(
+                    x.get_text() for x in replacement_directive.argument
+                ).strip()
+                definitions[arg] = replacement_directive.children
 
-    def _get_page_from_slug(self, current_page: Page, slug: str) -> Optional[Page]:
-        relative, _ = util.reroot_path(
-            FileId(slug), current_page.source_path, self.project_config.source_path
-        )
+        elif isinstance(node, n.SubstitutionDefinition):
+            self.substitution_definitions[node.name] = node.children
+            self.seen_definitions = set()
 
-        try:
-            fileid_with_ext = self.slug_fileid_mapping[relative.as_posix()]
-        except KeyError:
+        elif isinstance(node, n.SubstitutionReference):
+            inline_substitution = self.search_inline(node, fileid_stack)
+            if inline_substitution is not None:
+                node.children = inline_substitution
+            else:
+                # Save node in order to populate it at the end of the page
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
+
+            if self.seen_definitions is not None:
+                self.seen_definitions.add(node.name)
+
+        elif isinstance(node, n.BlockSubstitutionReference):
+            block_substitution = self.search_block(node, fileid_stack)
+            if block_substitution is not None:
+                node.children = block_substitution
+            else:
+                # Save node in order to populate it at the end of the page
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
+
+            if self.seen_definitions is not None:
+                self.seen_definitions.add(node.name)
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.SubstitutionDefinition):
+            self.seen_definitions = None
+        elif isinstance(node, n.Directive) and node.name in {
+            "include",
+            "sharedinclude",
+        }:
+            self.include_replacement_definitions.pop()
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
+
+        Clear definitions and unreplaced nodes for the next page.
+        """
+        for node, fileid, line in self.unreplaced_nodes:
+            substitution = self.substitution_definitions.get(node.name)
+            if substitution is not None:
+                node.children = substitution
+            else:
+                self.context.diagnostics[fileid].append(
+                    SubstitutionRefError(
+                        f'Substitution reference could not be replaced: "|{node.name}|"',
+                        line,
+                    )
+                )
+
+        self.substitution_definitions = {}
+        self.include_replacement_definitions = []
+        self.unreplaced_nodes = []
+
+    def search_inline(
+        self, node: n.SubstitutionReference, fileid_stack: FileIdStack
+    ) -> Optional[MutableSequence[n.InlineNode]]:
+        result = self._search(node, fileid_stack)
+        if result is None:
             return None
-        return self.pages.get(fileid_with_ext)
 
-    def run_event_parser(
+        # Ensure that we're only attempting to insert a single inline element. Otherwise,
+        # it's not clear what the writer would want.
+        substitution = extract_inline(result)
+        if not substitution or len(substitution) != len(result):
+            self.context.diagnostics[fileid_stack.current].append(
+                InvalidContextError(
+                    node.name,
+                    node.span[0],
+                )
+            )
+            return None
+
+        return substitution
+
+    def search_block(
+        self, node: n.BlockSubstitutionReference, fileid_stack: FileIdStack
+    ) -> Optional[MutableSequence[n.Node]]:
+        result = self._search(node, fileid_stack)
+        if result is None:
+            return None
+
+        # If we're injecting inline nodes, wrap them in a paragraph. Coalesce adjacent
+        # inline elements into a single paragraph.
+        output: List[n.Node] = []
+        current_paragraph: List[n.InlineNode] = []
+        for element in result:
+            if isinstance(element, n.InlineNode):
+                current_paragraph.append(element)
+            else:
+                if current_paragraph:
+                    output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+                    current_paragraph = []
+                output.append(element)
+
+        if current_paragraph:
+            output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+
+        return output
+
+    def _search(
         self,
-        node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
-        page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
-    ) -> None:
-        event_parser = EventParser()
-        for event, node_listener in node_listeners:
-            event_parser.add_event_listener(event, node_listener)
+        node: Union[n.BlockSubstitutionReference, n.SubstitutionReference],
+        fileid_stack: FileIdStack,
+    ) -> Optional[Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]]]:
+        name = node.name
 
-        for event, page_listener in page_listeners:
-            event_parser.add_event_listener(event, page_listener)
-
-        event_parser.consume(
-            (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
-        )
-
-    def _attach_doc_title(self, fileid_stack: FileIdStack, node: n.RefRole) -> None:
-        target_fileid = None if node.fileid is None else node.fileid[0]
-        if not target_fileid:
-            line = node.span[0]
-            self.diagnostics[fileid_stack.current].append(
-                ExpectedPathArg(node.name, line)
+        # Detect substitution loop
+        if self.seen_definitions is not None and name in self.seen_definitions:
+            # Catch circular substitution
+            try:
+                del self.substitution_definitions[name]
+            except KeyError:
+                pass
+            self.context.diagnostics[fileid_stack.current].append(
+                SubstitutionRefError(
+                    f'Circular substitution definition referenced: "{name}"',
+                    node.span[0],
+                )
             )
-            return
+            return None
 
-        relative, _ = util.reroot_path(
-            FileId(target_fileid), fileid_stack.root, self.project_config.source_path
-        )
-        slug = clean_slug(relative.as_posix())
-        title = self.heading_handler.get_title(slug)
+        # Resolution order: include parameters, definitions from page, definitions from snooty.toml
+        # First, check if there are any parameters provided by our immediate parent
+        try:
+            return util.fast_deep_copy(self.include_replacement_definitions[-1][name])
+        except (IndexError, KeyError):
+            pass
 
-        if not title:
-            line = node.span[0]
-            self.diagnostics[fileid_stack.current].append(
-                UnnamedPage(target_fileid, line)
-            )
-            return
+        # Now try to get a substitution from page.
+        substitution = self.substitution_definitions.get(
+            name
+        ) or self.project_config.substitution_nodes.get(name)
 
-        node.children = [deepcopy(node) for node in title]
+        return util.fast_deep_copy(substitution)
 
-    def handle_refs(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+
+class AddTitlesToLabelTargetsHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.pending_targets: List[n.Node] = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)):
+            self.pending_targets = []
+
+        if isinstance(node, n.Target) and node.domain == "std" and node.name == "label":
+            self.pending_targets.extend(node.children)
+        elif isinstance(node, n.Section):
+            for target in self.pending_targets:
+                heading = next(node.get_child_of_type(n.Heading), None)
+                if heading is not None:
+                    assert isinstance(target, n.Parent)
+                    target.children = heading.children
+            self.pending_targets = []
+
+
+class RefsHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.project_config = context[ProjectConfig]
+        self.targets = context[TargetDatabase]
+        self.spec = specparser.Spec.get()
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.
 
         If so, append the full URL to the AST node. If not, throw an error.
@@ -867,7 +1266,7 @@ class Postprocessor:
         if not target_candidates:
             # insert title and raise diagnostic
             line = node.span[0]
-            target_dict = specparser.SPEC.rstobject
+            target_dict = self.spec.rstobject
             target_key = f"{node.domain}:{node.name}"
             title = node.target
             # abstract title from node's target to insert into new text node
@@ -879,7 +1278,7 @@ class Postprocessor:
             if injection_candidate is not None:
                 injection_candidate.children = [text_node]
 
-            self.diagnostics[fileid_stack.current].append(
+            self.context.diagnostics[fileid_stack.current].append(
                 TargetNotFound(node.name, node.target, line)
             )
             return
@@ -899,7 +1298,7 @@ class Postprocessor:
                 else:
                     candidate_descriptions.append(candidate.url)
 
-            self.diagnostics[fileid_stack.current].append(
+            self.context.diagnostics[fileid_stack.current].append(
                 AmbiguousTarget(node.name, node.target, candidate_descriptions, line)
             )
 
@@ -957,112 +1356,242 @@ class Postprocessor:
 
         return candidates
 
-    def handle_substitutions(self) -> None:
-        """Find and replace substitutions throughout project"""
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, self.replace_substitutions),
-                (EventParser.OBJECT_END_EVENT, self.reset_seen_definitions),
-            ],
-            [(EventParser.PAGE_END_EVENT, self.finalize_substitutions)],
+    def _attach_doc_title(self, fileid_stack: FileIdStack, node: n.RefRole) -> None:
+        target_fileid = None if node.fileid is None else node.fileid[0]
+        if not target_fileid:
+            line = node.span[0]
+            self.context.diagnostics[fileid_stack.current].append(
+                ExpectedPathArg(node.name, line)
+            )
+            return
+
+        relative, _ = util.reroot_path(
+            FileId(target_fileid), fileid_stack.root, self.project_config.source_path
+        )
+        slug = clean_slug(relative.as_posix())
+        title = self.context[HeadingHandler].get_title(slug)
+
+        if not title:
+            line = node.span[0]
+            self.context.diagnostics[fileid_stack.current].append(
+                UnnamedPage(target_fileid, line)
+            )
+            return
+
+        node.children = [deepcopy(node) for node in title]
+
+
+class PostprocessorResult(NamedTuple):
+    pages: Dict[FileId, Page]
+    metadata: Dict[str, SerializableType]
+    diagnostics: Dict[FileId, List[Diagnostic]]
+    targets: TargetDatabase
+
+
+def build_manpages(context: Context) -> Dict[str, Union[str, bytes]]:
+    config = context[ProjectConfig]
+    result: Dict[str, Union[str, bytes]] = {}
+
+    # Build manpages
+    manpages: List[Tuple[str, str]] = []
+    for name, definition in config.manpages.items():
+        fileid = FileId(definition.file)
+        manpage_page = context.pages.get(fileid)
+        if not manpage_page:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(CannotOpenFile(PurePath(fileid), "Page not found", 0))
+            continue
+
+        for filename, rendered in man.render(
+            manpage_page, name, definition.title, definition.section
+        ).items():
+            manpages.append((filename.as_posix(), rendered))
+            result[filename.as_posix()] = rendered
+
+    if manpages and config.bundle.manpages:
+        try:
+            result[config.bundle.manpages] = bundle(
+                PurePath(config.bundle.manpages), manpages
+            )
+        except ValueError:
+            context.diagnostics[
+                FileId(config.config_path.relative_to(config.root))
+            ].append(UnsupportedFormat(config.bundle.manpages, (".tar", ".tar.gz"), 0))
+
+    return result
+
+
+class Postprocessor:
+    """Handles all postprocessing operations on parsed AST files.
+
+    The only method that should be called on an instance of Postprocessor is run(). This method
+    handles calling all other methods and ensures that parse operations are run in the correct order."""
+
+    PASSES: Sequence[Sequence[Type[Handler]]] = [
+        [IncludeHandler],
+        [SubstitutionHandler],
+        [
+            HeadingHandler,
+            AddTitlesToLabelTargetsHandler,
+            ProgramOptionHandler,
+            TabsSelectorHandler,
+            ContentsHandler,
+            BannerHandler,
+            GuidesHandler,
+        ],
+        [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
+        [RefsHandler, NamedReferenceHandlerPass2],
+    ]
+
+    def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
+        self.project_config = project_config
+        self.toctree: Dict[str, SerializableType] = {}
+        self.pages: Dict[FileId, Page] = {}
+        self.targets = targets
+        self.pending_program: Optional[SerializableType] = None
+
+    def run(
+        self, pages: Dict[FileId, Page], cancellation_token: threading.Event
+    ) -> PostprocessorResult:
+        """Run all postprocessing operations and return a dictionary containing the metadata document to be saved."""
+        if not pages:
+            return PostprocessorResult({}, {}, {}, self.targets)
+
+        self.pages = pages
+        self.cancellation_token = cancellation_token
+        context = Context(pages)
+        context.add(self.project_config)
+        context.add(self.targets)
+
+        for project_pass in self.PASSES:
+            instances = [ty(context) for ty in project_pass]
+            for instance in instances:
+                context.add(instance)
+
+            self.run_event_parser(
+                [
+                    (EventParser.OBJECT_START_EVENT, instance.enter_node)
+                    for instance in instances
+                    if instance.__class__.enter_node is not Handler.enter_node
+                ]
+                + [
+                    (EventParser.OBJECT_END_EVENT, instance.exit_node)
+                    for instance in instances
+                    if instance.__class__.exit_node is not Handler.exit_node
+                ],
+                [
+                    (EventParser.PAGE_START_EVENT, instance.enter_page)
+                    for instance in instances
+                    if instance.__class__.enter_page is not Handler.enter_page
+                ]
+                + [
+                    (EventParser.PAGE_END_EVENT, instance.exit_page)
+                    for instance in instances
+                    if instance.__class__.exit_page is not Handler.exit_page
+                ],
+            )
+
+        document = self.generate_metadata(context)
+        self.finalize(context, document)
+        return PostprocessorResult(
+            self.pages, document, context.diagnostics, self.targets
         )
 
-    def replace_substitutions(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        """When a substitution is defined, add it to the page's index.
+    def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
+        pass
 
-        When a substitution is referenced, populate its children if possible.
-        If not, save this node to be populated at the end of the page.
-        """
+    @classmethod
+    def generate_metadata(cls, context: Context) -> n.SerializedNode:
+        project_config = context[ProjectConfig]
+        document: Dict[str, SerializableType] = {}
+        document["title"] = project_config.title
+        if project_config.deprecated_versions:
+            document["deprecated_versions"] = project_config.deprecated_versions
+        # Update metadata document with key-value pairs defined in event parser
+        document["slugToTitle"] = {
+            k: [node.serialize() for node in v]
+            for k, v in context[HeadingHandler].slug_title_mapping.items()
+        }
+        # Run postprocessing operations related to toctree and append to metadata document.
+        # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
+        iatree = cls.build_iatree(context)
+        toctree = cls.build_toctree(context)
+        if iatree and toctree.get("children"):
+            context.diagnostics[FileId("index.txt")].append(InvalidTocTree(0))
 
-        try:
-            line = node.span[0]
-            if isinstance(node, n.SubstitutionDefinition):
-                self.substitution_definitions[node.name] = node.children
-                self.seen_definitions = set()
-            elif isinstance(node, n.SubstitutionReference):
-                # Get substitution from page. If not found, attempt to source from snooty.toml. Otherwise, save substitution to be populated at the end of page
-                substitution = self.substitution_definitions.get(
-                    node.name
-                ) or self.project_config.substitution_nodes.get(node.name)
+        tree = iatree or toctree
+        document.update(
+            {
+                "toctree": toctree,
+                "toctreeOrder": cls.toctree_order(tree),
+                "parentPaths": cls.breadcrumbs(tree),
+            }
+        )
 
-                if (
-                    self.seen_definitions is not None
-                    and node.name in self.seen_definitions
-                ):
-                    # Catch circular substitution
-                    del self.substitution_definitions[node.name]
-                    node.children = []
-                    self.diagnostics[fileid_stack.current].append(
-                        SubstitutionRefError(
-                            f'Circular substitution definition referenced: "{node.name}"',
-                            line,
-                        )
-                    )
-                elif substitution is not None:
-                    node.children = substitution
-                else:
-                    # Save node in order to populate it at the end of the page
-                    self.unreplaced_nodes.append((node, line))
+        if iatree:
+            document["iatree"] = iatree
 
-                if self.seen_definitions is not None:
-                    self.seen_definitions.add(node.name)
-        except KeyError:
-            # If node does not contain "name" field, it is a duplicate substitution definition.
-            # An error has already been thrown for this on parse, so pass.
-            pass
+        context[GuidesHandler].add_guides_metadata(document)
 
-    def finalize_substitutions(self, fileid_stack: FileIdStack, page: Page) -> None:
-        """Attempt to populate any yet-unresolved substitutions (substitutions defined after usage) .
+        manpages = build_manpages(context)
+        document["static_files"] = manpages
 
-        Clear definitions and unreplaced nodes for the next page.
-        """
-        for node, line in self.unreplaced_nodes:
-            substitution = self.substitution_definitions.get(node.name)
-            if substitution is not None:
-                node.children = substitution
-            else:
-                self.diagnostics[fileid_stack.current].append(
-                    SubstitutionRefError(
-                        f'Substitution reference could not be replaced: "|{node.name}|"',
-                        line,
-                    )
-                )
+        return document
 
-        self.substitution_definitions = {}
-        self.unreplaced_nodes = []
-
-    def reset_seen_definitions(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.SubstitutionDefinition):
-            self.seen_definitions = None
-
-    def add_titles_to_label_targets(
-        self, fileid_stack: FileIdStack, node: n.Node
+    def run_event_parser(
+        self,
+        node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
+        page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
-        if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)):
-            self.pending_targets = []
+        event_parser = EventParser(self.cancellation_token)
+        for event, node_listener in node_listeners:
+            event_parser.add_event_listener(event, node_listener)
 
-        if isinstance(node, n.Target) and node.domain == "std" and node.name == "label":
-            self.pending_targets.extend(node.children)
-        elif isinstance(node, n.Section):
-            for target in self.pending_targets:
-                heading = next(node.get_child_of_type(n.Heading), None)
-                if heading is not None:
-                    assert isinstance(target, n.Parent)
-                    target.children = heading.children
-            self.pending_targets = []
+        for event, page_listener in page_listeners:
+            event_parser.add_event_listener(event, page_listener)
 
-    def build_slug_fileid_mapping(self) -> None:
-        """Construct a {slug: fileid} mapping so that we can retrieve the full file name
-        given a slug. We cannot use the with_suffix method since the type of the slug
-        in find_toctree_nodes(...) is string rather than FileId."""
-        fileid_dict: Dict[str, FileId] = {}
-        for fileid in self.pages:
-            slug = fileid.without_known_suffix
-            fileid_dict[slug] = fileid
-        self.slug_fileid_mapping = fileid_dict
+        event_parser.consume(
+            (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
+        )
 
-    def build_iatree(self) -> Dict[str, SerializableType]:
-        starting_page = self.pages.get(FileId("index.txt"))
+    @staticmethod
+    def build_iatree(context: Context) -> Dict[str, SerializableType]:
+        def _get_page_from_slug(current_page: Page, slug: str) -> Optional[Page]:
+            relative, _ = util.reroot_path(
+                FileId(slug),
+                current_page.source_path,
+                context[ProjectConfig].source_path,
+            )
+
+            try:
+                fileid_with_ext = context[IncludeHandler].slug_fileid_mapping[
+                    relative.as_posix()
+                ]
+            except KeyError:
+                return None
+            return context.pages.get(fileid_with_ext)
+
+        def iterate_ia(page: Page, result: Dict[str, SerializableType]) -> None:
+            """Construct a tree of similar structure to toctree. Starting from root, identify ia object on page and recurse on its entries to build a tree. Includes all potential properties of an entry including title, URI, project name, and primary status."""
+            if not isinstance(page.ast, n.Root):
+                return
+
+            ia = page.ast.options.get("ia")
+            if not isinstance(ia, List):
+                return
+            for entry in ia:
+                curr: Dict[str, SerializableType] = {**entry, "children": []}
+                if isinstance(result["children"], List):
+                    result["children"].append(curr)
+
+                slug = curr.get("slug")
+                if isinstance(slug, str):
+                    child = _get_page_from_slug(page, slug)
+                    if child:
+                        iterate_ia(child, curr)
+
+        starting_page = context.pages.get(FileId("index.txt"))
 
         if not starting_page:
             return {}
@@ -1071,37 +1600,19 @@ class Postprocessor:
         if "ia" not in starting_page.ast.options:
             return {}
 
-        title: Sequence[n.InlineNode] = self.heading_handler.get_title("index") or [
-            n.Text((0,), self.project_config.title)
+        title: Sequence[n.InlineNode] = context[HeadingHandler].get_title("index") or [
+            n.Text((0,), context[ProjectConfig].title)
         ]
         root: Dict[str, SerializableType] = {
             "title": [node.serialize() for node in title],
             "slug": "/",
             "children": [],
         }
-        self.iterate_ia(starting_page, root)
+        iterate_ia(starting_page, root)
         return root
 
-    def iterate_ia(self, page: Page, result: Dict[str, SerializableType]) -> None:
-        """Construct a tree of similar structure to toctree. Starting from root, identify ia object on page and recurse on its entries to build a tree. Includes all potential properties of an entry including title, URI, project name, and primary status."""
-        if not isinstance(page.ast, n.Root):
-            return
-
-        ia = page.ast.options.get("ia")
-        if not isinstance(ia, List):
-            return
-        for entry in ia:
-            curr: Dict[str, SerializableType] = {**entry, "children": []}
-            if isinstance(result["children"], List):
-                result["children"].append(curr)
-
-            slug = curr.get("slug")
-            if isinstance(slug, str):
-                child = self._get_page_from_slug(page, slug)
-                if child:
-                    self.iterate_ia(child, curr)
-
-    def build_toctree(self) -> Dict[str, SerializableType]:
+    @classmethod
+    def build_toctree(cls, context: Context) -> Dict[str, SerializableType]:
         """Build property toctree"""
 
         # The toctree must begin at either `contents.txt` or `index.txt`.
@@ -1109,29 +1620,36 @@ class Postprocessor:
         # the starting point will be `contents.txt`.
         candidates = (FileId("contents.txt"), FileId("index.txt"))
         starting_fileid = next(
-            (candidate for candidate in candidates if candidate in self.pages), None
+            (candidate for candidate in candidates if candidate in context.pages), None
         )
         if starting_fileid is None:
             return {}
 
         # Build the toctree
         root: Dict[str, SerializableType] = {
-            "title": [n.Text((0,), self.project_config.title).serialize()],
+            "title": [n.Text((0,), context[ProjectConfig].title).serialize()],
             "slug": "/",
             "children": [],
         }
-        ast = self.pages[starting_fileid].ast
+        ast = context.pages[starting_fileid].ast
 
-        self.find_toctree_nodes(starting_fileid, ast, root, {starting_fileid})
+        toc_landing_pages = [
+            clean_slug(slug) for slug in context[ProjectConfig].toc_landing_pages
+        ]
+        cls.find_toctree_nodes(
+            context, starting_fileid, ast, root, toc_landing_pages, {starting_fileid}
+        )
 
-        self.toctree = root
         return root
 
+    @classmethod
     def find_toctree_nodes(
-        self,
+        cls,
+        context: Context,
         fileid: FileId,
         ast: n.Node,
         node: Dict[str, Any],
+        toc_landing_pages: List[str],
         visited_file_ids: Set[FileId] = set(),
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
@@ -1160,9 +1678,11 @@ class Postprocessor:
                     # handling to the initial parse layer, but this works for now.
                     # https://jira.mongodb.org/browse/DOCSP-7941
                     try:
-                        slug_fileid: FileId = self.slug_fileid_mapping[slug_cleaned]
+                        slug_fileid: FileId = context[
+                            IncludeHandler
+                        ].slug_fileid_mapping[slug_cleaned]
                     except KeyError:
-                        self.diagnostics[fileid].append(
+                        context.diagnostics[fileid].append(
                             MissingTocTreeEntry(slug_cleaned, ast.span[0])
                         )
                         continue
@@ -1174,27 +1694,40 @@ class Postprocessor:
                             n.Text((0,), entry.title).serialize()
                         ]
                     else:
-                        title_nodes = self.heading_handler.get_title(slug)
+                        title_nodes = context[HeadingHandler].get_title(slug)
                         title = (
                             [node.serialize() for node in title_nodes]
                             if title_nodes
                             else None
                         )
 
+                    toctree_node_options: Dict[str, Any] = {
+                        "drawer": slug not in toc_landing_pages
+                    }
+
+                    # Check if tocicon is a page level option
+                    if context.pages[FileId(slug_fileid)].ast.options:
+                        if "tocicon" in context.pages[FileId(slug_fileid)].ast.options:
+                            toctree_node_options["tocicon"] = context.pages[
+                                FileId(slug_fileid)
+                            ].ast.options["tocicon"]
+
                     toctree_node = {
                         "title": title,
                         "slug": "/" if slug == "index" else slug,
                         "children": [],
-                        "options": {"drawer": slug not in self.toc_landing_pages},
+                        "options": toctree_node_options,
                     }
 
                     # Don't recurse on the index page
                     if slug_fileid not in visited_file_ids:
-                        new_ast = self.pages[slug_fileid].ast
-                        self.find_toctree_nodes(
+                        new_ast = context.pages[slug_fileid].ast
+                        cls.find_toctree_nodes(
+                            context,
                             slug_fileid,
                             new_ast,
                             toctree_node,
+                            toc_landing_pages,
                             visited_file_ids.union({slug_fileid}),
                         )
 
@@ -1203,9 +1736,12 @@ class Postprocessor:
 
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
-            self.find_toctree_nodes(fileid, child_ast, node, visited_file_ids)
+            cls.find_toctree_nodes(
+                context, fileid, child_ast, node, toc_landing_pages, visited_file_ids
+            )
 
-    def breadcrumbs(self, tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
+    @staticmethod
+    def breadcrumbs(tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
         """Generate breadcrumbs for each page represented in the provided toctree"""
         page_dict: Dict[str, List[str]] = {}
         all_paths: List[Any] = []
@@ -1225,7 +1761,8 @@ class Postprocessor:
                 page_dict[slug] = path[:i]
         return page_dict
 
-    def toctree_order(self, tree: Dict[str, SerializableType]) -> List[str]:
+    @staticmethod
+    def toctree_order(tree: Dict[str, SerializableType]) -> List[str]:
         """Return a pre-order traversal of the toctree to be used for internal page navigation"""
         order: List[str] = []
 
@@ -1276,9 +1813,7 @@ def clean_slug(slug: str) -> str:
     return slug
 
 
-class DevhubPostprocessor(Postprocessor):
-    """Postprocess operation to be run if a project's default_domain is equal to 'devhub'"""
-
+class DevhubHandler(Handler):
     # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
     # These directives are represented as list nodes; they will return a list of strings
     LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
@@ -1290,102 +1825,24 @@ class DevhubPostprocessor(Postprocessor):
     # they will return a dictionary with all options represented, and with the content represented as a list of nodes whose key is `children`.
     OPTION_BLOCK_FIELDS = {":og", ":twitter"}
 
-    def run(
-        self, pages: Dict[FileId, Page]
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
-        if not pages:
-            return {}, {}
-
-        self.pages = pages
-        self.build_slug_fileid_mapping()
-        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
-
-        include_handler = IncludeHandler(
-            self.diagnostics, self.slug_fileid_mapping, self.pages
-        )
-        self.run_event_parser([(EventParser.OBJECT_START_EVENT, include_handler)])
-
-        self.handle_substitutions()
-
-        option_handler = ProgramOptionHandler(self.diagnostics)
-        self.heading_handler = HeadingHandler(self.targets)
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, self.heading_handler),
-                (EventParser.OBJECT_START_EVENT, self.add_titles_to_label_targets),
-                (
-                    EventParser.OBJECT_START_EVENT,
-                    option_handler,
-                ),
-            ],
-            [
-                (EventParser.PAGE_START_EVENT, option_handler.reset),
-                (EventParser.PAGE_END_EVENT, self.heading_handler.reset),
-            ],
-        )
-
-        target_handler = TargetHandler(self.targets)
-        self.run_event_parser(
-            [(EventParser.OBJECT_START_EVENT, target_handler)],
-            [(EventParser.PAGE_START_EVENT, target_handler.reset)],
-        )
-
-        def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
-            """Clean a slug and validate that it is a known page. If it is not, return None."""
-            cleaned = clean_slug(slug)
-            if cleaned not in self.heading_handler:
-                # XXX: Because reporting errors in config.toml properly is dodgy right now, just
-                # log to stderr.
-                logger.error(f"Cannot find slug '{cleaned}'")
-                return None
-
-            return cleaned
-
-        self.run_event_parser(
-            [
-                (EventParser.OBJECT_START_EVENT, self.handle_refs),
-                (EventParser.OBJECT_START_EVENT, self.flatten_devhub_article),
-            ],
-            [
-                (EventParser.PAGE_START_EVENT, self.reset_query_fields),
-                (EventParser.PAGE_END_EVENT, self.append_query_fields),
-            ],
-        )
-
-        document = self.generate_metadata()
-        # Normalize all page group slugs
-        page_groups = {
-            title: [
-                slug
-                for slug in (clean_and_validate_page_group_slug(slug) for slug in slugs)
-                if slug
-            ]
-            for title, slugs in self.project_config.page_groups.items()
-        }
-
-        if page_groups:
-            document.update({"pageGroups": page_groups})
-
-        return document, self.diagnostics
-
-    def reset_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the start of each page: reset the query field dictionary"""
         self.query_fields: Dict[str, Any] = {}
 
-    def append_query_fields(self, fileid_stack: FileIdStack, page: Page) -> None:
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         """To be called at the end of each page: append the query field dictionary to the
         top level of the page's class instance.
         """
         # Save page title to query_fields, if it exists
         slug = clean_slug(fileid_stack.current.as_posix())
         self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
-        title = self.heading_handler.get_title(slug)
+        title = self.context[HeadingHandler].get_title(slug)
         if title is not None:
             self.query_fields["title"] = [node.serialize() for node in title]
 
         page.query_fields = self.query_fields
 
-    def flatten_devhub_article(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """Extract fields from a page's AST and expose them as a queryable nested document in the page document."""
         if not isinstance(node, n.Directive):
             return
@@ -1439,3 +1896,48 @@ class DevhubPostprocessor(Postprocessor):
                     text_candidate = get_deepest(item)
                     assert isinstance(text_candidate, n.Text)
                     self.query_fields[node.name].append(text_candidate.value)
+
+
+class DevhubPostprocessor(Postprocessor):
+    """Postprocess operation to be run if a project's default_domain is equal to 'devhub'"""
+
+    PASSES: Sequence[Sequence[Type[Handler]]] = [
+        [IncludeHandler],
+        [SubstitutionHandler],
+        [
+            HeadingHandler,
+            AddTitlesToLabelTargetsHandler,
+            ProgramOptionHandler,
+            TabsSelectorHandler,
+            ContentsHandler,
+            BannerHandler,
+            GuidesHandler,
+        ],
+        [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
+        [RefsHandler, NamedReferenceHandlerPass2, DevhubHandler],
+    ]
+
+    def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
+        def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
+            """Clean a slug and validate that it is a known page. If it is not, return None."""
+            cleaned = clean_slug(slug)
+            if cleaned not in context[HeadingHandler]:
+                # XXX: Because reporting errors in config.toml properly is dodgy right now, just
+                # log to stderr.
+                logger.error(f"Cannot find slug '{cleaned}'")
+                return None
+
+            return cleaned
+
+        # Normalize all page group slugs
+        page_groups = {
+            title: [
+                slug
+                for slug in (clean_and_validate_page_group_slug(slug) for slug in slugs)
+                if slug
+            ]
+            for title, slugs in self.project_config.page_groups.items()
+        }
+
+        if page_groups:
+            metadata.update({"pageGroups": page_groups})

@@ -1,5 +1,5 @@
 import enum
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from . import n
@@ -62,6 +62,9 @@ class Diagnostic:
         diag["start"] = self.start[0]
         diag["message"] = self.message
         return diag
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.message)}, {repr(self.start)})"
 
 
 class UnexpectedIndentation(Diagnostic, MakeCorrectionMixin):
@@ -177,6 +180,18 @@ class ErrorParsingYAMLFile(Diagnostic):
         self.reason = reason
 
 
+class InvalidDirectiveStructure(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        msg: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'Directive "io-code-block" {msg}', start, end)
+
+
 class InvalidInclude(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -187,6 +202,23 @@ class InvalidLiteralInclude(Diagnostic):
 
 class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
+
+
+class InvalidContextError(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Cannot substitute block elements into an inline context: |{name}|",
+            start,
+            end,
+        )
+        self.name = name
 
 
 class ConstantNotDeclared(Diagnostic):
@@ -315,7 +347,7 @@ class CannotOpenFile(Diagnostic):
 
     def __init__(
         self,
-        path: Path,
+        path: PurePath,
         reason: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
@@ -587,3 +619,66 @@ class InvalidChild(Diagnostic, MakeCorrectionMixin):
 
     def did_you_mean(self) -> List[str]:
         return [f".. {self.suggestion}::"]
+
+
+class ConfigurationProblem(Diagnostic):
+    severity = Diagnostic.Level.error
+
+
+class ChapterAlreadyExists(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        chapter_name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'Chapter "{chapter_name}" already exists', start, end)
+
+
+class InvalidChapter(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        message: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Invalid chapter: {message}", start, end)
+
+
+class MissingChild(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        directive: str,
+        expected_child: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f'Directive "{directive}" expects at least one child of type "{expected_child}"; found 0',
+            start,
+            end,
+        )
+
+
+class GuideAlreadyHasChapter(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        guide_slug: str,
+        assigned_chapter: str,
+        target_chapter: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Cannot add guide "{guide_slug}" to chapter "{target_chapter}" because the guide is already assigned to chapter "{assigned_chapter}\"""",
+            start,
+            end,
+        )

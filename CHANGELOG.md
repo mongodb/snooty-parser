@@ -7,6 +7,167 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.12.5] - 2022-02-08
+
+### Added
+
+- Implement input, output, and io-code-block directives (DOP-2651, #375).
+- Add an `icon` option to the `cta-banner` directive (DOP-2719, #382).
+
+## [v0.12.4] - 2022-02-02
+
+### Fixed
+
+- Typo in the deploy environment configuration (DOP-2712, #383).
+
+## [v0.12.3] - 2022-02-01
+
+### Added
+
+- An option to specify the location of an rstspec file to use (DOP-2649).
+- A new set of deploy environments.
+
+## [v0.12.2] - 2022-01-27
+
+### Added
+
+- The `mongodb:cta-banner` directive (DOP-2600, #380).
+
+## [v0.12.1] - 2022-01-25
+
+### Fixed
+
+- Using the `include` directive with no argument no longer cause a build hang (DOP-2696, #376, #377).
+
+## [v0.12.0] - 2022-01-19
+
+### Changed
+
+- `step` and `procedure` directives can now be styled and are used to help generate steps from YAML (DOP-2504).
+
+## [v0.11.13] - 2022-01-12
+
+### Fixed
+
+- Substitutions containing multiple substitution elements no longer yields multiple paragraphs (DOP-2620).
+
+## [v0.11.12] - 2022-01-06
+
+### Added
+
+- The `tocicon` page option allows writers to attach an icon to a page in the site nav (DOP-2320, #367).
+
+## [v0.11.11] - 2022-01-05
+
+### Added
+
+- Flutter link roles (#373).
+- Roles for different versions of WT docs (DOCS-14997).
+- Chapters are now given an appropriate HTML5 id (DOP-2505).
+
+### Fixed
+
+- Handle escaped double-quotes (DOP-2638).
+- Temporary workaround for PHP role intersphinx issues (DOP-2636).
+- Properly report diagnostics on YAML parsing and unmarshaling errors (DOP-2637).
+
+## [v0.11.10] - 2021-12-17
+
+## [v0.11.9] - 2021-12-15
+
+### Changed
+
+- The language server has had significant work to increase concurrency and reduce jank,
+  and now runs the postprocessor (DOP-2546, #358) bringing diagnostic parity with builds.
+
+  More work is planned, but this is a significant step forward, years in the making!
+
+- OpenAPI specs may now be fetched from realm (DOP-2533, #360) with the `:uses-realm:` option
+  on the `openapi` directive.
+
+- The `iOS SDK` Realm SDK tab has been retitled to `Swift SDK` courtesy of Chris Bush (#364).
+
+### Fixed
+
+- HTTP cache now avoids re-sending requests for an hour (#363)
+
+## [v0.11.8] - 2021-12-01
+
+### Fixed
+
+- Do not crash if a literalinclude cannot be parsed as UTF-8 (DOP-2613).
+- Correctly handle docutils output when a ref role contains backslashes (DOP-2611).
+
+## [v0.11.7] - 2021-11-17
+
+### Added
+
+- Add `v5.0` and `v5.1` extlinks for the server manual (#354, #356)
+- Support for the literalinclude `lineno-start` option (DOP-2562 #355)
+- Support for chapter `image` and `icon` options (DOP-2446 #351, DOP-2447 #357)
+
+## [v0.11.6] - 2021-11-03
+
+### Added
+
+- External link roles for the k8s migration (DOP-2556).
+- `rust-async` and `rust-sync` driver tabs.
+- Directives and metadata for upcoming guides work.
+
+### Changed
+
+- Docutils 0.18 is explicitly unsupported for the moment.
+
+## [v0.11.5] - 2021-10-06
+
+### Changed
+
+- DOP-2332: tab drivers Mongo Shell -> MongoDB Shell
+
+## [v0.11.4] - 2021-09-17
+
+### Added
+
+- The `replacement` and `sharedinclude` directives to support shared content work (DOP-2377, DOP-2376).
+
+### Changed
+
+- Symbolic links are now followed while scanning for content, as long as they do not go above snooty.toml in the filesystem hierarchy (DOP-2415, DOP-2430).
+
+### Fixed
+
+- Source constants no longer fail to recursively evaluate.
+
+## [v0.11.3] - 2021-08-25
+
+### Added
+
+- Add version 5.0 to mongo-web-shell directive (DOP-2356)
+
+## [v0.11.2] - 2021-08-04
+
+### Added
+
+- Quiz widget! (DOP-2319 #333 DOP-2354, DOP-2354 #334)
+
+## [v0.11.1] - 2021-08-04
+
+### Added
+
+- `java-docs-4.3` extlink (#337)
+
+## [v0.11.0] - 2021-07-14
+
+### Added
+
+- Directive for banner support (DOP-1573, #308)
+
+## [v0.10.4] - 2021-07-07
+
+### Fixed
+
+- Correctly report line numbers within directive contents (DOP-2300).
+
 ## [v0.10.3] - 2021-06-30
 
 ### Fixed

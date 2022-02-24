@@ -6,18 +6,14 @@
 import datetime
 import logging
 import re
-import urllib.parse
 import zlib
 from dataclasses import dataclass, field
-from email.utils import formatdate
 from pathlib import Path
-from time import mktime
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-import requests
+from .util import HTTPCache
 
 __all__ = ("TargetDefinition", "Inventory")
-DEFAULT_CACHE_DIR = Path.home().joinpath(".cache", "snooty")
 INVENTORY_PATTERN = re.compile(r"(?x)(.+?)\s+(\S*:\S*)\s+(-?\d+)\s(\S*)\s+(.*)")
 logger = logging.Logger(__name__)
 
@@ -144,42 +140,15 @@ class Inventory:
         return inventory
 
 
-def fetch_inventory(url: str, cache_dir: Path = DEFAULT_CACHE_DIR) -> Inventory:
+def fetch_inventory(
+    url: str,
+    cache_dir: Optional[Path] = HTTPCache.DEFAULT_CACHE_DIR,
+    cache_interval: Optional[datetime.timedelta] = None,
+) -> Inventory:
     """Fetch an intersphinx inventory, or use a locally cached copy if it is still valid."""
-    logger.debug(f"Fetching inventory: {url}")
-
     base_url = url.rsplit("/", 1)[0]
     base_url.rstrip("/")
     base_url += "/"
 
-    # Make our user's cache directory if it doesn't exist
-    parsed_url = urllib.parse.urlparse(url)
-    filename = "".join(
-        char for char in parsed_url.netloc + parsed_url.path if char.isalnum()
-    )
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    inventory_path = cache_dir.joinpath(filename)
-
-    # Only re-request if more than an hour old
-    request_headers: Dict[str, str] = {}
-    mtime: Optional[datetime.datetime] = None
-    try:
-        mtime = datetime.datetime.fromtimestamp(inventory_path.stat().st_mtime)
-    except FileNotFoundError:
-        pass
-
-    if mtime is not None:
-        if (datetime.datetime.now() - mtime) < datetime.timedelta(hours=1):
-            request_headers["If-Modified-Since"] = formatdate(
-                mktime(mtime.timetuple()), usegmt=True
-            )
-
-    res = requests.get(url, headers=request_headers)
-
-    res.raise_for_status()
-    if res.status_code == 304:
-        return Inventory.parse(base_url, inventory_path.read_bytes())
-
-    with open(inventory_path, "wb") as f:
-        f.write(res.content)
-    return Inventory.parse(base_url, res.content)
+    data = HTTPCache(cache_dir).get(url, cache_interval)
+    return Inventory.parse(base_url, data)

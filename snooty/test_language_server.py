@@ -47,9 +47,13 @@ class LSPDiagnostic:
 def test_debounce() -> None:
     bounces = [0]
 
-    @language_server.debounce(0.1)
+    debouncer = language_server.Debouncer()
+
     def inc() -> None:
-        bounces[0] += 1
+        def _inc() -> None:
+            bounces[0] += 1
+
+        debouncer.run([(0.1, _inc)])
 
     inc()
     inc()
@@ -58,6 +62,7 @@ def test_debounce() -> None:
     time.sleep(0.2)
     inc()
 
+    debouncer.stop()
     assert bounces[0] == 1
 
 
@@ -173,12 +178,12 @@ def test_text_doc_get_page_ast() -> None:
 
             <directive name="include"><text>/includes/steps/migrate-compose-pr.rst</text>
             <root fileid="includes/steps-migrate-compose-pr.yaml">
-            <directive name="steps-yaml">
-            <directive name="step-yaml"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
+            <directive name="procedure" style="normal">
+            <directive name="step"><section><heading id="mongodb-atlas-account"><text>MongoDB Atlas account</text>
             </heading><paragraph><text>If you don't have an Atlas account, </text>
             <ref_role domain="std" name="doc" fileid="['/cloud/atlas', '']"><text>create one</text></ref_role>
             <text> now.</text></paragraph></section></directive>
-            <directive name="step-yaml"><section><heading id="compose-mongodb-deployment">
+            <directive name="step"><section><heading id="compose-mongodb-deployment">
             <text>Compose MongoDB deployment</text></heading>
             </section></directive></directive>
             </root></directive></section></root>"""

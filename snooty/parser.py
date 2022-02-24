@@ -1,15 +1,18 @@
+from __future__ import annotations
+
 import collections
 import errno
 import getpass
-import io
 import json
 import logging
 import multiprocessing
 import os
+import queue
 import re
 import subprocess
 import threading
-import time
+import urllib.parse
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -22,6 +25,7 @@ from typing import (
     List,
     MutableSequence,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -31,41 +35,43 @@ from typing import (
 import docutils.nodes
 import docutils.utils
 import networkx
+import requests.exceptions
 import watchdog.events
-from typing_extensions import Protocol
 from yaml import safe_load
 
 from . import gizaparser, n, rstparser, specparser, util
-from .builders import man
 from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
+    ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
     ExpectedPathArg,
     FetchError,
     ImageSuggested,
+    InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
     MalformedGlossary,
+    MissingChild,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
-    UnsupportedFormat,
 )
 from .gizaparser.nodes import GizaCategory
 from .openapi import OpenAPI
 from .page import Page, PendingTask
-from .postprocess import DevhubPostprocessor, Postprocessor
+from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     BuildIdentifierSet,
     FileId,
+    ParsedBannerConfig,
     ProjectConfig,
     SerializableType,
     StaticAsset,
@@ -76,33 +82,14 @@ NO_CHILDREN = (n.SubstitutionReference,)
 logger = logging.getLogger(__name__)
 
 
-def bundle(
-    filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
-) -> bytes:
-    if filename.suffixes[-2:] == [".tar", ".gz"] or filename.suffixes[-1] == ".tar":
-        import tarfile
-
-        compression_flag = "gz" if filename.suffix == ".gz" else "::"
-
-        current_time = time.time()
-        output_file = io.BytesIO()
-        with tarfile.open(
-            None, f"w:{compression_flag}", output_file, format=tarfile.PAX_FORMAT
-        ) as tf:
-            for member_name, member_data in members:
-                if isinstance(member_data, str):
-                    member_data = bytes(member_data, "utf-8")
-                member_file = io.BytesIO(member_data)
-                tar_info = tarfile.TarInfo(name=member_name)
-                tar_info.size = len(member_data)
-                tar_info.mtime = int(current_time)
-                tar_info.mode = 0o644
-                tf.addfile(tar_info, member_file)
-
-        return output_file.getvalue()
-
-    else:
-        raise ValueError(f"Unknown bundling format: {filename.as_posix()}")
+def eligible_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> bool:
+    """Test if a docutils node should emit a BlockSubstitutionReference *instead* of a normal
+    Paragraph."""
+    return (
+        isinstance(node, docutils.nodes.paragraph)
+        and len(node.children) == 1
+        and isinstance(node.children[0], docutils.nodes.substitution_reference)
+    )
 
 
 @dataclass
@@ -170,6 +157,10 @@ class JSONVisitor:
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
+
+        # It's possible for pages to synthetically create other pages that don't
+        # exist in the filesystem
+        self.synthetic_pages: Dict[FileId, str] = {}
 
     def dispatch_visit(self, node: docutils.nodes.Node) -> None:
         line = util.get_line(node)
@@ -243,6 +234,7 @@ class JSONVisitor:
                 node["emphasize_lines"] if "emphasize_lines" in node else None,
                 node.astext(),
                 node["linenos"],
+                node["lineno_start"] if "lineno_start" in node else None,
             )
             top_of_state = self.state[-1]
             assert isinstance(top_of_state, n.Parent)
@@ -338,6 +330,9 @@ class JSONVisitor:
                 )
             )
         elif isinstance(node, docutils.nodes.list_item):
+            assert isinstance(
+                self.state[-1], n.ListNode
+            ), "Attempting to place a list item in a non-list context"
             self.state.append(n.ListNodeItem((line,), []))
         elif isinstance(node, docutils.nodes.title):
             # Attach an anchor ID to this section
@@ -360,7 +355,22 @@ class JSONVisitor:
             except IndexError:
                 pass
         elif isinstance(node, docutils.nodes.substitution_reference):
-            self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
+            if node.parent and eligible_for_paragraph_to_block_substitution(
+                node.parent
+            ):
+                block_substitution_node = n.BlockSubstitutionReference(
+                    (line,), [], node["refname"]
+                )
+                self.state.append(block_substitution_node)
+            else:
+                self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
+
+            raise docutils.nodes.SkipChildren()
+        elif isinstance(node, docutils.nodes.paragraph):
+            if eligible_for_paragraph_to_block_substitution(node):
+                # We don't want a paragraph node here: instead, we'll (next) create a BlockSubstitutionReference node
+                raise docutils.nodes.SkipDeparture()
+            self.state.append(n.Paragraph((line,), []))
         elif isinstance(node, docutils.nodes.footnote):
             # Autonumbered footnotes do not have a refname
             name = node["names"] if "names" in node else None
@@ -373,8 +383,6 @@ class JSONVisitor:
             self.state.append(n.FootnoteReference((line,), [], node["ids"][0], refname))
         elif isinstance(node, docutils.nodes.section):
             self.state.append(n.Section((line,), []))
-        elif isinstance(node, docutils.nodes.paragraph):
-            self.state.append(n.Paragraph((line,), []))
         elif isinstance(node, rstparser.directive_argument):
             self.state.append(n.DirectiveArgument((line,), []))
         elif isinstance(node, docutils.nodes.term):
@@ -402,7 +410,7 @@ class JSONVisitor:
             raise docutils.nodes.SkipNode()
         elif isinstance(node, rstparser.snooty_diagnostic):
             self.diagnostics.append(node["diagnostic"])
-            return
+            raise docutils.nodes.SkipNode()
         else:
             lineno = util.get_line(node)
             raise NotImplementedError(
@@ -414,7 +422,6 @@ class JSONVisitor:
             return
 
         popped = self.state.pop()
-
         top_of_state = self.state[-1]
 
         if isinstance(popped, _DefinitionListTerm):
@@ -448,6 +455,9 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "tabs":
             self.validate_tabs_children(popped)
 
+        elif isinstance(popped, n.Directive) and popped.name == "io-code-block":
+            self.diagnostics.extend(_validate_io_code_block_children(popped))
+
         elif (
             isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
@@ -478,12 +488,15 @@ class JSONVisitor:
                 target.children = [identifier]
                 item.term.append(target)
 
+        elif isinstance(popped, n.Directive) and popped.name == "step":
+            popped.children = [n.Section((util.get_line(node),), popped.children)]  # type: ignore
+
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
         line = node.start[0]
         # retrieve dictionary associated with this specific tabset
         try:
-            tab_definitions_list = specparser.SPEC.tabs[tabset]
+            tab_definitions_list = specparser.Spec.get().tabs[tabset]
         except KeyError:
             self.diagnostics.append(UnknownTabset(tabset, line))
             return
@@ -597,13 +610,7 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
-            try:
-                static_asset = self.add_static_asset(argument_text, upload=True)
-                self.pending.append(PendingFigure(doc, static_asset))
-            except OSError as err:
-                self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
-                )
+            self.validate_and_add_asset(doc, argument_text, line)
 
         elif name == "list-table":
             # Calculate the expected number of columns for this list-table structure.
@@ -624,16 +631,34 @@ class JSONVisitor:
         elif name == "openapi":
             # Parsing should be done by the OpenAPI renderer on the frontend by default
             uses_rst = options.get("uses-rst", False)
+            # The frontend will grab the file contents from Realm, using the argument as its key
+            uses_realm = options.get("uses-realm", False)
 
             if argument_text is None:
+                if uses_realm or uses_rst:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
+
                 # Check if argument is a url instead
                 url_argument = None
+                spec = None
                 try:
                     url_argument = argument[0].refuri
+                    response = util.HTTPCache.singleton().get(url_argument)
+                    file_content = str(response, "utf-8")
+                    spec = json.dumps(safe_load(file_content))
+                    spec_node = n.Text((line,), spec)
+                    doc.children.append(spec_node)
+                    return doc
                 except:
                     pass
-                if url_argument is None or uses_rst:
+                if url_argument is None:
                     self.diagnostics.append(ExpectedPathArg(name, line))
+                elif spec is None:
+                    self.diagnostics.append(InvalidURL(line))
+                return doc
+
+            if uses_realm:
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
@@ -679,9 +704,12 @@ class JSONVisitor:
                 )
                 return doc
 
-        elif name == "literalinclude":
+        elif name == "literalinclude" or name == "input" or name == "output":
+            if name == "literalinclude":
+                if argument_text is None:
+                    self.diagnostics.append(ExpectedPathArg(name, line))
+                    return doc
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, line))
                 return doc
 
             _, filepath = util.reroot_path(
@@ -690,90 +718,99 @@ class JSONVisitor:
 
             # Attempt to read the literally included file
             try:
-                with open(filepath) as file:
-                    text = file.read()
-
+                text = filepath.read_text(encoding="utf-8")
             except OSError as err:
                 self.diagnostics.append(
                     CannotOpenFile(argument_text, err.strerror, line)
                 )
                 return doc
+            except UnicodeDecodeError as err:
+                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
+                return doc
 
             lines = text.split("\n")
-
-            def _locate_text(text: str) -> int:
-                """
-                Searches the literally-included file ('lines') for the specified text. If no such text is found,
-                add an InvalidLiteralInclude diagnostic.
-                """
-                assert isinstance(text, str)
-                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
-                if loc < 0:
-                    self.diagnostics.append(
-                        InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
-                    )
-                return loc
-
-            # Locate the start_after query
-            start_after = 0
-            if "start-after" in options:
-                start_after_text = options["start-after"]
-                start_after = _locate_text(start_after_text)
-                # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                start_after += 1
-
-            # ...now locate the end_before query
-            end_before = len(lines)
-            if "end-before" in options:
-                end_before_text = options["end-before"]
-                end_before = _locate_text(end_before_text)
-
-            # Check that start_after_text precedes end_before_text (and end_before exists)
-            if start_after >= end_before >= 0:
-                self.diagnostics.append(
-                    InvalidLiteralInclude(
-                        f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
-                        line,
-                    )
-                )
-
-            # If we failed to locate end_before text, default to the end-of-file
-            if end_before == -1:
-                end_before = len(lines)
-
             # Capture the original file-length before splicing it
             len_file = len(lines)
-            lines = lines[start_after:end_before]
 
-            dedent = 0
-            if "dedent" in options:
-                # Dedent is specified as a flag
-                if isinstance(options["dedent"], bool):
-                    # Deduce a reasonable dedent
-                    try:
-                        dedent = min(
-                            len(line) - len(line.lstrip())
-                            for line in lines
-                            if len(line.lstrip()) > 0
+            if name == "literalinclude":
+
+                def _locate_text(text: str) -> int:
+                    """
+                    Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                    add an InvalidLiteralInclude diagnostic.
+                    """
+                    assert isinstance(text, str)
+                    loc = next(
+                        (idx for idx, line in enumerate(lines) if text in line), -1
+                    )
+                    if loc < 0:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f'"{text}" not found in {filepath}', line
+                            )
                         )
-                    except ValueError:
-                        # Handle the (unlikely) case where there are no non-empty lines
-                        dedent = 0
-                # Dedent is specified as a nonnegative integer (number of characters):
-                # Note: since boolean is a subtype of int, this conditonal must follow the
-                # above bool-type conditional.
-                elif isinstance(options["dedent"], int):
-                    dedent = options["dedent"]
-                else:
+                    return loc
+
+                # Locate the start_after query
+                start_after = 0
+                if "start-after" in options:
+                    start_after_text = options["start-after"]
+                    # start_after = self._locate_text(start_after_text, lines, line, text)
+                    start_after = _locate_text(start_after_text)
+                    # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                    start_after += 1
+
+                # ...now locate the end_before query
+                end_before = len(lines)
+                if "end-before" in options:
+                    end_before_text = options["end-before"]
+                    # end_before = self._locate_text(end_before_text, lines, line, text)
+                    end_before = _locate_text(end_before_text)
+
+                # Check that start_after_text precedes end_before_text (and end_before exists)
+                if start_after >= end_before >= 0:
                     self.diagnostics.append(
                         InvalidLiteralInclude(
-                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                            f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
                             line,
                         )
                     )
-                    return doc
 
-            lines = [line[dedent:] for line in lines]
+                # If we failed to locate end_before text, default to the end-of-file
+                if end_before == -1:
+                    end_before = len(lines)
+
+                lines = lines[start_after:end_before]
+
+                dedent = 0
+                if "dedent" in options:
+                    # Dedent is specified as a flag
+                    if isinstance(options["dedent"], bool):
+                        # Deduce a reasonable dedent
+                        try:
+                            dedent = min(
+                                len(line) - len(line.lstrip())
+                                for line in lines
+                                if len(line.lstrip()) > 0
+                            )
+                        except ValueError:
+                            # Handle the (unlikely) case where there are no non-empty lines
+                            dedent = 0
+                    # Dedent is specified as a nonnegative integer (number of characters):
+                    # Note: since boolean is a subtype of int, this conditonal must follow the
+                    # above bool-type conditional.
+                    elif isinstance(options["dedent"], int):
+                        dedent = options["dedent"]
+                    else:
+                        self.diagnostics.append(
+                            InvalidLiteralInclude(
+                                f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
+                                line,
+                            )
+                        )
+                        return doc
+
+                lines = [line[dedent:] for line in lines]
 
             emphasize_lines = None
             if "emphasize-lines" in options:
@@ -784,7 +821,8 @@ class JSONVisitor:
                 except ValueError as err:
                     self.diagnostics.append(
                         InvalidLiteralInclude(
-                            f"Invalid emphasize-lines specification caused: {err}", line
+                            f"Invalid emphasize-lines specification caused: {err}",
+                            line,
                         )
                     )
 
@@ -794,6 +832,9 @@ class JSONVisitor:
             copyable = "copyable" not in options or options["copyable"] == "True"
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
+            lineno_start = (
+                options["lineno-start"] if "lineno-start" in options else None
+            )
 
             code = n.Code(
                 span,
@@ -803,9 +844,20 @@ class JSONVisitor:
                 emphasize_lines,
                 selected_content,
                 linenos,
+                lineno_start,
             )
 
             doc.children.append(code)
+
+        elif name == "io-code-block":
+            if argument_text is not None:
+                self.diagnostics.append(
+                    InvalidDirectiveStructure(
+                        "did not expect an argument, language should be passed as an option to input/output directives",
+                        line,
+                    )
+                )
+                return doc
 
         elif name == "include":
             if argument_text is None:
@@ -816,24 +868,53 @@ class JSONVisitor:
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
-            # Validate if file exists
-            if not path.is_file():
-                # Check if file is snooty-generated
-                if (
-                    fileid.match("steps/*.rst")
-                    or fileid.match("extracts/*.rst")
-                    or fileid.match("release/*.rst")
-                    or fileid == FileId("includes/hash.rst")
-                ):
-                    pass
-                else:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            argument_text,
-                            os.strerror(errno.ENOENT),
-                            util.get_line(node),
-                        )
+        elif name == "sharedinclude":
+            if argument_text is None:
+                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                return doc
+
+            if self.project_config.sharedinclude_root is None:
+                self.diagnostics.append(
+                    ConfigurationProblem(
+                        "To use sharedinclude, you must provide a 'sharedinclude_root' option in snooty.toml",
+                        util.get_line(node),
                     )
+                )
+                return doc
+
+            url = urllib.parse.urljoin(
+                self.project_config.sharedinclude_root, argument_text
+            )
+            try:
+                response = util.HTTPCache.singleton().get(url)
+            except requests.exceptions.RequestException as err:
+                self.diagnostics.append(
+                    CannotOpenFile(argument_text, str(err), util.get_line(node))
+                )
+                return doc
+
+            new_fileid = FileId("sharedinclude").joinpath(argument_text)
+            doc.argument = [n.Text((line,), new_fileid.as_posix())]
+            self.synthetic_pages[new_fileid] = str(response, "utf-8")
+
+        elif name == "step":
+            # Create heading for the step's argument, similar to titles of Giza/YAML steps
+            if argument:
+                argument_text = "".join(node.get_text() for node in argument)
+                heading_id = util.make_html5_id(argument_text.strip()).lower()
+
+                heading = n.Heading((line,), [], heading_id)
+                heading.children = argument
+                doc.children.insert(0, heading)
+
+        elif name == "chapter":
+            image_argument = options.get("image")
+            if image_argument:
+                self.validate_and_add_asset(doc, image_argument, line)
+
+            icon_argument = options.get("icon")
+            if icon_argument:
+                self.validate_and_add_asset(doc, icon_argument, line)
 
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
@@ -847,30 +928,26 @@ class JSONVisitor:
                 # Warn writers that an image is suggested, but do not require
                 self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
             else:
-                try:
-                    static_asset = self.add_static_asset(image_argument, upload=True)
-                    self.pending.append(PendingFigure(doc, static_asset))
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            image_argument, err.strerror, util.get_line(node)
-                        )
-                    )
+                self.validate_and_add_asset(doc, image_argument, line)
+
         elif key in {"mongodb:card"}:
             image_argument = options.get("icon")
 
             if image_argument:
-                try:
-                    static_asset = self.add_static_asset(image_argument, upload=True)
-                    self.pending.append(PendingFigure(doc, static_asset))
-                except OSError as err:
-                    self.diagnostics.append(
-                        CannotOpenFile(
-                            image_argument, err.strerror, util.get_line(node)
-                        )
-                    )
+                self.validate_and_add_asset(doc, image_argument, line)
 
         return doc
+
+    def validate_and_add_asset(
+        self, doc: n.Directive, image_argument: str, line: int
+    ) -> None:
+        try:
+            static_asset = self.add_static_asset(image_argument, upload=True)
+            self.pending.append(PendingFigure(doc, static_asset))
+        except OSError as err:
+            self.diagnostics.append(
+                CannotOpenFile(Path(image_argument), err.strerror, line)
+            )
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
@@ -933,6 +1010,75 @@ class JSONVisitor:
         return visitor
 
 
+def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
+    """Validates that a given io-code-block directive has 1 input and 1 output
+    child nodes, and copies the io-code-block's options into the options of the
+    underlying code nodes."""
+    # new_children should contain input and output directives
+    new_children: List[n.Node] = []
+    line = node.start[0]
+    expected_children = {"input", "output"}
+    diagnostics: List[Diagnostic] = []
+
+    for child in node.children:
+        if not isinstance(child, n.Directive):
+            diagnostics.append(
+                InvalidDirectiveStructure(
+                    f"expected input/output child directives, saw {child.type}",
+                    line,
+                )
+            )
+            continue
+
+        if child.name in expected_children:
+            new_grandchildren: List[n.Node] = []
+
+            # Input or output should have 1 child Code node
+            if len(child.children) == 1:
+                expected_children.remove(child.name)
+
+                # child nodes for input/output will inherit parent options
+                grandchild = child.children[0]
+                if isinstance(grandchild, n.Code):
+                    grandchild.lang = (
+                        child.options["language"]
+                        if "language" in child.options
+                        else None
+                    )
+                    grandchild.caption = (
+                        node.options["caption"] if "caption" in node.options else None
+                    )
+                    grandchild.copyable = (
+                        True
+                        if "copyable" in node.options and node.options["copyable"]
+                        else False
+                    )
+                    new_grandchildren.append(grandchild)
+                child.children = new_grandchildren
+                new_children.append(child)
+        else:
+            # either duplicate input/output or invalid child is provided
+            msg = f"already contains an {child.name} directive"
+            if not (child.name == "input" or child.name == "output"):
+                msg = f"does not accept child {child.name}"
+            diagnostics.append(
+                InvalidDirectiveStructure(
+                    msg,
+                    line,
+                )
+            )
+
+    # handle missing nested input and/or output directives
+    if len(expected_children) != 0 or len(new_children) != 2:
+        for expected_child in expected_children:
+            diagnostics.append(MissingChild("io-code-block", expected_child, line))
+            if expected_child == "input":
+                new_children = []
+
+    node.children = new_children
+    return diagnostics
+
+
 class InlineJSONVisitor(JSONVisitor):
     """A JSONVisitor subclass which does not emit block nodes."""
 
@@ -955,15 +1101,27 @@ class InlineJSONVisitor(JSONVisitor):
 
 def parse_rst(
     parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
-) -> Tuple[Page, List[Diagnostic]]:
+) -> Sequence[Tuple[Page, List[Diagnostic]]]:
     visitor, text = parser.parse(path, text)
 
     top_of_state = visitor.state[-1]
-    assert isinstance(top_of_state, n.Parent)
+    assert isinstance(top_of_state, n.Root)
     page = Page.create(path, None, text, top_of_state)
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending
-    return (page, visitor.diagnostics)
+    result = [(page, visitor.diagnostics)]
+
+    # Pages can create additional pages that are not "real" filesystem artifacts
+    for synthetic_page, synthetic_page_text in visitor.synthetic_pages.items():
+        result.extend(
+            parse_rst(
+                parser,
+                parser.project_config.source_path.joinpath(synthetic_page),
+                synthetic_page_text,
+            )
+        )
+
+    return result
 
 
 @dataclass
@@ -1008,11 +1166,14 @@ def get_giza_category(path: PurePath) -> str:
     return path.name.split("-", 1)[0]
 
 
-class ProjectBackend(Protocol):
+class ProjectBackend:
     def on_progress(self, progress: int, total: int, message: str) -> None:
         ...
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        ...
+
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         ...
 
     def on_update(
@@ -1042,18 +1203,63 @@ class ProjectBackend(Protocol):
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline
     is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
-    pages can be accessed."""
+    pages can be accessed.
+
+    All methods are thread-safe, but data returned should not be mutated by more than one
+    thread."""
 
     def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
+        self._lock = threading.Lock()
+
         self.postprocessor_factory = postprocessor_factory
-        self.parsed: Dict[FileId, Page] = {}
-        self.__postprocessed: Dict[FileId, Page] = {}
+        self._parsed: Dict[FileId, Tuple[Page, FileId, List[Diagnostic]]] = {}
+        self._orphan_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+        self.__cached = PostprocessorResult({}, {}, {}, TargetDatabase())
         self.__changed_pages: Set[FileId] = set()
 
-    def __setitem__(self, key: FileId, value: Page) -> None:
+        def start(
+            cancellation_token: threading.Event,
+            args: Postprocessor,
+        ) -> PostprocessorResult:
+            with self._lock:
+                if not self.__changed_pages:
+                    return self.__cached
+
+                with util.PerformanceLogger.singleton().start("copy"):
+                    copied_pages = {}
+                    for k, v in self._parsed.items():
+                        if cancellation_token.is_set():
+                            raise util.CancelledException()
+
+                        copied_pages[k] = util.fast_deep_copy(v[0])
+
+            with util.PerformanceLogger.singleton().start("postprocessing"):
+                result = args.run(copied_pages, cancellation_token)
+
+            with self._lock:
+                self.__cached = result
+                self.__changed_pages.clear()
+
+            return result
+
+        self.worker: util.WorkerLauncher[
+            Postprocessor, PostprocessorResult
+        ] = util.WorkerLauncher("postprocessor", start)
+
+    def set_orphan_diagnostics(self, key: FileId, value: List[Diagnostic]) -> None:
+        """Some diagnostics can't be associated with a parsed Page because of underlying
+        problems like invalid YAML syntax. These are orphan diagnostics, and we need
+        to track them too."""
+        with self._lock:
+            self._orphan_diagnostics[key] = value
+
+    def __setitem__(
+        self, key: FileId, value: Tuple[Page, FileId, List[Diagnostic]]
+    ) -> None:
         """Set a raw parsed page."""
-        self.parsed[key] = value
-        self.__changed_pages.add(key)
+        with self._lock:
+            self._parsed[key] = value
+            self.__changed_pages.add(key)
 
     def get(self, key: FileId) -> Optional[Page]:
         try:
@@ -1063,42 +1269,75 @@ class PageDatabase:
 
     def __getitem__(self, key: FileId) -> Page:
         """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
-        assert not self.__changed_pages
-        return self.__postprocessed[key]
+        with self._lock:
+            assert not self.__changed_pages
+            return self.__cached.pages[key]
 
     def __contains__(self, key: FileId) -> bool:
         """Check if a given page exists in the parsed set."""
-        return key in self.parsed
+        with self._lock:
+            return key in self._parsed
 
-    def values(self) -> Iterable[Page]:
-        """Iterate over postprocessed pages."""
-        assert not self.__changed_pages
-        return self.__postprocessed.values()
+    def __delitem__(self, key: FileId) -> None:
+        with self._lock:
+            try:
+                del self._parsed[key]
+            except KeyError:
+                pass
 
-    def items(self) -> Iterable[Tuple[FileId, Page]]:
-        """Iterate over the postprocessed (FileId, Page) set."""
-        assert not self.__changed_pages
-        return self.__postprocessed.items()
+            try:
+                del self._orphan_diagnostics[key]
+            except KeyError:
+                pass
+
+    def merge_diagnostics(
+        self, *others: Dict[FileId, List[Diagnostic]]
+    ) -> Dict[FileId, List[Diagnostic]]:
+        with self._lock:
+            result: Dict[FileId, List[Diagnostic]] = {
+                v[1]: list(v[2]) for v in self._parsed.values()
+            }
+
+            for key, diagnostics in self._orphan_diagnostics.items():
+                if key in result:
+                    result[key].extend(diagnostics)
+                else:
+                    result[key] = list(diagnostics)
+
+        all_keys: Set[FileId] = set()
+        for other in others:
+            all_keys.update(other.keys())
+
+        for key in all_keys:
+            try:
+                lst = result[key]
+            except KeyError:
+                lst = []
+                result[key] = lst
+            for other in others:
+                try:
+                    lst.extend(other[key])
+                except KeyError:
+                    pass
+
+        return result
 
     def flush(
         self,
-    ) -> Tuple[Dict[str, SerializableType], Dict[FileId, List[Diagnostic]]]:
+    ) -> queue.Queue[Tuple[Optional[PostprocessorResult], Optional[Exception]]]:
         """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
-        if not self.__changed_pages:
-            return {}, {}
-
         postprocessor = self.postprocessor_factory()
+        return self.worker.run(postprocessor)
 
-        with util.PerformanceLogger.singleton().start("copy"):
-            copied_pages = {k: util.fast_deep_copy(v) for k, v in self.parsed.items()}
+    def flush_and_wait(self) -> PostprocessorResult:
+        result, exception = self.flush().get()
+        if exception:
+            raise exception
+        assert result is not None
+        return result
 
-        with util.PerformanceLogger.singleton().start("postprocessing"):
-            post_metadata, post_diagnostics = postprocessor.run(copied_pages)
-
-        self.__postprocessed = postprocessor.pages
-        self.__changed_pages.clear()
-
-        return post_metadata, post_diagnostics
+    def cancel(self) -> None:
+        self.worker.cancel()
 
 
 class _Project:
@@ -1118,20 +1357,35 @@ class _Project:
         root = self.config.root
 
         self.targets, failed_requests = TargetDatabase.load(self.config)
+        self.initialization_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(
+            list
+        )
 
         snooty_config_fileid = FileId(self.config.config_path.relative_to(root))
 
         if failed_requests:
+            fetch_diagnostics: List[Diagnostic] = [
+                FetchError(message, 0) for _, message in failed_requests
+            ]
+            self.initialization_diagnostics[snooty_config_fileid].extend(
+                fetch_diagnostics
+            )
             backend.on_diagnostics(
                 snooty_config_fileid,
-                [FetchError(message, 0) for _, message in failed_requests],
+                fetch_diagnostics,
             )
 
         if config_diagnostics:
+            self.initialization_diagnostics[snooty_config_fileid].extend(
+                config_diagnostics
+            )
             backend.on_diagnostics(snooty_config_fileid, config_diagnostics)
 
         self.parser = rstparser.Parser(self.config, JSONVisitor)
+
         self.backend = backend
+        self._backend_lock = threading.Lock()
+
         self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
 
@@ -1145,18 +1399,48 @@ class _Project:
         inline_parser = rstparser.Parser(self.config, InlineJSONVisitor)
         substitution_nodes: Dict[str, List[n.InlineNode]] = {}
         for k, v in self.config.substitutions.items():
-            page, substitution_diagnostics = parse_rst(inline_parser, root, v)
+            # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
+            page, substitution_diagnostics = parse_rst(inline_parser, root, v)[0]
             substitution_nodes[k] = list(
                 deepcopy(child) for child in page.ast.children  # type: ignore
             )
 
             if substitution_diagnostics:
+                self.initialization_diagnostics[snooty_config_fileid].extend(
+                    substitution_diagnostics
+                )
                 backend.on_diagnostics(
                     self.config.get_fileid(self.config.config_path),
                     substitution_diagnostics,
                 )
 
         self.config.substitution_nodes = substitution_nodes
+
+        # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
+        for banner in self.config.banners:
+            if banner.value:
+
+                options = {"variant": banner.variant}
+                banner_node = ParsedBannerConfig(
+                    banner.targets,
+                    n.Directive((-1,), [], "mongodb", "banner", [], options),
+                )
+
+                # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
+                page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)[
+                    0
+                ]
+                banner_node.node.children = page.ast.children
+                if banner_node.node.children:
+                    self.config.banner_nodes.append(banner_node)
+                if banner_diagnostics:
+                    self.initialization_diagnostics[snooty_config_fileid].extend(
+                        banner_diagnostics
+                    )
+                    backend.on_diagnostics(
+                        self.config.get_fileid(self.config.config_path),
+                        banner_diagnostics,
+                    )
 
         username = getpass.getuser()
         try:
@@ -1173,9 +1457,9 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets)
+            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
             if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets)
+            else Postprocessor(self.config, self.targets.copy_clean_slate())
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
@@ -1188,11 +1472,8 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
-        post_metadata, post_diagnostics = self.pages.flush()
-        for fileid, diagnostics in post_diagnostics.items():
-            self.backend.on_diagnostics(fileid, diagnostics)
-        page = self.pages[fileid]
-
+        result = self.pages.flush_and_wait()
+        page = result.pages[fileid]
         assert isinstance(page.ast, n.Parent)
         return page.ast
 
@@ -1208,9 +1489,9 @@ class _Project:
         _, ext = os.path.splitext(path)
         pages: List[Page] = []
         if ext in RST_EXTENSIONS:
-            page, page_diagnostics = parse_rst(self.parser, path, optional_text)
-            pages.append(page)
-            diagnostics[path] = page_diagnostics
+            for page, page_diagnostics in parse_rst(self.parser, path, optional_text):
+                pages.append(page)
+                diagnostics[path] = page_diagnostics
         elif ext == ".yaml" and prefix in self.yaml_mapping:
             file_id = os.path.basename(path)
             giza_category = self.yaml_mapping[prefix]
@@ -1255,23 +1536,36 @@ class _Project:
         else:
             raise ValueError("Unknown file type: " + str(path))
 
-        for source_path, diagnostic_list in diagnostics.items():
-            self.backend.on_diagnostics(
-                self.config.get_fileid(source_path), diagnostic_list
-            )
+        with self._backend_lock:
+            for source_path, diagnostic_list in diagnostics.items():
+                self.backend.on_diagnostics(
+                    self.config.get_fileid(source_path), diagnostic_list
+                )
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
             fileid = self.config.get_fileid(page.fake_full_path())
-            self.backend.on_update(self.prefix, self.build_identifiers, fileid, page)
-        self.backend.flush()
+            with self._backend_lock:
+                self.backend.on_update(
+                    self.prefix, self.build_identifiers, fileid, page
+                )
+
+            self.backend.flush()
 
     def delete(self, path: PurePath) -> None:
         file_id = os.path.basename(path)
         for giza_category in self.yaml_mapping.values():
-            del giza_category[file_id]
+            try:
+                del giza_category[file_id]
+            except KeyError:
+                pass
 
-        self.backend.on_delete(self.config.get_fileid(path), self.build_identifiers)
+        fileid = self.config.get_fileid(path)
+
+        with self._backend_lock:
+            self.backend.on_delete(fileid, self.build_identifiers)
+
+        del self.pages[fileid]
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
@@ -1280,11 +1574,14 @@ class _Project:
         pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
             try:
-                paths = util.get_files(self.config.source_path, RST_EXTENSIONS)
+                paths = util.get_files(
+                    self.config.source_path, RST_EXTENSIONS, self.config.root
+                )
                 logger.debug("Processing rst files")
                 results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-                for page, diagnostics in results:
-                    self._page_updated(page, diagnostics)
+                for sequence in results:
+                    for page, diagnostics in sequence:
+                        self._page_updated(page, diagnostics)
             finally:
                 # We cannot use the multiprocessing.Pool context manager API due to the following:
                 # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
@@ -1294,7 +1591,9 @@ class _Project:
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
-        for path in util.get_files(self.config.source_path, (".yaml",)):
+        for path in util.get_files(
+            self.config.source_path, (".yaml",), self.config.root
+        ):
             prefix = get_giza_category(path)
             if prefix in self.yaml_mapping:
                 categorized[prefix].append(path)
@@ -1303,11 +1602,13 @@ class _Project:
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Parsing %s YAML", prefix)
             for path in categorized[prefix]:
-                steps, text, diagnostics = giza_category.parse(path)
-                all_yaml_diagnostics[path] = diagnostics
-                giza_category.add(path, text, steps)
+                artifacts, text, diagnostics = giza_category.parse(path)
+                if diagnostics:
+                    all_yaml_diagnostics[path] = diagnostics
+                giza_category.add(path, text, artifacts)
 
         # Now that all of our YAML files are loaded, generate a page for each one
+        seen_paths: Set[Path] = set()
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Processing %s YAML: %d nodes", prefix, len(giza_category))
             for file_id, giza_node in giza_category.reify_all_files(
@@ -1333,12 +1634,21 @@ class _Project:
                 for page in giza_category.to_pages(
                     giza_node.path, create_page, giza_node.data
                 ):
+                    seen_paths.add(page.source_path)
                     self._page_updated(
                         page, all_yaml_diagnostics.get(page.source_path, [])
                     )
 
+        # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
+        # any page.
+        for key in all_yaml_diagnostics:
+            if key not in seen_paths:
+                self.pages.set_orphan_diagnostics(
+                    self.config.get_fileid(key), all_yaml_diagnostics[key]
+                )
+
         if postprocess:
-            post_metadata, post_diagnostics = self.pages.flush()
+            postprocessor_result = self.postprocess()
 
             static_files: Dict[str, Union[str, bytes]] = {
                 "objects.inv": self.targets.generate_inventory("").dumps(
@@ -1346,52 +1656,48 @@ class _Project:
                 )
             }
 
+            if "static_files" in postprocessor_result.metadata:
+                cast(
+                    Dict[str, Union[str, bytes]],
+                    postprocessor_result.metadata["static_files"],
+                ).update(static_files)
+
             with util.PerformanceLogger.singleton().start("commit"):
-                for fileid, page in self.pages.items():
-                    self.backend.on_update(
-                        self.prefix, self.build_identifiers, fileid, page
-                    )
-                self.backend.flush()
+                with self._backend_lock:
+                    for fileid, page in postprocessor_result.pages.items():
+                        self.backend.on_update(
+                            self.prefix, self.build_identifiers, fileid, page
+                        )
+                    self.backend.flush()
 
-            # Build manpages
-            manpages: List[Tuple[str, str]] = []
-            for name, definition in self.config.manpages.items():
-                fileid = FileId(definition.file)
-                manpage_page = self.pages.get(fileid)
-                if not manpage_page:
-                    self.backend.on_diagnostics(
-                        FileId(self.config.config_path.relative_to(self.config.root)),
-                        [CannotOpenFile(Path(fileid), "Page not found", 0)],
-                    )
-                    continue
-                for filename, rendered in man.render(
-                    manpage_page, name, definition.title, definition.section
-                ).items():
-                    manpages.append((filename.as_posix(), rendered))
-                    static_files[filename.as_posix()] = rendered
+            with self._backend_lock:
+                self.backend.on_update_metadata(
+                    self.prefix, self.build_identifiers, postprocessor_result.metadata
+                )
 
-            if manpages and self.config.bundle.manpages:
-                try:
-                    static_files[self.config.bundle.manpages] = bundle(
-                        PurePath(self.config.bundle.manpages), manpages
-                    )
-                except ValueError:
-                    self.backend.on_diagnostics(
-                        FileId(self.config.config_path.relative_to(self.config.root)),
-                        [
-                            UnsupportedFormat(
-                                self.config.bundle.manpages, (".tar", ".tar.gz"), 0
-                            )
-                        ],
-                    )
+    def cancel_postprocessor(self) -> None:
+        self.pages.cancel()
 
-            post_metadata["static_files"] = static_files
-            for fileid, diagnostics in post_diagnostics.items():
+    def postprocess(self) -> PostprocessorResult:
+        logger.debug("Starting self.pages.flush_and_wait()")
+        result = self.pages.flush_and_wait()
+
+        merged_diagnostics = self.pages.merge_diagnostics(
+            result.diagnostics, self.initialization_diagnostics
+        )
+
+        # Update our targets database
+        self.targets = result.targets
+
+        logger.debug("flush_and_wait() finished")
+        with self._backend_lock:
+            for fileid, diagnostics in result.diagnostics.items():
                 self.backend.on_diagnostics(fileid, diagnostics)
 
-            self.backend.on_update_metadata(
-                self.prefix, self.build_identifiers, post_metadata
-            )
+            for fileid, diagnostics in merged_diagnostics.items():
+                self.backend.set_diagnostics(fileid, diagnostics)
+
+        return result
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1406,7 +1712,7 @@ class _Project:
         logger.debug("Updated: %s", fileid)
 
         if fileid in self.pages:
-            old_page = self.pages.parsed[fileid]
+            old_page = self.pages._parsed[fileid][0]
             old_assets = old_page.static_assets
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
@@ -1436,10 +1742,15 @@ class _Project:
         )
 
         # Report to our backend
-        self.pages[fileid] = page
-        self.backend.on_diagnostics(
-            self.config.get_fileid(page.source_path), diagnostics
+        self.pages[fileid] = (
+            page,
+            self.config.get_fileid(page.source_path),
+            diagnostics,
         )
+        with self._backend_lock:
+            self.backend.on_diagnostics(
+                self.config.get_fileid(page.source_path), diagnostics
+            )
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
@@ -1461,17 +1772,22 @@ class Project:
 
     This class's public methods are thread-safe."""
 
-    __slots__ = ("_project", "_lock", "_filesystem_watcher")
-
     def __init__(
-        self, root: Path, backend: ProjectBackend, build_identifiers: BuildIdentifierSet
+        self,
+        root: Path,
+        backend: ProjectBackend,
+        build_identifiers: BuildIdentifierSet,
+        watch: bool = True,
     ) -> None:
         self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
         self._project = _Project(
             root, backend, self._filesystem_watcher, build_identifiers
         )
         self._lock = threading.Lock()
-        self._filesystem_watcher.start()
+
+        self.watch = watch
+        if watch:
+            self._filesystem_watcher.start()
 
     @property
     def config(self) -> ProjectConfig:
@@ -1507,9 +1823,18 @@ class Project:
         with self._lock:
             self._project.build(max_workers, postprocess)
 
+    def postprocess(self) -> None:
+        # The postprocessor is the only method that is intended to be thread-safe without the
+        # big project lock.
+        self._project.postprocess()
+
+    def cancel_postprocessor(self) -> None:
+        self._project.cancel_postprocessor()
+
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""
-        self._filesystem_watcher.stop(join=True)
+        if self.watch:
+            self._filesystem_watcher.stop(join=True)
 
     def _on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         with self._lock:

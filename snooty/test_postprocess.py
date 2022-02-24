@@ -2,15 +2,24 @@
    Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path
+from typing import Any, Dict, cast
 
 from . import diagnostics
 from .diagnostics import (
+    ChapterAlreadyExists,
+    DocUtilsParseError,
     DuplicateDirective,
+    ExpectedPathArg,
     ExpectedTabs,
+    GuideAlreadyHasChapter,
+    InvalidChapter,
     InvalidChild,
+    InvalidContextError,
     InvalidIAEntry,
+    MissingChild,
     MissingTab,
     MissingTocTreeEntry,
+    SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
 )
@@ -142,6 +151,256 @@ Page One Title
         )
 
 
+def test_guides() -> None:
+    # Chapters are generated properly and page ast should look as expected
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+    .. chapter:: Atlas
+        :description: This is the description for the Atlas chapter.
+        :icon: /path/to/icon.png
+
+        .. guide:: /path/to/guide1.txt
+        .. guide:: /path/to/guide2.txt
+
+    .. include:: /chapters/crud.rst
+            """,
+            Path(
+                "source/chapters/crud.rst"
+            ): """
+.. chapter:: CRUD
+    :description: This is the description for the CRUD chapter.
+
+    .. guide:: /path/to/guide3.txt
+            """,
+            Path("source/path/to/icon.png"): "",
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ]
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+    <section>
+        <heading id="guides">
+            <text>Guides</text>
+        </heading>
+        <directive domain="mongodb" name="chapters">
+            <directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." icon="/path/to/icon.png" checksum="0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8">
+                <text>Atlas</text>
+                <directive domain="mongodb" name="guide">
+                    <text>/path/to/guide1.txt</text>
+                </directive>
+                <directive domain="mongodb" name="guide">
+                    <text>/path/to/guide2.txt</text>
+                </directive>
+            </directive>
+            <directive name="include">
+                <text>/chapters/crud.rst</text>
+                <root fileid="chapters/crud.rst">
+                    <directive domain="mongodb" name="chapter" description="This is the description for the CRUD chapter.">
+                        <text>CRUD</text>
+                        <directive domain="mongodb" name="guide">
+                            <text>/path/to/guide3.txt</text>
+                        </directive>
+                    </directive>
+                </root>
+            </directive>
+        </directive>
+    </section>
+</root>
+            """,
+        )
+        chapters = cast(Dict[str, Any], result.metadata["chapters"])
+        assert len(chapters) == 2
+        assert (
+            chapters["Atlas"]["description"]
+            == "This is the description for the Atlas chapter."
+        )
+        assert chapters["Atlas"]["guides"] == ["path/to/guide1", "path/to/guide2"]
+        assert chapters["Atlas"]["chapter_number"] == 1
+        assert chapters["Atlas"]["icon"] == "/path/to/icon.png"
+        assert (
+            chapters["CRUD"]["description"]
+            == "This is the description for the CRUD chapter."
+        )
+        assert chapters["CRUD"]["guides"] == ["path/to/guide3"]
+        assert chapters["CRUD"]["chapter_number"] == 2
+        assert chapters["CRUD"]["icon"] == None
+
+    # Guides metadata is added to the project's metadata document
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+    .. chapter:: Atlas
+        :description: This is the description for the Atlas chapter.
+
+        .. guide:: /path/to/guide1.txt
+            """,
+            Path(
+                "source/path/to/guide1.txt"
+            ): """
+=======
+Guide 1
+=======
+
+.. time:: 20
+.. short-description::
+
+   This is guide 1.
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ]
+        guides = cast(Dict[str, Any], result.metadata["guides"])
+        assert len(guides) == 1
+
+        test_guide_data = guides["path/to/guide1"]
+        assert test_guide_data["completion_time"] == 20
+        assert test_guide_data["title"][0]["value"] == "Guide 1"
+        test_guide_description = test_guide_data["description"][0]["children"][0]
+        assert test_guide_description["value"] == "This is guide 1."
+        assert test_guide_data["chapter_name"] == "Atlas"
+
+    # Diagnostic errors reported
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+
+   .. chapter:: Missing Description
+
+      .. guide:: /path/to/guide1.txt
+
+   .. chapter:: Good Chapter Here
+      :description: The description exists! No errors
+
+      .. guide:: /path/to/guide2.txt
+
+   .. chapter:: No Guides
+      :description: No guides
+
+   .. guide:: /path/to/guide3.txt
+
+   .. chapter::
+      :description: No title
+
+      .. guide:: /path/to/guide4.txt
+
+   .. chapter:: Invalid nested chapter
+      :description: Also no guides found
+
+      .. chapter:: Should throw error
+         :description: Whoops
+
+         .. guide:: /path/to/guide5.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 6
+        assert isinstance(diagnostics[0], DocUtilsParseError)
+        assert isinstance(diagnostics[1], MissingChild)
+        assert isinstance(diagnostics[2], InvalidChild)
+        assert isinstance(diagnostics[3], InvalidChapter)
+        assert isinstance(diagnostics[4], InvalidChild)
+        assert isinstance(diagnostics[5], MissingChild)
+
+    # Test missing directives in "chapters" directive
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Guides
+======
+
+.. chapters::
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], MissingChild)
+
+    # Test duplicate chapters
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. chapters::
+
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide1.txt
+
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide2.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], ChapterAlreadyExists)
+
+    # Test adding 1 guide to multiple children
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. chapters::
+
+   .. chapter:: Test
+      :description: This is a chapter
+
+      .. guide:: /path/to/guide1.txt
+
+   .. chapter:: Test: The Sequel
+      :description: This is another chapter
+
+      .. guide:: /path/to/guide1.txt
+      .. guide:: /path/to/guide2.txt
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], GuideAlreadyHasChapter)
+
+
 # ensure that broken links still generate titles
 def test_broken_link() -> None:
     with make_test(
@@ -195,6 +454,76 @@ The :parameter:`title` stuff works
         )
 
 
+# Test for toctree icon
+def test_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" tocicon="sync">
+    <section>
+        <heading id="collections">
+            <text>Collections </text>
+            <role name="icon" target="sync-pill"></role>
+        </heading>
+    </section>
+</root>
+""",
+        )
+
+
+def test_toctree_tocicon() -> None:
+    with make_test(
+        {
+            Path(
+                "source/install.txt"
+            ): """
+:tocicon: sync
+
+=============================
+Collections :icon:`sync-pill`
+=============================
+            """,
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+   :titlesonly:
+
+   Overview </index>
+   /install
+            """,
+        }
+    ) as result:
+        check_toctree_testing_string(
+            result.metadata["toctree"],
+            """
+<toctree slug="/">
+    <title><text>untitled</text></title>
+    <toctree slug="/" drawer="True">
+        <title><text>Overview</text></title>
+    </toctree>
+    <toctree slug="install" drawer="True" tocicon="sync">
+        <title><text>Collections </text><role name="icon" target="sync-pill"></role></title>
+    </toctree>
+</toctree>
+""",
+        )
+
+
 # Ensure that "index.txt" can add itself to the toctree
 def test_toctree_self_add() -> None:
     with make_test(
@@ -221,7 +550,7 @@ def test_toctree_self_add() -> None:
 <toctree slug="/">
     <title><text>untitled</text></title>
     <toctree slug="page1" drawer="True" />
-    <toctree slug="/" drawer="True">
+    <toctree slug="/" drawer="True" >
         <title><text>Overview</text></title>
     </toctree>
     <toctree slug="page2" drawer="True" />
@@ -486,10 +815,10 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Mongo Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'MongoDB Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
-<directive name="tab" tabid="shell"><text>Mongo Shell</text>
+<directive name="tab" tabid="shell"><text>MongoDB Shell</text>
 <paragraph><text>Shell</text></paragraph>
 </directive>
 <directive name="tab" tabid="python"><text>Python</text>
@@ -988,6 +1317,21 @@ A Heading
         )
 
 
+def test_missing_include_argument() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. include::
+""",
+        }
+    ) as result:
+        assert [type(d) for d in result.diagnostics[FileId("index.txt")]] == [
+            ExpectedPathArg
+        ]
+
+
 def test_include_subset() -> None:
     with make_test(
         {
@@ -1156,6 +1500,243 @@ Paragraph
             )
             == 3
         ), "Should raise 3 diagnostics"
+
+
+def test_replacements() -> None:
+    with make_test(
+        {
+            # Correctly handles inline replacement
+            Path(
+                "source/inline.txt"
+            ): """
+.. include:: /includes/replacement-inline.rst
+
+   .. replacement:: i-hope
+
+      Yes
+
+   .. replacement:: maybe
+
+      Yes
+""",
+            Path(
+                "source/includes/replacement-inline.rst"
+            ): """
+Do we correctly handle replacing inline values? |i-hope| we do.
+""",
+            # Correctly handles own-paragraph replacement
+            Path(
+                "source/block.txt"
+            ): """
+.. include:: /includes/replacement-block.rst
+
+   .. replacement:: code
+
+      .. code-block:: python
+
+         mongo --port 27017
+""",
+            Path(
+                "source/includes/replacement-block.rst"
+            ): """
+The following should be a code block:
+
+|code|
+""",
+        },
+    ) as result:
+
+        active_file = "inline.txt"
+        assert not result.diagnostics[FileId(active_file)]
+        page = result.pages[FileId(active_file)]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="inline.txt">
+    <directive name="include">
+        <text>/includes/replacement-inline.rst</text>
+        <directive name="replacement"><text>i-hope</text><paragraph><text>Yes</text></paragraph></directive>
+        <directive name="replacement"><text>maybe</text><paragraph><text>Yes</text></paragraph></directive>
+        <root fileid="includes/replacement-inline.rst">
+            <paragraph>
+                <text>Do we correctly handle replacing inline values? </text>
+                <substitution_reference name="i-hope"><text>Yes</text></substitution_reference>
+                <text> we do.</text>
+            </paragraph>
+        </root>
+    </directive>
+</root>
+""",
+        )
+
+        active_file = "block.txt"
+        assert not result.diagnostics[FileId(active_file)]
+        page = result.pages[FileId(active_file)]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="block.txt">
+    <directive name="include">
+        <text>/includes/replacement-block.rst</text>
+        <directive name="replacement"><text>code</text><code lang="python" copyable="True">
+            mongo --port 27017
+        </code></directive>
+        <root fileid="includes/replacement-block.rst">
+            <paragraph>
+                <text>The following should be a code block:</text>
+            </paragraph>
+            <substitution_reference name="code">
+                <code lang="python" copyable="True">
+                    mongo --port 27017
+                </code>
+            </substitution_reference>
+        </root>
+    </directive>
+</root>
+""",
+        )
+
+    # Test replacements that have multiple inline elements: DOP-2620
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. binary:: mongod
+
+.. |both| replace:: Available for :binary:`~bin.mongod` only.
+
+|both|
+
+"""
+        }
+    ) as result:
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <target domain="mongodb" name="binary" html_id="mongodb-binary-bin.mongod">
+        <directive_argument>
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </directive_argument>
+        <target_identifier ids="['bin.mongod']">
+            <text>mongod</text>
+        </target_identifier>
+    </target>
+    <substitution_definition name="both">
+        <text>Available for </text>
+        <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+            <literal>
+                <text>mongod</text>
+            </literal>
+        </ref_role>
+        <text> only.</text>
+    </substitution_definition>
+    <substitution_reference name="both">
+        <paragraph>
+            <text>Available for </text>
+            <ref_role domain="mongodb" name="binary" target="bin.mongod" flag="~" fileid="['index', 'mongodb-binary-bin.mongod']">
+                <literal>
+                    <text>mongod</text>
+                </literal>
+            </ref_role>
+            <text> only.</text>
+        </paragraph>
+    </substitution_reference>
+</root>""",
+        )
+
+
+def test_replacements_scope() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/a.txt"
+            ): """
+.. include:: /includes/b.rst
+
+   .. replacement:: foo
+
+      foo
+
+   .. replacement:: bar
+
+      bar
+""",
+            Path(
+                "source/includes/b.rst"
+            ): """
+.. include:: /includes/c.rst
+
+   .. replacement:: foo
+
+      foo
+""",
+            Path(
+                "source/includes/c.rst"
+            ): """
+|foo|
+
+|bar|
+""",
+        },
+    ) as result:
+        print(result.diagnostics)
+        assert not result.diagnostics[FileId("includes/b.rst")]
+        assert not result.diagnostics[FileId("includes/a.txt")]
+        assert [type(x) for x in result.diagnostics[FileId("includes/c.rst")]] == [
+            SubstitutionRefError
+        ]
+
+
+def test_replacement_context() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/a.txt"
+            ): """
+.. include:: /includes/b.rst
+
+   .. replacement:: two-paragraphs
+
+      foo
+
+      bar
+
+   .. replacement:: a-codeblock
+
+      .. code-block:: sh
+
+         ls
+""",
+            Path(
+                "source/includes/b.rst"
+            ): """
+Block in Inline Contexts
+------------------------
+
+test |two-paragraphs|
+
+test |a-codeblock|
+
+Block in Block Contexts
+-----------------------
+
+|two-paragraphs|
+
+|a-codeblock|
+""",
+        },
+    ) as result:
+        assert [type(x) for x in result.diagnostics[FileId("includes/b.rst")]] == [
+            InvalidContextError,
+            InvalidContextError,
+            SubstitutionRefError,
+            SubstitutionRefError,
+        ]
 
 
 def test_named_references() -> None:
@@ -1364,6 +1945,280 @@ A Heading
         )
 
 
+def test_banner_postprocess_multiple_pages_one_banner() -> None:
+    # Banners should apply to any pages whose source paths match our glob pattern in targets
+    # and should be prepended to the first section of a page which contains a header
+    # if no suitable section can be found, the banner should prepend to the top of the page
+    with make_test(
+        {
+            Path(
+                "source/test/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/test/page2.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/how-to/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
+title = "MongoDB title"
+
+[[banners]]
+targets = ["test/*.txt"]
+variant = "info"
+value = "This product is deprecated"
+            """,
+        }
+    ) as result:
+        page1 = result.pages[FileId("test/page1.txt")]
+        diagnostics = result.diagnostics[FileId("test/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page1.ast,
+            """
+<root fileid="test/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page2 = result.pages[FileId("test/page2.txt")]
+        diagnostics = result.diagnostics[FileId("test/page2.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page2.ast,
+            """
+<root fileid="test/page2.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page3 = result.pages[FileId("how-to/page1.txt")]
+        diagnostics = result.diagnostics[FileId("how-to/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page3.ast,
+            """
+<root fileid="how-to/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+
+
+def test_banner_postprocess_multiple_banners() -> None:
+    with make_test(
+        {
+            Path(
+                "source/test/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/guide/page2.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "source/how-to/page1.txt"
+            ): """
+==========
+Index Page
+==========
+
+A Heading
+---------
+
+Paragraph
+
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
+title = "MongoDB title"
+
+[[banners]]
+targets = ["test/*.txt"]
+variant = "info"
+value = "This product is deprecated"
+
+[[banners]]
+targets = ["guide/*.txt"]
+variant = "warning"
+value = "This product is out of date"
+            """,
+        }
+    ) as result:
+        page1 = result.pages[FileId("test/page1.txt")]
+        diagnostics = result.diagnostics[FileId("test/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page1.ast,
+            """
+<root fileid="test/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="info">
+<text>This product is deprecated</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page2 = result.pages[FileId("guide/page2.txt")]
+        diagnostics = result.diagnostics[FileId("test/page2.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page2.ast,
+            """
+<root fileid="guide/page2.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<directive domain="mongodb" name="banner" variant="warning">
+<text>This product is out of date</text>
+</directive>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+        page3 = result.pages[FileId("how-to/page1.txt")]
+        diagnostics = result.diagnostics[FileId("how-to/page1.txt")]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page3.ast,
+            """
+<root fileid="how-to/page1.txt">
+<section>
+<heading id="index-page">
+<text>Index Page</text>
+</heading>
+<section>
+<heading id="a-heading">
+<text>A Heading</text>
+</heading>
+<paragraph>
+<text>Paragraph</text>
+</paragraph>
+</section>
+</section>
+</root>
+            """,
+        )
+
+
 def test_monospace_limit_fix() -> None:
     with make_test(
         {
@@ -1395,4 +2250,175 @@ Title
 <ref_role domain="mongodb" name="limit" target="a test of a limit" fileid="['index', 'mongodb-limit-a-test-of-a-limit']">
 <text>a test of a limit</text>
 </ref_role></paragraph></section></root>""",
+        )
+
+
+def test_block_substitutions_in_lists() -> None:
+    # There were some subtle issues with inserting a BlockSubstitutionReference instead of a paragraph
+    # node that led to a ListItemNode living *outside* of the ListNode. Test that case.
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. |checkmark| unicode:: U+2713
+
+.. list-table::
+   :header-rows: 1
+
+   * - Col 1
+     - Col 2
+
+   * - :readconcern:`"majority"`
+     - |checkmark|
+
+   * - :readconcern:`"majority"`
+     - |checkmark|
+"""
+        }
+    ) as result:
+        print(ast_to_testing_string(result.pages[FileId("index.txt")].ast))
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <substitution_definition name="checkmark">
+        <text>✓</text>
+    </substitution_definition>
+    <directive name="list-table" header-rows="1">
+        <list enumtype="unordered">
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <text>Col 1</text>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <paragraph>
+                            <text>Col 2</text>
+                        </paragraph>
+                    </listItem>
+                </list>
+            </listItem>
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <ref_role domain="mongodb" name="readconcern" target="readconcern.&quot;majority&quot;">
+                                <literal>
+                                    <text>"majority"</text>
+                                </literal>
+                            </ref_role>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <substitution_reference name="checkmark">
+                            <paragraph>
+                                <text>✓</text>
+                            </paragraph>
+                        </substitution_reference>
+                    </listItem>
+                </list>
+            </listItem>
+            <listItem>
+                <list enumtype="unordered">
+                    <listItem>
+                        <paragraph>
+                            <ref_role domain="mongodb" name="readconcern" target="readconcern.&quot;majority&quot;">
+                                <literal>
+                                    <text>"majority"</text>
+                                </literal>
+                            </ref_role>
+                        </paragraph>
+                    </listItem>
+                    <listItem>
+                        <substitution_reference name="checkmark">
+                            <paragraph>
+                                <text>✓</text>
+                            </paragraph>
+                        </substitution_reference>
+                    </listItem>
+                </list>
+            </listItem>
+        </list>
+    </directive>
+</root>""",
+        )
+
+
+def test_targets_with_backslashes() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): r"""
+:phpmethod:`MongoDB\Database::listCollections()`
+:phpmethod:`foobar <MongoDB\Database::listCollections()>`
+
+.. phpmethod:: MongoDB\Database::listCollections()
+"""
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("index.txt")]
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            r"""
+<root fileid="index.txt">
+    <paragraph>
+        <ref_role domain="mongodb" name="phpmethod" target="phpmethod.MongoDB\Database::listCollections()" fileid="['index', 'mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--']">
+            <literal><text>MongoDB\Database::listCollections()</text></literal>
+        </ref_role>
+        <text> </text>
+        <ref_role domain="mongodb" name="phpmethod" target="phpmethod.MongoDB\Database::listCollections()" fileid="['index', 'mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--']">
+            <literal><text>foobar</text></literal>
+        </ref_role>
+    </paragraph>
+    <target domain="mongodb" name="phpmethod" html_id="mongodb-phpmethod-phpmethod.MongoDB-Database--listCollections--">
+        <directive_argument><literal><text>MongoDB\Database::listCollections()</text></literal></directive_argument>
+        <target_identifier ids="['phpmethod.MongoDB\\Database::listCollections()']">
+            <text>MongoDB\Database::listCollections()</text>
+        </target_identifier>
+    </target>
+</root>
+""",
+        )
+
+
+def test_target_quotes() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): r"""
+:writeconcern:`majority <\"majority\">`
+:writeconcern:`majority <"majority">`
+
+.. writeconcern:: "majority"
+"""
+        }
+    ) as result:
+        assert not result.diagnostics[FileId("index.txt")]
+        print(ast_to_testing_string(result.pages[FileId("index.txt")].ast))
+
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+    <root fileid="index.txt">
+    <paragraph>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&quot;majority&quot;" fileid="['index', 'mongodb-writeconcern-writeconcern.-majority-']">
+            <literal><text>majority</text></literal>
+        </ref_role><text></text>
+        <ref_role domain="mongodb" name="writeconcern" target="writeconcern.&quot;majority&quot;" fileid="['index', 'mongodb-writeconcern-writeconcern.-majority-']">
+            <literal><text>majority</text></literal>
+        </ref_role>
+    </paragraph>
+
+    <target domain="mongodb" name="writeconcern" html_id="mongodb-writeconcern-writeconcern.-majority-">
+        <directive_argument><literal><text>"majority"</text></literal></directive_argument>
+        <target_identifier ids="['writeconcern.&quot;majority&quot;']">
+            <text>"majority"</text>
+        </target_identifier>
+    </target>
+</root>""",
         )

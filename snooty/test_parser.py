@@ -9,6 +9,7 @@ from .diagnostics import (
     ExpectedPathArg,
     IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
+    InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
     InvalidURL,
@@ -19,14 +20,103 @@ from .diagnostics import (
     UnknownTabID,
     UnknownTabset,
 )
-from .parser import InlineJSONVisitor, JSONVisitor, parse_rst
+from .parser import InlineJSONVisitor, JSONVisitor
 from .types import ProjectConfig
-from .util_test import ast_to_testing_string, check_ast_testing_string
+from .util_test import ast_to_testing_string, check_ast_testing_string, parse_rst
 
 ROOT_PATH = Path("test_data")
 
 # Some of the tests in this file may seem a little weird around refs: the raw parser output
 # does NOT include postprocessing artifacts such as nonlocal link titles and intersphinx lookups.
+
+
+def test_quiz() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test_quiz.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(parser, tabs_path, None)
+    page.finish(diagnostics)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test_quiz.rst">
+        <directive name="quiz" domain="mongodb" quiz-id="mongoacc1" quiz-date="2021-06-21">
+            <paragraph><text>With my MongoDB account, I can now access?</text></paragraph>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB Atlas</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB Atlas isn’t the right answer choice</text></paragraph>
+            </directive>
+            <directive name="quizchoice" domain="mongodb">
+                <text>MongoDB University</text>
+                <paragraph><text>Up to 2 lines of copy here explaining why MongoDB University isn’t the right answer choice</text></paragraph>
+            </directive>
+            <directive name="quizchoice" domain="mongodb" is-true="True">
+                <text>All of the Above</text>
+                <paragraph><text>Your MongoDB account gives you access to all of the above: Atlas, University, Cloud Manager, etc.</text></paragraph>
+            </directive>
+        </directive>
+        </root>""",
+    )
+
+
+def test_chapter() -> None:
+    """Test chapter directive"""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test good chapter with image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+      :image: /test_parser/sample.png
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Test good chapter without image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+    # Test chapter with incorrect image
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. chapters::
+
+   .. chapter:: Atlas
+      :description: Chapter description.
+      :image: /fake-image.png
+
+      .. guide:: /test_parser/includes/sample_rst.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
 
 
 def test_tabs() -> None:
@@ -252,6 +342,344 @@ def test_tabs_reorder() -> None:
     )
 
 
+def test_iocodeblock() -> None:
+    tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test a io-code-block with nested input/output directives with raw code content passed in
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: 
+      :language: python
+
+      print('hello world')
+
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="io-code-block">
+        <directive name="input" language="python"><code lang="python">print('hello world')</code></directive>
+        <directive name="output"><code>hello world</code></directive>
+    </directive>
+</root>""",
+    )
+
+    # Test a io-code-block with nested input/output directives with <path/to/file> passed in
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: /test_parser/includes/sample_code.py
+      :language: python
+
+   .. output:: /test_parser/includes/sample_code.py
+      :language: python""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="io-code-block">
+        <directive name="input" language="python"><text>/test_parser/includes/sample_code.py</text>
+            <code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+            </code></directive>
+        <directive name="output" language="python"><text>/test_parser/includes/sample_code.py</text>
+            <code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+            </code>
+    </directive></directive></root>
+""",
+    )
+
+    # Test a io-code-block with language incorrectly passed in as an argument
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block:: python
+
+   .. input::
+
+      print('hello world')
+
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], InvalidDirectiveStructure)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+  <directive name="io-code-block">
+      <text>python</text>
+      <directive name="input">
+          <code>print('hello world')</code>
+      </directive>
+      <directive name="output">
+          <code>hello world</code>
+      </directive>
+  </directive>
+</root>""",
+    )
+
+    # Test an invalid <path/to/file> for nested input directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: /test_parser/includes/nonexistent_file.py
+      :language: python
+
+   .. output:: /test_parser/includes/sample_code.py
+""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], CannotOpenFile)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst"><directive name="io-code-block"></directive></root>""",
+    )
+
+    # Test an invalid <path/to/file> for nested output directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: /test_parser/includes/sample_code.py
+      :language: python
+
+   .. output:: /test_parser/includes/nonexistent_file.py
+      :language: python
+""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], CannotOpenFile)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="io-code-block">
+        <directive name="input" language="python"><text>/test_parser/includes/sample_code.py</text>
+        <code lang="python">    # start example 1
+    print("test dedent")
+    # end example 1
+
+    # start example 2
+    print("hello world")
+    # end example 2
+</code></directive></directive></root>""",
+    )
+
+    # Test a io-code-block with a missing input directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst"><directive name="io-code-block"></directive></root>""",
+    )
+
+    # Test a io-code-block with a missing output directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: 
+      :language: python
+
+      print('hello world')""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+  <directive name="io-code-block">
+      <directive name="input" language="python"><code lang="python">print('hello world')</code>
+  </directive>
+ </directive></root>""",
+    )
+
+    # Test a io-code-block with an invalid child directive
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   this is a paragraph
+   that should not be here
+
+   .. input:: 
+      :language: python
+
+      print('hello world')""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], InvalidDirectiveStructure)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+  <directive name="io-code-block">
+      <directive name="input" language="python"><code lang="python">print('hello world')</code></directive>
+  </directive>
+</root>""",
+    )
+
+    # Test a io-code-block with multiple valid input/output directives
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: 
+      :language: python
+
+      print('hello world')
+
+   .. input:: 
+      :language: python
+
+      print('hello world')
+      
+   .. output::
+    
+      hello world""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], InvalidDirectiveStructure)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+  <directive name="io-code-block">
+      <directive name="input" language="python"><code lang="python">print('hello world')</code></directive>
+      <directive name="output"><code>hello world</code></directive>
+  </directive>
+</root>""",
+    )
+
+    # Test parsing of emphasize-lines and linenos for input/output directives
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: 
+      :language: python
+      :linenos:
+      :emphasize-lines: 1-2, 4
+
+      print('hello world1')
+      print('hello world2')
+      print('hello world3')
+      print('hello world4')
+
+   .. output::
+      :emphasize-lines: 3
+    
+      hello world1
+      hello world2
+      hello world3
+      hello world4""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="io-code-block">
+        <directive name="input" language="python" linenos="True" emphasize-lines="1-2, 4">
+        <code lang="python" emphasize_lines="[(1, 2), (4, 4)]" linenos="True">print('hello world1')
+print('hello world2')
+print('hello world3')
+print('hello world4')</code></directive>
+        <directive name="output" emphasize-lines="3"><code emphasize_lines="[(3, 3)]">hello world1
+hello world2
+hello world3
+hello world4</code></directive>
+    </directive>
+</root>""",
+    )
+
+    # Test a io-code-block with incorrect options linenos and emphasize-lines
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+   :emphasize-lines: 1-2
+
+   .. input:: 
+      :language: python
+
+      print('hello world1')
+      print('hello world2')
+      print('hello world3')
+
+   .. output::
+    
+      hello world1
+      hello world2
+      hello world3""",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+    assert diagnostics[0].severity == Diagnostic.Level.error
+
+
 def test_codeblock() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -407,7 +835,7 @@ for (i = 0; i &lt; 10; i++) {
    :linenos:
    :copyable: false
    :emphasize-lines: 1,2-4
-   :lines: 1
+   :lineno-start: 17
 """,
     )
     page.finish(diagnostics)
@@ -415,9 +843,9 @@ for (i = 0; i &lt; 10; i++) {
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="literalinclude" caption="Sample Code" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lines="1">
+        <directive name="literalinclude" caption="Sample Code" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lineno-start="17">
         <text>/test_parser/includes/sample_code.py</text>
-        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True">print("test dedent")</code>
+        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True" lineno_start="17">print("test dedent")</code>
         </directive>
         </root>""",
     )
@@ -614,6 +1042,20 @@ for (i = 0; i &lt; 10; i++) {
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+    # Test non-textual
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /compass-explain-plan-with-index-raw-json.png
+        """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert [(type(d), "utf-8" in d.message) for d in diagnostics] == [
+        (CannotOpenFile, True)
+    ]
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -659,28 +1101,6 @@ def test_include() -> None:
         </directive>
         </root>""",
     )
-
-    # Test generated include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/steps/generated-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert diagnostics == []
-
-    # Test bad include
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        """
-.. include:: /driver-examples/fake-include.rst
-        """,
-    )
-    page.finish(diagnostics)
-    assert len(diagnostics) == 1
 
 
 def test_admonition() -> None:
@@ -781,6 +1201,92 @@ def test_admonition_deprecated() -> None:
             <paragraph><text>Content</text></paragraph>
         </directive>
         </root>""",
+    )
+
+
+def test_banner() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. banner::
+    :variant: warning
+
+    Content
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    print(page.ast)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="banner" variant="warning">
+            <paragraph><text>Content</text></paragraph>
+        </directive>
+        </root>""",
+    )
+
+
+def test_cta_banner() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test valid cta-banner
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. cta-banner::
+   :url: https://university.mongodb.com/
+   :icon: University
+
+   If you prefer learning through videos, try this lesson on `MongoDB University 
+   <https://university.mongodb.com/>`_
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="cta-banner" url="https://university.mongodb.com/" icon="University">
+            <paragraph>
+                <text>If you prefer learning through videos, try this lesson on </text>
+                <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
+                <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
+            </paragraph>
+        </directive></root>""",
+    )
+
+    # Test cta-banner without url option specified
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. cta-banner::
+
+   If you prefer learning through videos, try this lesson on `MongoDB University 
+   <https://university.mongodb.com/>`_
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive domain="mongodb" name="cta-banner">
+            <paragraph><text>If you prefer learning through videos, try this lesson on </text>
+            <reference refuri="https://university.mongodb.com/"><text>MongoDB University</text></reference>
+            <named_reference refname="MongoDB University" refuri="https://university.mongodb.com/"></named_reference>
+            </paragraph>
+        </directive></root>""",
     )
 
 
@@ -2653,3 +3159,37 @@ def test_escape() -> None:
     <paragraph><substitution_reference name="adl"></substitution_reference><text>ss</text></paragraph>
 </root>""",
     )
+
+
+def test_directive_line_offset() -> None:
+    """Ensure that line numbers are correctly tracked inside of directives."""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r""".. _kotlin-multiplatform-install:
+
+========================================
+Install Realm - Kotlin Multiplatform SDK
+========================================
+
+.. default-domain:: mongodb
+
+Prerequisites
+-------------
+
+.. warning::
+
+   You can track an issue with line numbers in :github:`this GitHub issue
+   <https://github.com/mongodb/snooty-parser/pull/328>`__.
+
+.. include:: /includes/steps/install-kotlin-multiplatform.rst
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert diagnostics[0].start[0] == 13

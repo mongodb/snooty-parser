@@ -4,14 +4,16 @@ version = 0
 [enum]
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
+banner_variant = ["info", "warning", "danger"]
 card_layout = ["default", "carousel"]
 card_style = ["default", "compact", "extra-compact"]
 card_type = ["small", "large"]
 charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
-mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "latest"]
+mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
 output_format = ["html"]
+procedure_styles = ["normal", "connected"]
 user_level = ["beginner", "intermediate", "advanced"]
 
 [directive.default-domain]
@@ -54,7 +56,8 @@ ${4:   :align:
 
 """
 
-[directive."ecosystem:landing-page-tiles"]
+# Intended for use on the ecosystem landing page only
+[directive."mongodb:drivers-index-tiles"]
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
@@ -171,11 +174,18 @@ example = """.. contents:: ${1:string}
 [directive.include]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "uri"]
+content_type = "string"
 options.start-after = "string"
 options.end-before = "string"
 example = """.. include:: ${1:/includes/file.rst}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
+"""
+
+[directive.sharedinclude]
+argument_type = "string"
+content_type = "string"
+example = """.. sharedinclude:: ${1:/test/sample-item.rst}
 """
 
 [directive.literalinclude]
@@ -189,7 +199,7 @@ options.copyable = "boolean"
 options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
-options.lines = "linenos"
+options.lineno-start = "nonnegative_integer"
 example = """..literalinclude:: ${1:/path/to/file.js}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
@@ -198,7 +208,16 @@ example = """..literalinclude:: ${1:/path/to/file.js}
    :caption:
    :dedent:
    :emphasize-lines:
-   :lines:}
+   :lineno-start:}
+"""
+
+[directive.replacement]
+help = """Specify replacements for variables in a shared content item."""
+argument_type = "str"
+content_type = "block"
+example = """.. replacement:: ${1:variable name}
+
+   ${2:Content with which to replace variable}
 """
 
 [directive.figure]
@@ -444,6 +463,53 @@ example = """.. code:: ${1:language}
    ${0:code content}
 """
 
+[directive.io-code-block]
+help = """A block of code and its corresponding output to show the user."""
+argument_type = "string"
+content_type = "block"
+options.caption = "string"
+options.copyable = "boolean"
+options.class = "string"
+options.source = "uri"
+# example = """.. io-code-block::
+#    ${2::copyable: (bool)
+#    :caption: (string)
+#    :class: (string)}
+#    :source: ${1: URL to source code}
+
+#    ${0:code input/code output content}
+# """
+
+[directive.input]
+help = """The code content."""
+argument_type = ["path", "raw"]
+content_type = "raw"
+options.language = "string"
+options.emphasize-lines = "linenos"
+options.linenos = "flag"
+# example = """.. io-code-block::
+#    .. input:: ${0:code output or </path/to/file>}
+#       :language: ${1:language}
+#       :emphasize-lines: (string)
+#       :linenos: (flag)
+# """
+
+[directive.output]
+help = """The code output."""
+argument_type = ["path", "raw"]
+content_type = "raw"
+options.language = "string"
+options.emphasize-lines = "linenos"
+options.linenos = "flag"
+options.visible = "boolean"
+# example = """.. io-code-block::
+#    .. output:: ${0:code output or </path/to/file>}
+#       :language: ${1:language}
+#       :emphasize-lines: (string)
+#       :linenos: (flag)
+#       :visible: (bool)
+# """
+
 [directive.cssclass]
 help = """Add the given CSS class name to generated HTML of the contained (if content is given) or
           following (if not) page element."""
@@ -614,6 +680,27 @@ content_type = "block"
 # """
 
 ##### Internal "mongodb" directives
+[directive."mongodb:banner"]
+help = """A skinny admonition, meant for alerts or smaller notifications."""
+content_type = "block"
+options.variant = "banner_variant"
+example = """.. banner::
+   :variant: ${1: warning (Optional)}
+
+   ${2:banner content}
+"""
+
+[directive."mongodb:cta-banner"]
+content_type = "block"
+options.url = { type = "uri", required = true }
+options.icon = "string"
+example = """.. cta-banner::
+   :url: https://university.mongodb.com/
+   :icon: ${1:Leafygreen icon}
+
+   ${2:Banner Text content}
+"""
+
 [directive."mongodb:button"]
 help = "Make a button."
 example = """.. button:: ${1: string}
@@ -656,12 +743,49 @@ example = """.. card-group::
    ${0: Card content}
 """
 
+[directive."mongodb:chapter"]
+help = "A container for a group of MongoDB guides."
+example = """.. chapter:: ${1: string}
+   :description: ${2: string}
+   :image: ${3: /path/to/image.png - the chapter card will use this}
+   :icon: ${4: /path/to/icon.png - the guides cards related to the chapter will use this}
+
+   ${0: chapter content}
+"""
+argument_type = "string"
+content_type = "block"
+options.description = {type = "string", required = true}
+options.image = ["path", "uri"]
+options.icon = ["path", "uri"]
+
+[directive."mongodb:chapters"]
+help = "A container for a group of chapter directives."
+example = """.. chapters::
+
+   ${0: chapters content}
+"""
+content_type = "block"
+
 [directive."mongodb:cta"]
 help = "Call to action directing users to a new part of the site"
 example = """..cta::
 
    ${0::manual:`Read the Introduction to MongoDB </introduction>`}
 """
+content_type = "block"
+
+[directive."mongodb:guide"]
+help = "Denotes a guide page."
+example = """.. guide:: ${0: /path/to/guide.txt}"""
+argument_type = ["path", "uri"]
+content_type = "string"
+
+[directive."mongodb:guide-next"]
+help = "A section that directs users to what they should do next after reading a guide"
+example = """.. guide-next:: ${0: string}
+   ${1: content}
+"""
+argument_type = "string"
 content_type = "block"
 
 [directive."mongodb:introduction"]
@@ -681,8 +805,9 @@ example = """.. mongo-web-shell::
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
-argument_type = ["path", "uri"]
+argument_type = ["path", "string", "uri"]
 options.uses-rst = "flag"
+options.uses-realm = "flag"
 
 [directive."mongodb:operation"]
 content_type = "block"
@@ -693,8 +818,40 @@ options.path = "string"
 [directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
 example = """.. procedure::
-${0: Steps content}"""
+   :style: ${0: string}
+
+${1: Steps content}"""
 content_type = "block"
+options.style = "procedure_styles"
+
+[directive."mongodb:quiz"]
+content_type = "block"
+help = "Embed a quiz with a question argument, using the quizchoice directive to construct answer options."
+example = """.. quiz::
+  :quiz-id: ${1:string}
+  :quiz-date: ${2:string}
+
+   ${3:string}"""
+argument_type = "string"
+options.quiz-id = {type = "string", required = true}
+options.quiz-date = "string"
+
+[directive."mongodb:quizchoice"]
+content_type = "block"
+help = "A possible quiz answer and an explanation to be displayed after submission"
+example = """ .. quizchoice:: ${1:string}
+   :is-true:
+
+   ${3:string}"""
+argument_type = "string"
+options.is-true = "flag"
+
+[directive."mongodb:short-description"]
+help = "A description or preview of what the content will be about."
+content_type = "block"
+example = """.. short-description::
+   ${0: content}
+"""
 
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
@@ -702,6 +859,11 @@ example = """.. step:: ${0: Step's headline string}
 ${1: Step content}"""
 argument_type = "string"
 content_type = "block"
+
+[directive."mongodb:time"]
+help = "The amount of time that it would take to go through the guide content in minutes."
+argument_type = {type = "nonnegative_integer", required = true}
+example = """.. time:: 15"""
 
 ###### Misc.
 [directive.atf-image]
@@ -757,6 +919,11 @@ options.title = {required = true, type = "string"}
 options.image = {required = true, type = ["path", "uri"]}
 options.type = "string"
 
+[directive.video]
+help = "Embed a video in your article"
+argument_type = "uri"
+example = """.. video:: ${1: full video url}"""
+
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
 argument_type = "string"
@@ -793,10 +960,12 @@ help = """Add metadata to the site for SEO."""
 options.keywords = "string"
 options.description = "string"
 options.robots = "string"
+options.canonical = "uri"
 example = """.. meta::
    :keywords: ${1:string}
    :description: ${2:string}
    :robots: ${3:string}
+   :canonical: ${4: full url, not relative}
 """
 
 [directive.topic]
@@ -1043,7 +1212,7 @@ type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."node-api-4.0"]
 help = """Link to a page in Node.js driver V4.0's API reference."""
-type = {link = "https://mongodb.github.io/node-mongodb-native/4.0%s"}
+type = {link = "https://mongodb.github.io/node-mongodb-native/4.0/%s"}
 
 [role."node-api-3.6"]
 help = """Link to a page in Node.js driver V3.6's API reference."""
@@ -1076,6 +1245,10 @@ type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/
 [role.java-docs]
 help = """Link to the Java driver's documentation."""
 type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/%s"}
+
+[role."java-docs-4.3"]
+help = """Link to the Java driver's documentation."""
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.3/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
@@ -1130,6 +1303,12 @@ type = {link = "https://docs.mongodb.com/v4.2%s", ensure_trailing_slash = true}
 
 [role."v4.4"]
 type = {link = "https://docs.mongodb.com/v4.4%s", ensure_trailing_slash = true}
+
+[role."v5.0"]
+type = {link = "https://docs.mongodb.com/v5.0%s", ensure_trailing_slash = true}
+
+[role."v5.1"]
+type = {link = "https://docs.mongodb.com/v5.1%s", ensure_trailing_slash = true}
 
 [role.website]
 help = """Link to a page in the MongoDB website."""
@@ -1229,6 +1408,18 @@ type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
+[role."wtdocs-v4.0"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.0%s"}
+
+[role."wtdocs-v4.2"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.2%s"}
+
+[role."wtdocs-v4.4"]
+type = {link = "http://source.wiredtiger.com/mongodb-4.4%s"}
+
+[role."wtdocs-v5.0"]
+type = {link = "http://source.wiredtiger.com/mongodb-5.0%s"}
+
 [role.spec]
 type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
@@ -1304,6 +1495,12 @@ type = {link = "https://docs.mongodb.com/realm-sdks/swift/latest/%s"}
 [role."objc-sdk"]
 type = {link = "https://docs.mongodb.com/realm-sdks/objc/latest/%s"}
 
+[role."flutter-sdk"]
+type = {link = "https://pub.dev/documentation/realm/latest/%s"}
+
+[role."flutter"]
+type = {link = "https://docs.flutter.dev/%s"}
+
 [role."codesandbox"]
 type = {link = "https://codesandbox.io/%s"}
 
@@ -1330,6 +1527,27 @@ type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."xamarin"]
 type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
+
+[role."k8sdocs"]
+type = {link = "https://kubernetes.io/docs%s"}
+
+[role."gopkg"]
+type = {link = "https://godoc.org%s"}
+
+[role."osi"]
+type = {link = "https://opensource.org%s"}
+
+[role."osil"]
+type = {link = "https://opensource.org/licenses/%s"}
+
+[role."tldrl"]
+type = {link = "https://www.tldrlegal.com/l/%s"}
+
+[role."q-mdb"]
+type = {link = "https://quay.io/mongodb%s"}
+
+[role."qr-mdb"]
+type = {link = "https://quay.io/repository/mongodb%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
@@ -1533,7 +1751,7 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
-  {id = "shell", title = "Mongo Shell"},
+  {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
@@ -1548,6 +1766,8 @@ drivers = [
   {id = "python", title = "Python"},
   {id = "ruby", title = "Ruby"},
   {id = "rust", title = "Rust"},
+  {id = "rust-async", title = "Rust (Async)"},
+  {id = "rust-sync", title = "Rust (Sync)"},
   {id = "scala", title = "Scala"},
   {id = "swift-async", title = "Swift (Async)"},
   {id = "swift-sync", title = "Swift (Sync)"},
@@ -1594,7 +1814,7 @@ realm-sdks = [
   {id = "functions", title = "Functions"},
   {id = "json-expressions", title = "JSON Expressions"},
   {id = "graphql", title = "GraphQL"},
-  {id = "ios", title = "iOS SDK"},
+  {id = "ios", title = "Swift SDK"},
   {id = "android", title = "Android SDK"},
   {id = "dotnet", title = ".NET SDK"},
   {id = "xamarin", title = "Xamarin SDK"},

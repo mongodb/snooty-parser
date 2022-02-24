@@ -4,7 +4,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 
 import toml
 from typing_extensions import Protocol
@@ -22,6 +22,7 @@ from .n import SerializableType as ST
 
 SerializableType = ST
 FileId = FD
+FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
 BuildIdentifierSet = Dict[str, Optional[str]]
@@ -96,6 +97,20 @@ class StaticAsset:
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
 
 
+@dataclass
+class ParsedBannerConfig:
+    targets: List[str]
+    node: n.Directive
+
+
+@checked
+@dataclass
+class BannerConfig:
+    targets: List[str]
+    variant: str = field(default="info")
+    value: str = field(default="")
+
+
 @checked
 @dataclass
 class ManPageConfig:
@@ -119,9 +134,13 @@ class ProjectConfig:
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     source: str = field(default="source")
+    banners: List[BannerConfig] = field(default_factory=list)
+    # banner_nodes contains parsed banner nodes with target data
+    banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
     constants: Dict[str, object] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
+    sharedinclude_root: Optional[str] = field(default=None)
     substitutions: Dict[str, str] = field(default_factory=dict)
     # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
     substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)
@@ -171,7 +190,7 @@ class ProjectConfig:
         constants: Dict[str, object] = {}
         all_diagnostics: List[Diagnostic] = []
         for k, v in self.constants.items():
-            result, diagnostics = self.substitute(str(v))
+            result, diagnostics = self._substitute(str(v), constants)
             all_diagnostics.extend(diagnostics)
             constants[k] = result
 
@@ -194,8 +213,10 @@ class ProjectConfig:
 
         return (text, diagnostics)
 
-    def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
-        """Substitute all placeholders within a string."""
+    @staticmethod
+    def _substitute(
+        source: str, constants: Dict[str, object]
+    ) -> Tuple[str, List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         def handle_match(match: Match[str]) -> str:
@@ -203,7 +224,7 @@ class ProjectConfig:
             configuration. Log a warning if it's not defined."""
             variable_name = match.group(1)
             try:
-                return str(self.constants[variable_name])
+                return str(constants[variable_name])
             except KeyError:
                 lineno = source.count("\n", 0, match.start())
                 diagnostics.append(ConstantNotDeclared(variable_name, lineno))
@@ -212,3 +233,7 @@ class ProjectConfig:
             return "\u200b"
 
         return PAT_VARIABLE.sub(handle_match, source), diagnostics
+
+    def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
+        """Substitute all placeholders within a string."""
+        return self._substitute(source, self.constants)

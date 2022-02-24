@@ -31,7 +31,6 @@ import docutils.parsers.rst.roles
 import docutils.parsers.rst.states
 import docutils.statemachine
 import docutils.utils
-from docutils.nodes import unescape
 from typing_extensions import Protocol
 
 from . import n, specparser, util
@@ -89,12 +88,27 @@ docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
 docutils.nodes.dupname = lambda node, name: None
 
 
+def unescape_backslashes(text: str) -> str:
+    """docutils replaces backslashes with null characters. Deal with this in
+    a fairly inane way that matches how backslashes seem to be used in our
+    corpus."""
+    return (
+        text.replace("\x00<", "<")
+        .replace("\x00>", ">")
+        .replace('\x00"', '"')
+        .replace("\x00", "\\")
+    )
+
+
 def parse_explicit_title(text: str) -> Tuple[str, Optional[str]]:
     match = PAT_EXPLICIT_TITLE.match(text)
-    if match:
-        return unescape(match["target"]), unescape(match["label"])
 
-    return (unescape(text), None)
+    if match:
+        return unescape_backslashes(match["target"]), unescape_backslashes(
+            match["label"]
+        )
+
+    return (unescape_backslashes(text), None)
 
 
 def strip_parameters(target: str) -> str:
@@ -533,7 +547,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
         # Parse the content
         self.state.nested_parse(
-            self.content, self.state_machine.line_offset, node, match_titles=True
+            self.content, self.content_offset, node, match_titles=True
         )
 
         return [node]
@@ -557,7 +571,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             content_lines = prepare_viewlist(self.arguments[0])
             self.state.nested_parse(
                 docutils.statemachine.ViewList(content_lines, source=self.arguments[0]),
-                self.state_machine.line_offset,
+                self.content_offset,
                 node,
                 match_titles=True,
             )
@@ -757,7 +771,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
         content_lines = prepare_viewlist(child.content)
         self.state.nested_parse(
             docutils.statemachine.ViewList(content_lines, source=source),
-            self.state_machine.line_offset,
+            self.content_offset,
             node,
             match_titles=True,
         )
@@ -795,6 +809,55 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
+class BaseCodeIODirective(docutils.parsers.rst.Directive):
+    """Special handling for code input/output directives.
+
+    These directives can either take in a filepath or raw code content. If a filepath
+    is present, this should be included in the `argument` field of the AST. If raw code
+    content is present, it should become the value of the child Code node.
+    """
+
+    optional_arguments = 1
+
+    def run(self) -> List[docutils.nodes.Node]:
+        source, line = self.state_machine.get_source_and_line(self.lineno)
+        copyable = "copyable" not in self.options or self.options["copyable"]
+        linenos = "linenos" in self.options
+
+        node = directive("", self.name)
+        node.document = self.state.document
+        node.source, node.line = source, line
+        node["options"] = self.options
+
+        if self.arguments:
+            title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
+            node.append(directive_argument(self.arguments[0], "", title_node))
+        else:
+            try:
+                n_lines = len(self.content)
+                emphasize_lines = parse_linenos(
+                    self.options.get("emphasize-lines", ""), n_lines
+                )
+            except ValueError as err:
+                error_node = self.state.document.reporter.error(
+                    str(err), line=self.lineno
+                )
+                return [error_node]
+
+            value = "\n".join(self.content)
+            child_code = code(value, value)
+            child_code["name"] = "code"
+            child_code["emphasize_lines"] = emphasize_lines
+            child_code["linenos"] = linenos
+            child_code["copyable"] = copyable
+
+            child_code.document = self.state.document
+            child_code.source, node.line = source, line
+            node.append(child_code)
+
+        return [node]
+
+
 class BaseVersionDirective(docutils.parsers.rst.Directive):
     """Special handling for version change directives.
 
@@ -826,7 +889,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
 
         if self.content:
             self.state.nested_parse(
-                self.content, self.state_machine.line_offset, node, match_titles=True
+                self.content, self.content_offset, node, match_titles=True
             )
 
         return [node]
@@ -1008,7 +1071,7 @@ class Registry:
         ):
             return cls.CURRENT_REGISTRY[1]
 
-        registry = register_spec_with_docutils(specparser.SPEC, default_domain)
+        registry = register_spec_with_docutils(specparser.Spec.get(), default_domain)
         cls.CURRENT_REGISTRY = (default_domain, registry)
         return registry
 
@@ -1016,6 +1079,8 @@ class Registry:
 SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
     "code-block": BaseCodeDirective,
     "code": BaseCodeDirective,
+    "input": BaseCodeIODirective,
+    "output": BaseCodeIODirective,
     "sourcecode": BaseCodeDirective,
     "versionadded": BaseVersionDirective,
     "versionchanged": BaseVersionDirective,
