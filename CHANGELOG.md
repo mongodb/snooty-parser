@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An `visible` option to the `output` directive (DOP-2760, #385).
+- A `video` directive for embedding videos (DOP-2754, #384).
+
 ## [v0.12.5] - 2022-02-08
 
 ### Added
