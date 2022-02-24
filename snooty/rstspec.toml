@@ -477,7 +477,16 @@ example = """.. io-code-block::
    :class: (string)}
    :source: ${1: URL to source code}
 
-   ${0:code input/code output content}
+   .. input:: ${0:code input or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+
+   .. output:: ${0:code output or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+      :visible: (bool)
 """
 
 [directive.input]
@@ -487,8 +496,7 @@ content_type = "raw"
 options.language = "string"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
-example = """.. io-code-block::
-   .. input:: ${0:code output or </path/to/file>}
+example = """.. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
       :emphasize-lines: (string)
       :linenos: (flag)
@@ -502,8 +510,7 @@ options.language = "string"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
 options.visible = "boolean"
-example = """.. io-code-block::
-   .. output:: ${0:code output or </path/to/file>}
+example = """.. output:: ${0:code output or </path/to/file>}
       :language: ${1:language}
       :emphasize-lines: (string)
       :linenos: (flag)
