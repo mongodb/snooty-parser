@@ -64,7 +64,6 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
-from .gizaparser.published_branches import PublishedBranches, parse_published_branches
 from .openapi import OpenAPI
 from .page import Page, PendingTask
 from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
@@ -1465,36 +1464,6 @@ class _Project:
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
-
-        published_branches, published_branches_diagnostics = self.get_parsed_branches()
-        with self._backend_lock:
-            if published_branches:
-                self.backend.on_update_metadata(
-                    self.prefix,
-                    self.build_identifiers,
-                    {"publishedBranches": published_branches.serialize()},
-                )
-
-            if published_branches_diagnostics:
-                self.initialization_diagnostics[snooty_config_fileid].extend(
-                    published_branches_diagnostics
-                )
-                backend.on_diagnostics(
-                    self.config.get_fileid(self.config.config_path),
-                    published_branches_diagnostics,
-                )
-
-    def get_parsed_branches(
-        self,
-    ) -> Tuple[Optional[PublishedBranches], List[Diagnostic]]:
-        try:
-            path = self.config.root
-            return parse_published_branches(
-                path.joinpath("published-branches.yaml"), self.config
-            )
-        except FileNotFoundError:
-            pass
-        return None, []
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.config.source_path.joinpath(fileid)
