@@ -474,8 +474,8 @@ options.source = "uri"
 example = """.. io-code-block::
    ${2::copyable: (bool)
    :caption: (string)
-   :class: (string)}
-   :source: ${1: URL to source code}
+   :class: (string)
+   :source: ${1: URL to source code}}
 
    .. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
