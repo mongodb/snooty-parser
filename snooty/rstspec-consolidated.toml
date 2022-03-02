@@ -463,6 +463,60 @@ example = """.. code:: ${1:language}
    ${0:code content}
 """
 
+[directive.io-code-block]
+help = """A block of code and its corresponding output to show the user."""
+argument_type = "string"
+content_type = "block"
+options.caption = "string"
+options.copyable = "boolean"
+options.class = "string"
+options.source = "uri"
+example = """.. io-code-block::
+   ${2::copyable: (bool)
+   :caption: (string)
+   :class: (string)
+   :source: ${1: URL to source code}}
+
+   .. input:: ${0:code input or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+
+   .. output:: ${0:code output or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+      :visible: (bool)
+"""
+
+[directive.input]
+help = """The code content."""
+argument_type = ["path", "raw"]
+content_type = "raw"
+options.language = "string"
+options.emphasize-lines = "linenos"
+options.linenos = "flag"
+example = """.. input:: ${0:code input or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+"""
+
+[directive.output]
+help = """The code output."""
+argument_type = ["path", "raw"]
+content_type = "raw"
+options.language = "string"
+options.emphasize-lines = "linenos"
+options.linenos = "flag"
+options.visible = "boolean"
+example = """.. output:: ${0:code output or </path/to/file>}
+      :language: ${1:language}
+      :emphasize-lines: (string)
+      :linenos: (flag)
+      :visible: (bool)
+"""
+
 [directive.cssclass]
 help = """Add the given CSS class name to generated HTML of the contained (if content is given) or
           following (if not) page element."""
@@ -646,8 +700,10 @@ example = """.. banner::
 [directive."mongodb:cta-banner"]
 content_type = "block"
 options.url = { type = "uri", required = true }
+options.icon = "string"
 example = """.. cta-banner::
    :url: https://university.mongodb.com/
+   :icon: ${1:Leafygreen icon}
 
    ${2:Banner Text content}
 """
@@ -869,6 +925,11 @@ options.url = "string"
 options.title = {required = true, type = "string"}
 options.image = {required = true, type = ["path", "uri"]}
 options.type = "string"
+
+[directive.video]
+help = "Embed a video in your article"
+argument_type = "uri"
+example = """.. video:: ${1: full video url}"""
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
@@ -1761,7 +1822,9 @@ realm-sdks = [
   {id = "json-expressions", title = "JSON Expressions"},
   {id = "graphql", title = "GraphQL"},
   {id = "ios", title = "Swift SDK"},
-  {id = "android", title = "Android SDK"},
+  {id = "android", title = "Java SDK"},
+  {id = "kotlin", title = "Kotlin SDK"},
+  {id = "flutter", title = "Flutter SDK"},
   {id = "dotnet", title = ".NET SDK"},
   {id = "xamarin", title = "Xamarin SDK"},
   {id = "javascript", title = "JavaScript SDKs"},
