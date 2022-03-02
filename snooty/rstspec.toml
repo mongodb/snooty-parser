@@ -1822,7 +1822,7 @@ realm-sdks = [
   {id = "json-expressions", title = "JSON Expressions"},
   {id = "graphql", title = "GraphQL"},
   {id = "ios", title = "Swift SDK"},
-  {id = "android", title = "Android SDK"},
+  {id = "android", title = "Java SDK"},
   {id = "dotnet", title = ".NET SDK"},
   {id = "xamarin", title = "Xamarin SDK"},
   {id = "javascript", title = "JavaScript SDKs"},
