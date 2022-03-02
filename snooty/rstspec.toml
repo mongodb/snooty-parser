@@ -1823,6 +1823,8 @@ realm-sdks = [
   {id = "graphql", title = "GraphQL"},
   {id = "ios", title = "Swift SDK"},
   {id = "android", title = "Java SDK"},
+  {id = "kotlin", title = "Kotlin SDK"},
+  {id = "flutter", title = "Flutter SDK"},
   {id = "dotnet", title = ".NET SDK"},
   {id = "xamarin", title = "Xamarin SDK"},
   {id = "javascript", title = "JavaScript SDKs"},
