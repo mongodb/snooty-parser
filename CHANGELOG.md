@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Rename "Android SDK" tab to "Java SDK" (#388).
+- Add `kotlin` and `flutter` SDKs to the `realm-sdks` tabset (#388).
+- Improve `io-code-block` example snippets (DOP-2742, #387).
+
 ## [v0.13.0] - 2022-02-24
 
 - Removed published branches logic from parser; version information
