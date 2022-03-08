@@ -804,6 +804,8 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         node["copyable"] = copyable
         node["emphasize_lines"] = emphasize_lines
         node["linenos"] = linenos
+        if "source" in self.options:
+            node["source"] = self.options["source"]
         node.document = self.state.document
         node.source, node.line = source, line
         return [node]
@@ -850,6 +852,9 @@ class BaseCodeIODirective(docutils.parsers.rst.Directive):
             child_code["emphasize_lines"] = emphasize_lines
             child_code["linenos"] = linenos
             child_code["copyable"] = copyable
+            child_code["source"] = "test"
+            if "source" in self.options:
+                child_code["source"] = self.options["source"]
 
             child_code.document = self.state.document
             child_code.source, node.line = source, line

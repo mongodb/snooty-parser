@@ -440,12 +440,14 @@ options.copyable = "boolean"
 options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
+options.source = "uri"
 example = """.. code-block:: ${1:language}
    ${2::copyable: (bool)
    :caption: (string)
    :emphasize-lines: (string)
    :class: (string)
-   :linenos: (flag)}
+   :linenos: (flag)
+   :source: ${1: URL to source code}}
 
    ${0:code content}
 """
@@ -458,7 +460,8 @@ example = """.. code:: ${1:language}
    :caption: (string)
    :emphasize-lines: (string)
    :class: (string)
-   :linenos: (flag)}
+   :linenos: (flag)
+   :source: ${1: URL to source code}}
 
    ${0:code content}
 """
