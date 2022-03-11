@@ -1506,6 +1506,9 @@ class Postprocessor:
         project_config = context[ProjectConfig]
         document: Dict[str, SerializableType] = {}
         document["title"] = project_config.title
+
+        if project_config.eol:
+            document["eol"] = project_config.eol
         if project_config.deprecated_versions:
             document["deprecated_versions"] = project_config.deprecated_versions
         # Update metadata document with key-value pairs defined in event parser
