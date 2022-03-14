@@ -73,17 +73,21 @@ helper classes.
 
 ## Developing Snooty
 
-Run the following to install the necessary tools:
+1. Run the following to install the necessary tools:
 
-```shell
-python3 -m pip install flit virtualenv
-```
+   ```shell
+   python3 -m pip install flit virtualenv
+   ```
 
-Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
+2. Make your changes to the source code.
 
-```shell
-flit install -s
-```
+3. (Optionally) Run `make test` and `make format ` to check that the tests pass and fix your formatting.
+
+4. Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
+
+   ```shell
+   flit install -s
+   ```
 
 ### Running tests
 
@@ -104,15 +108,19 @@ coverage html
 
 This will generate an HTML representation of code coverage throughout the repo that can be viewed in the browser.
 
-### Release Process
+### Formatting
 
-#### Prerequisites
+To run all linting, use `make lint`. To format source code, use `make format`.
+
+## Release Process
+
+### Prerequisites
 
 Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew.
 
 If you have not generated a key before, follow the instructions from [GitHub Docs on Generating a new GPG key](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-gpg-key).
 
-#### Releasing
+### Releasing
 
 To release snooty, do the following:
 
