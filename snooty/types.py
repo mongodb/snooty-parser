@@ -133,6 +133,7 @@ class ProjectConfig:
     fail_on_diagnostics: bool = field(default=False)
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
+    eol: bool = field(default=False)
     source: str = field(default="source")
     banners: List[BannerConfig] = field(default_factory=list)
     # banner_nodes contains parsed banner nodes with target data
