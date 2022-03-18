@@ -354,13 +354,13 @@ def test_iocodeblock() -> None:
         """
 .. io-code-block::
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world')
 
    .. output::
-    
+
       hello world""",
     )
     page.finish(diagnostics)
@@ -430,7 +430,7 @@ def test_iocodeblock() -> None:
       print('hello world')
 
    .. output::
-    
+
       hello world""",
     )
     page.finish(diagnostics)
@@ -512,7 +512,7 @@ def test_iocodeblock() -> None:
 .. io-code-block::
 
    .. output::
-    
+
       hello world""",
     )
     page.finish(diagnostics)
@@ -529,7 +529,7 @@ def test_iocodeblock() -> None:
         """
 .. io-code-block::
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world')""",
@@ -556,7 +556,7 @@ def test_iocodeblock() -> None:
    this is a paragraph
    that should not be here
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world')""",
@@ -581,18 +581,18 @@ def test_iocodeblock() -> None:
         """
 .. io-code-block::
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world')
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world')
-      
+
    .. output::
-    
+
       hello world""",
     )
     page.finish(diagnostics)
@@ -616,7 +616,7 @@ def test_iocodeblock() -> None:
         """
 .. io-code-block::
 
-   .. input:: 
+   .. input::
       :language: python
       :linenos:
       :emphasize-lines: 1-2, 4
@@ -628,7 +628,7 @@ def test_iocodeblock() -> None:
 
    .. output::
       :emphasize-lines: 3
-    
+
       hello world1
       hello world2
       hello world3
@@ -662,7 +662,7 @@ hello world4</code></directive>
 .. io-code-block::
    :emphasize-lines: 1-2
 
-   .. input:: 
+   .. input::
       :language: python
 
       print('hello world1')
@@ -670,7 +670,7 @@ hello world4</code></directive>
       print('hello world3')
 
    .. output::
-    
+
       hello world1
       hello world2
       hello world3""",
@@ -1246,7 +1246,7 @@ def test_cta_banner() -> None:
    :url: https://university.mongodb.com/
    :icon: University
 
-   If you prefer learning through videos, try this lesson on `MongoDB University 
+   If you prefer learning through videos, try this lesson on `MongoDB University
    <https://university.mongodb.com/>`_
 """,
     )
@@ -1271,7 +1271,7 @@ def test_cta_banner() -> None:
         """
 .. cta-banner::
 
-   If you prefer learning through videos, try this lesson on `MongoDB University 
+   If you prefer learning through videos, try this lesson on `MongoDB University
    <https://university.mongodb.com/>`_
 """,
     )
@@ -1431,14 +1431,14 @@ def test_roles() -> None:
             <list enumtype="unordered">
             <listItem>
             <paragraph>
-            <reference refuri="https://docs.mongodb.com/manual/introduction/">
+            <reference refuri="https://www.mongodb.com/docs/manual/introduction/">
             <text>/introduction/</text>
             </reference>
             </paragraph>
             </listItem>
             <listItem>
             <paragraph>
-            <reference refuri="https://docs.mongodb.com/manual/introduction/">
+            <reference refuri="https://www.mongodb.com/docs/manual/introduction/">
             <text>Introduction to MongoDB</text></reference></paragraph>
             </listItem>
             <listItem>
@@ -2491,8 +2491,8 @@ def test_toctree() -> None:
 
    Title here </test1>
    /test2/faq
-   URL with title <https://docs.atlas.mongodb.com>
-   <https://docs.mongodb.com/stitch>
+   URL with title <https://www.mongodb.com/docs/atlas>
+   <https://www.mongodb.com/docs/stitch>
 """,
     )
     page.finish(diagnostics)
@@ -2502,7 +2502,7 @@ def test_toctree() -> None:
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://docs.atlas.mongodb.com'}]" />
+        <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://www.mongodb.com/docs/atlas'}]" />
         </root>""",
     )
 
@@ -2926,7 +2926,7 @@ def test_malformed_external_link() -> None:
     parser = rstparser.Parser(project_config, InlineJSONVisitor)
 
     page, diagnostics = parse_rst(
-        parser, path, """`Atlas Data Lake <https://docs.mongodb.com/datalake/>`"""
+        parser, path, """`Atlas Data Lake <https://www.mongodb.com/docs/datalake/>`"""
     )
     page.finish(diagnostics)
     assert [
@@ -2935,13 +2935,13 @@ def test_malformed_external_link() -> None:
     ] == [
         (
             IncorrectLinkSyntax,
-            ["`Atlas Data Lake <https://docs.mongodb.com/datalake/>`__"],
+            ["`Atlas Data Lake <https://www.mongodb.com/docs/datalake/>`__"],
         )
     ]
     check_ast_testing_string(
         page.ast,
         """
-<root fileid="test.rst"><literal><text>Atlas Data Lake &lt;https://docs.mongodb.com/datalake/&gt;</text></literal></root>
+<root fileid="test.rst"><literal><text>Atlas Data Lake &lt;https://www.mongodb.com/docs/datalake/&gt;</text></literal></root>
 """,
     )
 
@@ -3117,12 +3117,12 @@ Link to :opsmgr:`Ops Manager </page?q=true>`
         """
 <root fileid="../test.rst">
 <paragraph>
-    <text>Link to </text><reference refuri="https://docs.mongodb.com/compass/current/"><text>Compass</text></reference>
-    <text>Link to </text><reference refuri="https://docs.mongodb.com/charts/saas/path/"><text>Charts</text></reference>
-    <text>Link to </text><reference refuri="https://docs.atlas.mongodb.com/path/#hash"><text>Atlas</text></reference>
-    <text>Link to </text><reference refuri="https://docs.mongodb.com/guides/path/#hash"><text>Guides</text></reference>
-    <text>Link to </text><reference refuri="https://docs.cloudmanager.mongodb.com/test.csv"><text>Cloud Manager file</text></reference>
-    <text>Link to </text><reference refuri="https://docs.opsmanager.mongodb.com/current/page/?q=true"><text>Ops Manager</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/compass/current/"><text>Compass</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/charts/saas/path/"><text>Charts</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/atlas/path/#hash"><text>Atlas</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/guides/path/#hash"><text>Guides</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/cloudmanager/test.csv"><text>Cloud Manager file</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/opsmanager/current/page/?q=true"><text>Ops Manager</text></reference>
 </paragraph>
 </root>
 """,
