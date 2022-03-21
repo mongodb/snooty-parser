@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- An `eol` boolean option in `snooty.toml` (DOP-2771, #390).
+- Subdomain consolidation `rstspec.toml` changes (DOP-2808).
+
 ## [v0.13.1] - 2022-03-02
 
 - Rename "Android SDK" tab to "Java SDK" (#388).
