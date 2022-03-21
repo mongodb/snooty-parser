@@ -1140,7 +1140,7 @@ type = {link = "https://www.mongodb.com/docs/guides%s", ensure_trailing_slash = 
 
 [role.mms-docs]
 help = """Link to a page in the Cloud Manager documentation."""
-type = {link = "https://www.mongodb.com/docs/cloudmanager%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true}
 
 [role.mms-home]
 help = """Link to a MongoDB Cloud Services page."""
@@ -1331,11 +1331,11 @@ type = {link = "https://www.mongodb.com/docs/manual%s", ensure_trailing_slash = 
 
 [role.cloudmgr]
 help = """Link to a page in the Cloud Manager docs."""
-type = {link = "https://www.mongodb.com/docs/cloudmanager%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true}
 
 [role.opsmgr]
 help = """Link to a page in the MMS Ops Manager documentation."""
-type = {link = "https://www.mongodb.com/docs/opsmanager/current%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/ops-manager/current%s", ensure_trailing_slash = true}
 
 [role.realm]
 help = """Link to a page in the Realm docs."""
