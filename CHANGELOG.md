@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.2] - 2022-03-21
+
 - An `eol` boolean option in `snooty.toml` (DOP-2771, #390).
 - Subdomain consolidation `rstspec.toml` changes (DOP-2808).
 
