@@ -793,6 +793,41 @@ def test_codeblock() -> None:
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+    # Test source option
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code-block:: java
+   :copyable: false
+   :source: https://www.github.com/mongodb/snooty
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <code lang="java" source="https://www.github.com/mongodb/snooty">foo</code>
+        </root>""",
+    )
+
+    # Test empty source
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code-block:: java
+   :copyable: false
+   :source: 
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
 
 def test_literalinclude() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

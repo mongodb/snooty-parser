@@ -236,6 +236,7 @@ class JSONVisitor:
                 node.astext(),
                 node["linenos"],
                 node["lineno_start"] if "lineno_start" in node else None,
+                node["source"] if "source" in node else None,
             )
             top_of_state = self.state[-1]
             assert isinstance(top_of_state, n.Parent)
@@ -836,6 +837,7 @@ class JSONVisitor:
             lineno_start = (
                 options["lineno-start"] if "lineno-start" in options else None
             )
+            source = options["source"] if "source" in options else None
 
             code = n.Code(
                 span,
@@ -846,6 +848,7 @@ class JSONVisitor:
                 selected_content,
                 linenos,
                 lineno_start,
+                source,
             )
 
             doc.children.append(code)
@@ -1053,6 +1056,9 @@ def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
                         True
                         if "copyable" in node.options and node.options["copyable"]
                         else False
+                    )
+                    grandchild.source = (
+                        node.options["source"] if "source" in node.options else None
                     )
                     new_grandchildren.append(grandchild)
                 child.children = new_grandchildren
