@@ -1387,11 +1387,11 @@ type = {link = "https://www.mongodb.com/docs/realm-sdks/dotnet/latest/%s"}
 
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
-type = {link = "https://www.mongodb.com/drivers%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true}
 
 [role.driver]
 help = """Link to a driver's page in the Ecosystem docs."""
-type = {link = "https://www.mongodb.com/drivers%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true}
 
 [role.products]
 help = """Link to a page in the MongoDB Products site."""
