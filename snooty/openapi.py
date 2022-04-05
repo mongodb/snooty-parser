@@ -426,7 +426,7 @@ class OpenAPI:
 
                 stack.extend((cursor, subkey, x) for subkey, x in cursor.items())
             elif isinstance(cursor, list):
-                stack.extend((cursor, i, x) for i, x in enumerate(cursor))  # type: ignore
+                stack.extend((cursor, i, x) for i, x in enumerate(cursor))
 
         # Set up our operations
         for method, path, methods in self.resources():
