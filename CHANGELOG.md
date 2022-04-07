@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `source` option to `code-block` directives and the Code node (DOP-2743, #389).
+
 ## [v0.13.2] - 2022-03-21
 
 - An `eol` boolean option in `snooty.toml` (DOP-2771, #390).
