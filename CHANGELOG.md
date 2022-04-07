@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.3] - 2022-04-07
+
 ### Added
 
 - Add `source` option to `code-block` directives and the Code node (DOP-2743, #389).
