@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from .diagnostics import CannotOpenFile, ConfigurationProblem, SubstitutionRefError
-from .types import FileId
+from .n import FileId
 from .util_test import check_ast_testing_string, make_test
 
 

@@ -9,7 +9,7 @@ from typing import Dict, Union, cast
 import pytest
 
 from ..diagnostics import CannotOpenFile, UnsupportedFormat
-from ..types import FileId
+from ..n import FileId
 from ..util_test import make_test
 
 PAGE_TEXT = """

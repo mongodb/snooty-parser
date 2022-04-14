@@ -7,9 +7,10 @@ from ..diagnostics import (
     FailedToInheritRef,
     UnmarshallingError,
 )
+from ..n import FileId
 from ..page import Page
 from ..parser import EmbeddedRstParser
-from ..types import FileId, ProjectConfig
+from ..types import ProjectConfig
 from ..util_test import check_ast_testing_string, make_test
 from .extracts import GizaExtractsCategory
 

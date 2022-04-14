@@ -8,10 +8,11 @@ from typing import DefaultDict, Dict, List
 
 from . import n
 from .diagnostics import ConstantNotDeclared, Diagnostic, GitMergeConflictArtifactFound
+from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
 from .target_database import TargetDatabase
-from .types import BuildIdentifierSet, FileId, ProjectConfig, SerializableType
+from .types import BuildIdentifierSet, ProjectConfig
 from .util import ast_dive
 from .util_test import check_ast_testing_string, make_test
 

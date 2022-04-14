@@ -23,7 +23,7 @@ from .diagnostics import (
     TabMustBeDirective,
     TargetNotFound,
 )
-from .types import FileId
+from .n import FileId
 from .util_test import (
     ast_to_testing_string,
     check_ast_testing_string,

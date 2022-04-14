@@ -3,9 +3,10 @@ from typing import Any, Dict, List, cast
 
 import pytest
 
+from .n import FileId, SerializableType
 from .parser import Project
 from .test_project import Backend
-from .types import BuildIdentifierSet, FileId, SerializableType
+from .types import BuildIdentifierSet
 from .util_test import ast_to_testing_string, check_ast_testing_string
 
 

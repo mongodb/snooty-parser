@@ -12,10 +12,11 @@ from xml.sax.saxutils import escape
 
 from . import n, rstparser
 from .diagnostics import Diagnostic
+from .n import FileId, SerializableType
 from .page import Page
 from .parser import JSONVisitor, Project, ProjectBackend
 from .parser import parse_rst as parse_rst_multi
-from .types import BuildIdentifierSet, FileId, SerializableType
+from .types import BuildIdentifierSet
 
 __all__ = ("eprint", "ast_to_testing_string", "assert_etree_equals")
 

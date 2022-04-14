@@ -3,8 +3,8 @@ from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import n
+from .n import FileId
 from .page import Page
-from .types import FileId
 from .util import CancelledException
 
 

@@ -9,7 +9,8 @@ from yaml.composer import Composer
 
 from ..diagnostics import Diagnostic, ErrorParsingYAMLFile, UnmarshallingError
 from ..flutter import LoadError, check_type, mapping_dict
-from ..types import ProjectConfig, SerializableType
+from ..n import SerializableType
+from ..types import ProjectConfig
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)

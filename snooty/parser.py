@@ -64,18 +64,12 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
+from .n import FileId, SerializableType
 from .openapi import OpenAPI
 from .page import Page, PendingTask
 from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
-from .types import (
-    BuildIdentifierSet,
-    FileId,
-    ParsedBannerConfig,
-    ProjectConfig,
-    SerializableType,
-    StaticAsset,
-)
+from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
