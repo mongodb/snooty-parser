@@ -273,6 +273,7 @@ class Spec:
     role: Dict[str, Role] = field(default_factory=dict)
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
     tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
+    data_fields: List[str] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
 

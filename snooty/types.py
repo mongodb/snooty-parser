@@ -9,7 +9,7 @@ from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 import toml
 from typing_extensions import Protocol
 
-from . import n
+from . import n, specparser
 from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
@@ -145,7 +145,8 @@ class ProjectConfig:
     toc_landing_pages: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
-    bundle: BundleConfig = field(default_factory=lambda: BundleConfig())
+    bundle: BundleConfig = field(default_factory=BundleConfig)
+    data: Dict[str, object] = field(default_factory=dict)
 
     @property
     def source_path(self) -> Path:
@@ -172,6 +173,9 @@ class ProjectConfig:
                     result, parsed_diagnostics = check_type(
                         ProjectConfig, data
                     ).render_constants()
+
+                    parsed_diagnostics.extend(cls.validate_data(result.data))
+
                     return result, parsed_diagnostics
             except FileNotFoundError:
                 pass
@@ -235,3 +239,15 @@ class ProjectConfig:
     def substitute(self, source: str) -> Tuple[str, List[Diagnostic]]:
         """Substitute all placeholders within a string."""
         return self._substitute(source, self.constants)
+
+    @staticmethod
+    def validate_data(data: Dict[str, object]) -> List[Diagnostic]:
+        diagnostics: List[Diagnostic] = []
+        permitted_fields = specparser.Spec.get().data_fields
+        for key in data:
+            if key not in permitted_fields:
+                diagnostics.append(
+                    UnmarshallingError(f'Data field "{key}" not permitted', 0)
+                )
+
+        return diagnostics
