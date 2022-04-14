@@ -5,9 +5,10 @@ import pytest
 
 from . import n
 from .diagnostics import AmbiguousTarget, MissingTocTreeEntry, TargetNotFound
+from .n import FileId
 from .parser import Project
 from .test_project import Backend
-from .types import BuildIdentifierSet, FileId
+from .types import BuildIdentifierSet
 from .util_test import (
     ast_to_testing_string,
     check_ast_testing_string,

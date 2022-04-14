@@ -55,9 +55,10 @@ from .diagnostics import (
     UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
-from .types import FileId, ProjectConfig, SerializableType
+from .types import ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)

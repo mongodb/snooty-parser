@@ -5,8 +5,8 @@ from enum import Enum, auto
 from typing import Dict, Iterable, List, Union, cast
 
 from .. import n
+from ..n import FileId
 from ..page import Page
-from ..types import FileId
 
 logger = logging.getLogger(__name__)
 

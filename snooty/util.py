@@ -46,7 +46,6 @@ import watchdog.observers
 import watchdog.observers.api
 
 from . import n
-from .types import FileId
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -66,13 +65,13 @@ if PACKAGE_ROOT.is_file():
 
 def reroot_path(
     filename: PurePosixPath, docpath: PurePath, project_root: Path
-) -> Tuple[FileId, Path]:
+) -> Tuple[n.FileId, Path]:
     """Files within a project may refer to other files. Return a canonical path
     relative to the project root."""
     if filename.is_absolute():
-        rel_fn = FileId(*filename.parts[1:])
+        rel_fn = n.FileId(*filename.parts[1:])
     else:
-        rel_fn = FileId(*docpath.parent.joinpath(filename).parts).collapse_dots()
+        rel_fn = n.FileId(*docpath.parent.joinpath(filename).parts).collapse_dots()
     return rel_fn, project_root.joinpath(rel_fn).resolve()
 
 

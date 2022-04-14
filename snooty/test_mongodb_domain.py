@@ -3,9 +3,10 @@ from pathlib import Path
 import pytest
 
 from . import n
+from .n import FileId
 from .parser import Project
 from .test_project import Backend
-from .types import BuildIdentifierSet, FileId
+from .types import BuildIdentifierSet
 from .util_test import check_ast_testing_string
 
 

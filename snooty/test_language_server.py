@@ -10,7 +10,7 @@ import pytest
 from . import language_server
 from .diagnostics import DocUtilsParseError, InvalidTableStructure
 from .flutter import check_type, checked
-from .types import FileId, SerializableType
+from .n import FileId, SerializableType
 from .util_test import ast_to_testing_string, check_ast_testing_string
 
 CWD_URL = "file://" + Path().resolve().as_posix()

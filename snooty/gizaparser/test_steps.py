@@ -2,9 +2,10 @@ from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Tuple
 
 from ..diagnostics import Diagnostic
+from ..n import FileId
 from ..page import Page
 from ..parser import EmbeddedRstParser
-from ..types import FileId, ProjectConfig
+from ..types import ProjectConfig
 from ..util_test import ast_to_testing_string, check_ast_testing_string, make_test
 from .steps import GizaStepsCategory
 

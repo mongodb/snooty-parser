@@ -8,10 +8,10 @@ from pytest import raises
 from . import n
 from .diagnostics import FetchError
 from .intersphinx import Inventory, TargetDefinition, fetch_inventory
+from .n import FileId
 from .parser import Project
 from .target_database import TargetDatabase
 from .test_project import Backend
-from .types import FileId
 from .util_test import make_test
 
 TESTING_CACHE_DIR = Path(f".intersphinx_cache-{os.getpid()}")

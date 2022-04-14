@@ -12,7 +12,8 @@ from typing_extensions import Protocol
 
 from . import intersphinx, n, specparser
 from .cache import Cache
-from .types import FileId, ProjectConfig, normalize_target
+from .n import FileId
+from .types import ProjectConfig, normalize_target
 
 logger = logging.getLogger(__name__)
 

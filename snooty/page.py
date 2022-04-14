@@ -4,8 +4,9 @@ from typing import Dict, List, Optional, Set
 
 from . import n
 from .diagnostics import Diagnostic
+from .n import FileId
 from .target_database import EmptyProjectInterface, ProjectInterface
-from .types import FileId, StaticAsset
+from .types import StaticAsset
 
 
 class PendingTask:

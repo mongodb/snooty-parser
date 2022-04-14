@@ -28,9 +28,10 @@ import pyls_jsonrpc.streams
 from . import n, util
 from .diagnostics import Diagnostic
 from .flutter import check_type, checked
+from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
-from .types import BuildIdentifierSet, FileId, SerializableType
+from .types import BuildIdentifierSet
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 Uri = str

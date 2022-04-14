@@ -17,11 +17,8 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId as FD
-from .n import SerializableType as ST
+from .n import FileId
 
-SerializableType = ST
-FileId = FD
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
