@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 
-import toml
+import tomli
 from typing_extensions import Protocol
 
 from . import n, specparser
@@ -167,8 +167,8 @@ class ProjectConfig:
         diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
-                with path.joinpath("snooty.toml").open(encoding="utf-8") as f:
-                    data = toml.load(f)
+                with path.joinpath("snooty.toml").open("rb") as f:
+                    data = tomli.load(f)
                     data["root"] = path
                     result, parsed_diagnostics = check_type(
                         ProjectConfig, data

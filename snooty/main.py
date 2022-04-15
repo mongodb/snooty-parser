@@ -30,7 +30,7 @@ from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 
 import pymongo
-import toml
+import tomli
 import watchdog.events
 import watchdog.observers
 from docopt import docopt
@@ -165,8 +165,8 @@ class MongoBackend(Backend):
         ] = defaultdict(list)
 
     def _config_db(self) -> str:
-        with PACKAGE_ROOT.joinpath("config.toml").open(encoding="utf-8") as f:
-            config = toml.load(f)
+        with PACKAGE_ROOT.joinpath("config.toml").open("rb") as f:
+            config = tomli.load(f)
             db_name = config["environments"][SNOOTY_ENV]["db"]
             assert isinstance(db_name, str)
             return db_name

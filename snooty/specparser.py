@@ -25,7 +25,7 @@ from typing import (
 import docutils.nodes
 import docutils.parsers.rst
 import docutils.parsers.rst.directives
-import toml
+import tomli
 from typing_extensions import Protocol
 
 from . import util
@@ -280,7 +280,7 @@ class Spec:
     @classmethod
     def loads(cls, data: str) -> "Spec":
         """Load a spec from a string."""
-        root = check_type(cls, toml.loads(data))
+        root = check_type(cls, tomli.loads(data))
         if root.meta.version != SPEC_VERSION:
             raise ValueError(f"Unknown spec version: {root.meta.version}")
 

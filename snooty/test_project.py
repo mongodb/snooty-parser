@@ -267,7 +267,7 @@ name = "invalid_data"
 
 [data]
 source_page_template = "https://github.com/mongodb/docs/blob/master/source/%s.txt"
-invalid = "gooblygoobly"
+invalid = {foo = "bar"}
 """,
             Path("source/index.txt"): r"",
         }
