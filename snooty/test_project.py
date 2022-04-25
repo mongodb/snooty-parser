@@ -7,7 +7,12 @@ from pathlib import Path, PurePath
 from typing import DefaultDict, Dict, List
 
 from . import n
-from .diagnostics import ConstantNotDeclared, Diagnostic, GitMergeConflictArtifactFound
+from .diagnostics import (
+    ConstantNotDeclared,
+    Diagnostic,
+    GitMergeConflictArtifactFound,
+    UnmarshallingError,
+)
 from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
@@ -250,3 +255,23 @@ def test_target_wipe() -> None:
             query_result = project._project.targets["std:label:gooblygooblygoo"][0]
             assert isinstance(query_result, TargetDatabase.InternalResult)
             assert query_result.result[0] == "index"
+
+
+def test_invalid_data() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): r"""
+name = "invalid_data"
+
+[data]
+source_page_template = "https://github.com/mongodb/docs/blob/master/source/%s.txt"
+invalid = {foo = "bar"}
+""",
+            Path("source/index.txt"): r"",
+        }
+    ) as result:
+        assert [type(d) for d in result.diagnostics[FileId("snooty.toml")]] == [
+            UnmarshallingError
+        ]

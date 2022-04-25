@@ -14,7 +14,7 @@ requires = [
     "docutils >= 0.16, < 0.18",
     "watchdog ~= 1.0",
     "requests ~= 2.24",
-    "toml ~= 0.10",
+    "tomli ~= 2.0",
     "pyyaml ~= 5.3",
     "typing-extensions >= 3.7",
     "python-jsonrpc-server ~= 0.3.4",
@@ -30,8 +30,7 @@ dev = [
     "mypy == 0.942",
     "pyinstaller ~= 4.10",
     "isort ~= 5.10.1",
-    "types-requests ~= 2.26.1",
-    "types-toml ~= 0.10.1"
+    "types-requests ~= 2.26.1"
 ]
 test = [
     "pytest ~= 7.1.1",
