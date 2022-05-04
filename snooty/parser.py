@@ -727,85 +727,79 @@ class JSONVisitor:
             # Capture the original file-length before splicing it
             len_file = len(lines)
 
-            if name == "literalinclude":
-
-                def _locate_text(text: str) -> int:
-                    """
-                    Searches the literally-included file ('lines') for the specified text. If no such text is found,
-                    add an InvalidLiteralInclude diagnostic.
-                    """
-                    assert isinstance(text, str)
-                    loc = next(
-                        (idx for idx, line in enumerate(lines) if text in line), -1
+            def _locate_text(text: str) -> int:
+                """
+                Searches the literally-included file ('lines') for the specified text. If no such text is found,
+                add an InvalidLiteralInclude diagnostic.
+                """
+                assert isinstance(text, str)
+                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
+                if loc < 0:
+                    self.diagnostics.append(
+                        InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
                     )
-                    if loc < 0:
-                        self.diagnostics.append(
-                            InvalidLiteralInclude(
-                                f'"{text}" not found in {filepath}', line
-                            )
-                        )
-                    return loc
+                return loc
 
-                # Locate the start_after query
-                start_after = 0
-                if "start-after" in options:
-                    start_after_text = options["start-after"]
-                    # start_after = self._locate_text(start_after_text, lines, line, text)
-                    start_after = _locate_text(start_after_text)
-                    # Only increment start_after if text is specified, to avoid capturing the start_after_text
-                    start_after += 1
+            # Locate the start_after query
+            start_after = 0
+            if "start-after" in options:
+                start_after_text = options["start-after"]
+                # start_after = self._locate_text(start_after_text, lines, line, text)
+                start_after = _locate_text(start_after_text)
+                # Only increment start_after if text is specified, to avoid capturing the start_after_text
+                start_after += 1
 
-                # ...now locate the end_before query
+            # ...now locate the end_before query
+            end_before = len(lines)
+            if "end-before" in options:
+                end_before_text = options["end-before"]
+                # end_before = self._locate_text(end_before_text, lines, line, text)
+                end_before = _locate_text(end_before_text)
+
+            # Check that start_after_text precedes end_before_text (and end_before exists)
+            if start_after >= end_before >= 0:
+                self.diagnostics.append(
+                    InvalidLiteralInclude(
+                        f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                        line,
+                    )
+                )
+
+            # If we failed to locate end_before text, default to the end-of-file
+            if end_before == -1:
                 end_before = len(lines)
-                if "end-before" in options:
-                    end_before_text = options["end-before"]
-                    # end_before = self._locate_text(end_before_text, lines, line, text)
-                    end_before = _locate_text(end_before_text)
 
-                # Check that start_after_text precedes end_before_text (and end_before exists)
-                if start_after >= end_before >= 0:
+            lines = lines[start_after:end_before]
+
+            dedent = 0
+            if "dedent" in options:
+                # Dedent is specified as a flag
+                if isinstance(options["dedent"], bool):
+                    # Deduce a reasonable dedent
+                    try:
+                        dedent = min(
+                            len(line) - len(line.lstrip())
+                            for line in lines
+                            if len(line.lstrip()) > 0
+                        )
+                    except ValueError:
+                        # Handle the (unlikely) case where there are no non-empty lines
+                        dedent = 0
+                # Dedent is specified as a nonnegative integer (number of characters):
+                # Note: since boolean is a subtype of int, this conditonal must follow the
+                # above bool-type conditional.
+                elif isinstance(options["dedent"], int):
+                    dedent = options["dedent"]
+                else:
                     self.diagnostics.append(
                         InvalidLiteralInclude(
-                            f'"{end_before_text}" precedes "{start_after_text}" in {filepath}',
+                            f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
                             line,
                         )
                     )
+                    return doc
 
-                # If we failed to locate end_before text, default to the end-of-file
-                if end_before == -1:
-                    end_before = len(lines)
-
-                lines = lines[start_after:end_before]
-
-                dedent = 0
-                if "dedent" in options:
-                    # Dedent is specified as a flag
-                    if isinstance(options["dedent"], bool):
-                        # Deduce a reasonable dedent
-                        try:
-                            dedent = min(
-                                len(line) - len(line.lstrip())
-                                for line in lines
-                                if len(line.lstrip()) > 0
-                            )
-                        except ValueError:
-                            # Handle the (unlikely) case where there are no non-empty lines
-                            dedent = 0
-                    # Dedent is specified as a nonnegative integer (number of characters):
-                    # Note: since boolean is a subtype of int, this conditonal must follow the
-                    # above bool-type conditional.
-                    elif isinstance(options["dedent"], int):
-                        dedent = options["dedent"]
-                    else:
-                        self.diagnostics.append(
-                            InvalidLiteralInclude(
-                                f'Dedent "{dedent}" of type {type(dedent)}; expected nonnegative integer or flag',
-                                line,
-                            )
-                        )
-                        return doc
-
-                lines = [line[dedent:] for line in lines]
+            lines = [line[dedent:] for line in lines]
 
             emphasize_lines = None
             if "emphasize-lines" in options:
