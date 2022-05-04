@@ -1743,6 +1743,22 @@ help = """Stitch Function Context"""
 help = """Data Lake Configuration Object"""
 prefix = "datalakeconf"
 
+[rstobject."mongodb:datalakeconf-adl"]
+help = """Data Lake ADL Configuration Object"""
+prefix = "datalakeconf-adl"
+
+[rstobject."mongodb:datalakeconf-atlas"]
+help = """Data Lake Atlas Configuration Object"""
+prefix = "datalakeconf-atlas"
+
+[rstobject."mongodb:datalakeconf-aws"]
+help = """Data Lake AWS Configuration Object"""
+prefix = "datalakeconf-aws"
+
+[rstobject."mongodb:datalakeconf-http"]
+help = """Data Lake HTTP Configuration Object"""
+prefix = "datalakeconf-http"
+
 [rstobject."mongodb:opsmgrkube"]
 help = """Kubernetes Operator Ops Manager Resource Setting"""
 prefix = "opsmgrkube"
