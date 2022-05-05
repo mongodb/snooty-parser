@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.4] - 2022-05-05
+
 ### Added
 
 - Support adding arbitrary data to `snooty.toml` files via the `data_fields` key in rstspec.toml (DOP-2657, #396).
