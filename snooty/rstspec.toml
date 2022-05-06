@@ -509,8 +509,8 @@ example = """.. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
       :start-after: ${2:text to start after (Optional}}
       :end-before: ${3:text to end before (Optional}}
-      :dedent:
-      :lineno-start:
+      :dedent: ${4:number of chars to dedent by}
+      :lineno-start: ${5:nonnegative integer to start line numbering from}
       :emphasize-lines: (string)
       :linenos: (flag)
 """
@@ -531,8 +531,8 @@ example = """.. output:: ${0:code output or </path/to/file>}
       :language: ${1:language}
       :start-after: ${2:text to start after (Optional}}
       :end-before: ${3:text to end before (Optional}}
-      :dedent:
-      :lineno-start:
+      :dedent: ${4:number of chars to dedent by}
+      :lineno-start: ${5:nonnegative integer to start line numbering from}
       :emphasize-lines: (string)
       :linenos: (flag)
       :visible: (bool)
