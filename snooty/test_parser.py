@@ -820,7 +820,7 @@ def test_codeblock() -> None:
         """
 .. code-block:: java
    :copyable: false
-   :source: 
+   :source:
 
    foo""",
     )
@@ -3228,3 +3228,23 @@ Prerequisites
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert diagnostics[0].start[0] == 13
+
+
+def test_field_list_in_list() -> None:
+    """Tests DOP-2975"""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+a. :hash: json
+
+#. :hash: json
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 2

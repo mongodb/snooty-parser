@@ -205,7 +205,6 @@ class JSONVisitor:
                             util.get_line(node.children[0]),
                         )
                     )
-                    raise docutils.nodes.SkipNode()
             else:
                 # Handle case where :field: does not appear in a directive
                 self.diagnostics.append(
@@ -214,6 +213,7 @@ class JSONVisitor:
                         util.get_line(node.children[0]),
                     )
                 )
+            raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.field_name):
             raise docutils.nodes.SkipNode()
         elif isinstance(node, docutils.nodes.field_body):
