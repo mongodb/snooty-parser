@@ -42,7 +42,7 @@ from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
-from .types import BuildIdentifierSet
+from .types import BuildIdentifierSet, ProjectConfig
 from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
@@ -280,6 +280,9 @@ class ZipBackend(Backend):
         self.metadata: Dict[str, SerializableType] = {}
         self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
         self.assets_written: Set[str] = set()
+
+    def on_config(self, config: ProjectConfig) -> None:
+        self.metadata["project"] = config.name
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         if not diagnostics:
