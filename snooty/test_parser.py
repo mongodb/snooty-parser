@@ -654,6 +654,52 @@ hello world4</code></directive>
 </root>""",
     )
 
+    # Test full support of literalinclude options for input/output directives
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. io-code-block::
+
+   .. input:: /test_parser/includes/sample_code.py
+      :language: python
+      :linenos:
+      :start-after: start example 1
+      :end-before: end example 2
+      :dedent: 4
+      :lineno-start: 2
+
+   .. output:: /test_parser/includes/sample_code.py
+      :language: python
+      :linenos:
+      :start-after: start example 2
+      :end-before: end example 2
+      :dedent: 4
+      :lineno-start: 6""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="io-code-block">
+        <directive name="input" language="python" linenos="True" start-after="start example 1" end-before="end example 2" dedent="4" lineno-start="2">
+            <text>/test_parser/includes/sample_code.py</text>
+            <code lang="python" linenos="True" lineno_start="2">print("test dedent")
+# end example 1
+
+# start example 2
+print("hello world")
+            </code>
+        </directive>
+        <directive name="output" language="python" linenos="True" start-after="start example 2" end-before="end example 2" dedent="4" lineno-start="6">
+            <text>/test_parser/includes/sample_code.py</text><code lang="python" linenos="True" lineno_start="6">print("hello world")</code>
+       </directive>
+    </directive>
+</root>""",
+    )
+
     # Test a io-code-block with incorrect options linenos and emphasize-lines
     page, diagnostics = parse_rst(
         parser,
