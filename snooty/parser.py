@@ -1202,6 +1202,9 @@ class ProjectBackend:
     def flush(self) -> None:
         ...
 
+    def close(self) -> None:
+        pass
+
 
 class PageDatabase:
     """A database of FileId->Page mappings that ensures the postprocessing pipeline

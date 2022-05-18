@@ -7,6 +7,7 @@ Usage:
 
 Options:
   -h --help                 Show this screen.
+  --output=<path>             The path to which the output manifest should be written.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
   --no-caching              Disable HTTP response caching.
@@ -209,11 +210,11 @@ class MongoBackend(Backend):
         build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
-        property_name = "/".join(prefix)
+        property_name_with_prefix = "/".join(prefix)
 
         # Construct filter for retrieving build documents
         document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": property_name,
+            "page_id": property_name_with_prefix,
             **self.construct_build_identifiers_filter(build_identifiers),
         }
 
@@ -259,6 +260,11 @@ class MongoBackend(Backend):
                 upsert=True,
             )
         )
+
+    def close(self) -> None:
+        if self.client:
+            print("Closing connection...")
+            self.client.close()
 
     @staticmethod
     def construct_build_identifiers_filter(
@@ -407,11 +413,7 @@ def main() -> None:
             os.unlink(output_path)
         raise
     finally:
-        if isinstance(backend, ZipBackend):
-            backend.close()
-        elif connection:
-            print("Closing connection...")
-            connection.close()
+        backend.close()
 
     if args["build"] and backend.total_errors > 0:
         exit_code = (
