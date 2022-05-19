@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.5] - 2022-05-19
+
 ### Added
 
 - Literalinclude support for input/output directives (DOP-2952, #398).
