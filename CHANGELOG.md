@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Literalinclude support for input/output directives (DOP-2952, #398).
+
+### Fixed
+
+- Correctly handle field lists existing within a list (DOP-2975).
+
 ## [v0.13.4] - 2022-05-05
 
 ### Added
