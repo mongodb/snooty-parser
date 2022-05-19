@@ -1,12 +1,13 @@
 """Snooty.
 
 Usage:
-  snooty build [--no-caching] <source-path> [<mongodb-url>] [options]
+  snooty build [--no-caching] <source-path> [<mongodb-url>] [--output=<path>] [options]
   snooty watch [--no-caching] <source-path>
   snooty [--no-caching] language-server
 
 Options:
   -h --help                 Show this screen.
+  --output=<path>             The path to which the output manifest should be written.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
   --no-caching              Disable HTTP response caching.
@@ -24,11 +25,13 @@ import logging
 import multiprocessing
 import os
 import sys
+import zipfile
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
+import bson
 import pymongo
 import tomli
 import watchdog.events
@@ -40,7 +43,7 @@ from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
-from .types import BuildIdentifierSet
+from .types import BuildIdentifierSet, ProjectConfig
 from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
@@ -90,6 +93,7 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 class Backend(ProjectBackend):
     def __init__(self) -> None:
         self.total_errors = 0
+        self.assets_written: Set[str] = set()
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
         pass
@@ -127,6 +131,36 @@ class Backend(ProjectBackend):
         if PARANOID_MODE:
             page.ast.verify()
 
+        fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
+
+        uploadable_assets = [
+            asset for asset in page.static_assets if asset.can_upload()
+        ]
+
+        document = {
+            "page_id": fully_qualified_pageid,
+            "filename": page_id.as_posix(),
+            "ast": page.ast.serialize(),
+            "source": page.source,
+            "static_assets": [
+                {"checksum": asset.get_checksum(), "key": asset.key}
+                for asset in uploadable_assets
+            ],
+        }
+
+        if page.query_fields:
+            document.update({"query_fields": page.query_fields})
+
+        self.handle_document(build_identifiers, page_id.without_known_suffix, document)
+
+        for static_asset in uploadable_assets:
+            checksum = static_asset.get_checksum()
+            if checksum in self.assets_written:
+                continue
+
+            self.assets_written.add(checksum)
+            self.handle_asset(checksum, static_asset.data)
+
     def on_update_metadata(
         self,
         prefix: List[str],
@@ -141,17 +175,16 @@ class Backend(ProjectBackend):
     def flush(self) -> None:
         pass
 
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        pass
 
-def construct_build_identifiers_filter(
-    build_identifiers: BuildIdentifierSet,
-) -> Dict[str, Union[str, Dict[str, Any]]]:
-    """Given a dictionary of build identifiers associated with build, construct
-    a filter to properly query MongoDB for associated documents.
-    """
-    return {
-        key: (value if value else {"$exists": False})
-        for (key, value) in build_identifiers.items()
-    }
+    def handle_asset(self, checksum: str, asset: Union[str, bytes]) -> None:
+        pass
 
 
 class MongoBackend(Backend):
@@ -171,78 +204,18 @@ class MongoBackend(Backend):
             assert isinstance(db_name, str)
             return db_name
 
-    def on_update(
-        self,
-        prefix: List[str],
-        build_identifiers: BuildIdentifierSet,
-        page_id: FileId,
-        page: Page,
-    ) -> None:
-        super().on_update(prefix, build_identifiers, page_id, page)
-
-        uploadable_assets = [
-            asset for asset in page.static_assets if asset.can_upload()
-        ]
-
-        fully_qualified_pageid = "/".join(prefix + [page_id.without_known_suffix])
-
-        # Construct filter for retrieving build documents
-        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": fully_qualified_pageid,
-            **construct_build_identifiers_filter(build_identifiers),
-        }
-
-        document = {
-            "page_id": fully_qualified_pageid,
-            **{
-                key: value
-                for (key, value) in build_identifiers.items()
-                if value is not None
-            },
-            "prefix": prefix,
-            "filename": page_id.as_posix(),
-            "ast": page.ast.serialize(),
-            "source": page.source,
-            "created_at": datetime.utcnow(),
-            "static_assets": [
-                {"checksum": asset.get_checksum(), "key": asset.key}
-                for asset in uploadable_assets
-            ],
-        }
-
-        if page.query_fields:
-            document.update({"query_fields": page.query_fields})
-
-        self.pending_writes[COLL_DOCUMENTS].append(
-            pymongo.ReplaceOne(document_filter, document, upsert=True)
-        )
-
-        for static_asset in uploadable_assets:
-            self.pending_writes[COLL_ASSETS].append(
-                pymongo.UpdateOne(
-                    {"_id": static_asset.get_checksum()},
-                    {
-                        "$setOnInsert": {
-                            "_id": static_asset.get_checksum(),
-                            "data": static_asset.data,
-                        }
-                    },
-                    upsert=True,
-                )
-            )
-
     def on_update_metadata(
         self,
         prefix: List[str],
         build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
     ) -> None:
-        property_name = "/".join(prefix)
+        property_name_with_prefix = "/".join(prefix)
 
         # Construct filter for retrieving build documents
         document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": property_name,
-            **construct_build_identifiers_filter(build_identifiers),
+            "page_id": property_name_with_prefix,
+            **self.construct_build_identifiers_filter(build_identifiers),
         }
 
         # Write to Atlas if field is not an empty dictionary
@@ -258,6 +231,110 @@ class MongoBackend(Backend):
                 pending_writes, ordered=False
             )
         self.pending_writes.clear()
+
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
+            "page_id": fully_qualified_pageid,
+            **self.construct_build_identifiers_filter(build_identifiers),
+        }
+
+        self.pending_writes[COLL_DOCUMENTS].append(
+            pymongo.ReplaceOne(document_filter, document, upsert=True)
+        )
+
+    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
+        self.pending_writes[COLL_ASSETS].append(
+            pymongo.UpdateOne(
+                {"_id": checksum},
+                {
+                    "$setOnInsert": {
+                        "_id": checksum,
+                        "data": data,
+                    }
+                },
+                upsert=True,
+            )
+        )
+
+    def close(self) -> None:
+        if self.client:
+            print("Closing connection...")
+            self.client.close()
+
+    @staticmethod
+    def construct_build_identifiers_filter(
+        build_identifiers: BuildIdentifierSet,
+    ) -> Dict[str, Union[str, Dict[str, Any]]]:
+        """Given a dictionary of build identifiers associated with build, construct
+        a filter to properly query MongoDB for associated documents.
+        """
+        return {
+            key: (value if value else {"$exists": False})
+            for (key, value) in build_identifiers.items()
+        }
+
+
+class ZipBackend(Backend):
+    def __init__(self, zip: zipfile.ZipFile) -> None:
+        super(ZipBackend, self).__init__()
+        self.zip = zip
+        self.metadata: Dict[str, SerializableType] = {}
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        self.assets_written: Set[str] = set()
+
+    def on_config(self, config: ProjectConfig) -> None:
+        self.metadata["project"] = config.name
+
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        if not diagnostics:
+            return
+
+        super().on_diagnostics(path, diagnostics)
+        self.diagnostics[path].extend(diagnostics)
+
+    def handle_document(
+        self,
+        build_identifiers: BuildIdentifierSet,
+        fully_qualified_pageid: str,
+        document: Dict[str, Any],
+    ) -> None:
+        self.zip.writestr(
+            f"documents/{fully_qualified_pageid}.bson", bson.encode(document)
+        )
+
+    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
+        self.zip.writestr(f"assets/{checksum}", data)
+
+    def on_update_metadata(
+        self,
+        prefix: List[str],
+        build_identifiers: BuildIdentifierSet,
+        field: Dict[str, SerializableType],
+    ) -> None:
+        if field:
+            self.metadata.update(field)
+
+    def flush(self) -> None:
+        for key, diagnostics in self.diagnostics.items():
+            self.zip.writestr(
+                f"diagnostics/{key.as_posix()}.bson",
+                bson.encode(
+                    {
+                        "diagnostics": [
+                            diagnostic.serialize() for diagnostic in diagnostics
+                        ]
+                    }
+                ),
+            )
+
+    def close(self) -> None:
+        self.zip.writestr("site.bson", bson.encode(self.metadata))
+        self.zip.close()
 
 
 def _generate_build_identifiers(args: Dict[str, Optional[str]]) -> BuildIdentifierSet:
@@ -299,10 +376,19 @@ def main() -> None:
         return
 
     url = args["<mongodb-url>"]
-    connection = (
-        None if not url else pymongo.MongoClient(url, password=getpass.getpass())
-    )
-    backend = MongoBackend(connection) if connection else Backend()
+    output_path = args["--output"]
+
+    connection: Optional[pymongo.MongoClient] = None
+
+    if url:
+        connection = pymongo.MongoClient(url, password=getpass.getpass())
+        backend: Backend = MongoBackend(connection)
+    elif output_path:
+        zf = zipfile.ZipFile(output_path, mode="w")
+        backend = ZipBackend(zf)
+    else:
+        backend = Backend()
+
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
     project = Project(root_path, backend, _generate_build_identifiers(args))
@@ -322,10 +408,12 @@ def main() -> None:
             observer.join()
     except KeyboardInterrupt:
         pass
+    except:
+        if output_path:
+            os.unlink(output_path)
+        raise
     finally:
-        if connection:
-            print("Closing connection...")
-            connection.close()
+        backend.close()
 
     if args["build"] and backend.total_errors > 0:
         exit_code = (

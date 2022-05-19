@@ -1161,6 +1161,9 @@ def get_giza_category(path: PurePath) -> str:
 
 
 class ProjectBackend:
+    def on_config(self, config: ProjectConfig) -> None:
+        pass
+
     def on_progress(self, progress: int, total: int, message: str) -> None:
         ...
 
@@ -1192,6 +1195,9 @@ class ProjectBackend:
 
     def flush(self) -> None:
         ...
+
+    def close(self) -> None:
+        pass
 
 
 class PageDatabase:
@@ -1458,6 +1464,7 @@ class _Project:
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
+        self.backend.on_config(self.config)
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.config.source_path.joinpath(fileid)
