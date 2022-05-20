@@ -151,7 +151,9 @@ class Backend(ProjectBackend):
         if page.query_fields:
             document.update({"query_fields": page.query_fields})
 
-        self.handle_document(build_identifiers, page_id.without_known_suffix, document)
+        self.handle_document(
+            build_identifiers, page_id, fully_qualified_pageid, document
+        )
 
         for static_asset in uploadable_assets:
             checksum = static_asset.get_checksum()
@@ -178,6 +180,7 @@ class Backend(ProjectBackend):
     def handle_document(
         self,
         build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
@@ -235,6 +238,7 @@ class MongoBackend(Backend):
     def handle_document(
         self,
         build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
@@ -300,11 +304,12 @@ class ZipBackend(Backend):
     def handle_document(
         self,
         build_identifiers: BuildIdentifierSet,
+        page_id: FileId,
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
         self.zip.writestr(
-            f"documents/{fully_qualified_pageid}.bson", bson.encode(document)
+            f"documents/{page_id.without_known_suffix}.bson", bson.encode(document)
         )
 
     def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:

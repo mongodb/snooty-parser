@@ -1,13 +1,17 @@
 import builtins
+import io
 import json
 import os
 import subprocess
 import sys
+import zipfile
+from pathlib import Path
 from typing import Any, List
 
 from . import main
 from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
 from .n import FileId
+from .parser import Project
 
 
 def test_backend() -> None:
@@ -82,3 +86,23 @@ def test_parser_failure() -> None:
         [sys.executable, "-m", "snooty", "build", "test_data/test_parser_failure"]
     )
     assert return_code == 1
+
+
+def test_manifest() -> None:
+    f = io.BytesIO()
+    zf = zipfile.ZipFile(f, mode="w")
+    backend = main.ZipBackend(zf)
+    with Project(Path("test_data/test_project/"), backend, {}) as project:
+        project.build()
+        backend.flush()
+        backend.close()
+
+        with zipfile.ZipFile(f, mode="r") as zf:
+            zf.testzip()
+            assert set(zf.namelist()) == set(
+                [
+                    "documents/index.bson",
+                    "site.bson",
+                    "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
+                ]
+            )
