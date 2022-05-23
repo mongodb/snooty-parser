@@ -242,6 +242,9 @@ class MongoBackend(Backend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
+        # Add the created_at field for a TTL index
+        document["created_at"] = datetime.utcnow()
+
         document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
             "page_id": fully_qualified_pageid,
             **self.construct_build_identifiers_filter(build_identifiers),
