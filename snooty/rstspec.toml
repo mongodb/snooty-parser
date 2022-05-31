@@ -1587,6 +1587,12 @@ type = {link = "https://quay.io/mongodb%s"}
 [role."qr-mdb"]
 type = {link = "https://quay.io/repository/mongodb%s"}
 
+[role."oas-atlas-tag"]
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/#tag%s"}
+
+[role."oas-atlas-op"]
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/#operation%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
