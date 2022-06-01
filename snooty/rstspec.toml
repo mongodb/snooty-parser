@@ -1357,6 +1357,10 @@ type = {link = "https://www.mongodb.com/docs/realm%s", ensure_trailing_slash = t
 [role.stitch]
 inherit = "realm"
 
+[role.appservices]
+help = """Link to a page in the App Services docs."""
+type = {link = "https://www.mongodb.com/docs/atlas/app-services%s", ensure_trailing_slash = true}
+
 [role.mdb-shell]
 help = """Link to a page in the MongoDB Shell docs."""
 type = {link = "https://www.mongodb.com/docs/mongodb-shell%s", ensure_trailing_slash = true}
