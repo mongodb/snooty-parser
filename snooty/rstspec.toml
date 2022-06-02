@@ -1796,6 +1796,9 @@ prefix = "opsmgrkube"
 help = "Automatic Client-Side Field Level Encrytion Rules Keyword"
 prefix = "autoencryptkeyword"
 
+[rstobject."mongodb:c2cstate"]
+help = """mongosync State"""
+
 [tabs]
 cloud-providers = [
   {id = "aws", title = "AWS"},
