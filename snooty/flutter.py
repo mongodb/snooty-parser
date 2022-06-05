@@ -81,7 +81,7 @@ class _TypeThunk:
             fields: Dict[str, _Field] = {
                 field.name: _Field(
                     field.default_factory
-                    if field.default_factory is not MISSING  # type: ignore
+                    if field.default_factory is not MISSING
                     else (
                         (make_factory(field.default))
                         if field.default is not MISSING

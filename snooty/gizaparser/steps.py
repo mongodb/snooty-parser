@@ -29,7 +29,7 @@ class Action(HeadingMixin):
 
         if heading_nodes:
             nodes_to_append_children: MutableSequence[n.Node] = []
-            section = n.Section((self.line,), nodes_to_append_children)  # type: ignore
+            section = n.Section((self.line,), nodes_to_append_children)
             section.children = nodes_to_append_children
             all_nodes.append(section)
 
@@ -82,7 +82,7 @@ class Step(Inheritable, HeadingMixin):
 
     def render(self, page: Page, rst_parser: EmbeddedRstParser) -> n.Node:
         children: MutableSequence[n.Node] = []
-        root = n.Section((self.line,), children)  # type: ignore
+        root = n.Section((self.line,), children)
 
         children.extend(self.render_heading(rst_parser))
 

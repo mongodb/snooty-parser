@@ -484,7 +484,7 @@ class JSONVisitor:
                 item.term.append(target)
 
         elif isinstance(popped, n.Directive) and popped.name == "step":
-            popped.children = [n.Section((util.get_line(node),), popped.children)]  # type: ignore
+            popped.children = [n.Section((util.get_line(node),), popped.children)]
 
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
@@ -1533,7 +1533,7 @@ class _Project:
                     giza_node.path, create_page, giza_node.data
                 )
                 path = giza_node.path
-                diagnostics.setdefault(path).extend(file_diagnostics)
+                diagnostics.setdefault(path, []).extend(file_diagnostics)
         else:
             raise ValueError("Unknown file type: " + str(path))
 
