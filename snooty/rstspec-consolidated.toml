@@ -1351,7 +1351,7 @@ help = """Link to a page in the MMS Ops Manager documentation."""
 type = {link = "https://www.mongodb.com/docs/ops-manager/current%s", ensure_trailing_slash = true}
 
 [role.realm]
-help = """Link to a page in the Realm docs."""
+help = """Link to a page in the Realm SDK docs."""
 type = {link = "https://www.mongodb.com/docs/realm%s", ensure_trailing_slash = true}
 
 [role.stitch]
@@ -1725,10 +1725,10 @@ help = """JSON Expression Expansion"""
 help = """JSON Expression Operator"""
 
 [rstobject."mongodb:sync-client-message"]
-help = """Realm Sync Protocol Client->Server Request"""
+help = """Device Sync Protocol Client->Server Request"""
 
 [rstobject."mongodb:sync-server-message"]
-help = """Realm Sync Protocol Server->Client Request"""
+help = """Device Sync Protocol Server->Client Request"""
 
 [rstobject."mongodb:action"]
 help = """Service Actions"""
@@ -1847,8 +1847,8 @@ realm-sdks = [
 ]
 
 realm-admin-interfaces = [
-  {id = "ui", title = "Realm UI"},
-  {id = "cli", title = "Realm CLI"},
+  {id = "ui", title = "App Services UI"},
+  {id = "cli", title = "App Services CLI"},
   {id = "api", title = "Admin API"},
   {id = "github", title = "GitHub Deploy"},
   {id = "code-deploy", title = "Code Deploy"},
