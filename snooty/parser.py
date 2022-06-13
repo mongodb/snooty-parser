@@ -923,9 +923,12 @@ class JSONVisitor:
 
         elif key in {"mongodb:card"}:
             image_argument = options.get("icon")
+            url_argument = options.get("url")
 
             if image_argument:
                 self.validate_and_add_asset(doc, image_argument, line)
+            if url_argument and not url_argument.startswith("http"):
+                self.validate_relative_url(url_argument, line)
 
         return doc
 
@@ -938,6 +941,19 @@ class JSONVisitor:
         except OSError as err:
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
+            )
+
+    def validate_relative_url(self, url_argument: str, line: int) -> None:
+        """Validate URL point to page within docs site"""
+        # import pdb; pdb.set_trace()
+        # TODO: lots of the same code as validate_doc_role. can you DRY it out...
+        filePath = url_argument if url_argument[0] == "/" else f"/{url_argument}"
+        fullPath = f"{self.project_config.source_path}{filePath}.txt" # TODO: what other file types could be here??
+        if not Path(fullPath).is_file():
+            self.diagnostics.append(
+                CannotOpenFile( # TODO: maybe a new error that's a subclass of CannotOpenFile?
+                    fullPath, os.strerror(errno.ENOENT), line
+                )
             )
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
