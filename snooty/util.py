@@ -84,11 +84,12 @@ def is_relative_to(a: Path, b: Path) -> bool:
 
 
 def path_given_relative_url(relative_url: str, project_root: Path) -> str:
-    """Returns absolute path to file specified by relative URL.
+    """Returns absolute path to txt file specified by relative URL.
     URLs can be of the form /foo, foo, /foo/"""
     relative_url = relative_url[1:] if relative_url.startswith("/") else relative_url
     relative_url = relative_url[:-1] if relative_url.endswith("/") else relative_url
-    return f"{project_root}/{relative_url}.txt" # TODO: what other file types could be here??
+    return f"{project_root}/{relative_url}.txt"
+
 
 def get_files(
     root: Path, extensions: Container[str], must_be_relative_to: Optional[Path] = None

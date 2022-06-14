@@ -945,14 +945,12 @@ class JSONVisitor:
 
     def validate_relative_url(self, url_argument: str, line: int) -> None:
         """Validate relative URL points to page within current docs site"""
-        fullPath = util.filepath_given_relative_url(url_argument, self.project_config.source_path)
-        if not Path(fullPath).is_file():
+        fullPath = Path(
+            util.path_given_relative_url(url_argument, self.project_config.source_path)
+        )
+        if not fullPath.is_file():
             errMessage = f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
-            self.diagnostics.append(
-                CannotOpenFile(
-                    fullPath, errMessage, line
-                )
-            )
+            self.diagnostics.append(CannotOpenFile(fullPath, errMessage, line))
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
