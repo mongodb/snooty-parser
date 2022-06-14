@@ -944,15 +944,13 @@ class JSONVisitor:
             )
 
     def validate_relative_url(self, url_argument: str, line: int) -> None:
-        """Validate URL point to page within docs site"""
-        # import pdb; pdb.set_trace()
-        # TODO: lots of the same code as validate_doc_role. can you DRY it out...
-        filePath = url_argument if url_argument[0] == "/" else f"/{url_argument}"
-        fullPath = f"{self.project_config.source_path}{filePath}.txt" # TODO: what other file types could be here??
+        """Validate relative URL points to page within current docs site"""
+        fullPath = util.filepath_given_relative_url(url_argument, self.project_config.source_path)
         if not Path(fullPath).is_file():
+            errMessage = f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
             self.diagnostics.append(
-                CannotOpenFile( # TODO: maybe a new error that's a subclass of CannotOpenFile?
-                    fullPath, os.strerror(errno.ENOENT), line
+                CannotOpenFile(
+                    fullPath, errMessage, line
                 )
             )
 
