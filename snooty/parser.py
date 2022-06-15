@@ -952,7 +952,9 @@ class JSONVisitor:
         )
 
         if not target_path.is_file():
-            err_message = f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
+            err_message = (
+                f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
+            )
             self.diagnostics.append(CannotOpenFile(target_path, err_message, line))
         elif re.search(r"([\/])\1", url_argument) is not None:
             self.diagnostics.append(MalformedRelativePath(url_argument, line))
