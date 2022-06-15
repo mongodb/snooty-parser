@@ -515,7 +515,7 @@ class MalformedRelativePath(Diagnostic):
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"Malformed relative path {str(relative_path)}", start, end)
+        super().__init__(f"Malformed relative path {relative_path}", start, end)
         self.relative_path = relative_path
 
 
