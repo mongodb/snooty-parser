@@ -119,6 +119,47 @@ def test_chapter() -> None:
     assert isinstance(diagnostics[0], CannotOpenFile)
 
 
+def test_card() -> None:
+    """Test card directive"""
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    SOURCE_DIR = "/test_project/source/"
+    VALID_URLS = ["index", "index/"]
+    INVALID_URL = "foo"
+    CARD_CONTENT = """
+.. card-group::
+   :columns: 3
+   :layout: carousel
+
+   .. card::
+      :headline: Develop Applications
+      :cta: Test Develop Applications Relative URL Test
+      :url: %s
+
+      This card was built with a relative URL.
+"""
+
+    for url in VALID_URLS:
+        page, diagnostics = parse_rst(
+            parser,
+            path,
+            CARD_CONTENT % (SOURCE_DIR + url),
+        )
+
+        page.finish(diagnostics)
+        assert len(diagnostics) == 0
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        CARD_CONTENT % (SOURCE_DIR + INVALID_URL),
+    )
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], CannotOpenFile)
+
+
 def test_tabs() -> None:
     tabs_path = ROOT_PATH.joinpath(Path("test_tabs.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")

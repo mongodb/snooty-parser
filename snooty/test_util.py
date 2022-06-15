@@ -27,16 +27,6 @@ def test_reroot_path() -> None:
     assert relative.parts == ("test_data", "bar", "baz.rst")
 
 
-def test_path_given_relative_url() -> None:
-    relative_urls = ["/foo", "foo", "/foo/"]
-    expected_output = [str(Path(".").joinpath("foo.txt").resolve()) for i in range(3)]
-    result = map(
-        lambda url: util.path_given_relative_url(url, Path(".").resolve()),
-        relative_urls,
-    )
-    assert list(result) == expected_output
-
-
 def test_option_string() -> None:
     assert util.option_string("Test") == "Test"
     # No input or blank input should raise a ValueError
