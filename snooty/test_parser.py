@@ -15,6 +15,7 @@ from .diagnostics import (
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
+    MalformedRelativePath,
     TabMustBeDirective,
     UnexpectedIndentation,
     UnknownTabID,
@@ -127,7 +128,7 @@ def test_card() -> None:
 
     SOURCE_DIR = "/test_project/source/"
     VALID_URLS = ["index", "index/"]
-    INVALID_URL = "foo"
+    INVALID_URL = [("foo", CannotOpenFile), ("index//", MalformedRelativePath)]
     CARD_CONTENT = """
 .. card-group::
    :columns: 3
@@ -151,13 +152,14 @@ def test_card() -> None:
         page.finish(diagnostics)
         assert len(diagnostics) == 0
 
-    page, diagnostics = parse_rst(
-        parser,
-        path,
-        CARD_CONTENT % (SOURCE_DIR + INVALID_URL),
-    )
-    assert len(diagnostics) == 1
-    assert isinstance(diagnostics[0], CannotOpenFile)
+    for url, error_type in INVALID_URL:
+        page, diagnostics = parse_rst(
+            parser,
+            path,
+            CARD_CONTENT % (SOURCE_DIR + url),
+        )
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], error_type)
 
 
 def test_tabs() -> None:
