@@ -55,6 +55,7 @@ from .diagnostics import (
     InvalidTableStructure,
     InvalidURL,
     MalformedGlossary,
+    MalformedRelativePath,
     MissingChild,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
@@ -953,6 +954,8 @@ class JSONVisitor:
         if not target_path.is_file():
             err_message = f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
             self.diagnostics.append(CannotOpenFile(target_path, err_message, line))
+        elif re.search(r"([\/])\1", url_argument) is not None:
+            self.diagnostics.append(MalformedRelativePath(url_argument, line))
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""

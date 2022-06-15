@@ -505,6 +505,17 @@ class IncorrectLinkSyntax(Diagnostic, MakeCorrectionMixin):
     def did_you_mean(self) -> List[str]:
         return [f"`{self.parts[0]} <{self.parts[1]}>`__"]
 
+class MalformedRelativePath(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        relative_path: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"Malformed relative path {str(relative_path)}", start, end)
+        self.relative_path = relative_path
 
 class MissingTab(Diagnostic):
     severity = Diagnostic.Level.error
