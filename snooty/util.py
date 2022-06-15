@@ -169,7 +169,7 @@ def add_doc_target_ext(target: str, docpath: PurePath, project_root: Path) -> Pa
     new_suffix = target_path.suffix + ".txt"
     target_path = target_path.with_suffix(new_suffix)
 
-    fileid, resolved_target_path = reroot_path(target_path, docpath, project_root)
+    _, resolved_target_path = reroot_path(target_path, docpath, project_root)
     return resolved_target_path
 
 
