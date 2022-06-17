@@ -7,7 +7,7 @@ import textwrap
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path, PurePath
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, AnyStr, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
 from . import n, rstparser
@@ -204,7 +204,7 @@ class BackendTestResults(ProjectBackend):
 
 @contextlib.contextmanager
 def make_test(
-    files: Dict[PurePath, str], name: str = ""
+    files: Dict[PurePath, AnyStr], name: str = ""
 ) -> Iterator[BackendTestResults]:
     """Create a temporary test project with the given files."""
     need_to_make_snooty_toml = Path("snooty.toml") not in files
@@ -222,7 +222,10 @@ def make_test(
             file_path = root.joinpath(filename)
             if file_path.parent != root:
                 os.makedirs(file_path.parent, exist_ok=True)
-            file_path.write_text(file_text)
+            if isinstance(file_text, str):
+                file_path.write_text(file_text)
+            else:
+                file_path.write_bytes(file_text)
 
         backend = BackendTestResults()
 

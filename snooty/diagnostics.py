@@ -144,16 +144,15 @@ class GitMergeConflictArtifactFound(Diagnostic):
 
     def __init__(
         self,
-        path: Path,
+        path: Optional[Path],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Git merge conflict artifact found in {str(path)} on line {str(start)}",
+            f"Git merge conflict artifact found{' in ' + str(path) if path else ''} on line {str(start)}",
             start,
             end,
         )
-        self.path = path
 
 
 class DocUtilsParseError(Diagnostic):
@@ -347,12 +346,14 @@ class CannotOpenFile(Diagnostic):
 
     def __init__(
         self,
-        path: PurePath,
+        path: Optional[PurePath],
         reason: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"Error opening {str(path)}: {reason}", start, end)
+        super().__init__(
+            f"Error opening{' ' + str(path) if path else ''}: {reason}", start, end
+        )
         self.path = path
         self.reason = reason
 
