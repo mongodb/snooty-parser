@@ -373,7 +373,7 @@ def main() -> None:
             rstspec_bytes = HTTPCache.singleton().get(args["--rstspec"])
             rstspec_text = str(rstspec_bytes, "utf-8")
         else:
-            rstspec_text = Path(rstspec_path).read_text(encoding="utf-8")
+            rstspec_text = Path(rstspec_path).expanduser().read_text(encoding="utf-8")
         specparser.Spec.initialize(rstspec_text)
 
     if PARANOID_MODE:
@@ -392,7 +392,7 @@ def main() -> None:
         connection = pymongo.MongoClient(url, password=getpass.getpass())
         backend: Backend = MongoBackend(connection)
     elif output_path:
-        zf = zipfile.ZipFile(output_path, mode="w")
+        zf = zipfile.ZipFile(os.path.expanduser(output_path), mode="w")
         backend = ZipBackend(zf)
     else:
         backend = Backend()
