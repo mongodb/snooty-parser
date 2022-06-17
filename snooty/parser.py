@@ -74,6 +74,7 @@ from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, Static
 from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
+MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
 logger = logging.getLogger(__name__)
 
 
@@ -956,7 +957,7 @@ class JSONVisitor:
                 f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
             )
             self.diagnostics.append(CannotOpenFile(target_path, err_message, line))
-        elif re.search(r"([\/])\1", url_argument) is not None:
+        elif MULTIPLE_FORWARD_SLASHES.search(url_argument) is not None:
             self.diagnostics.append(MalformedRelativePath(url_argument, line))
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
