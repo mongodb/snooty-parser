@@ -55,6 +55,7 @@ from .diagnostics import (
     InvalidTableStructure,
     InvalidURL,
     MalformedGlossary,
+    MalformedRelativePath,
     MissingChild,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
@@ -73,6 +74,7 @@ from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, Static
 from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
+MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
 logger = logging.getLogger(__name__)
 
 
@@ -923,9 +925,12 @@ class JSONVisitor:
 
         elif key in {"mongodb:card"}:
             image_argument = options.get("icon")
+            url_argument = options.get("url")
 
             if image_argument:
                 self.validate_and_add_asset(doc, image_argument, line)
+            if url_argument and not url_argument.startswith("http"):
+                self.validate_relative_url(url_argument, line)
 
         return doc
 
@@ -939,6 +944,21 @@ class JSONVisitor:
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
             )
+
+    def validate_relative_url(self, url_argument: str, line: int) -> None:
+        """Validate relative URL points to page within current docs site.
+        URLs can be of the form /foo, foo, /foo/"""
+        target_path = util.add_doc_target_ext(
+            url_argument, self.docpath, self.project_config.source_path
+        )
+
+        if not target_path.is_file():
+            err_message = (
+                f"{os.strerror(errno.ENOENT)} for relative path {url_argument}"
+            )
+            self.diagnostics.append(CannotOpenFile(target_path, err_message, line))
+        elif MULTIPLE_FORWARD_SLASHES.search(url_argument) is not None:
+            self.diagnostics.append(MalformedRelativePath(url_argument, line))
 
     def validate_doc_role(self, node: docutils.nodes.Node) -> None:
         """Validate target for doc role"""
