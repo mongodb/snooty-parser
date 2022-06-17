@@ -20,9 +20,15 @@ from .diagnostics import (
     UnknownTabID,
     UnknownTabset,
 )
+from .n import FileId
 from .parser import InlineJSONVisitor, JSONVisitor
 from .types import ProjectConfig
-from .util_test import ast_to_testing_string, check_ast_testing_string, parse_rst
+from .util_test import (
+    ast_to_testing_string,
+    check_ast_testing_string,
+    make_test,
+    parse_rst,
+)
 
 ROOT_PATH = Path("test_data")
 
@@ -3294,3 +3300,18 @@ a. :hash: json
 
     page.finish(diagnostics)
     assert len(diagnostics) == 2
+
+
+def test_invalid_utf8() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): b"""test line 1
+test line 2
+here is an invalid character sequence\x80 oh noooo
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]

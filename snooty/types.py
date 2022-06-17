@@ -11,6 +11,7 @@ from typing_extensions import Protocol
 
 from . import n, specparser
 from .diagnostics import (
+    CannotOpenFile,
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
@@ -203,7 +204,11 @@ class ProjectConfig:
         self, path: Path, text: Optional[str] = None
     ) -> Tuple[str, List[Diagnostic]]:
         if text is None:
-            text = path.read_text(encoding="utf-8")
+            try:
+                text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError as err:
+                error_line = path.read_bytes()[: err.start].count(b"\n")
+                return ("", [CannotOpenFile(None, str(err), error_line)])
 
         text, diagnostics = self.substitute(text)
         match_found = PAT_GIT_MARKER.finditer(text)
@@ -211,7 +216,7 @@ class ProjectConfig:
         if match_found:
             for match in match_found:
                 lineno = text.count("\n", 0, match.start())
-                diagnostics.append(GitMergeConflictArtifactFound(path, lineno))
+                diagnostics.append(GitMergeConflictArtifactFound(None, lineno))
 
         return (text, diagnostics)
 
