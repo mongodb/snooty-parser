@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.6] - 2022-06-22
+
 ### Added
 
 -  Added new link roles and mongosyncstate rstobject (#401, #402, #403, #404)
