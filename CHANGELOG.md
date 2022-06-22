@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.6] - 2022-06-22
+
+### Added
+
+-  Added new link roles and mongosyncstate rstobject (#401, #402, #403, #404)
+-  Rename "Realm" to "App Services" in tabsets (#405)
+-  Validate relative URLs in card directives (DOP-3064, #408)
+
+### Fixed
+
+-  Fix upsert logic and added manifest testing (#400).
+-  Expand tildes in paths input on the command line (DOP-3078, #409)
+-  Properly handle rst source files with invalid UTF-8 (DOP-3068, #410)
+
 ## [v0.13.5] - 2022-05-19
 
 ### Added
