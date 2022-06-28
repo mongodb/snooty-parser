@@ -298,7 +298,7 @@ argument_type = "string"
 
 [directive.class]
 help = """Set a class on the next element."""
-# deprecated = true
+deprecated = true
 argument_type = "string"
 content_type = "block"
 
@@ -1691,6 +1691,8 @@ prefix = "writeconcern"
 
 [rstobject."mongodb:readconcern"]
 prefix = "readconcern"
+options.node_class = "string"
+
 
 [rstobject."mongodb:alert"]
 help = """system alert"""
