@@ -372,7 +372,7 @@ class Target(Parent[Node]):
     domain: str
     name: str
     html_id: Optional[str]
-    options: Dict[str, str]
+    options: Optional[Dict[str, str]]
 
 
 @dataclass

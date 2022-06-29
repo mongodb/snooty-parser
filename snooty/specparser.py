@@ -235,7 +235,6 @@ class RstObject:
     options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
         default_factory=MissingDict
     )
-    
 
     def create_directive(self) -> Directive:
         return Directive(
@@ -247,7 +246,7 @@ class RstObject:
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
-            options={"node_class": PrimitiveType.string},
+            options={"class": PrimitiveType.string},
             fields=[],
             name=self.name,
             rstobject=self,
