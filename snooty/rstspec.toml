@@ -1691,7 +1691,6 @@ prefix = "writeconcern"
 
 [rstobject."mongodb:readconcern"]
 prefix = "readconcern"
-options.node_class = "string"
 
 
 [rstobject."mongodb:alert"]
