@@ -3358,3 +3358,39 @@ here is an invalid character sequence\x80 oh noooo
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]
+<<<<<<< Updated upstream
+=======
+
+
+def test_class_hidden() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. program:: foo
+.. option:: --foobar
+    :class: hidden
+
+    foobar
+"""
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert not diagnostics
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+    <root fileid="index.txt">
+    <target domain="std" name="program" html_id="std-program-foo">
+        <directive_argument><literal><text>foo</text></literal></directive_argument>
+        <target_identifier ids="['foo']"><text>foo</text></target_identifier>
+    </target>
+    <target domain="std" name="option" html_id="std-option-foo.--foobar" class="hidden">
+        <directive_argument><literal><text>--foobar</text></literal></directive_argument>
+        <target_identifier ids="['--foobar', 'foo.--foobar']"><text>foo --foobar</text></target_identifier>
+        <paragraph><text>foobar</text></paragraph>
+    </target></root>
+""",
+        )
+>>>>>>> Stashed changes
