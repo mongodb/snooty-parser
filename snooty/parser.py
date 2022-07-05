@@ -245,7 +245,11 @@ class JSONVisitor:
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
-            self.state.append(n.Target((line,), [], node["domain"], node["name"], None, node["options"]))
+            self.state.append(
+                n.Target(
+                    (line,), [], node["domain"], node["name"], None, node["options"]
+                )
+            )
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
             if directive:

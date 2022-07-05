@@ -3365,14 +3365,14 @@ def test_class_hidden() -> None:
         {
             Path(
                 "source/index.txt"
-                ): """
+            ): """
 .. program:: foo
 .. option:: --foobar
     :class: hidden
 
     foobar
 """
-         }
+        }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert not diagnostics
