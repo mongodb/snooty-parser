@@ -3358,8 +3358,11 @@ here is an invalid character sequence\x80 oh noooo
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
+=======
+>>>>>>> 98e8a2903a46e22347dcd6f61d474aabc1907e8d
 
 
 def test_class_hidden() -> None:
@@ -3367,14 +3370,22 @@ def test_class_hidden() -> None:
         {
             Path(
                 "source/index.txt"
+<<<<<<< HEAD
             ): """
+=======
+                ): """
+>>>>>>> 98e8a2903a46e22347dcd6f61d474aabc1907e8d
 .. program:: foo
 .. option:: --foobar
     :class: hidden
 
     foobar
 """
+<<<<<<< HEAD
         }
+=======
+         }
+>>>>>>> 98e8a2903a46e22347dcd6f61d474aabc1907e8d
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert not diagnostics
@@ -3392,5 +3403,9 @@ def test_class_hidden() -> None:
         <paragraph><text>foobar</text></paragraph>
     </target></root>
 """,
+<<<<<<< HEAD
         )
 >>>>>>> Stashed changes
+=======
+        )
+>>>>>>> 98e8a2903a46e22347dcd6f61d474aabc1907e8d

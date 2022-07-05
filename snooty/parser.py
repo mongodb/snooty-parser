@@ -245,6 +245,7 @@ class JSONVisitor:
             )
             raise docutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
+<<<<<<< HEAD
 <<<<<<< Updated upstream
             self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
 =======
@@ -254,6 +255,9 @@ class JSONVisitor:
                 )
             )
 >>>>>>> Stashed changes
+=======
+            self.state.append(n.Target((line,), [], node["domain"], node["name"], None, node["options"]))
+>>>>>>> 98e8a2903a46e22347dcd6f61d474aabc1907e8d
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
             if directive:
@@ -316,7 +320,7 @@ class JSONVisitor:
                 return
 
             children: Any = [n.TargetIdentifier((line,), [], [node_id])]
-            self.state.append(n.Target((line,), children, "std", "label", None))
+            self.state.append(n.Target((line,), children, "std", "label", None, None))
         elif isinstance(node, rstparser.target_identifier):
             self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
         elif isinstance(node, docutils.nodes.definition_list):
@@ -489,7 +493,7 @@ class JSONVisitor:
                 term_text = "".join(term.get_text() for term in item.term)
                 identifier = n.TargetIdentifier(item.start, [], [term_text])
                 identifier.children = item.term[:]
-                target = n.InlineTarget(item.start, [], "std", "term", None)
+                target = n.InlineTarget(item.start, [], "std", "term", None, None)
                 target.children = [identifier]
                 item.term.append(target)
 

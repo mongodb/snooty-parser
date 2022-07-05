@@ -232,6 +232,9 @@ class RstObject:
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
+    options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
+        default_factory=MissingDict
+    )
 
     def create_directive(self) -> Directive:
         return Directive(
@@ -243,7 +246,7 @@ class RstObject:
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
-            options={},
+            options={"class": PrimitiveType.string},
             fields=[],
             name=self.name,
             rstobject=self,
