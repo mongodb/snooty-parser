@@ -294,8 +294,9 @@ class ZipBackend(Backend):
         self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
         self.assets_written: Set[str] = set()
 
-    def on_config(self, config: ProjectConfig) -> None:
+    def on_config(self, config: ProjectConfig, branch: str) -> None:
         self.metadata["project"] = config.name
+        self.metadata["branch"] = branch
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         if not diagnostics:
