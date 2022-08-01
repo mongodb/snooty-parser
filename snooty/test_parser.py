@@ -1,3 +1,4 @@
+from hmac import digest
 from pathlib import Path
 
 from . import rstparser
@@ -7,6 +8,7 @@ from .diagnostics import (
     DocUtilsParseError,
     ErrorParsingYAMLFile,
     ExpectedPathArg,
+    IconMustBeDefined,
     IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
     InvalidDirectiveStructure,
@@ -3358,3 +3360,39 @@ here is an invalid character sequence\x80 oh noooo
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]
+
+
+def test_icon() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:icon:`trash-alt`
+""",
+    )
+    page.finish(diagnostics)
+    print('check here>>>>')
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <paragraph>
+        <role name="icon" target="trash-alt"></role>
+    </paragraph>
+</root>""",
+    )
+    
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:icon:`ICON-DNE`
+"""
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], IconMustBeDefined)

@@ -696,3 +696,18 @@ class GuideAlreadyHasChapter(Diagnostic):
             start,
             end,
         )
+
+class IconMustBeDefined(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        icon_role: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Icon roles must be defined in .icon_names, supplied icon role is not defined: {icon_role}",
+            start,
+            end,
+        )

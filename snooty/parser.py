@@ -48,6 +48,7 @@ from .diagnostics import (
     DocUtilsParseError,
     ExpectedPathArg,
     FetchError,
+    IconMustBeDefined,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,
@@ -72,6 +73,7 @@ from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
+import pdb
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
@@ -289,6 +291,9 @@ class JSONVisitor:
                 )
                 self.state.append(role)
                 return
+
+            elif role_name == "icon":
+                self.validate_icon_role(node)
 
             role = n.Role((line,), [], node["domain"], role_name, target, flag)
             self.state.append(role)
@@ -931,6 +936,13 @@ class JSONVisitor:
                 self.validate_and_add_asset(doc, image_argument, line)
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
+        
+        elif name == "icon":
+            print(name)
+            print(options)
+            # TODO: DOP-1166: validate options for icon
+        else:
+            print("name is {}".format(name))
 
         return doc
 
@@ -1000,6 +1012,24 @@ class JSONVisitor:
                 continue
             new_children.append(child)
         node.children = new_children
+        return
+
+    def validate_icon_role(self, node: docutils.nodes.Node) -> None:
+        """
+        Validate target for icon role
+        Checks for included icon file in root path
+        """
+        ROOT_DIR = Path(__file__).parent.parent
+        icon_name = node.__getitem__('target')
+        icon_file = open("{}/.icon_names".format(ROOT_DIR))
+        # TODO: DOP-1166: fetch snooty repo and parse icon into gitignored fiile .icon_names
+        if not icon_file:
+            return
+        icon_set = set(line.strip() for line in icon_file)
+        if icon_name not in icon_set:
+            self.diagnostics.append(
+                IconMustBeDefined(icon_name, util.get_line(node))
+            )
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
@@ -1177,7 +1207,8 @@ class EmbeddedRstParser:
 
 def get_giza_category(path: PurePath) -> str:
     """Infer the Giza category of a YAML file."""
-    return path.name.split("-", 1)[0]
+    # returns first name in hyphenated path name
+    return path.name.split("-", 1)[0] 
 
 
 class ProjectBackend:
