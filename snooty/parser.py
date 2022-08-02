@@ -66,6 +66,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
+from .icon_name_const import ICON_SET
 from .n import FileId, SerializableType
 from .openapi import OpenAPI
 from .page import Page, PendingTask
@@ -73,7 +74,6 @@ from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
-from .icon_name_const import ICON_SET
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
@@ -1014,16 +1014,14 @@ class JSONVisitor:
         """
         if not ICON_SET:
             return
-        icon_name = node.__getitem__('target')
+        icon_name = node.__getitem__("target")
         possible_name_set = {
             icon_name,
             "fa-{}".format(icon_name),
-            "fa4-{}".format(icon_name)
+            "fa4-{}".format(icon_name),
         }
         if not possible_name_set.intersection(ICON_SET):
-            self.diagnostics.append(
-                IconMustBeDefined(icon_name, util.get_line(node))
-            )
+            self.diagnostics.append(IconMustBeDefined(icon_name, util.get_line(node)))
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
@@ -1202,7 +1200,7 @@ class EmbeddedRstParser:
 def get_giza_category(path: PurePath) -> str:
     """Infer the Giza category of a YAML file."""
     # returns first name in hyphenated path name
-    return path.name.split("-", 1)[0] 
+    return path.name.split("-", 1)[0]
 
 
 class ProjectBackend:

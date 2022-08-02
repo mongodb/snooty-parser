@@ -697,6 +697,7 @@ class GuideAlreadyHasChapter(Diagnostic):
             end,
         )
 
+
 class IconMustBeDefined(Diagnostic):
     severity = Diagnostic.Level.error
 

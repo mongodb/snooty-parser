@@ -3384,13 +3384,13 @@ def test_icon() -> None:
     </paragraph>
 </root>""",
     )
-    
+
     page, diagnostics = parse_rst(
         parser,
         path,
         """
 :icon:`ICON-DNE`
-"""
+""",
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 1
