@@ -66,7 +66,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
-from .icon_name_const import ICON_SET
+from .icon_names import ICON_SET
 from .n import FileId, SerializableType
 from .openapi import OpenAPI
 from .page import Page, PendingTask
