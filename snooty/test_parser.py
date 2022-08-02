@@ -1,4 +1,3 @@
-from hmac import digest
 from pathlib import Path
 
 from . import rstparser
