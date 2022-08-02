@@ -73,6 +73,7 @@ from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
+from tools.icon_name_const import ICON_SET
 import pdb
 
 NO_CHILDREN = (n.SubstitutionReference,)
@@ -1019,14 +1020,10 @@ class JSONVisitor:
         Validate target for icon role
         Checks for included icon file in root path
         """
-        ROOT_DIR = Path(__file__).parent.parent
-        icon_name = node.__getitem__('target')
-        icon_file = open("{}/.icon_names".format(ROOT_DIR))
-        # TODO: DOP-1166: fetch snooty repo and parse icon into gitignored fiile .icon_names
-        if not icon_file:
+        if not ICON_SET:
             return
-        icon_set = set(line.strip() for line in icon_file)
-        if icon_name not in icon_set:
+        icon_name = node.__getitem__('target')
+        if icon_name not in ICON_SET:
             self.diagnostics.append(
                 IconMustBeDefined(icon_name, util.get_line(node))
             )

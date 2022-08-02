@@ -3375,7 +3375,6 @@ def test_icon() -> None:
 """,
     )
     page.finish(diagnostics)
-    print('check here>>>>')
     check_ast_testing_string(
         page.ast,
         """
