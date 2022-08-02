@@ -73,8 +73,7 @@ from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
-from tools.icon_name_const import ICON_SET
-import pdb
+from .icon_name_const import ICON_SET
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
@@ -937,13 +936,6 @@ class JSONVisitor:
                 self.validate_and_add_asset(doc, image_argument, line)
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
-        
-        elif name == "icon":
-            print(name)
-            print(options)
-            # TODO: DOP-1166: validate options for icon
-        else:
-            print("name is {}".format(name))
 
         return doc
 
@@ -1023,7 +1015,12 @@ class JSONVisitor:
         if not ICON_SET:
             return
         icon_name = node.__getitem__('target')
-        if icon_name not in ICON_SET:
+        possible_name_set = {
+            icon_name,
+            "fa-{}".format(icon_name),
+            "fa4-{}".format(icon_name)
+        }
+        if not possible_name_set.intersection(ICON_SET):
             self.diagnostics.append(
                 IconMustBeDefined(icon_name, util.get_line(node))
             )
