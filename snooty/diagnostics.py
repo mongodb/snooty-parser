@@ -708,7 +708,7 @@ class IconMustBeDefined(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"Icon roles must be defined in .icon_names, supplied icon role is not defined: {icon_role}",
+            f"The Icon {icon_role} does not exist",
             start,
             end,
         )

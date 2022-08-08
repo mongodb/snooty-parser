@@ -1974,6 +1974,7 @@ ICON_SET = {
     "fa4-window-close",
     "fa4-times-rectangle-o",
     "fa4-window-close-o",
+    "charts-icon-geoglobe",
     "mms-icon-addcenter ",
     "mms-icon-configsvr-down",
     "mms-icon-configsvr-fatal",
