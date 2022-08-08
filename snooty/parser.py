@@ -448,6 +448,17 @@ class JSONVisitor:
             and popped.options["tabset"] != "tab"
         ):
             self.handle_tabset(popped)
+        elif isinstance(popped, n.Directive) and popped.name == "list-table":
+            failed_node = popped.check_tree(
+                n.ListNode, n.ListNodeItem, n.ListNode, n.ListNodeItem
+            )
+            if failed_node:
+                self.diagnostics.append(
+                    InvalidTableStructure(
+                        f"Incorrect list-item directive child: expected {failed_node[1].__name__}, got {type(failed_node[0]).__name__}. List tables must contain a list of lists",
+                        failed_node[0].start[0],
+                    )
+                )
 
         elif isinstance(popped, n.Directive) and popped.name == "tabs":
             self.validate_tabs_children(popped)
@@ -610,10 +621,10 @@ class JSONVisitor:
             self.validate_and_add_asset(doc, argument_text, line)
 
         elif name == "list-table":
-            # Calculate the expected number of columns for this list-table structure.
             if not node.children:
                 return doc
 
+            # Calculate the expected number of columns for this list-table structure.
             expected_num_columns = 0
             if "widths" in options:
                 widths = re.split(r"[,\s][\s]?", options["widths"])
@@ -623,7 +634,9 @@ class JSONVisitor:
                 if expected_num_columns == 0 and list_item.children:
                     expected_num_columns = len(list_item.children[0].children)
                 for bullets in list_item.children:
-                    self.validate_list_table(bullets, expected_num_columns)
+                    self.diagnostics.extend(
+                        self.validate_list_table_item(bullets, expected_num_columns)
+                    )
 
         elif name == "openapi":
             # Parsing should be done by the OpenAPI renderer on the frontend by default
@@ -973,9 +986,10 @@ class JSONVisitor:
                 )
             )
 
-    def validate_list_table(
-        self, node: docutils.nodes.Node, expected_num_columns: int
-    ) -> None:
+    @staticmethod
+    def validate_list_table_item(
+        node: docutils.nodes.Node, expected_num_columns: int
+    ) -> Sequence[Diagnostic]:
         """Validate list-table structure"""
         if (
             isinstance(node, docutils.nodes.bullet_list)
@@ -984,10 +998,11 @@ class JSONVisitor:
             msg = (
                 f'Expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
-            self.diagnostics.append(
+            return [
                 InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
-            )
-            return
+            ]
+
+        return []
 
     def validate_tabs_children(self, node: n.Directive) -> None:
         new_children: List[n.Node] = []
