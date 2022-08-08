@@ -12,6 +12,7 @@ from .diagnostics import (
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
+    InvalidTableStructure,
     InvalidURL,
     MakeCorrectionMixin,
     MalformedGlossary,
@@ -2488,6 +2489,20 @@ def test_list_table() -> None:
 """,
     )
     assert len(diagnostics) == 0
+
+    # Broken list-table
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+
+   * -Java (Synchronous) version 4.7.0-beta0 or later.
+     - MongoCrypt version 1.5.0-rc2 or later
+""",
+    )
+    print(ast_to_testing_string(page.ast))
+    assert [type(x) for x in diagnostics] == [InvalidTableStructure]
 
 
 def test_footnote() -> None:
