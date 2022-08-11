@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- List tables are now validated to have correct structure (DOP-3107)
+
 ## [v0.13.7] - 2022-07-28
+
+### Changed
+
+- Include branch name in manifest file (DOP-2986)
 
 ## [v0.13.6] - 2022-06-22
 
