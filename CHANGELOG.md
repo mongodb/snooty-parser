@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.8] - 2022-08-11
+
 ### Added
 
 - List tables are now validated to have correct structure (DOP-3107)
