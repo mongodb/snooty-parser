@@ -455,7 +455,7 @@ class JSONVisitor:
             if failed_node:
                 self.diagnostics.append(
                     InvalidTableStructure(
-                        f"Incorrect list-item directive child: expected {failed_node[1].__name__}, got {type(failed_node[0]).__name__}. List tables must contain a list of lists",
+                        f"Incorrect list-table directive child: expected {failed_node[1].__name__}, got {type(failed_node[0]).__name__}. List tables must contain a list of lists",
                         failed_node[0].start[0],
                     )
                 )
