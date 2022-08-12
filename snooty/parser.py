@@ -1015,14 +1015,14 @@ class JSONVisitor:
         if not ICON_SET:
             return
         icon_name = node["target"]
-        possible_name_set = {
+        icon_name_formats = {
             icon_name,
             f"fa-{icon_name}",
             f"fa4-{icon_name}",
             f"mms-icon-{icon_name}",
             f"charts-icon-{icon_name}",
         }
-        if not possible_name_set.intersection(ICON_SET):
+        if not icon_name_formats.intersection(ICON_SET):
             self.diagnostics.append(IconMustBeDefined(icon_name, util.get_line(node)))
         return
 
