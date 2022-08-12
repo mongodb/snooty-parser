@@ -48,6 +48,7 @@ from .diagnostics import (
     DocUtilsParseError,
     ExpectedPathArg,
     FetchError,
+    IconMustBeDefined,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,
@@ -65,6 +66,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
+from .icon_names import ICON_SET
 from .n import FileId, SerializableType
 from .openapi import OpenAPI
 from .page import Page, PendingTask
@@ -289,6 +291,9 @@ class JSONVisitor:
                 )
                 self.state.append(role)
                 return
+
+            elif role_name == "icon":
+                self.validate_icon_role(node)
 
             role = n.Role((line,), [], node["domain"], role_name, target, flag)
             self.state.append(role)
@@ -1015,6 +1020,25 @@ class JSONVisitor:
                 continue
             new_children.append(child)
         node.children = new_children
+        return
+
+    def validate_icon_role(self, node: docutils.nodes.Node) -> None:
+        """
+        Validate target for icon role
+        Checks for included icon file in root path
+        """
+        if not ICON_SET:
+            return
+        icon_name = node["target"]
+        icon_name_formats = {
+            icon_name,
+            f"fa-{icon_name}",
+            f"fa4-{icon_name}",
+            f"mms-icon-{icon_name}",
+            f"charts-icon-{icon_name}",
+        }
+        if not icon_name_formats.intersection(ICON_SET):
+            self.diagnostics.append(IconMustBeDefined(icon_name, util.get_line(node)))
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
