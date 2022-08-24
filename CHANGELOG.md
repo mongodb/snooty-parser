@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.9] - 2022-08-24
+
 ### Added
 
 - Add validation for icon role (DOP-1166) (#414)
