@@ -2,6 +2,7 @@ import copy
 import enum
 import itertools
 import logging
+import re
 import threading
 import urllib
 from collections import defaultdict
@@ -31,6 +32,8 @@ logger = logging.getLogger(__name__)
 #: Indicates the target protocol of a target: either a file local to the
 #: current project, or a URL (from an intersphinx inventory).
 TargetType = enum.Enum("TargetType", ("fileid", "url"))
+
+PAT_TARGET_PART_SEPARATOR = re.compile(r"[_-]+")
 
 
 @dataclass
@@ -131,11 +134,27 @@ class TargetDatabase:
                 self.local_definitions.keys(), intersphinx_keys
             )
 
+            key_parts = PAT_TARGET_PART_SEPARATOR.split(key)
+
             for key_definition in all_keys:
                 if abs(len(key) - len(key_definition)) > 2:
                     continue
 
-                if util.damerau_levenshtein_distance(key_definition, key) <= 2:
+                # Tokens tend to be separated by - and _: if there's a different number of
+                # separators, don't attempt a typo correction
+                key_definition_parts = PAT_TARGET_PART_SEPARATOR.split(key_definition)
+                if len(key_definition_parts) != len(key_parts):
+                    continue
+
+                # Evaluate each part separately, since the complexity is O(N*M)
+                # If any part is too different, we can abort before evaluating the rest
+                if all(
+                    dist <= 2
+                    for dist in (
+                        util.damerau_levenshtein_distance(p1, p2)
+                        for p1, p2 in zip(key_parts, key_definition_parts)
+                    )
+                ):
                     candidates.append(key_definition)
 
             return candidates

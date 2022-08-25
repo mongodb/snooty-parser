@@ -267,4 +267,6 @@ def test_suggestions() -> None:
             ).repeat(number=5)
         )
     )
-    # db.get_suggestions("std:label:a-labal-on-index")
+    assert db.get_suggestions("std:label:a-labal-on-index") == [
+        "std:label:a-label-on-index"
+    ]
