@@ -183,3 +183,12 @@ def test_worker_that_fails() -> None:
     worker = util.WorkerLauncher("worker-test", start)
     with pytest.raises(SomeException):
         worker.run_and_wait(None)
+
+
+def test_damerau_levenshtein_distance() -> None:
+    assert util.damerau_levenshtein_distance("foo", "foo") == 0
+    assert util.damerau_levenshtein_distance("foo", "f1o") == 1
+    assert util.damerau_levenshtein_distance("foo", "fo") == 1
+    assert util.damerau_levenshtein_distance("foo", "fooa") == 1
+    assert util.damerau_levenshtein_distance("foo", "ofo") == 1
+    assert util.damerau_levenshtein_distance("foo", "xoao") == 2

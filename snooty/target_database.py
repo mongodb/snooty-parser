@@ -1,16 +1,27 @@
 import copy
 import enum
+import itertools
 import logging
 import threading
 import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import DefaultDict, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import (
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import requests.exceptions
 from typing_extensions import Protocol
 
-from . import intersphinx, n, specparser
+from . import intersphinx, n, specparser, util
 from .cache import Cache
 from .n import FileId
 from .types import ProjectConfig, normalize_target
@@ -106,6 +117,28 @@ class TargetDatabase:
                     )
 
         return results
+
+    def get_suggestions(self, key: str) -> Sequence[str]:
+        key = normalize_target(key)
+        candidates: List[str] = []
+
+        with self.lock:
+            intersphinx_keys: Iterable[str] = itertools.chain.from_iterable(
+                (str(s) for s in inventory.targets.keys())
+                for inventory in self.intersphinx_inventories.values()
+            )
+            all_keys: Iterable[str] = itertools.chain(
+                self.local_definitions.keys(), intersphinx_keys
+            )
+
+            for key_definition in all_keys:
+                if abs(len(key) - len(key_definition)) > 2:
+                    continue
+
+                if util.damerau_levenshtein_distance(key_definition, key) <= 2:
+                    candidates.append(key_definition)
+
+            return candidates
 
     def define_local_target(
         self,
