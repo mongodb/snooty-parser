@@ -258,15 +258,6 @@ def test_suggestions() -> None:
         "std-label-a-label-on-index-2",
     )
 
-    import timeit
-
-    print(
-        min(
-            timeit.Timer(
-                'db.get_suggestions("std:label:a-labal-on-index")', globals=locals()
-            ).repeat(number=5)
-        )
-    )
     assert db.get_suggestions("std:label:a-labal-on-index") == [
         "std:label:a-label-on-index"
     ]

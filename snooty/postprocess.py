@@ -402,7 +402,7 @@ class NamedReferenceHandlerPass2(Handler):
         if refuri is None:
             line = node.span[0]
             self.context.diagnostics[fileid_stack.current].append(
-                TargetNotFound("extlink", node.refname, line)
+                TargetNotFound("extlink", node.refname, [], line)
             )
             return
 
@@ -1279,8 +1279,11 @@ class RefsHandler(Handler):
             if injection_candidate is not None:
                 injection_candidate.children = [text_node]
 
+            # See if there are any near matches
+            suggestions = self.targets.get_suggestions(key)
+
             self.context.diagnostics[fileid_stack.current].append(
-                TargetNotFound(node.name, node.target, line)
+                TargetNotFound(node.name, node.target, suggestions, line)
             )
             return
 
