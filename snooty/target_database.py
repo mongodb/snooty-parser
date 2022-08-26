@@ -82,9 +82,9 @@ class TargetDatabase:
                         canonical_target_name,
                         title,
                     )
-                    for canonical_target_name, fileid, title, html5_id in self.local_definitions[
-                        key
-                    ]
+                    for canonical_target_name, fileid, title, html5_id in self.local_definitions.get(
+                        key, []
+                    )
                 )
             except KeyError:
                 pass
@@ -146,8 +146,8 @@ class TargetDatabase:
                 if len(key_definition_parts) != len(key_parts):
                     continue
 
-                # Evaluate each part separately, since the complexity is O(N*M)
-                # If any part is too different, we can abort before evaluating the rest
+                # Evaluate each part separately, since we can abort before evaluating the rest.
+                # Small bonus: complexity is O(N*M)
                 if all(
                     dist <= 2
                     for dist in (
