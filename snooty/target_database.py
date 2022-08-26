@@ -123,6 +123,7 @@ class TargetDatabase:
 
     def get_suggestions(self, key: str) -> Sequence[str]:
         key = normalize_target(key)
+        key = key.split(":", 2)[2]
         candidates: List[str] = []
 
         with self.lock:
@@ -136,7 +137,8 @@ class TargetDatabase:
 
             key_parts = PAT_TARGET_PART_SEPARATOR.split(key)
 
-            for key_definition in all_keys:
+            for original_key_definition in all_keys:
+                key_definition = original_key_definition.split(":", 2)[2]
                 if abs(len(key) - len(key_definition)) > 2:
                     continue
 
@@ -155,7 +157,7 @@ class TargetDatabase:
                         for p1, p2 in zip(key_parts, key_definition_parts)
                     )
                 ):
-                    candidates.append(key_definition)
+                    candidates.append(original_key_definition)
 
             return candidates
 
