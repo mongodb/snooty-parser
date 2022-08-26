@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import array
 import datetime
 import io
-import itertools
 import logging
 import os
 import pickle
@@ -585,45 +583,33 @@ class QueueDict(Generic[_K, _T]):
         return result
 
 
-class Array2D:
-    __slots__ = (
-        "width",
-        "data",
-    )
-
-    def __init__(self, width: int, height: int) -> None:
-        self.width = width
-        self.data = array.array("i", itertools.repeat(0, width * height))
-
-    def get(self, x: int, y: int) -> int:
-        x += 1
-        y += 1
-        return self.data[(self.width * y) + x]
-
-    def set(self, x: int, y: int, data: int) -> None:
-        x += 1
-        y += 1
-        self.data[(self.width * y) + x] = data
-
-
 def damerau_levenshtein_distance(a: str, b: str) -> int:
     """Derived from Wikipedia, the best possible source for an algorithm:
     https://en.wikipedia.org/w/index.php?title=Damerau%E2%80%93Levenshtein_distance&oldid=1050388400#Distance_with_adjacent_transpositions"""
     # Strings are 1-indexed, and d is -1-indexed.
 
     da = {ch: 0 for ch in set(a).union(b)}
-    d = Array2D(len(a) + 2, len(b) + 2)
+
+    width = len(a) + 2
+    height = len(b) + 2
+    d = [0] * width * height
+
+    def matrix_set(x: int, y: int, value: int) -> None:
+        d[(width * (y + 1)) + (x + 1)] = value
+
+    def matrix_get(x: int, y: int) -> int:
+        return d[(width * (y + 1)) + (x + 1)]
 
     maxdist = len(a) + len(b)
-    d.set(-1, -1, maxdist)
+    matrix_set(-1, -1, maxdist)
 
     for i in range(0, len(a) + 1):
-        d.set(i, -1, maxdist)
-        d.set(i, 0, i)
+        matrix_set(i, -1, maxdist)
+        matrix_set(i, 0, i)
 
     for j in range(0, len(b) + 1):
-        d.set(-1, j, maxdist)
-        d.set(0, j, j)
+        matrix_set(-1, j, maxdist)
+        matrix_set(0, j, j)
 
     for i in range(1, len(a) + 1):
         db = 0
@@ -635,14 +621,14 @@ def damerau_levenshtein_distance(a: str, b: str) -> int:
                 db = j
             else:
                 cost = 1
-            d.set(
+            matrix_set(
                 i,
                 j,
                 min(
-                    d.get(i - 1, j - 1) + cost,  # substitution
-                    d.get(i, j - 1) + 1,  # insertion
-                    d.get(i - 1, j) + 1,  # deletion
-                    d.get(k - 1, l - 1)
+                    matrix_get(i - 1, j - 1) + cost,  # substitution
+                    matrix_get(i, j - 1) + 1,  # insertion
+                    matrix_get(i - 1, j) + 1,  # deletion
+                    matrix_get(k - 1, l - 1)
                     + (i - k - 1)
                     + 1
                     + (j - l - 1),  # transposition
@@ -650,4 +636,4 @@ def damerau_levenshtein_distance(a: str, b: str) -> int:
             )
         da[a[i - 1]] = i
 
-    return d.get(len(a), len(b))
+    return matrix_get(len(a), len(b))
