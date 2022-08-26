@@ -292,7 +292,7 @@ class JSONVisitor:
                 self.state.append(role)
                 return
 
-            elif role_name.startswith('icon'):
+            elif role_name.startswith("icon"):
                 self.validate_icon_role(node)
 
             role = n.Role((line,), [], node["domain"], role_name, target, flag)
@@ -1031,19 +1031,21 @@ class JSONVisitor:
             return
         # construct icon class name based off node
         classname_prefix = {
-            'icon-fa5': 'fa',
-            'icon': 'fa',
-            'icon-fa5-brands': 'fa',
-            'iconb': 'fa',
-            'icon-mms': 'mms',
-            'icon-mms-org': 'mms-org',
-            'icon-charts': 'charts-icon',
-            'icon-fa4': 'fa4'
+            "icon-fa5": "fa",
+            "icon": "fa",
+            "icon-fa5-brands": "fa",
+            "iconb": "fa",
+            "icon-mms": "mms",
+            "icon-mms-org": "mms-org",
+            "icon-charts": "charts-icon",
+            "icon-fa4": "fa4",
         }
         icon_name = node["target"]
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
         if target_icon_classname not in ICON_SET:
-            self.diagnostics.append(IconMustBeDefined(target_icon_classname, util.get_line(node)))
+            self.diagnostics.append(
+                IconMustBeDefined(target_icon_classname, util.get_line(node))
+            )
         return
 
     def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:

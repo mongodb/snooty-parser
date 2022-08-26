@@ -3417,6 +3417,7 @@ def test_valid_icon() -> None:
 </root>""",
     )
 
+
 def test_invalid_icon() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
