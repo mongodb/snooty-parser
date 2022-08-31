@@ -3376,7 +3376,7 @@ here is an invalid character sequence\x80 oh noooo
         assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]
 
 
-def test_icon() -> None:
+def test_valid_icon() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
@@ -3403,7 +3403,42 @@ def test_icon() -> None:
         parser,
         path,
         """
+:icon-fa5-brands:`Windows logo <windows>`
+""",
+    )
+    page.finish(diagnostics)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <paragraph>
+        <role name="icon-fa5-brands" target="windows"><text>Windows logo</text></role>
+    </paragraph>
+</root>""",
+    )
+
+
+def test_invalid_icon() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
 :icon:`ICON-DNE`
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], IconMustBeDefined)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:icon-fa4:`shunned`
 """,
     )
     page.finish(diagnostics)
