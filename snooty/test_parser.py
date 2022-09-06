@@ -3444,3 +3444,13 @@ def test_invalid_icon() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], IconMustBeDefined)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+:icon-mms:`ellipsis`
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
