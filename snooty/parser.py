@@ -1035,8 +1035,8 @@ class JSONVisitor:
             "icon": "fa",
             "icon-fa5-brands": "fa",
             "iconb": "fa",
-            "icon-mms": "mms",
-            "icon-mms-org": "mms-org",
+            "icon-mms": "mms-icon",
+            "icon-mms-org": "mms-org-icon",
             "icon-charts": "charts-icon",
             "icon-fa4": "fa4",
         }
