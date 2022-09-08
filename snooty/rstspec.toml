@@ -1875,10 +1875,11 @@ realm-languages = [
   {id = "swift", title = "Swift"},
   {id = "kotlin", title = "Kotlin"},
   {id = "typescript", title = "TypeScript"},
-  {id = "java", title = "Java"},
-  {id = "objective-c", title = "Objective C"},
   {id = "javascript", title = "JavaScript"},
   {id = "c-sharp", title = "C#"},
+  {id = "dart", title = "Dart"},
+  {id = "java", title = "Java"},
+  {id = "objective-c", title = "Objective C"},
 ]
 realm-sdks = [
   {id = "functions", title = "Functions"},
