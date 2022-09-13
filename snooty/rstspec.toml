@@ -1602,7 +1602,7 @@ type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/
 
 [role."atlascli"]
 help = """Link to a page in the Atlas CLI documentation."""
-type = {link = " [https://www.mongodb.com/docs/atlas/cli/stable%s] ", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailing_slash = true}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
