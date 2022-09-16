@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.10] - 2022-09-16
+
 ### Added
 
 - (DOCSP-23944) Adds Atlas CLI custom role to rstspec.toml (#419)
