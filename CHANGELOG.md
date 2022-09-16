@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- (DOCSP-23944) Adds Atlas CLI custom role to rstspec.toml (#419)
+- realm-languages: Add Dart + re-order
+- DOP-1166: include all icon roles. parse icon classname from role + target (#417)
+
+### Fixed
+
+- Fix some icon issues
+
 ## [v0.13.9] - 2022-08-24
 
 ### Added
