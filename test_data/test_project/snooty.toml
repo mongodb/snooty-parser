@@ -3,3 +3,7 @@ title = "MongoDB title"
 
 [substitutions]
 guides = "MongoDB Guides"
+
+[[associated_products]]
+name = "test-name"
+versions = ["v1.0", "v1.2"]

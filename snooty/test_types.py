@@ -27,7 +27,17 @@ def test_project() -> None:
     assert project_config.name == "unnamed"
     assert project_config.title == "untitled"
     assert project_config.deprecated_versions == None
+    assert project_config.associated_products == []
     assert len(project_diagnostics) == 0
+
+    # Test valid project
+    path = Path("test_data/test_project")
+    project_config, project_diganostics = ProjectConfig.open(path)
+    assert len(project_diganostics) == 0
+    assert len(project_config.associated_products) > 0
+    assert project_config.associated_products[0]["name"] == "test-name"
+    assert project_config.associated_products[0]["versions"] == ["v1.0", "v1.2"]
+    assert project_config.name == "test_data"
 
 
 def test_static_asset() -> None:
