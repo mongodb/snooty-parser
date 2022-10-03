@@ -2422,3 +2422,32 @@ def test_target_quotes() -> None:
     </target>
 </root>""",
         )
+
+
+def test_metadata() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Test
+======
+
+This is a test intro
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+title = "MongoDB title"
+
+[[associated_products]]
+name = "test_associated_product"
+versions = ["v1", "v2"]
+            """,
+        }
+    ) as result:
+        metadata = cast(Dict[str, Any], result.metadata)
+        assert len(metadata["associated_products"]) == 1
+        assert len(metadata["associated_products"][0]["versions"]) == 2

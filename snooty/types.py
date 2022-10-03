@@ -148,6 +148,7 @@ class ProjectConfig:
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
+    associated_products: List[Dict[str, object]] = field(default_factory=list)
 
     @property
     def source_path(self) -> Path:
