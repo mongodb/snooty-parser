@@ -581,3 +581,59 @@ class QueueDict(Generic[_K, _T]):
             del self._data[result[0]]
 
         return result
+
+
+def damerau_levenshtein_distance(a: str, b: str) -> int:
+    """Derived from Wikipedia, the best possible source for an algorithm:
+    https://en.wikipedia.org/w/index.php?title=Damerau%E2%80%93Levenshtein_distance&oldid=1050388400#Distance_with_adjacent_transpositions"""
+    # Strings are 1-indexed, and d is -1-indexed.
+
+    da = {ch: 0 for ch in set(a).union(b)}
+
+    width = len(a) + 2
+    height = len(b) + 2
+    d = [0] * width * height
+
+    def matrix_set(x: int, y: int, value: int) -> None:
+        d[(width * (y + 1)) + (x + 1)] = value
+
+    def matrix_get(x: int, y: int) -> int:
+        return d[(width * (y + 1)) + (x + 1)]
+
+    maxdist = len(a) + len(b)
+    matrix_set(-1, -1, maxdist)
+
+    for i in range(0, len(a) + 1):
+        matrix_set(i, -1, maxdist)
+        matrix_set(i, 0, i)
+
+    for j in range(0, len(b) + 1):
+        matrix_set(-1, j, maxdist)
+        matrix_set(0, j, j)
+
+    for i in range(1, len(a) + 1):
+        db = 0
+        for j in range(1, len(b) + 1):
+            k = da[b[j - 1]]
+            l = db
+            if a[i - 1] == b[j - 1]:
+                cost = 0
+                db = j
+            else:
+                cost = 1
+            matrix_set(
+                i,
+                j,
+                min(
+                    matrix_get(i - 1, j - 1) + cost,  # substitution
+                    matrix_get(i, j - 1) + 1,  # insertion
+                    matrix_get(i - 1, j) + 1,  # deletion
+                    matrix_get(k - 1, l - 1)
+                    + (i - k - 1)
+                    + 1
+                    + (j - l - 1),  # transposition
+                ),
+            )
+        da[a[i - 1]] = i
+
+    return matrix_get(len(a), len(b))

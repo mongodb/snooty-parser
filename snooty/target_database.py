@@ -1,16 +1,28 @@
 import copy
 import enum
+import itertools
 import logging
+import re
 import threading
 import urllib
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import DefaultDict, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import (
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import requests.exceptions
 from typing_extensions import Protocol
 
-from . import intersphinx, n, specparser
+from . import intersphinx, n, specparser, util
 from .cache import Cache
 from .n import FileId
 from .types import ProjectConfig, normalize_target
@@ -20,6 +32,8 @@ logger = logging.getLogger(__name__)
 #: Indicates the target protocol of a target: either a file local to the
 #: current project, or a URL (from an intersphinx inventory).
 TargetType = enum.Enum("TargetType", ("fileid", "url"))
+
+PAT_TARGET_PART_SEPARATOR = re.compile(r"[_-]+")
 
 
 @dataclass
@@ -68,9 +82,9 @@ class TargetDatabase:
                         canonical_target_name,
                         title,
                     )
-                    for canonical_target_name, fileid, title, html5_id in self.local_definitions[
-                        key
-                    ]
+                    for canonical_target_name, fileid, title, html5_id in self.local_definitions.get(
+                        key, []
+                    )
                 )
             except KeyError:
                 pass
@@ -106,6 +120,46 @@ class TargetDatabase:
                     )
 
         return results
+
+    def get_suggestions(self, key: str) -> Sequence[str]:
+        key = normalize_target(key)
+        key = key.split(":", 2)[2]
+        candidates: List[str] = []
+
+        with self.lock:
+            intersphinx_keys: Iterable[str] = itertools.chain.from_iterable(
+                (str(s) for s in inventory.targets.keys())
+                for inventory in self.intersphinx_inventories.values()
+            )
+            all_keys: Iterable[str] = itertools.chain(
+                self.local_definitions.keys(), intersphinx_keys
+            )
+
+            key_parts = PAT_TARGET_PART_SEPARATOR.split(key)
+
+            for original_key_definition in all_keys:
+                key_definition = original_key_definition.split(":", 2)[2]
+                if abs(len(key) - len(key_definition)) > 2:
+                    continue
+
+                # Tokens tend to be separated by - and _: if there's a different number of
+                # separators, don't attempt a typo correction
+                key_definition_parts = PAT_TARGET_PART_SEPARATOR.split(key_definition)
+                if len(key_definition_parts) != len(key_parts):
+                    continue
+
+                # Evaluate each part separately, since we can abort before evaluating the rest.
+                # Small bonus: complexity is O(N*M)
+                if all(
+                    dist <= 2
+                    for dist in (
+                        util.damerau_levenshtein_distance(p1, p2)
+                        for p1, p2 in zip(key_parts, key_definition_parts)
+                    )
+                ):
+                    candidates.append(original_key_definition)
+
+            return candidates
 
     def define_local_target(
         self,

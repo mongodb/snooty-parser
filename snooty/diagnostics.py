@@ -288,19 +288,24 @@ class UnknownSubstitution(Diagnostic):
     severity = Diagnostic.Level.warning
 
 
-class TargetNotFound(Diagnostic):
+class TargetNotFound(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
         name: str,
         target: str,
+        candidates: Sequence[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(f'Target not found: "{name}:{target}"', start, end)
         self.name = name
         self.target = target
+        self.candidates = list(candidates)
+
+    def did_you_mean(self) -> List[str]:
+        return self.candidates
 
 
 class AmbiguousTarget(Diagnostic):

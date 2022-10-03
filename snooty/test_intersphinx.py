@@ -224,3 +224,40 @@ intersphinx = ["booglygoogly not a real URL"]
         assert [type(diag) for diag in result.diagnostics[FileId("snooty.toml")]] == [
             FetchError
         ]
+
+
+def test_suggestions() -> None:
+    inventory_bytes = Path("test_data/test_intersphinx/manual.inv").read_bytes()
+    inventory = Inventory.parse(INVENTORY_URL, inventory_bytes)
+    db = TargetDatabase(intersphinx_inventories={"manual": inventory})
+
+    db.define_local_target(
+        "std",
+        "option",
+        ["--maxVarcharLength", "mongosqld.--maxVarcharLength"],
+        FileId("reference/mongosqld.txt"),
+        [n.Text(span=(7,), value="mongosqld --maxVarcharLength")],
+        "std-option-mongosqld.--maxVarcharLength",
+    )
+
+    db.define_local_target(
+        "std",
+        "label",
+        ["a-label-on-index"],
+        FileId("index.txt"),
+        [n.Text(span=(7,), value="A Label on Index")],
+        "std-label-a-label-on-index",
+    )
+
+    db.define_local_target(
+        "std",
+        "label",
+        ["a-label-on-index-2"],
+        FileId("reference/index.txt"),
+        [n.Text(span=(7,), value="A Label on Index 2")],
+        "std-label-a-label-on-index-2",
+    )
+
+    assert db.get_suggestions("std:label:a-labal-on-index") == [
+        "std:label:a-label-on-index"
+    ]

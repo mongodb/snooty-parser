@@ -108,7 +108,8 @@ class Backend(ProjectBackend):
 
             if isinstance(diagnostic, MakeCorrectionMixin):
                 did_you_mean = diagnostic.did_you_mean()
-                info["did_you_mean"] = did_you_mean
+                if did_you_mean:
+                    info["did_you_mean"] = did_you_mean
 
             if output == "JSON":
                 document: Dict[str, object] = {"diagnostic": info}
