@@ -2440,7 +2440,6 @@ This is a test intro
                 "snooty.toml"
             ): """
 name = "test_name"
-intersphinx = ["https://docs.mongodb.com/manual/objects.inv"]
 title = "MongoDB title"
 
 [[associated_products]]
