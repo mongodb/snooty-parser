@@ -1604,9 +1604,9 @@ type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/
 help = """Link to a page in the Atlas CLI documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailing_slash = true}
 
-[role."docstoplevel"]
-help = """Link to a page in top level MongoDB documentation."""
-type = {link = "https://www.mongodb.com/docs%s", ensure_trailing_slash = true}
+[role."mongodb-analyzer"]
+help = """Link to the MongoDB Analyzer documentation."""
+type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailing_slash = true}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
