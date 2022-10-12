@@ -1,3 +1,5 @@
+data_fields = ["source_page_template", "assets"]
+
 [meta]
 version = 0
 
@@ -497,10 +499,18 @@ help = """The code content."""
 argument_type = ["path", "raw"]
 content_type = "raw"
 options.language = "string"
+options.start-after = "string"
+options.end-before = "string"
+options.dedent = ["nonnegative_integer", "flag"]
+options.lineno-start = "nonnegative_integer"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
 example = """.. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
+      :start-after: ${2:text to start after (Optional}}
+      :end-before: ${3:text to end before (Optional}}
+      :dedent: ${4:number of chars to dedent by}
+      :lineno-start: ${5:nonnegative integer to start line numbering from}
       :emphasize-lines: (string)
       :linenos: (flag)
 """
@@ -510,11 +520,19 @@ help = """The code output."""
 argument_type = ["path", "raw"]
 content_type = "raw"
 options.language = "string"
+options.start-after = "string"
+options.end-before = "string"
+options.dedent = ["nonnegative_integer", "flag"]
+options.lineno-start = "nonnegative_integer"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
 options.visible = "boolean"
 example = """.. output:: ${0:code output or </path/to/file>}
       :language: ${1:language}
+      :start-after: ${2:text to start after (Optional}}
+      :end-before: ${3:text to end before (Optional}}
+      :dedent: ${4:number of chars to dedent by}
+      :lineno-start: ${5:nonnegative integer to start line numbering from}
       :emphasize-lines: (string)
       :linenos: (flag)
       :visible: (bool)
@@ -1582,6 +1600,14 @@ type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/
 [role."oas-atlas-op"]
 type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/#operation%s"}
 
+[role."atlascli"]
+help = """Link to a page in the Atlas CLI documentation."""
+type = {link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailing_slash = true}
+
+[role."mongodb-analyzer"]
+help = """Link to the MongoDB Analyzer documentation."""
+type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailing_slash = true}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
@@ -1857,10 +1883,11 @@ realm-languages = [
   {id = "swift", title = "Swift"},
   {id = "kotlin", title = "Kotlin"},
   {id = "typescript", title = "TypeScript"},
-  {id = "java", title = "Java"},
-  {id = "objective-c", title = "Objective C"},
   {id = "javascript", title = "JavaScript"},
   {id = "c-sharp", title = "C#"},
+  {id = "dart", title = "Dart"},
+  {id = "java", title = "Java"},
+  {id = "objective-c", title = "Objective C"},
 ]
 realm-sdks = [
   {id = "functions", title = "Functions"},
