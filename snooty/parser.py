@@ -605,10 +605,8 @@ class JSONVisitor:
         doc.argument = argument
 
         argument_text = None
-        try:
+        if argument and isinstance(argument[0], n.Text):
             argument_text = argument[0].value
-        except (IndexError, AttributeError):
-            pass
 
         key: str = f"{domain}:{name}"
         if name == "todo":
@@ -715,7 +713,7 @@ class JSONVisitor:
 
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
+                    CannotOpenFile(Path(argument_text), err.strerror, line)
                 )
                 return doc
 
@@ -736,11 +734,13 @@ class JSONVisitor:
                 text = filepath.read_text(encoding="utf-8")
             except OSError as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, err.strerror, line)
+                    CannotOpenFile(Path(argument_text), err.strerror, line)
                 )
                 return doc
             except UnicodeDecodeError as err:
-                self.diagnostics.append(CannotOpenFile(argument_text, str(err), line))
+                self.diagnostics.append(
+                    CannotOpenFile(Path(argument_text), str(err), line)
+                )
                 return doc
 
             lines = text.split("\n")
@@ -900,7 +900,7 @@ class JSONVisitor:
                 response = util.HTTPCache.singleton().get(url)
             except requests.exceptions.RequestException as err:
                 self.diagnostics.append(
-                    CannotOpenFile(argument_text, str(err), util.get_line(node))
+                    CannotOpenFile(Path(argument_text), str(err), util.get_line(node))
                 )
                 return doc
 
