@@ -3264,7 +3264,7 @@ Link to :opsmgr:`Ops Manager </page?q=true>`
 <root fileid="../test.rst">
 <paragraph>
     <text>Link to </text><reference refuri="https://www.mongodb.com/docs/compass/current/"><text>Compass</text></reference>
-    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/charts/saas/path/"><text>Charts</text></reference>
+    <text>Link to </text><reference refuri="https://www.mongodb.com/docs/charts/path/"><text>Charts</text></reference>
     <text>Link to </text><reference refuri="https://www.mongodb.com/docs/atlas/path/#hash"><text>Atlas</text></reference>
     <text>Link to </text><reference refuri="https://www.mongodb.com/docs/guides/path/#hash"><text>Guides</text></reference>
     <text>Link to </text><reference refuri="https://www.mongodb.com/docs/cloud-manager/test.csv"><text>Cloud Manager file</text></reference>
