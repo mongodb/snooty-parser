@@ -1391,7 +1391,7 @@ inherit = "mdb-shell"
 
 [role.charts]
 help = """Link to a page in the Charts docs."""
-type = {link = "https://www.mongodb.com/docs/charts/saas%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/charts%s", ensure_trailing_slash = true}
 
 [role."charts-v0.10"]
 help = """Link to a page in v0.10 of the Charts docs."""
