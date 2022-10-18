@@ -136,7 +136,7 @@ class ProjectConfig:
     banners: List[BannerConfig] = field(default_factory=list)
     # banner_nodes contains parsed banner nodes with target data
     banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
-    constants: Dict[str, object] = field(default_factory=dict)
+    constants: Dict[str, Union[str, int, float]] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
     sharedinclude_root: Optional[str] = field(default=None)
@@ -191,7 +191,7 @@ class ProjectConfig:
     def render_constants(self) -> Tuple["ProjectConfig", List[Diagnostic]]:
         if not self.constants:
             return self, []
-        constants: Dict[str, object] = {}
+        constants: Dict[str, Union[str, int, float]] = {}
         all_diagnostics: List[Diagnostic] = []
         for k, v in self.constants.items():
             result, diagnostics = self._substitute(str(v), constants)
@@ -223,7 +223,7 @@ class ProjectConfig:
 
     @staticmethod
     def _substitute(
-        source: str, constants: Dict[str, object]
+        source: str, constants: Dict[str, Union[str, int, float]]
     ) -> Tuple[str, List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
