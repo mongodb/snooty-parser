@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.12] - 2022-10-19
+
 ### Fixed
 
 - Tigthen up the schema for the `constants` field in snooty.toml. It was excessively
