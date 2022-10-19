@@ -16,8 +16,10 @@ jobs:
         platform: [ubuntu-20.04, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.8'
         architecture: 'x64'
@@ -29,7 +31,7 @@ jobs:
       id: build_package
       run: make package
     - name: Upload package
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: packages
         path: dist/${{ steps.build_package.outputs.package_filename }}
@@ -46,8 +48,8 @@ jobs:
       - name: Get environment
         id: environment
         run: |
-          echo "::set-output name=date::$(date +%Y-%m-%d)"
-          echo "::set-output name=tag_name::$(echo ${{ github.ref }} | cut -d / -f 3)"
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "tag_name=$(echo ${{ github.ref }} | cut -d / -f 3)" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@4874428bc07f8473128b16dfb628a0bcfb6ca10d
