@@ -44,11 +44,11 @@ the parsed directory is as follows:
 reStructuredText directory
 ┣snooty.toml
 ┣source
-┃ ┣images
+┃ ┗images
 ┃   ┗image files here
-┃ ┣page-name
+┃ ┗page-name
 ┃   ┗sub-page-name.txt
-┃ ┣index.txt
+┃ ┗index.txt
 ┃ ┗page-name.txt
 ```
 
