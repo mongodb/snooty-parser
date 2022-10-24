@@ -836,6 +836,7 @@ help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "string", "uri"]
 options.uses-rst = "flag"
 options.uses-realm = "flag"
+options.preview = "flag"
 
 [directive."mongodb:operation"]
 content_type = "block"
