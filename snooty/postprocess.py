@@ -929,17 +929,21 @@ class OpenAPIHandler(Handler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.openapi_pages: Dict[str, self.SourceData] = {}
-    
+        self.openapi_pages: Dict[str, OpenAPIHandler.SourceData] = {}
+
     def get_metadata(self) -> Dict[str, SerializableType]:
         """Returns serialized object to be used as part of the build's metadata."""
 
         return {k: asdict(v) for k, v in self.openapi_pages.items()}
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or node.name != "openapi" or node.options.get("preview"):
+        if (
+            not isinstance(node, n.Directive)
+            or node.name != "openapi"
+            or node.options.get("preview")
+        ):
             return
-        
+
         current_file = fileid_stack.current
         current_slug = clean_slug(current_file.without_known_suffix)
 
@@ -953,7 +957,7 @@ class OpenAPIHandler(Handler):
         source_type = node.options.get("source_type")
         if not source_type:
             return
-        
+
         source = ""
         argument = node.argument[0]
         if source_type == "local" or source_type == "atlas":
@@ -962,7 +966,7 @@ class OpenAPIHandler(Handler):
         else:
             assert isinstance(argument, n.Reference)
             source = argument.refuri
-        
+
         self.openapi_pages[current_slug] = self.SourceData(source_type, source)
 
 
@@ -1968,6 +1972,7 @@ class DevhubPostprocessor(Postprocessor):
             ContentsHandler,
             BannerHandler,
             GuidesHandler,
+            OpenAPIHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2, DevhubHandler],
