@@ -48,7 +48,7 @@ reStructuredText directory
 ┃   ┗image files here
 ┃ ┣page-name
 ┃   ┗sub-page-name.txt
-┃	┣index.txt
+┃ ┣index.txt
 ┃ ┗page-name.txt
 ```
 
