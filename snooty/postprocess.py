@@ -1592,7 +1592,10 @@ class Postprocessor:
             document["iatree"] = iatree
 
         context[GuidesHandler].add_guides_metadata(document)
-        document["openapi_pages"] = context[OpenAPIHandler].get_metadata()
+
+        openapi_pages_metadata = context[OpenAPIHandler].get_metadata()
+        if len(openapi_pages_metadata) > 0:
+            document["openapi_pages"] = openapi_pages_metadata
 
         manpages = build_manpages(context)
         document["static_files"] = manpages

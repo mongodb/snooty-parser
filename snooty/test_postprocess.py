@@ -2504,6 +2504,23 @@ def test_openapi_metadata() -> None:
         assert atlas_page["source"] == "cloud"
 
 
+def test_openapi_preview() -> None:
+    with make_test(
+        {
+            Path(
+                "source/admin/api/preview.txt"
+            ): """
+.. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
+   :preview:
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        assert "openapi_pages" not in result.metadata
+
+
 def test_openapi_duplicates() -> None:
     with make_test(
         {
