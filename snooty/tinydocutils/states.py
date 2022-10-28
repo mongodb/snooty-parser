@@ -182,7 +182,6 @@ class Inliner:
             literal: Pattern[str],
             target: Pattern[str],
             substitution_ref: Pattern[str],
-            email: Pattern[str],
             uri: Pattern[str],
             rfc: Pattern[str],
         ) -> None:
@@ -194,7 +193,6 @@ class Inliner:
             self.literal = literal
             self.target = target
             self.substitution_ref = substitution_ref
-            self.email = email
             self.uri = uri
             self.rfc = rfc
 
@@ -323,7 +321,6 @@ class Inliner:
                 self.non_whitespace_escape_before + r"(\|_{0,2})" + end_string_suffix,
                 re.UNICODE,
             ),
-            email=re.compile(self.email_pattern % args + "$", re.VERBOSE | re.UNICODE),
             uri=re.compile(
                 (
                     r"""
@@ -349,12 +346,6 @@ class Inliner:
                         %(uri_end)s
                       )?
                     )
-                  )
-                |                       # *OR*
-                  (?P<email>              # email address
-                    """
-                    + self.email_pattern
-                    + r"""
                   )
                 )
                 %(end_string_suffix)s
@@ -449,13 +440,6 @@ class Inliner:
     # End of a URI (either 'urilast' or 'uric followed by a
     # uri_end_delim'):
     uri_end = rf"""(?:{urilast}|{uric}(?={uri_end_delim}))"""
-    emailc = r"""[-_!~*'{|}/#?^`&=+$%a-zA-Z0-9\x00]"""
-    email_pattern = r"""
-          %(emailc)s+(?:\.%(emailc)s+)*   # name
-          (?<!\x00)@                      # at
-          %(emailc)s+(?:\.%(emailc)s*)*   # host
-          %(uri_end)s                     # final URI char
-          """
 
     def quoted_start(self, match: Match[str]) -> bool:
         """Test if inline markup start-string is 'quoted'.
@@ -600,7 +584,7 @@ class Inliner:
                 # remove unescaped whitespace
                 alias_parts = split_escaped_whitespace(match.group(2))
                 alias = " ".join("".join(part.split()) for part in alias_parts)
-                alias = self.adjust_uri(unescape(alias))
+                alias = unescape(alias)
                 if alias.endswith(r"\_"):
                     alias = alias[:-2] + "_"
                 target = nodes.target(match.group(1), refuri=alias)
@@ -648,13 +632,6 @@ class Inliner:
                 reference["refname"] = refname
                 self.document.note_refname(reference)
         return before, node_list, after, []
-
-    def adjust_uri(self, uri: str) -> str:
-        match = self.patterns.email.match(uri)
-        if match:
-            return "mailto:" + uri
-        else:
-            return uri
 
     def interpreted(
         self, rawsource: str, text: str, role: str, lineno: int
@@ -787,12 +764,8 @@ class Inliner:
             not match.group("scheme")
             or match.group("scheme").lower() in urischemes.schemes
         ):
-            if match.group("email"):
-                addscheme = "mailto:"
-            else:
-                addscheme = ""
             text = match.group("whole")
-            refuri = addscheme + unescape(text)
+            refuri = unescape(text)
             reference = nodes.reference(unescape(text, True), text, refuri=refuri)
             return [reference]
         else:  # not a valid scheme
@@ -2093,7 +2066,7 @@ class Body(RSTState):
             name = normalize_name(unescape(targetname))
             target["names"].append(name)
             if refuri:
-                uri = self.inliner.adjust_uri(refuri)
+                uri = refuri
                 if uri:
                     target["refuri"] = uri
                 else:

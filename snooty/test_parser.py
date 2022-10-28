@@ -1928,7 +1928,7 @@ def test_figure() -> None:
         parser,
         path,
         """
-.. figure:: /test_parser/sample.png
+.. figure:: /test_parser/sample@2x.png
    :alt: sample png
 
 .. figure:: /test_parser/sample.jpg
@@ -1942,7 +1942,7 @@ def test_figure() -> None:
         """
 <root fileid="test.rst">
     <directive name="figure" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665" width="100.0" height="100.0">
-        <text>/test_parser/sample.png</text>
+        <text>/test_parser/sample@2x.png</text>
     </directive>
     <directive name="figure" alt="sample jpeg" checksum="423345d0e4268d547aeaef46b74479f5df6e949d2b3288de1507f1f3082805ae" width="100.0" height="100.0">
         <text>/test_parser/sample.jpg</text>
