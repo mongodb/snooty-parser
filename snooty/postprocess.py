@@ -919,6 +919,62 @@ class GuidesHandler(Handler):
             self.guides[current_slug].description = node.children
 
 
+class OpenAPIHandler(Handler):
+    """Constructs metadata for OpenAPI content pages."""
+
+    @dataclass
+    class SourceData:
+        source_type: str
+        source: str
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.openapi_pages: Dict[str, OpenAPIHandler.SourceData] = {}
+
+    def get_metadata(self) -> Dict[str, SerializableType]:
+        """Returns serialized object to be used as part of the build's metadata."""
+
+        return {k: asdict(v) for k, v in self.openapi_pages.items()}
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if (
+            not isinstance(node, n.Directive)
+            or node.name != "openapi"
+            or node.options.get("preview")
+        ):
+            return
+
+        current_file = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
+
+        if current_slug in self.openapi_pages:
+            self.context.diagnostics[current_file].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
+
+        # source_type should be assigned in the parsing layer
+        source_type = node.options.get("source_type")
+        if not source_type:
+            return
+
+        source = ""
+        argument = node.argument[0]
+        # The parser determines the source_type based on the given argument and its
+        # node structure. We echo that logic here to grab the source without needing
+        # to worry about the argument's node structure.
+        # The source_type cannot be manually set in rST as long as the option is not exposed
+        # in the rstspec.
+        if source_type == "local" or source_type == "atlas":
+            assert isinstance(argument, n.Text)
+            source = argument.get_text()
+        else:
+            assert isinstance(argument, n.Reference)
+            source = argument.refuri
+
+        self.openapi_pages[current_slug] = self.SourceData(source_type, source)
+
+
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -1443,6 +1499,7 @@ class Postprocessor:
             ContentsHandler,
             BannerHandler,
             GuidesHandler,
+            OpenAPIHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
@@ -1540,6 +1597,10 @@ class Postprocessor:
             document["iatree"] = iatree
 
         context[GuidesHandler].add_guides_metadata(document)
+
+        openapi_pages_metadata = context[OpenAPIHandler].get_metadata()
+        if len(openapi_pages_metadata) > 0:
+            document["openapi_pages"] = openapi_pages_metadata
 
         manpages = build_manpages(context)
         document["static_files"] = manpages
@@ -1919,6 +1980,7 @@ class DevhubPostprocessor(Postprocessor):
             ContentsHandler,
             BannerHandler,
             GuidesHandler,
+            OpenAPIHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2, DevhubHandler],

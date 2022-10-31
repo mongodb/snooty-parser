@@ -662,6 +662,7 @@ class JSONVisitor:
                     spec = json.dumps(safe_load(file_content))
                     spec_node = n.Text((line,), spec)
                     doc.children.append(spec_node)
+                    doc.options["source_type"] = "url"
                     return doc
                 except:
                     pass
@@ -672,6 +673,7 @@ class JSONVisitor:
                 return doc
 
             if uses_realm:
+                doc.options["source_type"] = "atlas"
                 return doc
 
             openapi_fileid, filepath = util.reroot_path(
@@ -710,6 +712,7 @@ class JSONVisitor:
                         spec = json.dumps(safe_load(f))
                         spec_node = n.Text((line,), spec)
                         doc.children.append(spec_node)
+                        doc.options["source_type"] = "local"
 
             except OSError as err:
                 self.diagnostics.append(

@@ -2451,3 +2451,95 @@ versions = ["v1", "v2"]
         metadata = cast(Dict[str, Any], result.metadata)
         assert len(metadata["associated_products"]) == 1
         assert len(metadata["associated_products"][0]["versions"]) == 2
+
+
+def test_openapi_metadata() -> None:
+    with make_test(
+        {
+            Path(
+                "source/admin/api/v3.txt"
+            ): """
+:orphan:
+:template: openapi
+:title: Atlas App Services Admin API
+
+.. default-domain: mongodb
+
+.. _admin-api:
+
+.. openapi:: /openapi-admin-v3.yaml
+            """,
+            Path("source/openapi-admin-v3.yaml"): "",
+            Path(
+                "source/admin/api/url.txt"
+            ): """
+.. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
+            """,
+            Path(
+                "source/admin/api/atlas.txt"
+            ): """
+.. openapi:: cloud
+   :uses-realm:
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        openapi_pages = cast(Dict[str, Any], result.metadata["openapi_pages"])
+
+        local_file_page = openapi_pages["admin/api/v3"]
+        assert local_file_page["source_type"] == "local"
+        assert local_file_page["source"] == "/openapi-admin-v3.yaml"
+
+        url_page = openapi_pages["admin/api/url"]
+        assert url_page["source_type"] == "url"
+        assert (
+            url_page["source"]
+            == "https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml"
+        )
+
+        atlas_page = openapi_pages["admin/api/atlas"]
+        assert atlas_page["source_type"] == "atlas"
+        assert atlas_page["source"] == "cloud"
+
+
+def test_openapi_preview() -> None:
+    with make_test(
+        {
+            Path(
+                "source/admin/api/preview.txt"
+            ): """
+.. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
+   :preview:
+            """,
+        }
+    ) as result:
+        assert not [
+            diagnostics for diagnostics in result.diagnostics.values() if diagnostics
+        ], "Should not raise any diagnostics"
+        assert "openapi_pages" not in result.metadata
+
+
+def test_openapi_duplicates() -> None:
+    with make_test(
+        {
+            Path(
+                "source/admin/api/v3.txt"
+            ): """
+.. openapi:: /openapi-admin-v3.yaml
+
+.. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
+            """,
+            Path("source/openapi-admin-v3.yaml"): "",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("admin/api/v3.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicateDirective)
+
+        openapi_pages = cast(Dict[str, Any], result.metadata["openapi_pages"])
+        # First openapi directive should be source of truth
+        file_metadata = openapi_pages["admin/api/v3"]
+        assert file_metadata["source_type"] == "local"
+        assert file_metadata["source"] == "/openapi-admin-v3.yaml"
