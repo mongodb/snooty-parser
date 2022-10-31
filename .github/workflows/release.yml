@@ -19,10 +19,12 @@ jobs:
       with:
         python-version: '3.11'
         architecture: 'x64'
+    - name: Setup poetry
+      run: python3 -m pip install poetry
+    - name: Install dependencies
+      run: python3 -m poetry install
     - name: Run tests
       run: make test
-      env:
-        FLIT_ROOT_INSTALL: "1"
     - name: Build package
       id: build_package
       run: make package
