@@ -95,20 +95,24 @@ Helper functions to help the Parser in navigating through the reStructuredText. 
 
 ## Developing Snooty
 
-1. Run the following to install the necessary tools:
+1. Install [Poetry](https://python-poetry.org/docs/)
+
+2. Set up the project's dependencies.
 
    ```shell
-   python3 -m pip install flit virtualenv
+   poetry install
    ```
 
-2. Make your changes to the source code.
+3. Make your changes to the source code.
 
-3. Run `make test` and `make format ` to check that the tests pass and fix your formatting. This will also install the prerequirements defined in pyproject.toml.
+4. Run `make test` and `make format ` to check that the tests pass and fix your formatting. This will also install the prerequirements defined in pyproject.toml.
 
-4. Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
+5. You can activate a shell where the `snooty` command is available by running:
 
    ```shell
-   flit install -s
+   poetry shell
+
+   snooty build <docs_property_path>
    ```
 
 ### Running tests
@@ -116,13 +120,12 @@ Helper functions to help the Parser in navigating through the reStructuredText. 
 To run tests for a specific file:
 
 ```shell
-. .venv/bin/activate
-pytest snooty/test_<file>.py
+poetry run pytest snooty/test_<file>.py
 ```
 
 ### Code Coverage
 
-Install [Coverage](https://coverage.readthedocs.io/en/v4.5.x/). After running tests via `make format test`, run:
+Install [Coverage](https://coverage.readthedocs.io/). After running tests via `make format test`, run:
 
 ```shell
 coverage html
