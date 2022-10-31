@@ -960,6 +960,11 @@ class OpenAPIHandler(Handler):
 
         source = ""
         argument = node.argument[0]
+        # The parser determines the source_type based on the given argument and its
+        # node structure. We echo that logic here to grab the source without needing
+        # to worry about the argument's node structure.
+        # The source_type cannot be manually set in rST as long as the option is not exposed
+        # in the rstspec.
         if source_type == "local" or source_type == "atlas":
             assert isinstance(argument, n.Text)
             source = argument.get_text()
