@@ -19,14 +19,14 @@ The snooty parser has the following key parts:
 ### Drivers
 
 Snooty *drivers* instantiate a parser and use it to interact with
-reStructuredText and YAML files, and to create output artifacts and
+input reStructuredText and YAML files, and to create output artifacts and
 report diagnostics.
 
 These drivers instantiate a `parser.Project` object.
 
 #### `main.py`
 
-`main.py` defines the main command-line Snooty interface.
+`main.py` defines the main command-line Snooty interface. See CLI usage at head of file.
 
 #### `language_server.py`
 
@@ -38,7 +38,21 @@ for use with IDEs such as Visual Studio Code.
 
 The `parser.Project` class is the main driver-agnostic interface to
 Snooty. It reads a `snooty.toml` file to configure the project, and
-parses each file with `rstparser.Parser`.
+parses each file with `rstparser.Parser`. The general expected format of
+the parsed directory is as follows:
+```
+reStructuredText directory
+┣snooty.toml
+┣source
+┃ ┗images
+┃   ┗image files here
+┃ ┗includes
+┃   ┗fact-some-content.rst
+┃ ┗page-name
+┃   ┗sub-page-name.txt
+┃ ┗index.txt
+┃ ┗page-name.txt
+```
 
 `rstparser.Parser` is responsible for transforming input reStructuredText artifacts
 (.rst & .txt) into our JSON AST format. It instantiates a visitor object
@@ -50,8 +64,6 @@ callbacks to notify the backend of the parsed page.
 The parser transforms Giza-style YAML files using the `gizaparser`
 package. This uses the `flutter` library to deserialize the YAML files
 into Python classes, and check types to ensure there are no errors.
-
-#### `parser.py`
 
 #### `rstparser.py`
 
@@ -67,9 +79,19 @@ helper classes.
 
 #### `flutter.py`
 
+Tool to load arbitrary JSON/YAML/TOML data into a class and report schema violations.
+
 #### `types.py`
 
+Definitions of high level configuration components that make up the parser, ie. ProjectConfig
+
+#### `n.py`
+
+Node type definitions that the parser generates for front end consumption.
+
 #### `util.py`
+
+Helper functions to help the Parser in navigating through the reStructuredText. Also includes helper global classes ie. logger and cacher
 
 ## Developing Snooty
 
@@ -81,7 +103,7 @@ helper classes.
 
 2. Make your changes to the source code.
 
-3. (Optionally) Run `make test` and `make format ` to check that the tests pass and fix your formatting.
+3. Run `make test` and `make format ` to check that the tests pass and fix your formatting. This will also install the prerequirements defined in pyproject.toml.
 
 4. Use [Flit](https://flit.readthedocs.io/en/latest/) to install Snooty. The module will be symlinked (via `-s`) to allow for testing changes without reinstalling the module.
 
@@ -116,7 +138,7 @@ To run all linting, use `make lint`. To format source code, use `make format`.
 
 ### Prerequisites
 
-Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew.
+Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew. This is required to [sign a git tag with your username](https://git-scm.com/docs/git-tag#Documentation/git-tag.txt--s).
 
 If you have not generated a key before, follow the instructions from [GitHub Docs on Generating a new GPG key](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-gpg-key).
 
