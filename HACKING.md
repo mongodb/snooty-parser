@@ -46,6 +46,8 @@ reStructuredText directory
 ┣source
 ┃ ┗images
 ┃   ┗image files here
+┃ ┗includes
+┃   ┗fact-some-content.rst
 ┃ ┗page-name
 ┃   ┗sub-page-name.txt
 ┃ ┗index.txt
@@ -77,11 +79,15 @@ helper classes.
 
 #### `flutter.py`
 
-Tool to verify and mark validity for any Giza-style YAML input.
+Tool to load arbitrary JSON/YAML/TOML data into a class and report schema violations.
 
 #### `types.py`
 
-Definitions of class components that make up the parser. See n.py for more granular types of nodes that are expected within the reStructuredText.
+Definitions of high level configuration components that make up the parser, ie. ProjectConfig
+
+#### `n.py`
+
+Node type definitions that the parser generates for front end consumption.
 
 #### `util.py`
 
