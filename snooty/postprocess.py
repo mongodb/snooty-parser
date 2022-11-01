@@ -1669,6 +1669,15 @@ class Postprocessor:
             # Recursively build the tree for each toctree node in this entries list
             for entry in ast.entries:
                 toctree_node: Dict[str, object] = {}
+                if entry.ref_project:
+                    toctree_node = {
+                        "title": [n.Text((0,), entry.title).serialize()]
+                        if entry.title
+                        else None,
+                        "options": {
+                            "project": entry.ref_project
+                        }
+                    }
                 if entry.url:
                     toctree_node = {
                         "title": [n.Text((0,), entry.title).serialize()]

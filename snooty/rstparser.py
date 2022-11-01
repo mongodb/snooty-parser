@@ -39,6 +39,9 @@ from .flutter import LoadError, check_type, checked
 from .gizaparser import nodes
 from .gizaparser.parse import load_yaml
 from .types import ProjectConfig
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 RoleHandlerType = Callable[
     [
@@ -929,6 +932,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         errors: List[docutils.nodes.Node] = []
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
+            # TODO: check for duplicates within existing entries
             errors.extend(err)
             if entry:
                 entries.append(entry)
@@ -941,17 +945,23 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
     ) -> Tuple[Optional[n.TocTreeDirectiveEntry], List[docutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
         match = PAT_EXPLICIT_TITLE.match(child)
+        LOGGER.info(self.state_machine)
         title: Optional[str] = None
         url: Optional[str] = None
         slug: Optional[str] = None
+        ref_project: Optional[str] = None
         if match:
             title, target = match["label"], match["target"]
+            if target.startswith('|') and target.endswith('|'):
+                # CHECK PROJECT CONFIG FOR ASSOCIATED PROJECTS
+                ref_project = target[1:-1]
+                target = None
         else:
             target = child
 
         if not title and util.PAT_URI.match(target):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
-            err = "toctree nodes with URLs must include titles"
+            err = "toctree nodes with URLs or project references must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)
             return None, [error_node]
 
@@ -960,7 +970,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
             url = target
         else:
             slug = target
-        return n.TocTreeDirectiveEntry(title, url, slug), []
+        return n.TocTreeDirectiveEntry(title, url, slug, ref_project), []
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):
