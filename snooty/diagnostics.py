@@ -410,6 +410,20 @@ class InvalidTocTree(Diagnostic, MakeCorrectionMixin):
     def did_you_mean(self) -> List[str]:
         return [".. ia::"]
 
+class MissingAssociatedToc(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        expected_project: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"The toctree entry {expected_project} does not exist in project config associated projects. Removing this toctree entry",
+            start,
+            end,
+        )
 
 class InvalidIAEntry(Diagnostic):
     severity = Diagnostic.Level.error

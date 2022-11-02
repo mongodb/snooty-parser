@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pdb
 import collections
 import errno
 import getpass
@@ -57,6 +58,7 @@ from .diagnostics import (
     InvalidURL,
     MalformedGlossary,
     MalformedRelativePath,
+    MissingAssociatedToc,
     MissingChild,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
@@ -67,7 +69,7 @@ from .diagnostics import (
 )
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .openapi import OpenAPI
 from .page import Page, PendingTask
 from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
@@ -576,6 +578,11 @@ class JSONVisitor:
         options = node["options"] or {}
 
         if name == "toctree":
+            self.diagnostics.extend(validate_toc_entries(
+                node["entries"],
+                self.project_config.associated_products,
+                line
+            ))
             doc: n.Directive = n.TocTreeDirective(
                 (line,), [], domain, name, [], options, node["entries"]
             )
@@ -1066,6 +1073,24 @@ class JSONVisitor:
         visitor.pending = self.pending
         return visitor
 
+def validate_toc_entries(
+    node_entries: List[TocTreeDirectiveEntry], associated_products: ProjectConfig.associated_products, line: int
+) -> List[Diagnostic]:
+    """
+    validates that external toc node exists as one of the associated products
+    if not found, removes this node and emits a warning
+    associated_products come in form of {name: str, versions: List[str]}
+    """
+    diagnostics: List[Diagnostic] = []
+    associated_product_names = [product['name'] for product in associated_products]
+    for toc_entry in node_entries:
+        if toc_entry.ref_project and toc_entry.ref_project not in associated_product_names:
+            diagnostics.append(MissingAssociatedToc(
+                toc_entry.ref_project, 
+                line
+            ))
+            node_entries.remove(toc_entry)
+    return diagnostics
 
 def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
     """Validates that a given io-code-block directive has 1 input and 1 output
@@ -1638,22 +1663,23 @@ class _Project:
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-        pool = multiprocessing.Pool(max_workers)
-        with util.PerformanceLogger.singleton().start("parse rst"):
-            try:
-                paths = util.get_files(
-                    self.config.source_path, RST_EXTENSIONS, self.config.root
-                )
-                logger.debug("Processing rst files")
-                results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-                for sequence in results:
-                    for page, diagnostics in sequence:
-                        self._page_updated(page, diagnostics)
-            finally:
-                # We cannot use the multiprocessing.Pool context manager API due to the following:
-                # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
-                pool.close()
-                pool.join()
+        paths = util.get_files(
+            self.config.source_path, RST_EXTENSIONS, self.config.root
+        )
+        # TODO: revert. for testing single thread purposes
+        # pool = multiprocessing.Pool(max_workers)
+        results = map(lambda path: parse_rst(self.parser, path), paths)
+        for sequence in results:
+            for page, diagnostics in sequence:
+                self._page_updated(page, diagnostics)
+        # with util.PerformanceLogger.singleton().start("parse rst"):
+        #     try:
+        #         # results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
+        #     finally:
+        #         # We cannot use the multiprocessing.Pool context manager API due to the following:
+        #         # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+        #         pool.close()
+        #         pool.join()
 
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")

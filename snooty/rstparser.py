@@ -39,9 +39,6 @@ from .flutter import LoadError, check_type, checked
 from .gizaparser import nodes
 from .gizaparser.parse import load_yaml
 from .types import ProjectConfig
-import logging
-
-LOGGER = logging.getLogger(__name__)
 
 RoleHandlerType = Callable[
     [
@@ -930,6 +927,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
         entries: List[n.TocTreeDirectiveEntry] = []
         errors: List[docutils.nodes.Node] = []
+        print('BaseTocTreeDirective(docutils.parsers.rst.Directive) run')
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
             # TODO: check for duplicates within existing entries
@@ -945,15 +943,14 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
     ) -> Tuple[Optional[n.TocTreeDirectiveEntry], List[docutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
         match = PAT_EXPLICIT_TITLE.match(child)
-        LOGGER.info(self.state_machine)
         title: Optional[str] = None
         url: Optional[str] = None
         slug: Optional[str] = None
         ref_project: Optional[str] = None
         if match:
             title, target = match["label"], match["target"]
+            # pipelines denote project reference
             if target.startswith('|') and target.endswith('|'):
-                # CHECK PROJECT CONFIG FOR ASSOCIATED PROJECTS
                 ref_project = target[1:-1]
                 target = None
         else:
@@ -1246,6 +1243,8 @@ class Parser(Generic[_V]):
         self.visitor_class = visitor_class
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
+        print('parse')
+        # print(self)
         Registry.get(self.project_config.default_domain).activate()
 
         diagnostics: List[Diagnostic] = []
@@ -1263,5 +1262,6 @@ class Parser(Generic[_V]):
 
         visitor = self.visitor_class(self.project_config, path, document)
         visitor.add_diagnostics(diagnostics)
+        print('1272 document.walkabout')
         document.walkabout(visitor)
         return visitor, text
