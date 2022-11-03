@@ -1662,23 +1662,22 @@ class _Project:
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-        paths = util.get_files(
-            self.config.source_path, RST_EXTENSIONS, self.config.root
-        )
-        # TODO: revert. for testing single thread purposes
-        # pool = multiprocessing.Pool(max_workers)
-        results = map(lambda path: parse_rst(self.parser, path), paths)
-        for sequence in results:
-            for page, diagnostics in sequence:
-                self._page_updated(page, diagnostics)
-        # with util.PerformanceLogger.singleton().start("parse rst"):
-        #     try:
-        #         # results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-        #     finally:
-        #         # We cannot use the multiprocessing.Pool context manager API due to the following:
-        #         # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
-        #         pool.close()
-        #         pool.join()
+        pool = multiprocessing.Pool(max_workers)
+        with util.PerformanceLogger.singleton().start("parse rst"):
+            try:
+                paths = util.get_files(
+                    self.config.source_path, RST_EXTENSIONS, self.config.root
+                )
+                logger.debug("Processing rst files")
+                results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
+                for sequence in results:
+                    for page, diagnostics in sequence:
+                        self._page_updated(page, diagnostics)
+            finally:
+                # We cannot use the multiprocessing.Pool context manager API due to the following:
+                # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+                pool.close()
+                pool.join()
 
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")

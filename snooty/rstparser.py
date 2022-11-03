@@ -929,7 +929,6 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         errors: List[docutils.nodes.Node] = []
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
-            # TODO: check for duplicates within existing entries
             errors.extend(err)
             if entry:
                 entries.append(entry)
