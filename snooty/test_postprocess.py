@@ -9,6 +9,7 @@ from .diagnostics import (
     ChapterAlreadyExists,
     DocUtilsParseError,
     DuplicateDirective,
+    DuplicatedExternalToc,
     ExpectedPathArg,
     ExpectedTabs,
     GuideAlreadyHasChapter,
@@ -557,6 +558,42 @@ def test_toctree_self_add() -> None:
 </toctree>
 """,
         )
+
+def test_toctree_duplicate_node() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+title = "MongoDB title"
+
+[[associated_products]]
+name = "test_associated_product"
+versions = ["v1", "v2"]
+            """,
+            Path(
+                "source/index.txt"
+            ): """
+.. toctree::
+
+    /page1
+    Duplicate Toc <|test_associated_product|>
+            """,
+            Path("source/page1.txt"): """
+==================
+Page 1
+==================
+
+.. toctree::
+
+   Duplicate Toc <|test_associated_product|>
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicatedExternalToc)
 
 
 def test_case_sensitive_labels() -> None:

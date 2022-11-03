@@ -927,7 +927,6 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
         entries: List[n.TocTreeDirectiveEntry] = []
         errors: List[docutils.nodes.Node] = []
-        print('BaseTocTreeDirective(docutils.parsers.rst.Directive) run')
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
             # TODO: check for duplicates within existing entries
@@ -1243,8 +1242,6 @@ class Parser(Generic[_V]):
         self.visitor_class = visitor_class
 
     def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
-        print('parse')
-        # print(self)
         Registry.get(self.project_config.default_domain).activate()
 
         diagnostics: List[Diagnostic] = []
@@ -1262,6 +1259,5 @@ class Parser(Generic[_V]):
 
         visitor = self.visitor_class(self.project_config, path, document)
         visitor.add_diagnostics(diagnostics)
-        print('1272 document.walkabout')
         document.walkabout(visitor)
         return visitor, text
