@@ -425,6 +425,21 @@ class MissingAssociatedToc(Diagnostic):
             end,
         )
 
+class DuplicatedExternalToc(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        duplicated_toc: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"The external toctree entry {duplicated_toc} is duplicated",
+            start,
+            end,
+        )
+
 class InvalidIAEntry(Diagnostic):
     severity = Diagnostic.Level.error
 

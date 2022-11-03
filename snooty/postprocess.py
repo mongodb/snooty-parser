@@ -36,6 +36,7 @@ from .diagnostics import (
     ChapterAlreadyExists,
     Diagnostic,
     DuplicateDirective,
+    DuplicatedExternalToc,
     ExpectedPathArg,
     ExpectedTabs,
     GuideAlreadyHasChapter,
@@ -1658,6 +1659,7 @@ class Postprocessor:
         node: Dict[str, Any],
         toc_landing_pages: List[str],
         visited_file_ids: Set[FileId] = set(),
+        external_nodes: List[str] = []
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
 
@@ -1678,6 +1680,9 @@ class Postprocessor:
                             "project": entry.ref_project
                         }
                     }
+                    if toctree_node in external_nodes:
+                        context.diagnostics[fileid].append(DuplicatedExternalToc(entry.ref_project, ast.span[0]))
+                    external_nodes.append(toctree_node)
                 if entry.url:
                     toctree_node = {
                         "title": [n.Text((0,), entry.title).serialize()]
@@ -1745,6 +1750,7 @@ class Postprocessor:
                             toctree_node,
                             toc_landing_pages,
                             visited_file_ids.union({slug_fileid}),
+                            external_nodes
                         )
 
                 if toctree_node:
@@ -1753,7 +1759,7 @@ class Postprocessor:
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
             cls.find_toctree_nodes(
-                context, fileid, child_ast, node, toc_landing_pages, visited_file_ids
+                context, fileid, child_ast, node, toc_landing_pages, visited_file_ids, external_nodes
             )
 
     @staticmethod
