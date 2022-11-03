@@ -8,8 +8,8 @@ from . import diagnostics
 from .diagnostics import (
     ChapterAlreadyExists,
     DocUtilsParseError,
-    DuplicateDirective,
     DuplicatedExternalToc,
+    DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
     GuideAlreadyHasChapter,
@@ -559,6 +559,7 @@ def test_toctree_self_add() -> None:
 """,
         )
 
+
 def test_toctree_duplicate_node() -> None:
     with make_test(
         {
@@ -580,7 +581,9 @@ versions = ["v1", "v2"]
     /page1
     Duplicate Toc <|test_associated_product|>
             """,
-            Path("source/page1.txt"): """
+            Path(
+                "source/page1.txt"
+            ): """
 ==================
 Page 1
 ==================

@@ -50,6 +50,8 @@ mypy_path = "stubs"
 strict_equality = true
 
 [tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
 testpaths = [
     "snooty",
     "tools",

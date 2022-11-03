@@ -577,11 +577,11 @@ class JSONVisitor:
         options = node["options"] or {}
 
         if name == "toctree":
-            self.diagnostics.extend(validate_toc_entries(
-                node["entries"],
-                self.project_config.associated_products,
-                line
-            ))
+            self.diagnostics.extend(
+                validate_toc_entries(
+                    node["entries"], self.project_config.associated_products, line
+                )
+            )
             doc: n.Directive = n.TocTreeDirective(
                 (line,), [], domain, name, [], options, node["entries"]
             )
@@ -1072,8 +1072,11 @@ class JSONVisitor:
         visitor.pending = self.pending
         return visitor
 
+
 def validate_toc_entries(
-    node_entries: List[TocTreeDirectiveEntry], associated_products: ProjectConfig.associated_products, line: int
+    node_entries: List[TocTreeDirectiveEntry],
+    associated_products: List[Dict[str, object]],
+    line: int,
 ) -> List[Diagnostic]:
     """
     validates that external toc node exists as one of the associated products
@@ -1081,15 +1084,16 @@ def validate_toc_entries(
     associated_products come in form of {name: str, versions: List[str]}
     """
     diagnostics: List[Diagnostic] = []
-    associated_product_names = [product['name'] for product in associated_products]
+    associated_product_names = [product["name"] for product in associated_products]
     for toc_entry in node_entries:
-        if toc_entry.ref_project and toc_entry.ref_project not in associated_product_names:
-            diagnostics.append(MissingAssociatedToc(
-                toc_entry.ref_project, 
-                line
-            ))
+        if (
+            toc_entry.ref_project
+            and toc_entry.ref_project not in associated_product_names
+        ):
+            diagnostics.append(MissingAssociatedToc(toc_entry.ref_project, line))
             node_entries.remove(toc_entry)
     return diagnostics
+
 
 def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
     """Validates that a given io-code-block directive has 1 input and 1 output

@@ -410,6 +410,7 @@ class InvalidTocTree(Diagnostic, MakeCorrectionMixin):
     def did_you_mean(self) -> List[str]:
         return [".. ia::"]
 
+
 class MissingAssociatedToc(Diagnostic):
     severity = Diagnostic.Level.warning
 
@@ -425,6 +426,7 @@ class MissingAssociatedToc(Diagnostic):
             end,
         )
 
+
 class DuplicatedExternalToc(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -439,6 +441,7 @@ class DuplicatedExternalToc(Diagnostic):
             start,
             end,
         )
+
 
 class InvalidIAEntry(Diagnostic):
     severity = Diagnostic.Level.error

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import logging
-
 from . import rstparser
 from .diagnostics import (
     CannotOpenFile,
@@ -2647,7 +2645,11 @@ def test_toctree() -> None:
 """,
     )
     page.finish(diagnostics)
-    assert len(diagnostics) == 2 and "toctree" in diagnostics[0].message and "toctree" in diagnostics[1].message
+    assert (
+        len(diagnostics) == 2
+        and "toctree" in diagnostics[0].message
+        and "toctree" in diagnostics[1].message
+    )
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">

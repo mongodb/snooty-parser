@@ -948,7 +948,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         if match:
             title, target = match["label"], match["target"]
             # pipelines denote project reference
-            if target.startswith('|') and target.endswith('|'):
+            if target.startswith("|") and target.endswith("|"):
                 ref_project = target[1:-1]
                 target = None
         else:
