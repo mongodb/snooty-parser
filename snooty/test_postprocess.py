@@ -1774,6 +1774,15 @@ This is not `GitHub <https://twitter.com>`_
 
 Reference `GitHub`_
 """,
+            # Should not be able to link to a named reference from another .txt
+            Path(
+                "source/foo.txt"
+            ): """
+.. include:: /fact-reference.rst
+
+`docs link`_
+""",
+            Path("source/fact-reference.rst"): "`docs link`_",
         },
     ) as result:
 
@@ -1855,6 +1864,14 @@ Reference `GitHub`_
 </root>
 """,
         )
+
+        # Should not be able to link to a named reference from another .txt
+        active_file = "foo.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
+        active_file = "fact-reference.rst"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
 
 
 def test_contents_directive() -> None:
