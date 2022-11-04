@@ -374,13 +374,13 @@ class NamedReferenceHandlerPass1(Handler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.named_references: Dict[str, str] = {}
+        self.named_references: Dict[FileId, Dict[str, str]] = defaultdict(dict)
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.NamedReference):
             return
 
-        self.named_references[node.refname] = node.refuri
+        self.named_references[fileid_stack.root][node.refname] = node.refuri
 
 
 class NamedReferenceHandlerPass2(Handler):
@@ -396,8 +396,10 @@ class NamedReferenceHandlerPass2(Handler):
             # Node is already populated with url; nothing to do
             return
 
-        refuri = self.context[NamedReferenceHandlerPass1].named_references.get(
-            node.refname
+        refuri = (
+            self.context[NamedReferenceHandlerPass1]
+            .named_references[fileid_stack.root]
+            .get(node.refname)
         )
         if refuri is None:
             line = node.span[0]
