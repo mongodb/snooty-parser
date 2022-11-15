@@ -954,7 +954,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         else:
             target = child
 
-        if not title and util.PAT_URI.match(target):
+        if not title and (util.PAT_URI.match(target) or ref_project):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
             err = "toctree nodes with URLs or project references must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)

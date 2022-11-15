@@ -421,7 +421,9 @@ class MissingAssociatedToc(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"The toctree entry {expected_project} does not exist in project config associated projects. Removing this toctree entry",
+            f"""Detected an associated toctree entry at {expected_project} 
+            which does not exist in an associated_products entry within the snooty.toml. 
+            Removing this toctree entry.""",
             start,
             end,
         )
@@ -437,7 +439,7 @@ class DuplicatedExternalToc(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"The external toctree entry {duplicated_toc} is duplicated",
+            f"Detected a duplicated associated toctree entry at {duplicated_toc}. Removing this toctree entry.",
             start,
             end,
         )
