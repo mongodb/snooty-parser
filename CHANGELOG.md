@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.13] - 2022-11-16
+
 * Update GitHub actions by @i80and in https://github.com/mongodb/snooty-parser/pull/424
 * DOP-3159: README overhaul by @seungpark in https://github.com/mongodb/snooty-parser/pull/425
 * DOP-3307: Generate metadata for OpenAPI content pages by @rayangler in https://github.com/mongodb/snooty-parser/pull/426
