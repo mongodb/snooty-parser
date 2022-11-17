@@ -35,6 +35,7 @@ from .diagnostics import (
     CannotOpenFile,
     ChapterAlreadyExists,
     Diagnostic,
+    DuplicatedExternalToc,
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
@@ -1703,8 +1704,15 @@ class Postprocessor:
         toc_landing_pages = [
             clean_slug(slug) for slug in context[ProjectConfig].toc_landing_pages
         ]
+        ref_project_set: Set[Tuple[Optional[str], Optional[str]]] = set()
         cls.find_toctree_nodes(
-            context, starting_fileid, ast, root, toc_landing_pages, {starting_fileid}
+            context,
+            starting_fileid,
+            ast,
+            root,
+            toc_landing_pages,
+            ref_project_set,
+            {starting_fileid},
         )
 
         return root
@@ -1717,6 +1725,7 @@ class Postprocessor:
         ast: n.Node,
         node: Dict[str, Any],
         toc_landing_pages: List[str],
+        external_nodes: Set[Tuple[Optional[str], Optional[str]]],
         visited_file_ids: Set[FileId] = set(),
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
@@ -1729,6 +1738,19 @@ class Postprocessor:
             # Recursively build the tree for each toctree node in this entries list
             for entry in ast.entries:
                 toctree_node: Dict[str, object] = {}
+                if entry.ref_project:
+                    toctree_node = {
+                        "title": [n.Text((0,), entry.title).serialize()]
+                        if entry.title
+                        else None,
+                        "options": {"project": entry.ref_project},
+                    }
+                    ref_project_pair = (entry.title, entry.ref_project)
+                    if ref_project_pair in external_nodes:
+                        context.diagnostics[fileid].append(
+                            DuplicatedExternalToc(entry.ref_project, ast.span[0])
+                        )
+                    external_nodes.add(ref_project_pair)
                 if entry.url:
                     toctree_node = {
                         "title": [n.Text((0,), entry.title).serialize()]
@@ -1795,6 +1817,7 @@ class Postprocessor:
                             new_ast,
                             toctree_node,
                             toc_landing_pages,
+                            external_nodes,
                             visited_file_ids.union({slug_fileid}),
                         )
 
@@ -1804,7 +1827,13 @@ class Postprocessor:
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
             cls.find_toctree_nodes(
-                context, fileid, child_ast, node, toc_landing_pages, visited_file_ids
+                context,
+                fileid,
+                child_ast,
+                node,
+                toc_landing_pages,
+                external_nodes,
+                visited_file_ids,
             )
 
     @staticmethod

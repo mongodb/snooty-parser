@@ -2624,8 +2624,9 @@ This is an autonumbered footnote [#]_ in use.
 
 
 def test_toctree() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
-    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    project_root = ROOT_PATH.joinpath("test_project")
+    path = project_root.joinpath(Path("source/test.rst")).resolve()
+    [project_config, project_config_diagnostics] = ProjectConfig.open(project_root)
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -2638,17 +2639,21 @@ def test_toctree() -> None:
    Title here </test1>
    /test2/faq
    URL with title <https://www.mongodb.com/docs/atlas>
+   Associated Product <|non-existent-associated|>
+   Associated Product <|test-name|>
    <https://www.mongodb.com/docs/stitch>
 """,
     )
     page.finish(diagnostics)
-
-    # MESSAGE need to create a toctree diagnostic
-    assert len(diagnostics) == 1 and "toctree" in diagnostics[0].message
+    assert (
+        len(diagnostics) == 2
+        and "toctree" in diagnostics[0].message
+        and "toctree" in diagnostics[1].message
+    )
     check_ast_testing_string(
         page.ast,
         """<root fileid="test.rst">
-        <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://www.mongodb.com/docs/atlas'}]" />
+        <directive name="toctree" titlesonly="True" entries="[{'title': 'Title here', 'slug': '/test1'}, {'slug': '/test2/faq'}, {'title': 'URL with title', 'url': 'https://www.mongodb.com/docs/atlas'}, {'title': 'Associated Product', 'ref_project': 'test-name'}]" />
         </root>""",
     )
 

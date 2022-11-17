@@ -359,6 +359,7 @@ class TocTreeDirectiveEntry(NamedTuple):
     title: Optional[str]
     url: Optional[str]
     slug: Optional[str]
+    ref_project: Optional[str]
 
     def serialize(self) -> SerializedNode:
         result: SerializedNode = {}
@@ -368,6 +369,8 @@ class TocTreeDirectiveEntry(NamedTuple):
             result["url"] = self.url
         if self.slug:
             result["slug"] = self.slug
+        if self.ref_project:
+            result["ref_project"] = self.ref_project
         return result
 
 

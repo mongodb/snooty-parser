@@ -944,14 +944,19 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         title: Optional[str] = None
         url: Optional[str] = None
         slug: Optional[str] = None
+        ref_project: Optional[str] = None
         if match:
             title, target = match["label"], match["target"]
+            # pipelines denote project reference
+            if target.startswith("|") and target.endswith("|"):
+                ref_project = target[1:-1]
+                target = None
         else:
             target = child
 
-        if not title and util.PAT_URI.match(target):
+        if not title and (util.PAT_URI.match(target) or ref_project):
             # If entry is surrounded by <> tags, assume it is a URL and log an error.
-            err = "toctree nodes with URLs must include titles"
+            err = "toctree nodes with URLs or project references must include titles"
             error_node = self.state.document.reporter.error(err, line=self.lineno)
             return None, [error_node]
 
@@ -960,7 +965,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
             url = target
         else:
             slug = target
-        return n.TocTreeDirectiveEntry(title, url, slug), []
+        return n.TocTreeDirectiveEntry(title, url, slug, ref_project), []
 
 
 class NoTransformRstParser(docutils.parsers.rst.Parser):

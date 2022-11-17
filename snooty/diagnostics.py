@@ -411,6 +411,40 @@ class InvalidTocTree(Diagnostic, MakeCorrectionMixin):
         return [".. ia::"]
 
 
+class MissingAssociatedToc(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        expected_project: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Detected an associated toctree entry at {expected_project} 
+            which does not exist in an associated_products entry within the snooty.toml. 
+            Removing this toctree entry.""",
+            start,
+            end,
+        )
+
+
+class DuplicatedExternalToc(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        duplicated_toc: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Detected a duplicated associated toctree entry at {duplicated_toc}. Removing this toctree entry.",
+            start,
+            end,
+        )
+
+
 class InvalidIAEntry(Diagnostic):
     severity = Diagnostic.Level.error
 
