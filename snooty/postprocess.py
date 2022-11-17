@@ -1644,8 +1644,15 @@ class Postprocessor:
         toc_landing_pages = [
             clean_slug(slug) for slug in context[ProjectConfig].toc_landing_pages
         ]
+        ref_project_set: Set[Tuple[Optional[str], Optional[str]]] = set()
         cls.find_toctree_nodes(
-            context, starting_fileid, ast, root, toc_landing_pages, {starting_fileid}
+            context,
+            starting_fileid,
+            ast,
+            root,
+            toc_landing_pages,
+            ref_project_set,
+            {starting_fileid},
         )
 
         return root
@@ -1658,8 +1665,8 @@ class Postprocessor:
         ast: n.Node,
         node: Dict[str, Any],
         toc_landing_pages: List[str],
+        external_nodes: Set[Tuple[Optional[str], Optional[str]]],
         visited_file_ids: Set[FileId] = set(),
-        external_nodes: List[object] = [],
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
 
@@ -1678,11 +1685,12 @@ class Postprocessor:
                         else None,
                         "options": {"project": entry.ref_project},
                     }
-                    if toctree_node in external_nodes:
+                    ref_project_pair = (entry.title, entry.ref_project)
+                    if ref_project_pair in external_nodes:
                         context.diagnostics[fileid].append(
                             DuplicatedExternalToc(entry.ref_project, ast.span[0])
                         )
-                    external_nodes.append(toctree_node)
+                    external_nodes.add(ref_project_pair)
                 if entry.url:
                     toctree_node = {
                         "title": [n.Text((0,), entry.title).serialize()]
@@ -1749,8 +1757,8 @@ class Postprocessor:
                             new_ast,
                             toctree_node,
                             toc_landing_pages,
-                            visited_file_ids.union({slug_fileid}),
                             external_nodes,
+                            visited_file_ids.union({slug_fileid}),
                         )
 
                 if toctree_node:
@@ -1764,8 +1772,8 @@ class Postprocessor:
                 child_ast,
                 node,
                 toc_landing_pages,
-                visited_file_ids,
                 external_nodes,
+                visited_file_ids,
             )
 
     @staticmethod
