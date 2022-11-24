@@ -1247,6 +1247,10 @@ type = {link = "https://mongodb.github.io/node-mongodb-native/4.0/%s"}
 help = """Link to a page in Node.js driver V3.6's API reference."""
 type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
+[role."php"]
+help = """Link to a page on PHP.net"""
+type = {link = "https://php.net/%s"}
+
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
 type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
