@@ -1531,22 +1531,22 @@ type = {link = "https://developer.apple.com/%s"}
 type = {link = "https://www.mongodb.com/docs/realm/admin/api/v3/#%s", ensure_trailing_slash = true}
 
 [role."cpp-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s", ensure_trailing_slash = true}
 
 [role."java-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s", ensure_trailing_slash = true}
 
 [role."kotlin-ext"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/kotlin-extensions/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/kotlin-extensions/%s", ensure_trailing_slash = true}
 
 [role."kotlin-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/%s", ensure_trailing_slash = true}
 
 [role."swift-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/swift/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/swift/latest/%s", ensure_trailing_slash = true}
 
 [role."objc-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/objc/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/objc/latest/%s", ensure_trailing_slash = true}
 
 [role."flutter-sdk"]
 type = {link = "https://pub.dev/documentation/realm/latest/%s"}
