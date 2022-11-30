@@ -1530,6 +1530,9 @@ type = {link = "https://developer.apple.com/%s"}
 [role."admin-api-endpoint"]
 type = {link = "https://www.mongodb.com/docs/realm/admin/api/v3/#%s", ensure_trailing_slash = true}
 
+[role."cpp-sdk"]
+type = {link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s"}
+
 [role."java-sdk"]
 type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s"}
 
@@ -1890,6 +1893,7 @@ realm-languages = [
   {id = "typescript", title = "TypeScript"},
   {id = "javascript", title = "JavaScript"},
   {id = "c-sharp", title = "C#"},
+  {id = "cpp", title = "C++"},
   {id = "dart", title = "Dart"},
   {id = "java", title = "Java"},
   {id = "objective-c", title = "Objective C"},
@@ -1900,6 +1904,7 @@ realm-sdks = [
   {id = "graphql", title = "GraphQL"},
   {id = "ios", title = "Swift SDK"},
   {id = "android", title = "Java SDK"},
+  {id = "cpp", title = "C++ SDK"},
   {id = "kotlin", title = "Kotlin SDK"},
   {id = "flutter", title = "Flutter SDK"},
   {id = "dotnet", title = ".NET SDK"},
