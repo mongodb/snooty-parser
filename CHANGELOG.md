@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for external ToC nodes as part of the embedded versions project (DOP-3200).
+
+### Changed
+
+- Binary releases are now built from Github Actions with Python 3.11 (DOP-3298).
+
+### Fixed
+
+- Each `.txt` page now gets a separate context for named references, rather than having a single
+  global namespace with undefined filesystem-dependent semantics.
+
 ## [v0.13.13] - 2022-11-16
 
 * Update GitHub actions by @i80and in https://github.com/mongodb/snooty-parser/pull/424
