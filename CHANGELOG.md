@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.14] - 2022-11-30
+
 ### Added
 
 - Support for external ToC nodes as part of the embedded versions project (DOP-3200).
