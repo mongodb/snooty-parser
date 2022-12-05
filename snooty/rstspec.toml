@@ -1528,7 +1528,7 @@ type = {link = "https://developer.android.com/%s"}
 type = {link = "https://developer.apple.com/%s"}
 
 [role."admin-api-endpoint"]
-type = {link = "https://www.mongodb.com/docs/realm/admin/api/v3/#%s", ensure_trailing_slash = true}
+type = {link = "https://mongodb.com/docs/atlas/app-services/admin/api/v3/#%s", ensure_trailing_slash = true}
 
 [role."cpp-sdk"]
 type = {link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s"}
