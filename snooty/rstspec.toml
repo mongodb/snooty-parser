@@ -1580,6 +1580,9 @@ type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 [role."xamarin"]
 type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 
+[role."maui"]
+type = {link = "https://learn.microsoft.com/en-us/dotnet/maui/%s"}
+
 [role."k8sdocs"]
 type = {link = "https://kubernetes.io/docs%s"}
 
