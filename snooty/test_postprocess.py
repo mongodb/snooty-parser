@@ -2526,14 +2526,7 @@ def test_openapi_metadata() -> None:
 
 .. openapi:: /openapi-admin-v3.yaml
             """,
-            Path(
-                "source/openapi-admin-v3.yaml"
-            ): """
-openapi: "3.0.1"
-info:
-  description: ""
-  title: MongoDB Realm API
-""",
+            Path("source/openapi-admin-v3.yaml"): "",
             Path(
                 "source/admin/api/url.txt"
             ): """
@@ -2551,15 +2544,17 @@ info:
             diagnostics for diagnostics in result.diagnostics.values() if diagnostics
         ], "Should not raise any diagnostics"
         openapi_pages = cast(Dict[str, Any], result.metadata["openapi_pages"])
-        spec_title = "MongoDB Realm API"
 
         local_file_page = openapi_pages["admin/api/v3"]
         assert local_file_page["source_type"] == "local"
-        assert spec_title in local_file_page["source"]
+        assert local_file_page["source"] == "/openapi-admin-v3.yaml"
 
         url_page = openapi_pages["admin/api/url"]
         assert url_page["source_type"] == "url"
-        assert spec_title in url_page["source"]
+        assert (
+            url_page["source"]
+            == "https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml"
+        )
 
         atlas_page = openapi_pages["admin/api/atlas"]
         assert atlas_page["source_type"] == "atlas"
@@ -2593,14 +2588,7 @@ def test_openapi_duplicates() -> None:
 
 .. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
             """,
-            Path(
-                "source/openapi-admin-v3.yaml"
-            ): """
-openapi: "3.0.1"
-info:
-  description: ""
-  title: MongoDB Realm API
-""",
+            Path("source/openapi-admin-v3.yaml"): "",
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("admin/api/v3.txt")]
@@ -2611,4 +2599,4 @@ info:
         # First openapi directive should be source of truth
         file_metadata = openapi_pages["admin/api/v3"]
         assert file_metadata["source_type"] == "local"
-        assert "MongoDB Realm API" in file_metadata["source"]
+        assert file_metadata["source"] == "/openapi-admin-v3.yaml"
