@@ -71,7 +71,7 @@ from .icon_names import ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .openapi import OpenAPI
 from .page import Page, PendingTask
-from .postprocess import DevhubPostprocessor, Postprocessor, PostprocessorResult
+from .postprocess import Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
 from .util import RST_EXTENSIONS
@@ -940,7 +940,7 @@ class JSONVisitor:
             if "date" in node:
                 doc.options["date"] = node["date"]
 
-        elif key in {"devhub:author", ":og", ":twitter"}:
+        elif key in {":og", ":twitter"}:
             # Grab image from options array and save as static asset
             image_argument = options.get("image")
 
@@ -1554,9 +1554,7 @@ class _Project:
         self.prefix = [self.config.name, username, branch]
 
         self.pages = PageDatabase(
-            lambda: DevhubPostprocessor(self.config, self.targets.copy_clean_slate())
-            if self.config.default_domain == "devhub"
-            else Postprocessor(self.config, self.targets.copy_clean_slate())
+            lambda: Postprocessor(self.config, self.targets.copy_clean_slate())
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
