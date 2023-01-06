@@ -1747,6 +1747,8 @@ class Postprocessor:
                         if entry.title
                         else None,
                         "options": {"project": entry.ref_project},
+                        "children": [],
+                        "slug": entry.ref_project,
                     }
                     ref_project_pair = (entry.title, entry.ref_project)
                     if ref_project_pair in external_nodes:
