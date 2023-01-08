@@ -1,4 +1,5 @@
 import io
+import os
 import re
 import stat
 import subprocess
@@ -250,6 +251,7 @@ title = "This Manpage Doesn't Exist"
                 ["groff", "-T", "utf8", "-t", "-man"],
                 encoding="utf-8",
                 input=troff,
+                env={"PATH": os.environ["PATH"], "GROFF_NO_SGR": "1"},
             )
         except FileNotFoundError:
             pytest.xfail("groff is not installed")
