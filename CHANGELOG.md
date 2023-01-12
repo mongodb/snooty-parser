@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.15] - 2023-01-12
+
 ### Added
 
 - Default children and default slug for associated toc node (#438) by @seungpark in #438.
