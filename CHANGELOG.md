@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Default children and default slug for associated toc node (#438) by @seungpark in #438.
+
+### Changed
+
+- Revert "Change OpenAPI metadata source to be spec string (DOP-3353)" by @rayangler in #436.
+
 ## [v0.13.14] - 2022-11-30
 
 ### Added
