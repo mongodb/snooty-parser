@@ -13,7 +13,7 @@ requires = [
     "pymongo[srv,tls] >= 3.11.1, < 4",
     "docutils >= 0.16, < 0.18",
     "watchdog ~= 1.0",
-    "requests ~= 2.24",
+    "requests ~= 2.24.0",
     "tomli ~= 2.0",
     "pyyaml ~= 5.3",
     "typing-extensions >= 3.7",
@@ -28,7 +28,7 @@ dev = [
     "black ~= 22.3.0",
     "pyflakes ~= 2.4",
     "mypy == 0.960",
-    "pyinstaller ~= 5.6",
+    "pyinstaller ~= 5.6.2",
     "isort ~= 5.10.1",
     "types-requests ~= 2.26.1"
 ]
