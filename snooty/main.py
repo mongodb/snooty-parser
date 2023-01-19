@@ -149,9 +149,6 @@ class Backend(ProjectBackend):
             ],
         }
 
-        if page.query_fields:
-            document.update({"query_fields": page.query_fields})
-
         self.handle_document(
             build_identifiers, page_id, fully_qualified_pageid, document
         )

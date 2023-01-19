@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
 from . import n
 from .diagnostics import Diagnostic
@@ -33,7 +33,6 @@ class Page:
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
-    query_fields: Dict[str, n.SerializableType] = field(default_factory=dict)
 
     @classmethod
     def create(
