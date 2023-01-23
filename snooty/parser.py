@@ -847,7 +847,7 @@ class JSONVisitor:
             span = (line,)
             language = options["language"] if "language" in options else ""
             caption = options["caption"] if "caption" in options else None
-            copyable = "copyable" not in options or options["copyable"] == "True"
+            copyable = "copyable" not in options or options["copyable"] != False
             selected_content = "\n".join(lines)
             linenos = "linenos" in options
             lineno_start = (
