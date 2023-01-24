@@ -953,6 +953,33 @@ for (i = 0; i &lt; 10; i++) {
     </root>""",
     )
 
+    # Test a literally-included code block with copyable option specified
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.js
+    :language: json
+    :copyable: true
+    :emphasize-lines: 5
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+  <directive name="literalinclude" language="json" emphasize-lines="5" copyable="True">
+  <text>/test_parser/includes/sample_code.js</text>
+  <code lang="json" emphasize_lines="[(5, 5)]" copyable="True">var str = "sample code";
+var i = 0;
+for (i = 0; i &lt; 10; i++) {
+  str += i;
+}</code>
+    </directive>
+    </root>""",
+    )
+
     # Test a literally-included code block with fully specified options
     page, diagnostics = parse_rst(
         parser,
