@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.16] - 2023-01-12
+
+### Changed
+
+- Numerous version bumps for project dependencies.
+- Page.query_fields removed (unused).
+- Devhub specific codepaths removed.
+
+### Fixed
+
+- Copyable option now checks for non-falsey values instead of "True".
+
 ## [v0.13.15] - 2023-01-12
 
 ### Added
