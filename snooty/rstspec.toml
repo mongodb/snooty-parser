@@ -542,6 +542,7 @@ help = """Add the given CSS class name to generated HTML of the contained (if co
           following (if not) page element."""
 argument_type = "string"
 content_type = "block"
+deprecated = true
 example = """.. cssclass:: ${1:class name}
 
    ${0:Optional content to which class will apply. If no content given, class applies to following page element.}
