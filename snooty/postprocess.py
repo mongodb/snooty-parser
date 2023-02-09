@@ -54,6 +54,7 @@ from .diagnostics import (
     TargetNotFound,
     UnnamedPage,
     UnsupportedFormat,
+    ChildlessRef,
 )
 from .eventparser import EventParser, FileIdStack
 from .n import FileId, SerializableType
@@ -1392,6 +1393,12 @@ class RefsHandler(Handler):
                         node_to_abbreviate.value = new_value
 
             injection_candidate.children = cloned_title_nodes
+            
+            if not node.children:
+                line = node.span[0]
+                self.context.diagnostics[fileid_stack.current].append(
+                    ChildlessRef(node.name, node.target, line)
+                )
 
     def attempt_disambugation(
         self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]
