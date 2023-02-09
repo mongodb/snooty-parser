@@ -201,7 +201,7 @@ class GizaCategory(Generic[_I]):
         self, path: Path, text: Optional[str] = None
     ) -> Tuple[Sequence[_I], str, List[Diagnostic]]:
         """Abstract method to parse Giza nodes out of YAML source text."""
-        pass
+        raise NotImplementedError()
 
     def to_pages(
         self,
@@ -210,7 +210,7 @@ class GizaCategory(Generic[_I]):
         data: Sequence[_I],
     ) -> List[Page]:
         """Abstract method to generate pages from a given set of Giza nodes."""
-        pass
+        raise NotImplementedError()
 
     def add(self, path: Path, text: str, elements: Sequence[_I]) -> None:
         """Add a file with one or more Giza nodes."""
