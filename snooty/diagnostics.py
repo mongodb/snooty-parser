@@ -339,7 +339,7 @@ class ChildlessRef(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f'Reference found without label: "{target}". Be sure to add label text to the ref itself OR place the target ref directly before a heading',
+            f'Reference found without label: "{target}". Be sure to add label text to the :ref: itself OR place the target reference directly before a heading',
             start,
             end,
         )
