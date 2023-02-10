@@ -328,6 +328,7 @@ class AmbiguousTarget(Diagnostic):
         self.target = target
         self.candidates = candidates
 
+
 class ChildlessRef(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -338,11 +339,12 @@ class ChildlessRef(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Ref found without text: "{target}". Be sure to add label text to the ref itself OR place the target ref directly before a heading""",
+            f'Ref found without text: "{target}". Be sure to add label text to the ref itself OR place the target ref directly before a heading',
             start,
             end,
         )
         self.target = target
+
 
 class TodoInfo(Diagnostic):
     severity = Diagnostic.Level.info
