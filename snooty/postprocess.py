@@ -1581,7 +1581,9 @@ class Postprocessor:
         if project_config.deprecated_versions:
             document["deprecated_versions"] = project_config.deprecated_versions
         if project_config.associated_products:
-            document["associated_products"] = project_config.associated_products
+            document["associated_products"] = [
+                product.serialize() for product in project_config.associated_products
+            ]
         # Update metadata document with key-value pairs defined in event parser
         document["slugToTitle"] = {
             k: [node.serialize() for node in v]

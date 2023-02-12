@@ -18,7 +18,7 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId
+from .n import FileId, SerializableType
 
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -125,6 +125,16 @@ class BundleConfig:
 
 @checked
 @dataclass
+class AssociatedProduct:
+    name: str
+    versions: List[str]
+
+    def serialize(self) -> SerializableType:
+        return {"name": self.name, "versions": self.versions}
+
+
+@checked
+@dataclass
 class ProjectConfig:
     root: Path
     name: str
@@ -148,7 +158,7 @@ class ProjectConfig:
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
-    associated_products: List[Dict[str, object]] = field(default_factory=list)
+    associated_products: List[AssociatedProduct] = field(default_factory=list)
 
     @property
     def source_path(self) -> Path:

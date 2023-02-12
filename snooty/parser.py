@@ -73,7 +73,13 @@ from .openapi import OpenAPI
 from .page import Page, PendingTask
 from .postprocess import Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
-from .types import BuildIdentifierSet, ParsedBannerConfig, ProjectConfig, StaticAsset
+from .types import (
+    AssociatedProduct,
+    BuildIdentifierSet,
+    ParsedBannerConfig,
+    ProjectConfig,
+    StaticAsset,
+)
 from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
@@ -1078,16 +1084,15 @@ class JSONVisitor:
 
 def validate_toc_entries(
     node_entries: List[TocTreeDirectiveEntry],
-    associated_products: List[Dict[str, object]],
+    associated_products: List[AssociatedProduct],
     line: int,
 ) -> List[Diagnostic]:
     """
     validates that external toc node exists as one of the associated products
     if not found, removes this node and emits a warning
-    associated_products come in form of {name: str, versions: List[str]}
     """
     diagnostics: List[Diagnostic] = []
-    associated_product_names = [product["name"] for product in associated_products]
+    associated_product_names = [product.name for product in associated_products]
     for toc_entry in node_entries:
         if (
             toc_entry.ref_project
