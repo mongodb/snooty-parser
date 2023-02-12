@@ -34,6 +34,7 @@ from .diagnostics import (
     AmbiguousTarget,
     CannotOpenFile,
     ChapterAlreadyExists,
+    ChildlessRef,
     Diagnostic,
     DuplicatedExternalToc,
     DuplicateDirective,
@@ -1392,6 +1393,12 @@ class RefsHandler(Handler):
                         node_to_abbreviate.value = new_value
 
             injection_candidate.children = cloned_title_nodes
+
+            if not node.children:
+                line = node.span[0]
+                self.context.diagnostics[fileid_stack.current].append(
+                    ChildlessRef(node.target, line)
+                )
 
     def attempt_disambugation(
         self, fileid: FileId, candidates: Sequence[TargetDatabase.Result]

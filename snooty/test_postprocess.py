@@ -7,6 +7,7 @@ from typing import Any, Dict, cast
 from . import diagnostics
 from .diagnostics import (
     ChapterAlreadyExists,
+    ChildlessRef,
     DocUtilsParseError,
     DuplicatedExternalToc,
     DuplicateDirective,
@@ -1163,6 +1164,32 @@ def test_language_selector() -> None:
         assert [type(d) for d in result.diagnostics[FileId("tabs-six.txt")]] == [
             TabMustBeDirective
         ]
+
+
+def test_childless_ref_include() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. _invisible-ref:
+
+.. include:: /includes/fact.rst
+""",
+            Path(
+                "source/includes/fact.rst"
+            ): """
+We have a link below here, but you can't see it!
+
+See that info at :ref:`invisible-ref`
+""",
+        }
+    ) as result:
+        assert {
+            k: [type(diag) for diag in v] for k, v in result.diagnostics.items() if v
+        } == {
+            FileId("includes/fact.rst"): [ChildlessRef]
+        }, "Childless Ref diagnostics error raised"
 
 
 def test_correct_diagnostic_path() -> None:
