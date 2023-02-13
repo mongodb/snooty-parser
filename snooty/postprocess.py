@@ -57,6 +57,7 @@ from .diagnostics import (
     TargetNotFound,
     UnnamedPage,
     UnsupportedFormat,
+    InvalidVersion,
 )
 from .eventparser import EventParser, FileIdStack
 from .n import FileId, SerializableType
@@ -980,24 +981,33 @@ class OpenAPIHandler(Handler):
             assert isinstance(argument, n.Reference)
             source = argument.refuri
 
-        # Fetch OpenAPI versioning data if options are present
         url = node.options.get("versions", None)
         api_version = node.options.get("api_version", None)
         resource_versions = None
-        if url:
+        # Fetch OpenAPI versioning data if options are present
+        if url and api_version and source_type == "atlas":
             response = requests.get(url)
             response.raise_for_status()
             data = yaml.safe_load(response.content)
 
             if "versions" in data:
                 version_data = data.get("versions")
+                major_versions = version_data.get("major", None)
                 if api_version in version_data.keys():
                     datetime_resource_versions = version_data.get(api_version)
                     resource_versions = list(map(lambda x: x.strftime("%Y-%m-%d"), datetime_resource_versions))
+                elif not major_versions or (major_versions and api_version not in major_versions):
+                    if not (isinstance(major_versions, list) and all(isinstance(mv, str) for mv in major_versions)):
+                        major_versions = []
+                    self.context.diagnostics[fileid_stack.current].append(
+                        InvalidVersion(api_version, major_versions, node.start[0])
+                    )
+                    return
                 else:
                     resource_versions = []
 
         self.openapi_pages[current_slug] = self.SourceData(source_type, source, api_version, resource_versions)
+        print(self.openapi_pages[current_slug])
 
 
 class IAHandler(Handler):

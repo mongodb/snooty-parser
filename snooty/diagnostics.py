@@ -768,3 +768,20 @@ class IconMustBeDefined(Diagnostic):
             start,
             end,
         )
+
+
+class InvalidVersion(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        api_version: str,
+        major_versions: List[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f"""Invalid OpenAPI Version Option ({api_version}) specified in options""", start, end)
+        self.major_versions = major_versions
+
+    def did_you_mean(self) -> List[str]:
+        return self.major_versions
