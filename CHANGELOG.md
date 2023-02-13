@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.17] - 2023-02-13
+
 - Switch from flit to poetry by @i80and in https://github.com/mongodb/snooty-parser/pull/427
 - DOP-3487: Deprecate cssclass directive by @i80and in https://github.com/mongodb/snooty-parser/pull/443
 - DOP-3211:  ref label by @mmeigs in https://github.com/mongodb/snooty-parser/pull/444
