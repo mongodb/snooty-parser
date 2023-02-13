@@ -8,6 +8,9 @@ from typing import Match
 CHANGELOG_PATH = Path("CHANGELOG.md")
 INCOMING_VERISON_PAT = re.compile(r"\d+\.\d+\.\d+")
 PAT = re.compile(r'"(\d+\.\d+\.\S+)"')
+PYPROJECT_VERSION_PAT = re.compile(
+    r"(?<=^version = )\"(\d+\.\d+\.\S+)\"$", re.MULTILINE
+)
 CHANGELOG_UNRELEASED_PAT = re.compile(
     r"\n## \[Unreleased\](?P<unreleased>.*)(?=\n## )", re.DOTALL
 )
@@ -84,6 +87,19 @@ def main() -> None:
         if n_replaced != 1:
             print(
                 "Error bumping version: expected 1 version string in __init__.py",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        f.seek(0)
+        f.truncate(0)
+        f.write(data)
+
+    with Path("pyproject.toml").open("r+") as f:
+        data = f.read()
+        data, n_replaced = PYPROJECT_VERSION_PAT.subn(f'"{version_to_bump_to}"', data)
+        if n_replaced != 1:
+            print(
+                "Error bumping version: expected 1 version string in pyproject.toml",
                 file=sys.stderr,
             )
             sys.exit(1)
