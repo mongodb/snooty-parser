@@ -6,6 +6,8 @@ import sys
 import threading
 import typing
 import urllib.parse
+import requests
+import yaml
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
@@ -930,6 +932,8 @@ class OpenAPIHandler(Handler):
     class SourceData:
         source_type: str
         source: str
+        api_version: Optional[str]
+        resource_versions: Optional[List[str]]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -976,7 +980,24 @@ class OpenAPIHandler(Handler):
             assert isinstance(argument, n.Reference)
             source = argument.refuri
 
-        self.openapi_pages[current_slug] = self.SourceData(source_type, source)
+        # Fetch OpenAPI versioning data if options are present
+        url = node.options.get("versions", None)
+        api_version = node.options.get("api_version", None)
+        resource_versions = None
+        if url:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = yaml.safe_load(response.content)
+
+            if "versions" in data:
+                version_data = data.get("versions")
+                if api_version in version_data.keys():
+                    datetime_resource_versions = version_data.get(api_version)
+                    resource_versions = list(map(lambda x: x.strftime("%Y-%m-%d"), datetime_resource_versions))
+                else:
+                    resource_versions = []
+
+        self.openapi_pages[current_slug] = self.SourceData(source_type, source, api_version, resource_versions)
 
 
 class IAHandler(Handler):
