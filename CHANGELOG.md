@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Switch from flit to poetry by @i80and in https://github.com/mongodb/snooty-parser/pull/427
+- DOP-3487: Deprecate cssclass directive by @i80and in https://github.com/mongodb/snooty-parser/pull/443
+- DOP-3211:  ref label by @mmeigs in https://github.com/mongodb/snooty-parser/pull/444
+- Cleanup: use a type for associated products rather than Dict[str, object] by @i80and in https://github.com/mongodb/snooty-parser/pull/446
+- Make bump_version.py also bump the version in pyproject.toml by @i80and in https://github.com/mongodb/snooty-parser/pull/445
+
 ## [v0.13.16] - 2023-01-25
 
 ### Changed
