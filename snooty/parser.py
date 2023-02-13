@@ -16,7 +16,7 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     Any,
     Callable,
@@ -292,7 +292,7 @@ class JSONVisitor:
             flag = node["flag"] if "flag" in node else ""
 
             if role_name == "doc":
-                self.validate_doc_role(node)
+                target = self.validate_doc_role(node)
                 role = n.RefRole(
                     (line,), [], node["domain"], role_name, "", flag, (target, ""), None
                 )
@@ -993,10 +993,15 @@ class JSONVisitor:
         elif MULTIPLE_FORWARD_SLASHES.search(url_argument) is not None:
             self.diagnostics.append(MalformedRelativePath(url_argument, line))
 
-    def validate_doc_role(self, node: docutils.nodes.Node) -> None:
-        """Validate target for doc role"""
+    def validate_doc_role(self, node: docutils.nodes.Node) -> str:
+        """Validate target for doc role, and perform some normalization."""
+        target: str = node["target"]
+        if PurePosixPath(target) == PurePosixPath("/"):
+            target = "/index"
+            node["target"] = target
+
         resolved_target_path = util.add_doc_target_ext(
-            node["target"], self.docpath, self.project_config.source_path
+            target, self.docpath, self.project_config.source_path
         )
 
         if not resolved_target_path.is_file():
@@ -1005,6 +1010,8 @@ class JSONVisitor:
                     resolved_target_path, os.strerror(errno.ENOENT), util.get_line(node)
                 )
             )
+
+        return target
 
     @staticmethod
     def validate_list_table_item(

@@ -1686,6 +1686,7 @@ def test_doc_role() -> None:
 * :doc:`/index`
 * :doc:`./../source/index`
 * :doc:`/index/`
+* :doc:`/`
 """,
     )
     page.finish(diagnostics)
@@ -1727,6 +1728,11 @@ def test_doc_role() -> None:
         <listItem>
         <paragraph>
         <ref_role domain="std" name="doc" fileid="['/index/', '']"></ref_role>
+        </paragraph>
+        </listItem>
+        <listItem>
+        <paragraph>
+        <ref_role domain="std" name="doc" fileid="['/index', '']"></ref_role>
         </paragraph>
         </listItem>
         </list>
