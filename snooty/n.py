@@ -11,6 +11,7 @@ from typing import (
     Generic,
     Iterator,
     List,
+    Mapping,
     MutableSequence,
     NamedTuple,
     Optional,
@@ -39,7 +40,14 @@ __all__ = (
 )
 
 SerializableType = Union[
-    None, bool, str, int, float, Dict[str, Any], List[Any], datetime
+    None,
+    bool,
+    str,
+    int,
+    float,
+    Mapping[str, "SerializableType"],
+    Sequence["SerializableType"],
+    datetime,
 ]
 SerializedNode = Dict[str, SerializableType]
 ListEnumType = Enum(

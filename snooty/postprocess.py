@@ -439,7 +439,7 @@ class ContentsHandler(Handler):
             return
 
         if isinstance(page.ast, n.Root):
-            heading_list = [
+            heading_list: SerializableType = [
                 {
                     "depth": h.depth,
                     "id": h.id,

@@ -3,7 +3,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 import pytest
 
@@ -267,7 +267,7 @@ def test_text_doc_get_page_fileid() -> None:
 def test_reporting_config_error() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
         server.m_initialize(None, CWD_URL + "/test_data/bad_project")
-        doc = {
+        doc: Dict[str, SerializableType] = {
             "uri": f"{CWD_URL}/test_data/bad_project/snooty.toml",
             "languageId": "",
             "version": 0,
