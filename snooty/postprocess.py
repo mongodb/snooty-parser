@@ -50,6 +50,7 @@ from .diagnostics import (
     InvalidContextError,
     InvalidIAEntry,
     InvalidInclude,
+    InvalidOpenApiResponse,
     InvalidTocTree,
     InvalidVersion,
     MissingChild,
@@ -985,48 +986,73 @@ class OpenAPIHandler(Handler):
 
         url = node.options.get("versions", None)
         api_version = node.options.get("api_version", None)
-        resource_versions = None
+        resource_versions: Optional[List[str]] = None
 
         # Fetch OpenAPI versioning data if options are present
-        if url and api_version and source == "cloud":
-            response = requests.get(url)
-            response.raise_for_status()
-            decoded_response = response.content.decode("utf-8")
-            data = yaml.safe_load(decoded_response)
+        if api_version and source == "cloud":
+            # Conditional allows url to be changeable by Content team
+            # Else block contains faster approach
+            if url and url != "https://cloud.mongodb.com/api/openapi/versions":
+                response = requests.get(url)
+                response.raise_for_status()
+                decoded_response = response.content.decode("utf-8")
+                data = yaml.safe_load(decoded_response)
+            else:
+                git_hash_response = requests.get("https://cloud.mongodb.com/version")
+                git_hash_response.raise_for_status()
+                git_hash = git_hash_response.text
+                response = requests.get(
+                    f"https://mongodb-mms-prod-build-server.s3.amazonaws.com/openapi/{git_hash}-api-versions.json"
+                )
+                response.raise_for_status()
+                decoded_response = response.content.decode("utf-8")
+                data = yaml.safe_load(decoded_response)
 
-            if "versions" in data:
-                version_data = data.get("versions")
-                major_versions = version_data.get("major", None)
+            # Malformed Version data
+            if (
+                not data
+                or "versions" not in data
+                or "major" not in data.get("versions")
+            ):
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidOpenApiResponse(node.start[0])
+                )
+                return
 
-                if api_version in version_data.keys():
-                    datetime_resource_versions: List[
-                        datetime.datetime
-                    ] = version_data.get(api_version)
-                    resource_versions = list(
-                        map(
-                            lambda x: x.strftime("%Y-%m-%d"), datetime_resource_versions
-                        )
-                    )
-                elif not major_versions or (
-                    major_versions and api_version not in major_versions
+            version_data = data.get("versions")
+            major_versions = version_data.get("major")
+
+            if api_version not in major_versions:
+                # Allows error-free diagnostic report
+                if not (
+                    isinstance(major_versions, list)
+                    and all(isinstance(mv, str) for mv in major_versions)
                 ):
-                    if not (
-                        isinstance(major_versions, list)
-                        and all(isinstance(mv, str) for mv in major_versions)
-                    ):
-                        major_versions = []
-                    self.context.diagnostics[fileid_stack.current].append(
-                        InvalidVersion(api_version, major_versions, node.start[0])
+                    major_versions = []
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidVersion(api_version, major_versions, node.start[0])
+                )
+                return
+
+            if api_version in version_data.keys():
+                datetime_resource_versions: List[
+                    Union[datetime.datetime, str]
+                ] = version_data.get(api_version)
+                resource_versions = list(
+                    map(
+                        lambda x: x if isinstance(x, str) else x.strftime("%Y-%m-%d"),
+                        datetime_resource_versions,
                     )
-                    return
-                else:
-                    resource_versions = []
+                )
+            else:
+                resource_versions = []
         else:
             api_version = None
 
         self.openapi_pages[current_slug] = self.SourceData(
             source_type, source, api_version, resource_versions
         )
+        print("final ", self.openapi_pages[current_slug])
 
 
 class IAHandler(Handler):

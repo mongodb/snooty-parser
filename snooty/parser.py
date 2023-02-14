@@ -652,8 +652,7 @@ class JSONVisitor:
             uses_rst = options.get("uses-rst", False)
             # The frontend will grab the file contents from Realm, using the argument as its key
             uses_realm = options.get("uses-realm", False)
-            # Versioning will be dependent on present option(s)
-            versions = options.get("versions", None)
+            # Versioning will be dependent on present api_version option
             api_version = options.get("api-version", None)
 
             if argument_text is None:
@@ -681,7 +680,7 @@ class JSONVisitor:
                     self.diagnostics.append(InvalidURL(line))
                 return doc
 
-            if versions:
+            if api_version:
                 doc.options["source_type"] = "atlas"
                 doc.options["api_version"] = api_version
                 return doc

@@ -770,6 +770,21 @@ class IconMustBeDefined(Diagnostic):
         )
 
 
+class InvalidOpenApiResponse(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "OpenAPI Versioning data is malformed. Please contact DOP team.",
+            start,
+            end,
+        )
+
+
 class InvalidVersion(Diagnostic, MakeCorrectionMixin):
     severity = Diagnostic.Level.error
 
