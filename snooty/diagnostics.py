@@ -780,7 +780,11 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
-        super().__init__(f"""Invalid OpenAPI Version Option ({api_version}) specified in options""", start, end)
+        super().__init__(
+            f"""Invalid OpenAPI Version Option ({api_version}) specified in options""",
+            start,
+            end,
+        )
         self.major_versions = major_versions
 
     def did_you_mean(self) -> List[str]:

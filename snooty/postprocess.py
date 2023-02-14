@@ -1,4 +1,5 @@
 import collections
+import datetime
 import errno
 import logging
 import os.path
@@ -6,8 +7,6 @@ import sys
 import threading
 import typing
 import urllib.parse
-import requests
-import yaml
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
@@ -30,6 +29,9 @@ from typing import (
     cast,
 )
 
+import requests
+import yaml
+
 from . import n, specparser, util
 from .builders import man
 from .diagnostics import (
@@ -49,6 +51,7 @@ from .diagnostics import (
     InvalidIAEntry,
     InvalidInclude,
     InvalidTocTree,
+    InvalidVersion,
     MissingChild,
     MissingOption,
     MissingTab,
@@ -57,7 +60,6 @@ from .diagnostics import (
     TargetNotFound,
     UnnamedPage,
     UnsupportedFormat,
-    InvalidVersion,
 )
 from .eventparser import EventParser, FileIdStack
 from .n import FileId, SerializableType
@@ -984,20 +986,34 @@ class OpenAPIHandler(Handler):
         url = node.options.get("versions", None)
         api_version = node.options.get("api_version", None)
         resource_versions = None
+
         # Fetch OpenAPI versioning data if options are present
-        if url and api_version and source_type == "atlas":
+        if url and api_version and source == "cloud":
             response = requests.get(url)
             response.raise_for_status()
-            data = yaml.safe_load(response.content)
+            decoded_response = response.content.decode("utf-8")
+            data = yaml.safe_load(decoded_response)
 
             if "versions" in data:
                 version_data = data.get("versions")
                 major_versions = version_data.get("major", None)
+
                 if api_version in version_data.keys():
-                    datetime_resource_versions = version_data.get(api_version)
-                    resource_versions = list(map(lambda x: x.strftime("%Y-%m-%d"), datetime_resource_versions))
-                elif not major_versions or (major_versions and api_version not in major_versions):
-                    if not (isinstance(major_versions, list) and all(isinstance(mv, str) for mv in major_versions)):
+                    datetime_resource_versions: List[
+                        datetime.datetime
+                    ] = version_data.get(api_version)
+                    resource_versions = list(
+                        map(
+                            lambda x: x.strftime("%Y-%m-%d"), datetime_resource_versions
+                        )
+                    )
+                elif not major_versions or (
+                    major_versions and api_version not in major_versions
+                ):
+                    if not (
+                        isinstance(major_versions, list)
+                        and all(isinstance(mv, str) for mv in major_versions)
+                    ):
                         major_versions = []
                     self.context.diagnostics[fileid_stack.current].append(
                         InvalidVersion(api_version, major_versions, node.start[0])
@@ -1005,9 +1021,12 @@ class OpenAPIHandler(Handler):
                     return
                 else:
                     resource_versions = []
+        else:
+            api_version = None
 
-        self.openapi_pages[current_slug] = self.SourceData(source_type, source, api_version, resource_versions)
-        print(self.openapi_pages[current_slug])
+        self.openapi_pages[current_slug] = self.SourceData(
+            source_type, source, api_version, resource_versions
+        )
 
 
 class IAHandler(Handler):
