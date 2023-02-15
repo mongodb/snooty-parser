@@ -2570,7 +2570,6 @@ def test_openapi_metadata() -> None:
                 "source/reference/api-resources-spec/v2.txt"
             ): """
 .. openapi:: cloud
-   :versions: https://cloud.mongodb.com/api/openapi/versions
    :api-version: 2.0
             """,
         }
@@ -2652,7 +2651,6 @@ def test_openapi_invalid_version() -> None:
                 "source/reference/api-resources-spec/v3.txt"
             ): """
 .. openapi:: cloud
-   :versions: https://cloud.mongodb.com/api/openapi/versions
    :api-version: 17.5
             """,
         }

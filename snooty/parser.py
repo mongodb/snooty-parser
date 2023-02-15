@@ -680,12 +680,7 @@ class JSONVisitor:
                     self.diagnostics.append(InvalidURL(line))
                 return doc
 
-            if api_version:
-                doc.options["source_type"] = "atlas"
-                doc.options["api_version"] = api_version
-                return doc
-
-            if uses_realm:
+            if api_version or uses_realm:
                 doc.options["source_type"] = "atlas"
                 return doc
 

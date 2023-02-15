@@ -983,7 +983,7 @@ class OpenAPIHandler(Handler):
             assert isinstance(argument, n.Reference)
             source = argument.refuri
 
-        api_version = node.options.get("api_version", None)
+        api_version = node.options.get("api-version", None)
         resource_versions: Optional[List[str]] = None
 
         # Fetch OpenAPI versioning data if options are present
