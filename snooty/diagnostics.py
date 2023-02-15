@@ -791,7 +791,7 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
     def __init__(
         self,
         api_version: str,
-        major_versions: List[str],
+        major_versions: Sequence[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:

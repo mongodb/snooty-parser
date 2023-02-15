@@ -67,6 +67,7 @@ from .page import Page
 from .target_database import TargetDatabase
 from .types import ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, bundle
+from .flutter import LoadError, check_type, checked
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -928,6 +929,12 @@ class GuidesHandler(Handler):
             self.guides[current_slug].description = node.children
 
 
+@checked
+@dataclass
+class OpenAPIData:
+    versions: Dict[str, List[str]]
+
+
 class OpenAPIHandler(Handler):
     """Constructs metadata for OpenAPI content pages."""
 
@@ -997,7 +1004,7 @@ class OpenAPIHandler(Handler):
                 version_url = f"https://mongodb-mms-prod-build-server.s3.amazonaws.com/openapi/{git_hash}-api-versions.json"
                 version_response = util.HTTPCache.singleton().get(version_url)
                 decoded = str(version_response, "utf-8")
-                data = yaml.safe_load(decoded)
+                data = check_type(OpenAPIData, yaml.safe_load(decoded))
             except Exception as err:
                 self.context.diagnostics[fileid_stack.current].append(
                     FetchError(
@@ -1006,12 +1013,9 @@ class OpenAPIHandler(Handler):
                 )
                 return
 
+
             # Malformed Version data
-            if (
-                not data
-                or "versions" not in data
-                or "major" not in data.get("versions")
-            ):
+            if "major" not in data.get("versions"):
                 self.context.diagnostics[fileid_stack.current].append(
                     InvalidOpenApiResponse(node.start[0])
                 )
