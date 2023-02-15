@@ -28,7 +28,6 @@ from typing import (
     cast,
 )
 
-import requests
 import yaml
 
 from . import n, specparser, util
@@ -43,6 +42,7 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    FetchError,
     GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
@@ -989,15 +989,22 @@ class OpenAPIHandler(Handler):
         # Fetch OpenAPI versioning data if options are present
         if api_version and source == "cloud":
             # Fetch latest git_hash for S3 versioning data
-            git_hash_response = requests.get("https://cloud.mongodb.com/version")
-            git_hash_response.raise_for_status()
-            git_hash = git_hash_response.text
-            response = requests.get(
-                f"https://mongodb-mms-prod-build-server.s3.amazonaws.com/openapi/{git_hash}-api-versions.json"
-            )
-            response.raise_for_status()
-            decoded_response = response.content.decode("utf-8")
-            data = yaml.safe_load(decoded_response)
+            try:
+                git_hash_url = "https://cloud.mongodb.com/version"
+                git_hash_response = util.HTTPCache.singleton().get(git_hash_url)
+                git_hash = str(git_hash_response, "utf-8")
+
+                version_url = f"https://mongodb-mms-prod-build-server.s3.amazonaws.com/openapi/{git_hash}-api-versions.json"
+                version_response = util.HTTPCache.singleton().get(version_url)
+                decoded = str(version_response, "utf-8")
+                data = yaml.safe_load(decoded)
+            except Exception as err:
+                self.context.diagnostics[fileid_stack.current].append(
+                    FetchError(
+                        f"Fetching OpenAPI version errored: {err}", node.start[0]
+                    )
+                )
+                return
 
             # Malformed Version data
             if (
@@ -1012,6 +1019,7 @@ class OpenAPIHandler(Handler):
 
             version_data = data.get("versions")
             major_versions = version_data.get("major")
+            resource_versions = version_data.get(api_version, [])
 
             # Version not present in version data
             if api_version not in major_versions:
@@ -1026,10 +1034,6 @@ class OpenAPIHandler(Handler):
                 )
                 return
 
-            if api_version in version_data.keys():
-                resource_versions = version_data.get(api_version)
-            else:
-                resource_versions = []
         else:
             api_version = None
 
