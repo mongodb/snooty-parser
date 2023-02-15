@@ -20,4 +20,3 @@ value = "This product is deprecated"
 
 [[associated_products]]
 name = "test_associated_name"
-versions = ["v1.1", "v1.2"]

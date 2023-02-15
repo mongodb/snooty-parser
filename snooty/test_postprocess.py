@@ -2535,6 +2535,7 @@ versions = ["v1", "v2"]
         metadata = cast(Dict[str, Any], result.metadata)
         assert len(metadata["associated_products"]) == 1
         assert len(metadata["associated_products"][0]["versions"]) == 2
+        assert metadata["associated_products"][0]["name"] == "test_associated_product"
 
 
 def test_openapi_metadata() -> None:

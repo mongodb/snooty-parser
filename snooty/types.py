@@ -127,7 +127,7 @@ class BundleConfig:
 @dataclass
 class AssociatedProduct:
     name: str
-    versions: List[str]
+    versions: Optional[List[str]] = field(default=None)
 
     def serialize(self) -> SerializableType:
         return {"name": self.name, "versions": self.versions}
