@@ -38,7 +38,7 @@ def test_project() -> None:
     assert project_config.associated_products[0].name == "test-name"
     assert project_config.associated_products[0].versions == ["v1.0", "v1.2"]
     assert project_config.associated_products[1].name == "test-name2"
-    assert project_config.associated_products[1].versions == []
+    assert project_config.associated_products[1].versions == None
     assert project_config.name == "test_data"
 
 
