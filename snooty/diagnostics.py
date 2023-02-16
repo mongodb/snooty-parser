@@ -768,3 +768,39 @@ class IconMustBeDefined(Diagnostic):
             start,
             end,
         )
+
+
+class InvalidOpenApiResponse(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            "OpenAPI Versioning data is malformed. Please contact DOP team.",
+            start,
+            end,
+        )
+
+
+class InvalidVersion(Diagnostic, MakeCorrectionMixin):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        api_version: str,
+        major_versions: Sequence[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Invalid OpenAPI Version Option ({api_version}) specified in options""",
+            start,
+            end,
+        )
+        self.major_versions = major_versions
+
+    def did_you_mean(self) -> List[str]:
+        return list(self.major_versions)
