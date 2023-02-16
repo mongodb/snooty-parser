@@ -8,6 +8,7 @@ from .util_test import check_ast_testing_string, parse_rst
 
 ROOT_PATH = Path("test_data")
 
+
 def test_openapi_using_filepath() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
