@@ -803,4 +803,4 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
         self.major_versions = major_versions
 
     def did_you_mean(self) -> List[str]:
-        return self.major_versions
+        return list(self.major_versions)

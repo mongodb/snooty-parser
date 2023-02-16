@@ -62,12 +62,12 @@ from .diagnostics import (
     UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
+from .flutter import check_type, checked
 from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, bundle
-from .flutter import LoadError, check_type, checked
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -997,6 +997,7 @@ class OpenAPIHandler(Handler):
         if api_version and source == "cloud":
             # Fetch latest git_hash for S3 versioning data
             try:
+                # TODO: Move urls to snooty-toml configurable constants
                 git_hash_url = "https://cloud.mongodb.com/version"
                 git_hash_response = util.HTTPCache.singleton().get(git_hash_url)
                 git_hash = str(git_hash_response, "utf-8")
@@ -1013,16 +1014,15 @@ class OpenAPIHandler(Handler):
                 )
                 return
 
-
             # Malformed Version data
-            if "major" not in data.get("versions"):
+            if "major" not in data.versions:
                 self.context.diagnostics[fileid_stack.current].append(
                     InvalidOpenApiResponse(node.start[0])
                 )
                 return
 
-            version_data = data.get("versions")
-            major_versions = version_data.get("major")
+            version_data = data.versions
+            major_versions = version_data.get("major", [])
             resource_versions = version_data.get(api_version, [])
 
             # Version not present in version data
