@@ -331,18 +331,6 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
-name = "fett"
-version = "0.4.0"
-description = "A fast indentation-preserving template engine."
-category = "main"
-optional = false
-python-versions = ">=3.7,<4.0"
-files = [
-    {file = "fett-0.4.0-py3-none-any.whl", hash = "sha256:01b43baf8c1b2520f52bc1f8e49cd0a08e9290292c8be5acc1c54bdc530e75cf"},
-    {file = "fett-0.4.0.tar.gz", hash = "sha256:56912ad93cf537a450b4fb15ee97aedd97acf81a14e48375c523fffdeb182986"},
-]
-
-[[package]]
 name = "future"
 version = "0.18.3"
 description = "Clean single-source support for Python 3 and 2"
@@ -975,4 +963,4 @@ watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12" # Because of PyInstaller :(
-content-hash = "2ef88091be5a1a1fbb793b5af66c0efe741da11a2005e926473f75a47fdeefba"
+content-hash = "cdf095a32d4e4215c7df1e1f1908aef7ad4dd090102f251def40dce539391e51"
