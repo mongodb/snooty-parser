@@ -28,6 +28,8 @@ from typing import (
     cast,
 )
 
+import yaml
+
 from . import n, specparser, util
 from .builders import man
 from .diagnostics import (
@@ -38,13 +40,16 @@ from .diagnostics import (
     DuplicateDirective,
     ExpectedPathArg,
     ExpectedTabs,
+    FetchError,
     GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
     InvalidInclude,
+    InvalidOpenApiResponse,
     InvalidTocTree,
+    InvalidVersion,
     MissingChild,
     MissingOption,
     MissingTab,
@@ -55,6 +60,8 @@ from .diagnostics import (
     UnsupportedFormat,
 )
 from .eventparser import EventParser, FileIdStack
+from .flutter import check_type, checked
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import FileId, ProjectConfig, SerializableType
@@ -918,6 +925,12 @@ class GuidesHandler(Handler):
             self.guides[current_slug].description = node.children
 
 
+@checked
+@dataclass
+class OpenAPIData:
+    versions: Dict[str, List[str]]
+
+
 class OpenAPIHandler(Handler):
     """Constructs metadata for OpenAPI content pages."""
 
@@ -925,6 +938,8 @@ class OpenAPIHandler(Handler):
     class SourceData:
         source_type: str
         source: str
+        api_version: Optional[str]
+        resource_versions: Optional[List[str]]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -971,7 +986,60 @@ class OpenAPIHandler(Handler):
             assert isinstance(argument, n.Reference)
             source = argument.refuri
 
-        self.openapi_pages[current_slug] = self.SourceData(source_type, source)
+        api_version = node.options.get("api-version", None)
+        resource_versions: Optional[List[str]] = None
+
+        # Fetch OpenAPI versioning data if options are present
+        if api_version and source == "cloud":
+            # Fetch latest git_hash for S3 versioning data
+            try:
+                # TODO: Move urls to snooty-toml configurable constants
+                git_hash_url = "https://cloud.mongodb.com/version"
+                git_hash_response = util.HTTPCache.singleton().get(git_hash_url)
+                git_hash = str(git_hash_response, "utf-8")
+
+                version_url = f"https://mongodb-mms-prod-build-server.s3.amazonaws.com/openapi/{git_hash}-api-versions.json"
+                version_response = util.HTTPCache.singleton().get(version_url)
+                decoded = str(version_response, "utf-8")
+                data = check_type(OpenAPIData, yaml.safe_load(decoded))
+            except Exception as err:
+                self.context.diagnostics[fileid_stack.current].append(
+                    FetchError(
+                        f"Fetching OpenAPI version errored: {err}", node.start[0]
+                    )
+                )
+                return
+
+            # Malformed Version data
+            if "major" not in data.versions:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidOpenApiResponse(node.start[0])
+                )
+                return
+
+            version_data = data.versions
+            major_versions = version_data.get("major", [])
+            resource_versions = version_data.get(api_version, [])
+
+            # Version not present in version data
+            if api_version not in major_versions:
+                # Allows error-free diagnostic report
+                if not (
+                    isinstance(major_versions, list)
+                    and all(isinstance(mv, str) for mv in major_versions)
+                ):
+                    major_versions = []
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidVersion(api_version, major_versions, node.start[0])
+                )
+                return
+
+        else:
+            api_version = None
+
+        self.openapi_pages[current_slug] = self.SourceData(
+            source_type, source, api_version, resource_versions
+        )
 
 
 class IAHandler(Handler):

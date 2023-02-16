@@ -16,6 +16,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
+    InvalidVersion,
     MissingChild,
     MissingTab,
     MissingTocTreeEntry,
@@ -2479,7 +2480,13 @@ def test_openapi_metadata() -> None:
                 "source/admin/api/atlas.txt"
             ): """
 .. openapi:: cloud
-   :uses-realm:
+    :uses-realm:
+            """,
+            Path(
+                "source/reference/api-resources-spec/v2.txt"
+            ): """
+.. openapi:: cloud
+   :api-version: 2.0
             """,
         }
     ) as result:
@@ -2502,6 +2509,14 @@ def test_openapi_metadata() -> None:
         atlas_page = openapi_pages["admin/api/atlas"]
         assert atlas_page["source_type"] == "atlas"
         assert atlas_page["source"] == "cloud"
+
+        versioned_page = openapi_pages["reference/api-resources-spec/v2"]
+        assert versioned_page["source_type"] == "atlas"
+        assert versioned_page["source"] == "cloud"
+        assert versioned_page["api_version"] == "2.0"
+        resource_versions = versioned_page["resource_versions"]
+        assert isinstance(resource_versions, list)
+        assert all(isinstance(rv, str) for rv in resource_versions)
 
 
 def test_openapi_preview() -> None:
@@ -2543,3 +2558,19 @@ def test_openapi_duplicates() -> None:
         file_metadata = openapi_pages["admin/api/v3"]
         assert file_metadata["source_type"] == "local"
         assert file_metadata["source"] == "/openapi-admin-v3.yaml"
+
+
+def test_openapi_invalid_version() -> None:
+    with make_test(
+        {
+            Path(
+                "source/reference/api-resources-spec/v3.txt"
+            ): """
+.. openapi:: cloud
+   :api-version: 17.5
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("reference/api-resources-spec/v3.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidVersion)
