@@ -69,7 +69,6 @@ from .diagnostics import (
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
-from .openapi import OpenAPI
 from .page import Page, PendingTask
 from .postprocess import Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
@@ -654,15 +653,14 @@ class JSONVisitor:
                     )
 
         elif name == "openapi":
-            # Parsing should be done by the OpenAPI renderer on the frontend by default
-            uses_rst = options.get("uses-rst", False)
-            # The frontend will grab the file contents from Realm, using the argument as its key
+            # OpenAPI directive is parsed here and prepped for OAS module within autobuilder
+            # the module is responsible for building OpenAPI specs and AST, post parse
             uses_realm = options.get("uses-realm", False)
             # Versioning will be dependent on present api_version option
             api_version = options.get("api-version", None)
 
             if argument_text is None:
-                if uses_realm or uses_rst:
+                if uses_realm:
                     self.diagnostics.append(ExpectedPathArg(name, line))
                     return doc
 
@@ -690,43 +688,16 @@ class JSONVisitor:
                 doc.options["source_type"] = "atlas"
                 return doc
 
-            openapi_fileid, filepath = util.reroot_path(
+            _openapi_fileid, filepath = util.reroot_path(
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             try:
-                if uses_rst:
-                    with open(filepath) as f:
-                        openapi = OpenAPI.load(f)
-
-                    def create_page() -> Tuple[Page, EmbeddedRstParser]:
-                        # Create dummy page in order to use EmbeddedRstParser
-                        page = Page.create(
-                            filepath,
-                            None,
-                            "",
-                            n.Root((-1,), [], openapi_fileid, {}),
-                        )
-                        diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-                        return (
-                            page,
-                            EmbeddedRstParser(
-                                self.project_config,
-                                page,
-                                diagnostics.setdefault(filepath, []),
-                            ),
-                        )
-
-                    openapi_ast, diagnostics = openapi.to_ast(filepath, create_page)
-                    self.diagnostics.extend(diagnostics)
-                    doc.children.extend(openapi_ast)
-
-                else:
-                    with open(filepath) as f:
-                        spec = json.dumps(safe_load(f))
-                        spec_node = n.Text((line,), spec)
-                        doc.children.append(spec_node)
-                        doc.options["source_type"] = "local"
+                with open(filepath) as f:
+                    spec = json.dumps(safe_load(f))
+                    spec_node = n.Text((line,), spec)
+                    doc.children.append(spec_node)
+                    doc.options["source_type"] = "local"
 
             except OSError as err:
                 self.diagnostics.append(
