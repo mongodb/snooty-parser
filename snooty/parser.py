@@ -69,9 +69,9 @@ from .diagnostics import (
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
-from .page import Page, PendingTask
+from .page import Page, PendingFigure
 from .postprocess import Postprocessor, PostprocessorResult
-from .target_database import ProjectInterface, TargetDatabase
+from .target_database import TargetDatabase
 from .types import (
     AssociatedProduct,
     BuildIdentifierSet,
@@ -109,42 +109,6 @@ class _DefinitionListTerm(n.InlineParent):
         ), f"{self.__class__.__name__} is private and should have been removed from AST"
 
 
-class PendingFigure(PendingTask):
-    """Add an image's checksum."""
-
-    def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
-        super().__init__(node)
-        self.node: n.Directive = node
-        self.asset = asset
-
-    def __call__(
-        self, diagnostics: List[Diagnostic], project: ProjectInterface
-    ) -> None:
-        """Compute this figure's checksum and store it in our node."""
-        cache = project.expensive_operation_cache
-
-        # Use the cached checksum if possible. Note that this does not currently
-        # update the underlying asset: if the asset is used by the current backend,
-        # the image will still have to be read.
-        if self.node.options is None:
-            self.node.options = {}
-        options = self.node.options
-        entry = cache[(self.asset.fileid, 0)]
-        if entry is not None:
-            assert isinstance(entry, str)
-            options["checksum"] = entry
-            return
-
-        try:
-            checksum = self.asset.get_checksum()
-            options["checksum"] = checksum
-            cache[(self.asset.fileid, 0)] = checksum
-        except OSError as err:
-            diagnostics.append(
-                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
-            )
-
-
 class JSONVisitor:
     """Node visitor that creates a JSON-serializable structure."""
 
@@ -160,7 +124,7 @@ class JSONVisitor:
         self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
-        self.pending: List[PendingTask] = []
+        self.pending: List[PendingFigure] = []
 
         # It's possible for pages to synthetically create other pages that don't
         # exist in the filesystem
@@ -1799,13 +1763,7 @@ class _Project:
 
         new_assets = page.static_assets.difference(old_assets)
         for asset in new_assets:
-            try:
-                self.filesystem_watcher.watch_file(asset.path)
-            except OSError as err:
-                # Missing static asset directory: don't process it. We've already raised a
-                # diagnostic to the user.
-                logger.debug(f"Failed to set up watch: {err}")
-                page.static_assets.remove(asset)
+            self.filesystem_watcher.watch_file(asset.path)
         for asset in removed_assets:
             self.filesystem_watcher.end_watch(asset.path)
 
