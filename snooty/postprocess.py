@@ -1894,13 +1894,13 @@ class Postprocessor:
                         "options": toctree_node_options,
                     }
 
-                    # Check if the slug corresponds to an associated project name, indicating an external node
+                    # Check if the cleaned slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:
                         toctree_node["project"] = slug
-                        ref_project_pair = (entry.title, entry.slug)
+                        ref_project_pair = (entry.title, slug)
                         if ref_project_pair in external_nodes:
                             context.diagnostics[fileid].append(
-                                DuplicatedExternalToc(entry.slug, ast.span[0])
+                                DuplicatedExternalToc(slug, ast.span[0])
                             )
                         external_nodes.add(ref_project_pair)
 
