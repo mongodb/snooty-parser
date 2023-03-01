@@ -1783,7 +1783,9 @@ class Postprocessor:
         toc_landing_pages = [
             clean_slug(slug) for slug in context[ProjectConfig].toc_landing_pages
         ]
-        associated_project_names: Set[str] = set([project.name for project in context[ProjectConfig].associated_products])
+        associated_project_names: Set[str] = set(
+            [project.name for project in context[ProjectConfig].associated_products]
+        )
         ref_project_set: Set[Tuple[Optional[str], Optional[str]]] = set()
         cls.find_toctree_nodes(
             context,
@@ -1895,10 +1897,10 @@ class Postprocessor:
                     # Check if the slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:
                         toctree_node["project"] = slug
-                        ref_project_pair = (entry.title, entry.ref_project)
+                        ref_project_pair = (entry.title, entry.slug)
                         if ref_project_pair in external_nodes:
                             context.diagnostics[fileid].append(
-                                DuplicatedExternalToc(entry.ref_project, ast.span[0])
+                                DuplicatedExternalToc(entry.slug, ast.span[0])
                             )
                         external_nodes.add(ref_project_pair)
 
@@ -1927,6 +1929,7 @@ class Postprocessor:
                 child_ast,
                 node,
                 toc_landing_pages,
+                associated_project_names,
                 external_nodes,
                 visited_file_ids,
             )
