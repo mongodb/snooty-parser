@@ -1896,7 +1896,7 @@ class Postprocessor:
 
                     # Check if the cleaned slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:
-                        toctree_node["project"] = slug
+                        toctree_node["options"]["project"] = slug
                         ref_project_pair = (entry.title, slug)
                         if ref_project_pair in external_nodes:
                             context.diagnostics[fileid].append(
