@@ -1880,6 +1880,16 @@ class Postprocessor:
                         "drawer": slug not in toc_landing_pages
                     }
 
+                    # Check if the cleaned slug corresponds to an associated project name, indicating an external node
+                    if slug in associated_project_names:
+                        toctree_node_options["project"] = slug
+                        ref_project_pair = (entry.title, slug)
+                        if ref_project_pair in external_nodes:
+                            context.diagnostics[fileid].append(
+                                DuplicatedExternalToc(slug, ast.span[0])
+                            )
+                        external_nodes.add(ref_project_pair)
+
                     # Check if tocicon is a page level option
                     if context.pages[FileId(slug_fileid)].ast.options:
                         if "tocicon" in context.pages[FileId(slug_fileid)].ast.options:
@@ -1893,16 +1903,6 @@ class Postprocessor:
                         "children": [],
                         "options": toctree_node_options,
                     }
-
-                    # Check if the cleaned slug corresponds to an associated project name, indicating an external node
-                    if slug in associated_project_names:
-                        toctree_node["options"]["project"] = slug
-                        ref_project_pair = (entry.title, slug)
-                        if ref_project_pair in external_nodes:
-                            context.diagnostics[fileid].append(
-                                DuplicatedExternalToc(slug, ast.span[0])
-                            )
-                        external_nodes.add(ref_project_pair)
 
                     # Don't recurse on the index page
                     if slug_fileid not in visited_file_ids:
