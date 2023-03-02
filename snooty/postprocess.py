@@ -1783,6 +1783,9 @@ class Postprocessor:
         toc_landing_pages = [
             clean_slug(slug) for slug in context[ProjectConfig].toc_landing_pages
         ]
+        associated_project_names: Set[str] = set(
+            [project.name for project in context[ProjectConfig].associated_products]
+        )
         ref_project_set: Set[Tuple[Optional[str], Optional[str]]] = set()
         cls.find_toctree_nodes(
             context,
@@ -1790,6 +1793,7 @@ class Postprocessor:
             ast,
             root,
             toc_landing_pages,
+            associated_project_names,
             ref_project_set,
             {starting_fileid},
         )
@@ -1804,6 +1808,7 @@ class Postprocessor:
         ast: n.Node,
         node: Dict[str, Any],
         toc_landing_pages: List[str],
+        associated_project_names: Set[str],
         external_nodes: Set[Tuple[Optional[str], Optional[str]]],
         visited_file_ids: Set[FileId] = set(),
     ) -> None:
@@ -1875,6 +1880,16 @@ class Postprocessor:
                         "drawer": slug not in toc_landing_pages
                     }
 
+                    # Check if the cleaned slug corresponds to an associated project name, indicating an external node
+                    if slug in associated_project_names:
+                        toctree_node_options["project"] = slug
+                        ref_project_pair = (entry.title, slug)
+                        if ref_project_pair in external_nodes:
+                            context.diagnostics[fileid].append(
+                                DuplicatedExternalToc(slug, ast.span[0])
+                            )
+                        external_nodes.add(ref_project_pair)
+
                     # Check if tocicon is a page level option
                     if context.pages[FileId(slug_fileid)].ast.options:
                         if "tocicon" in context.pages[FileId(slug_fileid)].ast.options:
@@ -1898,6 +1913,7 @@ class Postprocessor:
                             new_ast,
                             toctree_node,
                             toc_landing_pages,
+                            associated_project_names,
                             external_nodes,
                             visited_file_ids.union({slug_fileid}),
                         )
@@ -1913,6 +1929,7 @@ class Postprocessor:
                 child_ast,
                 node,
                 toc_landing_pages,
+                associated_project_names,
                 external_nodes,
                 visited_file_ids,
             )
