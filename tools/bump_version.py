@@ -81,7 +81,7 @@ def main() -> None:
 
         return f'"{version_to_bump_to}"'
 
-    with Path("snooty/__init__.py").open("r+") as f:
+    with Path("python/snooty/__init__.py").open("r+") as f:
         data = f.read()
         data, n_replaced = PAT.subn(replace, data)
         if n_replaced != 1:

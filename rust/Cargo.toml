@@ -1,0 +1,15 @@
+[package]
+name = "snooty_oxide"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "snooty_oxide"
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = "fat"
+
+[dependencies]
+pyo3 = "0.18.1"

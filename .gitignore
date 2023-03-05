@@ -1,8 +1,9 @@
 __pycache__/
+/build/
 .mypy_cache/
 *.pyc
+*.so
 .DS_Store
-parser/snooty.py
 *.dist/
 node_modules/
 .coverage*
@@ -11,3 +12,4 @@ htmlcov/
 dist/
 .docs
 .vscode
+.spec
