@@ -40,7 +40,6 @@ import watchdog.events
 from yaml import safe_load
 
 from . import gizaparser, n, rstparser, specparser, util
-from .cache import Cache
 from .diagnostics import (
     CannotOpenFile,
     ConfigurationProblem,
@@ -69,9 +68,9 @@ from .diagnostics import (
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
-from .page import Page, PendingTask
+from .page import Page
 from .postprocess import Postprocessor, PostprocessorResult
-from .target_database import ProjectInterface, TargetDatabase
+from .target_database import TargetDatabase
 from .types import (
     AssociatedProduct,
     BuildIdentifierSet,
@@ -109,42 +108,6 @@ class _DefinitionListTerm(n.InlineParent):
         ), f"{self.__class__.__name__} is private and should have been removed from AST"
 
 
-class PendingFigure(PendingTask):
-    """Add an image's checksum."""
-
-    def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
-        super().__init__(node)
-        self.node: n.Directive = node
-        self.asset = asset
-
-    def __call__(
-        self, diagnostics: List[Diagnostic], project: ProjectInterface
-    ) -> None:
-        """Compute this figure's checksum and store it in our node."""
-        cache = project.expensive_operation_cache
-
-        # Use the cached checksum if possible. Note that this does not currently
-        # update the underlying asset: if the asset is used by the current backend,
-        # the image will still have to be read.
-        if self.node.options is None:
-            self.node.options = {}
-        options = self.node.options
-        entry = cache[(self.asset.fileid, 0)]
-        if entry is not None:
-            assert isinstance(entry, str)
-            options["checksum"] = entry
-            return
-
-        try:
-            checksum = self.asset.get_checksum()
-            options["checksum"] = checksum
-            cache[(self.asset.fileid, 0)] = checksum
-        except OSError as err:
-            diagnostics.append(
-                CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
-            )
-
-
 class JSONVisitor:
     """Node visitor that creates a JSON-serializable structure."""
 
@@ -160,7 +123,6 @@ class JSONVisitor:
         self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
-        self.pending: List[PendingTask] = []
 
         # It's possible for pages to synthetically create other pages that don't
         # exist in the filesystem
@@ -945,7 +907,14 @@ class JSONVisitor:
     ) -> None:
         try:
             static_asset = self.add_static_asset(image_argument, upload=True)
-            self.pending.append(PendingFigure(doc, static_asset))
+
+            try:
+                checksum = static_asset.get_checksum()
+                doc.options["checksum"] = checksum
+            except OSError as err:
+                self.diagnostics.append(
+                    CannotOpenFile(static_asset.path, err.strerror, doc.start[0])
+                )
         except OSError as err:
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
@@ -1058,7 +1027,6 @@ class JSONVisitor:
         visitor = type(self)(self.project_config, self.docpath, self.document)
         visitor.diagnostics = self.diagnostics
         visitor.static_assets = self.static_assets
-        visitor.pending = self.pending
         return visitor
 
 
@@ -1184,7 +1152,6 @@ def parse_rst(
     assert isinstance(top_of_state, n.Root)
     page = Page.create(path, None, text, top_of_state)
     page.static_assets = visitor.static_assets
-    page.pending_tasks = visitor.pending
     result = [(page, visitor.diagnostics)]
 
     # Pages can create additional pages that are not "real" filesystem artifacts
@@ -1218,7 +1185,6 @@ class EmbeddedRstParser:
 
         self.diagnostics.extend(visitor.diagnostics)
         self.page.static_assets.update(visitor.static_assets)
-        self.page.pending_tasks.extend(visitor.pending)
 
         return children
 
@@ -1232,7 +1198,6 @@ class EmbeddedRstParser:
 
         self.diagnostics.extend(visitor.diagnostics)
         self.page.static_assets.update(visitor.static_assets)
-        self.page.pending_tasks.extend(visitor.pending)
 
         return children
 
@@ -1543,7 +1508,6 @@ class _Project:
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
-        self.expensive_operation_cache: Cache[FileId] = Cache()
         self.backend.on_config(self.config, branch)
 
     def get_full_path(self, fileid: FileId) -> Path:
@@ -1782,9 +1746,6 @@ class _Project:
 
     def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
-        # Finish any pending tasks
-        page.finish(diagnostics, self)
-
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
         removed_assets: Set[StaticAsset] = set()
@@ -1798,16 +1759,15 @@ class _Project:
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
         new_assets = page.static_assets.difference(old_assets)
-        for asset in new_assets:
-            try:
+
+        try:
+            for asset in new_assets:
                 self.filesystem_watcher.watch_file(asset.path)
-            except OSError as err:
-                # Missing static asset directory: don't process it. We've already raised a
-                # diagnostic to the user.
-                logger.debug(f"Failed to set up watch: {err}")
-                page.static_assets.remove(asset)
-        for asset in removed_assets:
-            self.filesystem_watcher.end_watch(asset.path)
+
+            for asset in removed_assets:
+                self.filesystem_watcher.end_watch(asset.path)
+        except FileNotFoundError as err:
+            logger.warning("Failed to update watches: %s", err)
 
         # Update dependents
         try:
@@ -1835,12 +1795,6 @@ class _Project:
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
-
-        # Revoke any caching that might have been performed on this file
-        try:
-            del self.expensive_operation_cache[asset_path]
-        except KeyError:
-            pass
 
         # Rebuild any pages depending on this asset
         for page_id in list(self.asset_dg.predecessors(asset_path)):
