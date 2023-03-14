@@ -199,6 +199,10 @@ class InvalidLiteralInclude(Diagnostic):
     severity = Diagnostic.Level.error
 
 
+class AmbiguousLiteralInclude(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+
 class SubstitutionRefError(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -438,8 +442,8 @@ class MissingAssociatedToc(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Detected an associated toctree entry at {expected_project} 
-            which does not exist in an associated_products entry within the snooty.toml. 
+            f"""Detected an associated toctree entry at {expected_project}
+            which does not exist in an associated_products entry within the snooty.toml.
             Removing this toctree entry.""",
             start,
             end,

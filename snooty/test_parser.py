@@ -2,6 +2,7 @@ from pathlib import Path
 
 from . import rstparser
 from .diagnostics import (
+    AmbiguousLiteralInclude,
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
@@ -1214,6 +1215,32 @@ for (i = 0; i &lt; 10; i++) {
     assert [(type(d), "utf-8" in d.message) for d in diagnostics] == [
         (CannotOpenFile, True)
     ]
+
+    # Test that literalinclude start-after/end-before matching doesn't incorrectly match subsets of a given line (DOP-3531)
+    # This prevents incorrectly greedy matching of e.g. "sampleAggregation" when what you want is "sample"
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_prefixes.c
+    :start-after: begin sample
+    :end-before: end sample
+        """,
+    )
+    page.finish(diagnostics)
+    assert [type(x) for x in diagnostics] == [
+        AmbiguousLiteralInclude,
+        AmbiguousLiteralInclude,
+    ]
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="literalinclude" start-after="begin sample" end-before="end sample">
+        <text>/test_parser/includes/sample_prefixes.c</text>
+        <code copyable="True">sampleContent</code>
+        </directive>
+        </root>""",
+    )
 
 
 def test_include() -> None:

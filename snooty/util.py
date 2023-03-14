@@ -637,3 +637,11 @@ def damerau_levenshtein_distance(a: str, b: str) -> int:
         da[a[i - 1]] = i
 
     return matrix_get(len(a), len(b))
+
+
+def lines_contain(haystack: Iterable[str], needle: str) -> Iterator[int]:
+    """Check if a sequence of lines contains a specific needle, where the needle
+    is surrounded only by non-word characters. If there's a match, yield the index
+    of the line where the match succeeded. Repeat for each line."""
+    pat = re.compile(rf"^\W*{re.escape(needle)}\W*$")
+    yield from (idx for idx, line in enumerate(haystack) if pat.match(line))
