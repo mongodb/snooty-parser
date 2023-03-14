@@ -42,6 +42,7 @@ from yaml import safe_load
 from . import gizaparser, n, rstparser, specparser, util
 from .cache import Cache
 from .diagnostics import (
+    AmbiguousLiteralInclude,
     CannotOpenFile,
     ConfigurationProblem,
     Diagnostic,
@@ -740,11 +741,21 @@ class JSONVisitor:
                 Searches the literally-included file ('lines') for the specified text. If no such text is found,
                 add an InvalidLiteralInclude diagnostic.
                 """
-                assert isinstance(text, str)
-                loc = next((idx for idx, line in enumerate(lines) if text in line), -1)
+                matching_lines = util.lines_contain(lines, text)
+                loc = next(matching_lines, -1)
                 if loc < 0:
                     self.diagnostics.append(
                         InvalidLiteralInclude(f'"{text}" not found in {filepath}', line)
+                    )
+                    return loc
+
+                remaining_matches = [str(lineno) for lineno in matching_lines]
+                if remaining_matches:
+                    self.diagnostics.append(
+                        AmbiguousLiteralInclude(
+                            f'"{text}" matches in multiple places in {filepath}: lines {",".join([str(loc)] + remaining_matches)}',
+                            line,
+                        )
                     )
                 return loc
 
