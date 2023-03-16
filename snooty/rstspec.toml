@@ -751,10 +751,12 @@ example = """.. short-description::
 
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
-example = """.. step:: ${0: Step's headline string}
-${1: Step content}"""
-argument_type = "string"
+argument_type = {type = "string", required = false}
 content_type = "block"
+example = """.. step:: ${0: Step's headline string (Optional)}
+
+   ${1: Step content}
+"""
 
 [directive."mongodb:time"]
 help = "The amount of time that it would take to go through the guide content in minutes."
