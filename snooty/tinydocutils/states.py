@@ -104,30 +104,20 @@ __docformat__ = "reStructuredText"
 
 
 import re
-from types import FunctionType, MethodType
-from typing import Any, List, Optional, Pattern, Tuple
+from typing import Any, List, Optional, Pattern, Sequence, Tuple, Type
 
-# import docutils.parsers.rst
-# from docutils import ApplicationError, DataError, nodes, utils
-# from docutils.nodes import fully_normalize_name as normalize_name
-# from docutils.nodes import whitespace_normalize_name
-# from docutils.parsers.rst import directives, languages, roles, tableparser
+from . import directives, nodes, roles, roman, statemachine, urischemes, utils
+from .nodes import fully_normalize_name as normalize_name
+from .nodes import whitespace_normalize_name
+from .statemachine import StateMachineWS, StateWS
 from .utils import (
+    DataError,
+    PunctuationChars,
     column_width,
     escape2null,
-    PunctuationChars,
     split_escaped_whitespace,
     unescape,
-    urischemes,
 )
-from . import roman
-
-from . import statemachine
-from .statemachine import StateMachineWS, StateWS
-
-
-class DataError(Exception):
-    pass
 
 
 class ApplicationError(Exception):
@@ -154,361 +144,12 @@ class MarkupMismatch(Exception):
     pass
 
 
-class RSTStateMachine(StateMachineWS):
+class Struct:
 
-    """
-    reStructuredText's master StateMachine.
+    """Stores data attributes for dotted-attribute access."""
 
-    The entry point to reStructuredText parsing is the `run()` method.
-    """
-
-    def run(
-        self,
-        input_lines,
-        document,
-        input_offset: int = 0,
-        match_titles: bool = True,
-        inliner: Optional[Inliner] = None,
-    ) -> None:
-        """
-        Parse `input_lines` and modify the `document` node in place.
-
-        Extend `StateMachineWS.run()`: set up parse-global data and
-        run the StateMachine.
-        """
-        self.language = languages.get_language(
-            document.settings.language_code, document.reporter
-        )
-        self.match_titles = match_titles
-        if inliner is None:
-            inliner = Inliner()
-        inliner.init_customizations(document.settings)
-        self.memo = Struct(
-            document=document,
-            reporter=document.reporter,
-            language=self.language,
-            title_styles=[],
-            section_level=0,
-            section_bubble_up_kludge=False,
-            inliner=inliner,
-        )
-        self.document = document
-        self.attach_observer(document.note_source)
-        self.reporter = self.memo.reporter
-        self.node = document
-        results = StateMachineWS.run(
-            self, input_lines, input_offset, input_source=document["source"]
-        )
-        assert results == [], "RSTStateMachine.run() results should be empty!"
-        self.node = self.memo = None  # remove unneeded references
-
-
-class NestedStateMachine(StateMachineWS):
-
-    """
-    StateMachine run from within other StateMachine runs, to parse nested
-    document structures.
-    """
-
-    def run(
-        self, input_lines, input_offset, memo, node, match_titles: bool = True
-    ) -> None:
-        """
-        Parse `input_lines` and populate a `docutils.nodes.document` instance.
-
-        Extend `StateMachineWS.run()`: set up document-wide data.
-        """
-        self.match_titles = match_titles
-        self.memo = memo
-        self.document = memo.document
-        self.attach_observer(self.document.note_source)
-        self.reporter = memo.reporter
-        self.language = memo.language
-        self.node = node
-        results = StateMachineWS.run(self, input_lines, input_offset)
-        assert results == [], "NestedStateMachine.run() results should be " "empty!"
-        return results
-
-
-class RSTState(StateWS):
-
-    """
-    reStructuredText State superclass.
-
-    Contains methods used by all State subclasses.
-    """
-
-    nested_sm = NestedStateMachine
-    nested_sm_cache = []
-
-    def __init__(self, state_machine, debug: bool = False) -> None:
-        self.nested_sm_kwargs = {
-            "state_classes": state_classes,
-            "initial_state": "Body",
-        }
-        StateWS.__init__(self, state_machine, debug)
-
-    def runtime_init(self):
-        StateWS.runtime_init(self)
-        memo = self.state_machine.memo
-        self.memo = memo
-        self.reporter = memo.reporter
-        self.inliner = memo.inliner
-        self.document = memo.document
-        self.parent = self.state_machine.node
-        # enable the reporter to determine source and source-line
-        if not hasattr(self.reporter, "get_source_and_line"):
-            self.reporter.get_source_and_line = self.state_machine.get_source_and_line
-
-    def goto_line(self, abs_line_offset):
-        """
-        Jump to input line `abs_line_offset`, ignoring jumps past the end.
-        """
-        try:
-            self.state_machine.goto_line(abs_line_offset)
-        except EOFError:
-            pass
-
-    def no_match(self, context, transitions):
-        """
-        Override `StateWS.no_match` to generate a system message.
-
-        This code should never be run.
-        """
-        self.reporter.severe(
-            'Internal error: no transition pattern match.  State: "%s"; '
-            "transitions: %s; context: %s; current line: %r."
-            % (self.__class__.__name__, transitions, context, self.state_machine.line)
-        )
-        return context, None, []
-
-    def bof(self, context):
-        """Called at beginning of file."""
-        return [], []
-
-    def nested_parse(
-        self,
-        block,
-        input_offset,
-        node,
-        match_titles=False,
-        state_machine_class=None,
-        state_machine_kwargs=None,
-    ):
-        """
-        Create a new StateMachine rooted at `node` and run it over the input
-        `block`.
-        """
-        use_default = 0
-        if state_machine_class is None:
-            state_machine_class = self.nested_sm
-            use_default += 1
-        if state_machine_kwargs is None:
-            state_machine_kwargs = self.nested_sm_kwargs
-            use_default += 1
-        block_length = len(block)
-
-        state_machine = None
-        if use_default == 2:
-            try:
-                state_machine = self.nested_sm_cache.pop()
-            except IndexError:
-                pass
-        if not state_machine:
-            state_machine = state_machine_class(
-                debug=self.debug, **state_machine_kwargs
-            )
-        state_machine.run(
-            block, input_offset, memo=self.memo, node=node, match_titles=match_titles
-        )
-        if use_default == 2:
-            self.nested_sm_cache.append(state_machine)
-        else:
-            state_machine.unlink()
-        new_offset = state_machine.abs_line_offset()
-        # No `block.parent` implies disconnected -- lines aren't in sync:
-        if block.parent and (len(block) - block_length) != 0:
-            # Adjustment for block if modified in nested parse:
-            self.state_machine.next_line(len(block) - block_length)
-        return new_offset
-
-    def nested_list_parse(
-        self,
-        block,
-        input_offset,
-        node,
-        initial_state,
-        blank_finish,
-        blank_finish_state=None,
-        extra_settings={},
-        match_titles=False,
-        state_machine_class=None,
-        state_machine_kwargs=None,
-    ):
-        """
-        Create a new StateMachine rooted at `node` and run it over the input
-        `block`. Also keep track of optional intermediate blank lines and the
-        required final one.
-        """
-        if state_machine_class is None:
-            state_machine_class = self.nested_sm
-        if state_machine_kwargs is None:
-            state_machine_kwargs = self.nested_sm_kwargs.copy()
-        state_machine_kwargs["initial_state"] = initial_state
-        state_machine = state_machine_class(debug=self.debug, **state_machine_kwargs)
-        if blank_finish_state is None:
-            blank_finish_state = initial_state
-        state_machine.states[blank_finish_state].blank_finish = blank_finish
-        for key, value in extra_settings.items():
-            setattr(state_machine.states[initial_state], key, value)
-        state_machine.run(
-            block, input_offset, memo=self.memo, node=node, match_titles=match_titles
-        )
-        blank_finish = state_machine.states[blank_finish_state].blank_finish
-        state_machine.unlink()
-        return state_machine.abs_line_offset(), blank_finish
-
-    def section(self, title, source, style, lineno, messages):
-        """Check for a valid subsection and create one if it checks out."""
-        if self.check_subsection(source, style, lineno):
-            self.new_subsection(title, lineno, messages)
-
-    def check_subsection(self, source, style, lineno):
-        """
-        Check for a valid subsection header.  Return 1 (true) or None (false).
-
-        When a new section is reached that isn't a subsection of the current
-        section, back up the line count (use ``previous_line(-x)``), then
-        ``raise EOFError``.  The current StateMachine will finish, then the
-        calling StateMachine can re-examine the title.  This will work its way
-        back up the calling chain until the correct section level isreached.
-
-        @@@ Alternative: Evaluate the title, store the title info & level, and
-        back up the chain until that level is reached.  Store in memo? Or
-        return in results?
-
-        :Exception: `EOFError` when a sibling or supersection encountered.
-        """
-        memo = self.memo
-        title_styles = memo.title_styles
-        mylevel = memo.section_level
-        try:  # check for existing title style
-            level = title_styles.index(style) + 1
-        except ValueError:  # new title style
-            if len(title_styles) == memo.section_level:  # new subsection
-                title_styles.append(style)
-                return 1
-            else:  # not at lowest level
-                self.parent += self.title_inconsistent(source, lineno)
-                return None
-        if level <= mylevel:  # sibling or supersection
-            memo.section_level = level  # bubble up to parent section
-            if len(style) == 2:
-                memo.section_bubble_up_kludge = True
-            # back up 2 lines for underline title, 3 for overline title
-            self.state_machine.previous_line(len(style) + 1)
-            raise EOFError  # let parent section re-evaluate
-        if level == mylevel + 1:  # immediate subsection
-            return 1
-        else:  # invalid subsection
-            self.parent += self.title_inconsistent(source, lineno)
-            return None
-
-    def title_inconsistent(self, sourcetext, lineno):
-        error = self.reporter.severe(
-            "Title level inconsistent:",
-            nodes.literal_block("", sourcetext),
-            line=lineno,
-        )
-        return error
-
-    def new_subsection(self, title, lineno, messages):
-        """Append new subsection to document tree. On return, check level."""
-        memo = self.memo
-        mylevel = memo.section_level
-        memo.section_level += 1
-        section_node = nodes.section()
-        self.parent += section_node
-        textnodes, title_messages = self.inline_text(title, lineno)
-        titlenode = nodes.title(title, "", *textnodes)
-        name = normalize_name(titlenode.astext())
-        section_node["names"].append(name)
-        section_node += titlenode
-        section_node += messages
-        section_node += title_messages
-        self.document.note_implicit_target(section_node, section_node)
-        offset = self.state_machine.line_offset + 1
-        absoffset = self.state_machine.abs_line_offset() + 1
-        newabsoffset = self.nested_parse(
-            self.state_machine.input_lines[offset:],
-            input_offset=absoffset,
-            node=section_node,
-            match_titles=True,
-        )
-        self.goto_line(newabsoffset)
-        if memo.section_level <= mylevel:  # can't handle next section?
-            raise EOFError  # bubble up to supersection
-        # reset section_level; next pass will detect it properly
-        memo.section_level = mylevel
-
-    def paragraph(self, lines, lineno):
-        """
-        Return a list (paragraph & messages) & a boolean: literal_block next?
-        """
-        data = "\n".join(lines).rstrip()
-        if re.search(r"(?<!\\)(\\\\)*::$", data):
-            if len(data) == 2:
-                return [], 1
-            elif data[-3] in " \n":
-                text = data[:-3].rstrip()
-            else:
-                text = data[:-1]
-            literalnext = 1
-        else:
-            text = data
-            literalnext = 0
-        textnodes, messages = self.inline_text(text, lineno)
-        p = nodes.paragraph(data, "", *textnodes)
-        p.source, p.line = self.state_machine.get_source_and_line(lineno)
-        return [p] + messages, literalnext
-
-    def inline_text(self, text, lineno):
-        """
-        Return 2 lists: nodes (text and inline elements), and system_messages.
-        """
-        nodes, messages = self.inliner.parse(text, lineno, self.memo, self.parent)
-        return nodes, messages
-
-    def unindent_warning(self, node_name):
-        # the actual problem is one line below the current line
-        lineno = self.state_machine.abs_line_number() + 1
-        return self.reporter.warning(
-            "%s ends without a blank line; " "unexpected unindent." % node_name,
-            line=lineno,
-        )
-
-
-def build_regexp(definition, compile=True):
-    """
-    Build, compile and return a regular expression based on `definition`.
-
-    :Parameter: `definition`: a 4-tuple (group name, prefix, suffix, parts),
-        where "parts" is a list of regular expressions and/or regular
-        expression definitions to be joined into an or-group.
-    """
-    name, prefix, suffix, parts = definition
-    part_strings = []
-    for part in parts:
-        if isinstance(part, tuple):
-            part_strings.append(build_regexp(part, None))
-        else:
-            part_strings.append(part)
-    or_group = "|".join(part_strings)
-    regexp = "%(prefix)s(?P<%(name)s>%(or_group)s)%(suffix)s" % locals()
-    if compile:
-        return re.compile(regexp, re.UNICODE)
-    else:
-        return regexp
+    def __init__(self, **keywordargs):
+        self.__dict__.update(keywordargs)
 
 
 class Inliner:
@@ -525,14 +166,14 @@ class Inliner:
     def init_customizations(self, settings):
         # lookahead and look-behind expressions for inline markup rules
         if getattr(settings, "character_level_inline_markup", False):
-            start_string_prefix = u"(^|(?<!\x00))"
-            end_string_suffix = u""
+            start_string_prefix = "(^|(?<!\x00))"
+            end_string_suffix = ""
         else:
-            start_string_prefix = u"(^|(?<=\\s|[%s%s]))" % (
+            start_string_prefix = "(^|(?<=\\s|[%s%s]))" % (
                 PunctuationChars.openers,
                 PunctuationChars.delimiters,
             )
-            end_string_suffix = u"($|(?=\\s|[\x00%s%s%s]))" % (
+            end_string_suffix = "($|(?=\\s|[\x00%s%s%s]))" % (
                 PunctuationChars.closing_delimiters,
                 PunctuationChars.delimiters,
                 PunctuationChars.closers,
@@ -680,18 +321,6 @@ class Inliner:
                 % args,
                 re.VERBOSE | re.UNICODE,
             ),
-            pep=re.compile(
-                r"""
-                %(start_string_prefix)s
-                (
-                  (pep-(?P<pepnum1>\d+)(.txt)?) # reference to source file
-                |
-                  (PEP\s+(?P<pepnum2>\d+))      # reference by name
-                )
-                %(end_string_suffix)s"""
-                % args,
-                re.VERBOSE | re.UNICODE,
-            ),
             rfc=re.compile(
                 r"""
                 %(start_string_prefix)s
@@ -703,10 +332,6 @@ class Inliner:
         )
 
         self.implicit_dispatch.append((self.patterns.uri, self.standalone_uri))
-        if settings.pep_references:
-            self.implicit_dispatch.append((self.patterns.pep, self.pep_reference))
-        if settings.rfc_references:
-            self.implicit_dispatch.append((self.patterns.rfc, self.rfc_reference))
 
     def parse(self, text, lineno, memo, parent):
         # Needs to be refactored for nested inline markup.
@@ -725,7 +350,7 @@ class Inliner:
         URIs) is found last.
         """
         self.reporter = memo.reporter
-        self.document = memo.document
+        self.document: nodes.document = memo.document
         self.language = memo.language
         self.parent = parent
         pattern_search = self.patterns.initial.search
@@ -1075,7 +700,7 @@ class Inliner:
             if refname:
                 refnode["refname"] = refname
                 self.document.note_footnote_ref(refnode)
-            if utils.get_trim_footnote_ref_space(self.document.settings):
+            if self.document.settings.trim_footnote_reference_space:
                 before = before.rstrip()
         return (before, [refnode], remaining, [])
 
@@ -1117,27 +742,13 @@ class Inliner:
         else:  # not a valid scheme
             raise MarkupMismatch
 
-    def pep_reference(self, match, lineno):
-        text = match.group(0)
-        if text.startswith("pep-"):
-            pepnum = int(unescape(match.group("pepnum1")))
-        elif text.startswith("PEP"):
-            pepnum = int(unescape(match.group("pepnum2")))
-        else:
-            raise MarkupMismatch
-        ref = (
-            self.document.settings.pep_base_url
-            + self.document.settings.pep_file_url_template % pepnum
-        )
-        return [nodes.reference(unescape(text, True), text, refuri=ref)]
-
     rfc_url = "rfc%d.html"
 
     def rfc_reference(self, match, lineno):
         text = match.group(0)
         if text.startswith("RFC"):
             rfcnum = int(unescape(match.group("rfcnum")))
-            ref = self.document.settings.rfc_base_url + self.rfc_url % rfcnum
+            ref = self.document.settings["rfc_base_url"] + self.rfc_url % rfcnum
         else:
             raise MarkupMismatch
         return [nodes.reference(unescape(text, True), text, refuri=ref)]
@@ -1179,6 +790,358 @@ class Inliner:
     }
 
 
+class languages:
+    @staticmethod
+    def get_language(language_code, reporter):
+        return object()
+
+
+class RSTStateMachine(StateMachineWS):
+
+    """
+    reStructuredText's master StateMachine.
+
+    The entry point to reStructuredText parsing is the `run()` method.
+    """
+
+    def run(
+        self,
+        input_lines,
+        document,
+        input_offset: int = 0,
+        match_titles: bool = True,
+        inliner: Optional[Inliner] = None,
+    ) -> None:
+        """
+        Parse `input_lines` and modify the `document` node in place.
+
+        Extend `StateMachineWS.run()`: set up parse-global data and
+        run the StateMachine.
+        """
+        self.language = languages.get_language(
+            document.settings.language_code, document.reporter
+        )
+        self.match_titles = match_titles
+        if inliner is None:
+            inliner = Inliner()
+        inliner.init_customizations(document.settings)
+        self.memo = Struct(
+            document=document,
+            reporter=document.reporter,
+            language=self.language,
+            title_styles=[],
+            section_level=0,
+            section_bubble_up_kludge=False,
+            inliner=inliner,
+        )
+        self.document = document
+        self.attach_observer(document.note_source)
+        self.reporter = self.memo.reporter
+        self.node = document
+        results = StateMachineWS.run(
+            self, input_lines, input_offset, input_source=document["source"]
+        )
+        assert results == [], "RSTStateMachine.run() results should be empty!"
+        self.node = self.memo = None  # remove unneeded references
+
+
+class NestedStateMachine(StateMachineWS):
+
+    """
+    StateMachine run from within other StateMachine runs, to parse nested
+    document structures.
+    """
+
+    def run(
+        self, input_lines, input_offset, memo, node, match_titles: bool = True
+    ) -> None:
+        """
+        Parse `input_lines` and populate a `docutils.nodes.document` instance.
+
+        Extend `StateMachineWS.run()`: set up document-wide data.
+        """
+        self.match_titles = match_titles
+        self.memo = memo
+        self.document = memo.document
+        self.attach_observer(self.document.note_source)
+        self.reporter = memo.reporter
+        self.language = memo.language
+        self.node = node
+        results = StateMachineWS.run(self, input_lines, input_offset)
+        assert results == [], "NestedStateMachine.run() results should be " "empty!"
+        return results
+
+
+class RSTState(StateWS):
+
+    """
+    reStructuredText State superclass.
+
+    Contains methods used by all State subclasses.
+    """
+
+    nested_sm = NestedStateMachine
+    nested_sm_cache = []
+
+    def __init__(self, state_machine, debug: bool = False) -> None:
+        self.nested_sm_kwargs = {
+            "state_classes": state_classes,
+            "initial_state": "Body",
+        }
+        StateWS.__init__(self, state_machine, debug)
+
+    def runtime_init(self):
+        StateWS.runtime_init(self)
+        memo = self.state_machine.memo
+        self.memo = memo
+        self.reporter = memo.reporter
+        self.inliner = memo.inliner
+        self.document = memo.document
+        self.parent = self.state_machine.node
+        # enable the reporter to determine source and source-line
+        if self.reporter.get_source_and_line is None:
+            self.reporter.get_source_and_line = self.state_machine.get_source_and_line
+
+    def goto_line(self, abs_line_offset):
+        """
+        Jump to input line `abs_line_offset`, ignoring jumps past the end.
+        """
+        try:
+            self.state_machine.goto_line(abs_line_offset)
+        except EOFError:
+            pass
+
+    def bof(self, context):
+        """Called at beginning of file."""
+        return [], []
+
+    def nested_parse(
+        self,
+        block: statemachine.StringList,
+        input_offset: int,
+        node: nodes.Node,
+        match_titles: bool = False,
+        state_machine_class: Optional[Type[statemachine.StateMachine]] = None,
+        state_machine_kwargs=None,
+    ) -> int:
+        """
+        Create a new StateMachine rooted at `node` and run it over the input
+        `block`.
+        """
+        use_default = 0
+        if state_machine_class is None:
+            state_machine_class = self.nested_sm
+            use_default += 1
+        if state_machine_kwargs is None:
+            state_machine_kwargs = self.nested_sm_kwargs
+            use_default += 1
+        block_length = len(block)
+
+        state_machine = None
+        if use_default == 2:
+            try:
+                state_machine = self.nested_sm_cache.pop()
+            except IndexError:
+                pass
+        if not state_machine:
+            state_machine = state_machine_class(
+                debug=self.debug, **state_machine_kwargs
+            )
+        state_machine.run(
+            block, input_offset, memo=self.memo, node=node, match_titles=match_titles
+        )
+        if use_default == 2:
+            self.nested_sm_cache.append(state_machine)
+        else:
+            state_machine.unlink()
+        new_offset = state_machine.abs_line_offset()
+        # No `block.parent` implies disconnected -- lines aren't in sync:
+        if block.parent and (len(block) - block_length) != 0:
+            # Adjustment for block if modified in nested parse:
+            self.state_machine.next_line(len(block) - block_length)
+        return new_offset
+
+    def nested_list_parse(
+        self,
+        block,
+        input_offset,
+        node,
+        initial_state,
+        blank_finish,
+        blank_finish_state=None,
+        extra_settings={},
+        match_titles=False,
+        state_machine_class=None,
+        state_machine_kwargs=None,
+    ):
+        """
+        Create a new StateMachine rooted at `node` and run it over the input
+        `block`. Also keep track of optional intermediate blank lines and the
+        required final one.
+        """
+        if state_machine_class is None:
+            state_machine_class = self.nested_sm
+        if state_machine_kwargs is None:
+            state_machine_kwargs = self.nested_sm_kwargs.copy()
+        state_machine_kwargs["initial_state"] = initial_state
+        state_machine = state_machine_class(debug=self.debug, **state_machine_kwargs)
+        if blank_finish_state is None:
+            blank_finish_state = initial_state
+        state_machine.states[blank_finish_state].blank_finish = blank_finish
+        for key, value in extra_settings.items():
+            setattr(state_machine.states[initial_state], key, value)
+        state_machine.run(
+            block, input_offset, memo=self.memo, node=node, match_titles=match_titles
+        )
+        blank_finish = state_machine.states[blank_finish_state].blank_finish
+        state_machine.unlink()
+        return state_machine.abs_line_offset(), blank_finish
+
+    def section(self, title, source, style, lineno, messages):
+        """Check for a valid subsection and create one if it checks out."""
+        if self.check_subsection(source, style, lineno):
+            self.new_subsection(title, lineno, messages)
+
+    def check_subsection(self, source, style, lineno):
+        """
+        Check for a valid subsection header.  Return 1 (true) or None (false).
+
+        When a new section is reached that isn't a subsection of the current
+        section, back up the line count (use ``previous_line(-x)``), then
+        ``raise EOFError``.  The current StateMachine will finish, then the
+        calling StateMachine can re-examine the title.  This will work its way
+        back up the calling chain until the correct section level isreached.
+
+        @@@ Alternative: Evaluate the title, store the title info & level, and
+        back up the chain until that level is reached.  Store in memo? Or
+        return in results?
+
+        :Exception: `EOFError` when a sibling or supersection encountered.
+        """
+        memo = self.memo
+        title_styles = memo.title_styles
+        mylevel = memo.section_level
+        try:  # check for existing title style
+            level = title_styles.index(style) + 1
+        except ValueError:  # new title style
+            if len(title_styles) == memo.section_level:  # new subsection
+                title_styles.append(style)
+                return 1
+            else:  # not at lowest level
+                self.parent += self.title_inconsistent(source, lineno)
+                return None
+        if level <= mylevel:  # sibling or supersection
+            memo.section_level = level  # bubble up to parent section
+            if len(style) == 2:
+                memo.section_bubble_up_kludge = True
+            # back up 2 lines for underline title, 3 for overline title
+            self.state_machine.previous_line(len(style) + 1)
+            raise EOFError  # let parent section re-evaluate
+        if level == mylevel + 1:  # immediate subsection
+            return 1
+        else:  # invalid subsection
+            self.parent += self.title_inconsistent(source, lineno)
+            return None
+
+    def title_inconsistent(self, sourcetext, lineno):
+        error = self.reporter.severe(
+            "Title level inconsistent:",
+            nodes.literal_block("", sourcetext),
+            line=lineno,
+        )
+        return error
+
+    def new_subsection(self, title, lineno, messages):
+        """Append new subsection to document tree. On return, check level."""
+        memo = self.memo
+        mylevel = memo.section_level
+        memo.section_level += 1
+        section_node = nodes.section()
+        self.parent += section_node
+        textnodes, title_messages = self.inline_text(title, lineno)
+        titlenode = nodes.title(title, "", *textnodes)
+        name = normalize_name(titlenode.astext())
+        section_node["names"].append(name)
+        section_node += titlenode
+        section_node += messages
+        section_node += title_messages
+        self.document.note_implicit_target(section_node, section_node)
+        offset = self.state_machine.line_offset + 1
+        absoffset = self.state_machine.abs_line_offset() + 1
+        newabsoffset = self.nested_parse(
+            self.state_machine.input_lines[offset:],
+            input_offset=absoffset,
+            node=section_node,
+            match_titles=True,
+        )
+        self.goto_line(newabsoffset)
+        if memo.section_level <= mylevel:  # can't handle next section?
+            raise EOFError  # bubble up to supersection
+        # reset section_level; next pass will detect it properly
+        memo.section_level = mylevel
+
+    def paragraph(self, lines, lineno):
+        """
+        Return a list (paragraph & messages) & a boolean: literal_block next?
+        """
+        data = "\n".join(lines).rstrip()
+        if re.search(r"(?<!\\)(\\\\)*::$", data):
+            if len(data) == 2:
+                return [], 1
+            elif data[-3] in " \n":
+                text = data[:-3].rstrip()
+            else:
+                text = data[:-1]
+            literalnext = 1
+        else:
+            text = data
+            literalnext = 0
+        textnodes, messages = self.inline_text(text, lineno)
+        p = nodes.paragraph(data, "", *textnodes)
+        p.source, p.line = self.state_machine.get_source_and_line(lineno)
+        return [p] + messages, literalnext
+
+    def inline_text(
+        self, text: str, lineno: int
+    ) -> Tuple[Sequence[nodes.ConcreteNode], Sequence[nodes.system_message]]:
+        """
+        Return 2 lists: nodes (text and inline elements), and system_messages.
+        """
+        nodes, messages = self.inliner.parse(text, lineno, self.memo, self.parent)
+        return nodes, messages
+
+    def unindent_warning(self, node_name):
+        # the actual problem is one line below the current line
+        lineno = self.state_machine.abs_line_number() + 1
+        return self.reporter.warning(
+            "%s ends without a blank line; " "unexpected unindent." % node_name,
+            line=lineno,
+        )
+
+
+def build_regexp(definition, compile=True):
+    """
+    Build, compile and return a regular expression based on `definition`.
+
+    :Parameter: `definition`: a 4-tuple (group name, prefix, suffix, parts),
+        where "parts" is a list of regular expressions and/or regular
+        expression definitions to be joined into an or-group.
+    """
+    name, prefix, suffix, parts = definition
+    part_strings = []
+    for part in parts:
+        if isinstance(part, tuple):
+            part_strings.append(build_regexp(part, None))
+        else:
+            part_strings.append(part)
+    or_group = "|".join(part_strings)
+    regexp = "%(prefix)s(?P<%(name)s>%(or_group)s)%(suffix)s" % locals()
+    if compile:
+        return re.compile(regexp, re.UNICODE)
+    else:
+        return regexp
+
+
 def _loweralpha_to_int(s, _zero=(ord("a") - 1)):
     return ord(s) - _zero
 
@@ -1196,9 +1159,6 @@ class Body(RSTState):
     """
     Generic classifier of the first line of a block.
     """
-
-    double_width_pad_char = tableparser.TableParser.double_width_pad_char
-    """Padding character for East Asian double-width text."""
 
     enum = Struct()
     """Enumerated list parsing information."""
@@ -1237,15 +1197,6 @@ class Body(RSTState):
             enum.sequencepats[sequence] + "$", re.UNICODE
         )
 
-    grid_table_top_pat = re.compile(r"\+-[-+]+-\+ *$")
-    """Matches the top (& bottom) of a full table)."""
-
-    simple_table_top_pat = re.compile("=+( +=+)+ *$")
-    """Matches the top of a simple table."""
-
-    simple_table_border_pat = re.compile("=+[ =]*$")
-    """Matches the bottom & header bottom of a simple table."""
-
     pats = {}
     """Fragments of patterns used by transitions."""
 
@@ -1273,14 +1224,12 @@ class Body(RSTState):
         )
 
     patterns = {
-        "bullet": u"[-+*\u2022\u2023\u2043]( +|$)",
+        "bullet": "[-+*\u2022\u2023\u2043]( +|$)",
         "enumerator": r"(%(parens)s|%(rparen)s|%(period)s)( +|$)" % pats,
         "field_marker": r":(?![: ])([^:\\]|\\.|:(?!([ `]|$)))*(?<! ):( +|$)",
         "option_marker": r"%(option)s(, %(option)s)*(  +| ?$)" % pats,
         "doctest": r">>>( +|$)",
         "line_block": r"\|( +|$)",
-        "grid_table_top": grid_table_top_pat,
-        "simple_table_top": simple_table_top_pat,
         "explicit_markup": r"\.\.( +|$)",
         "anonymous": r"__( +|$)",
         "line": r"(%(nonalphanum7bit)s)\1* *$" % pats,
@@ -1293,8 +1242,6 @@ class Body(RSTState):
         "option_marker",
         "doctest",
         "line_block",
-        "grid_table_top",
-        "simple_table_top",
         "explicit_markup",
         "anonymous",
         "line",
@@ -1336,7 +1283,7 @@ class Body(RSTState):
         return elements
 
     # U+2014 is an em-dash:
-    attribution_pattern = re.compile(u"(---?(?!-)|\u2014) *(?=[^ \\n])", re.UNICODE)
+    attribution_pattern = re.compile("(---?(?!-)|\u2014) *(?=[^ \\n])", re.UNICODE)
 
     def split_attribution(self, indented, line_offset):
         """
@@ -1658,7 +1605,7 @@ class Body(RSTState):
             listitem, blank_finish = self.option_list_item(match)
         except MarkupError as error:
             # This shouldn't happen; pattern won't match.
-            msg = self.reporter.error(u"Invalid option list marker: %s" % error)
+            msg = self.reporter.error("Invalid option list marker: %s" % error)
             self.parent += msg
             (
                 indented,
@@ -1793,7 +1740,7 @@ class Body(RSTState):
             line_offset,
             blank_finish,
         ) = self.state_machine.get_first_known_indented(match.end(), until_blank=True)
-        text = u"\n".join(indented)
+        text = "\n".join(indented)
         text_nodes, messages = self.inline_text(text, lineno)
         line = nodes.line(text, "", *text_nodes)
         if match.string.rstrip() != "|":  # not empty
@@ -1824,198 +1771,6 @@ class Body(RSTState):
             self.nest_line_block_segment(new_block)
             new_items.append(new_block)
         block[:] = new_items
-
-    def grid_table_top(self, match, context, next_state):
-        """Top border of a full table."""
-        return self.table_top(
-            match,
-            context,
-            next_state,
-            self.isolate_grid_table,
-            tableparser.GridTableParser,
-        )
-
-    def simple_table_top(self, match, context, next_state):
-        """Top border of a simple table."""
-        return self.table_top(
-            match,
-            context,
-            next_state,
-            self.isolate_simple_table,
-            tableparser.SimpleTableParser,
-        )
-
-    def table_top(self, match, context, next_state, isolate_function, parser_class):
-        """Top border of a generic table."""
-        nodelist, blank_finish = self.table(isolate_function, parser_class)
-        self.parent += nodelist
-        if not blank_finish:
-            msg = self.reporter.warning(
-                "Blank line required after table.",
-                line=self.state_machine.abs_line_number() + 1,
-            )
-            self.parent += msg
-        return [], next_state, []
-
-    def table(self, isolate_function, parser_class):
-        """Parse a table."""
-        block, messages, blank_finish = isolate_function()
-        if block:
-            try:
-                parser = parser_class()
-                tabledata = parser.parse(block)
-                tableline = self.state_machine.abs_line_number() - len(block) + 1
-                table = self.build_table(tabledata, tableline)
-                nodelist = [table] + messages
-            except tableparser.TableMarkupError as err:
-                nodelist = (
-                    self.malformed_table(block, " ".join(err.args), offset=err.offset)
-                    + messages
-                )
-        else:
-            nodelist = messages
-        return nodelist, blank_finish
-
-    def isolate_grid_table(self):
-        messages = []
-        blank_finish = 1
-        try:
-            block = self.state_machine.get_text_block(flush_left=True)
-        except statemachine.UnexpectedIndentationError as err:
-            block, src, srcline = err.args
-            messages.append(
-                self.reporter.error("Unexpected indentation.", source=src, line=srcline)
-            )
-            blank_finish = 0
-        block.disconnect()
-        # for East Asian chars:
-        block.pad_double_width(self.double_width_pad_char)
-        width = len(block[0].strip())
-        for i in range(len(block)):
-            block[i] = block[i].strip()
-            if block[i][0] not in "+|":  # check left edge
-                blank_finish = 0
-                self.state_machine.previous_line(len(block) - i)
-                del block[i:]
-                break
-        if not self.grid_table_top_pat.match(block[-1]):  # find bottom
-            blank_finish = 0
-            # from second-last to third line of table:
-            for i in range(len(block) - 2, 1, -1):
-                if self.grid_table_top_pat.match(block[i]):
-                    self.state_machine.previous_line(len(block) - i + 1)
-                    del block[i + 1 :]
-                    break
-            else:
-                messages.extend(self.malformed_table(block))
-                return [], messages, blank_finish
-        for i in range(len(block)):  # check right edge
-            if len(block[i]) != width or block[i][-1] not in "+|":
-                messages.extend(self.malformed_table(block))
-                return [], messages, blank_finish
-        return block, messages, blank_finish
-
-    def isolate_simple_table(self):
-        start = self.state_machine.line_offset
-        lines = self.state_machine.input_lines
-        limit = len(lines) - 1
-        toplen = len(lines[start].strip())
-        pattern_match = self.simple_table_border_pat.match
-        found = 0
-        found_at = None
-        i = start + 1
-        while i <= limit:
-            line = lines[i]
-            match = pattern_match(line)
-            if match:
-                if len(line.strip()) != toplen:
-                    self.state_machine.next_line(i - start)
-                    messages = self.malformed_table(
-                        lines[start : i + 1],
-                        "Bottom/header table border does " "not match top border.",
-                    )
-                    return [], messages, i == limit or not lines[i + 1].strip()
-                found += 1
-                found_at = i
-                if found == 2 or i == limit or not lines[i + 1].strip():
-                    end = i
-                    break
-            i += 1
-        else:  # reached end of input_lines
-            if found:
-                extra = " or no blank line after table bottom"
-                self.state_machine.next_line(found_at - start)
-                block = lines[start : found_at + 1]
-            else:
-                extra = ""
-                self.state_machine.next_line(i - start - 1)
-                block = lines[start:]
-            messages = self.malformed_table(
-                block, "No bottom table border found%s." % extra
-            )
-            return [], messages, not extra
-        self.state_machine.next_line(end - start)
-        block = lines[start : end + 1]
-        # for East Asian chars:
-        block.pad_double_width(self.double_width_pad_char)
-        return block, [], end == limit or not lines[end + 1].strip()
-
-    def malformed_table(self, block, detail="", offset=0):
-        block.replace(self.double_width_pad_char, "")
-        data = "\n".join(block)
-        message = "Malformed table."
-        startline = self.state_machine.abs_line_number() - len(block) + 1
-        if detail:
-            message += "\n" + detail
-        error = self.reporter.error(
-            message, nodes.literal_block(data, data), line=startline + offset
-        )
-        return [error]
-
-    def build_table(self, tabledata, tableline, stub_columns=0, widths=None):
-        colwidths, headrows, bodyrows = tabledata
-        table = nodes.table()
-        if widths == "auto":
-            table["classes"] += ["colwidths-auto"]
-        elif widths:  # "grid" or list of integers
-            table["classes"] += ["colwidths-given"]
-        tgroup = nodes.tgroup(cols=len(colwidths))
-        table += tgroup
-        for colwidth in colwidths:
-            colspec = nodes.colspec(colwidth=colwidth)
-            if stub_columns:
-                colspec.attributes["stub"] = 1
-                stub_columns -= 1
-            tgroup += colspec
-        if headrows:
-            thead = nodes.thead()
-            tgroup += thead
-            for row in headrows:
-                thead += self.build_table_row(row, tableline)
-        tbody = nodes.tbody()
-        tgroup += tbody
-        for row in bodyrows:
-            tbody += self.build_table_row(row, tableline)
-        return table
-
-    def build_table_row(self, rowdata, tableline):
-        row = nodes.row()
-        for cell in rowdata:
-            if cell is None:
-                continue
-            morerows, morecols, offset, cellblock = cell
-            attributes = {}
-            if morerows:
-                attributes["morerows"] = morerows
-            if morecols:
-                attributes["morecols"] = morecols
-            entry = nodes.entry(**attributes)
-            row += entry
-            if "".join(cellblock):
-                self.nested_parse(
-                    cellblock, input_offset=tableline + offset, node=entry
-                )
-        return row
 
     explicit = Struct()
     """Patterns and constants used for explicit markup recognition."""
@@ -2299,7 +2054,7 @@ class Body(RSTState):
                 line=srcline,
             )
             return [msg], blank_finish
-        self.document.note_substitution_def(substitution_node, subname, self.parent)
+
         return [substitution_node], blank_finish
 
     def disallowed_inside_substitution_definitions(self, node):
@@ -2347,10 +2102,6 @@ class Body(RSTState):
 
         Returns a 2-tuple: list of nodes, and a "blank finish" boolean.
         """
-        if isinstance(directive, (FunctionType, MethodType)):
-            from docutils.parsers.rst import convert_directive_function
-
-            directive = convert_directive_function(directive)
         lineno = self.state_machine.abs_line_number()
         initial_line_offset = self.state_machine.line_offset
         (
@@ -2388,7 +2139,7 @@ class Body(RSTState):
         )
         try:
             result = directive_instance.run()
-        except docutils.parsers.rst.DirectiveError as error:
+        except directives.DirectiveError as error:
             msg_node = self.reporter.system_message(error.level, error.msg, line=lineno)
             msg_node += nodes.literal_block(block_text, block_text)
             result = [msg_node]
@@ -2513,8 +2264,8 @@ class Body(RSTState):
             return 0, ('unknown option: "%s"' % detail.args[0])
         except (ValueError, TypeError) as detail:
             return 0, ("invalid option value: %s" % " ".join(detail.args))
-        except utils.ExtensionOptionError as detail:
-            return 0, ("invalid option data: %s" % " ".join(detail.args))
+        # except utils.ExtensionOptionError as detail:
+        #     return 0, ("invalid option data: %s" % " ".join(detail.args))
         if blank_finish:
             return 1, options
         else:
@@ -2800,8 +2551,6 @@ class SpecializedBody(Body):
     option_marker = invalid_input
     doctest = invalid_input
     line_block = invalid_input
-    grid_table_top = invalid_input
-    simple_table_top = invalid_input
     explicit_markup = invalid_input
     anonymous = invalid_input
     line = invalid_input
@@ -3164,7 +2913,10 @@ class Text(RSTState):
         self.nested_parse(indented, input_offset=line_offset, node=definition)
         return itemnode, blank_finish
 
-    classifier_delimiter = re.compile(" +: +")
+    class classifier_delimiter:
+        @staticmethod
+        def split(text: str) -> List[str]:
+            return [text]
 
     def term(self, lines, lineno):
         """Return a definition_list's term and optional classifiers."""
@@ -3445,7 +3197,7 @@ class QuotedLiteralBlock(RSTState):
         raise EOFError
 
 
-state_classes = (
+state_classes: Sequence[Type[StateWS]] = (
     Body,
     BulletList,
     DefinitionList,

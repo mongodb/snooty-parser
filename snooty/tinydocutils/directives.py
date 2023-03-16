@@ -8,9 +8,22 @@ This package contains directive implementation modules.
 
 __docformat__ = "reStructuredText"
 
-import codecs
 import re
-from typing import Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
+
+from . import nodes, statemachine, states
+from .utils import escape2null, split_escaped_whitespace, unescape
 
 
 def flag(argument: Optional[str]) -> None:
@@ -81,7 +94,7 @@ def uri(argument: Optional[str]) -> str:
         return uri
 
 
-def nonnegative_int(argument: Optional[str]) -> str:
+def nonnegative_int(argument: str) -> int:
     """
     Check for a nonnegative integer argument; raise ``ValueError`` if not.
     (Directive option conversion function.)
@@ -92,22 +105,10 @@ def nonnegative_int(argument: Optional[str]) -> str:
     return value
 
 
-def percentage(argument: Optional[str]) -> str:
-    """
-    Check for an integer percentage value with optional percent sign.
-    (Directive option conversion function.)
-    """
-    try:
-        argument = argument.rstrip(" %")
-    except AttributeError:
-        pass
-    return nonnegative_int(argument)
-
-
 length_units = ["em", "ex", "px", "in", "cm", "mm", "pt", "pc"]
 
 
-def get_measure(argument, units):
+def get_measure(argument: str, units: Iterable[str]) -> str:
     """
     Check for a positive argument of one of the units and return a
     normalized string of the form "<value><unit>" (without space in
@@ -118,8 +119,11 @@ def get_measure(argument, units):
     """
     match = re.match(r"^([0-9.]+) *(%s)$" % "|".join(units), argument)
     try:
+        if not match:
+            raise ValueError()
+
         float(match.group(1))
-    except (AttributeError, ValueError):
+    except ValueError:
         raise ValueError(
             "not a positive measure of one of the following units:\n%s"
             % " ".join(['"%s"' % i for i in units])
@@ -127,11 +131,11 @@ def get_measure(argument, units):
     return match.group(1) + match.group(2)
 
 
-def length_or_unitless(argument):
+def length_or_unitless(argument: str) -> str:
     return get_measure(argument, length_units + [""])
 
 
-def length_or_percentage_or_unitless(argument, default=""):
+def length_or_percentage_or_unitless(argument: str, default: str = "") -> str:
     """
     Return normalized string of a length or percentage unit.
     (Directive option conversion function.)
@@ -158,7 +162,7 @@ def length_or_percentage_or_unitless(argument, default=""):
             return get_measure(argument, length_units + ["%"])
 
 
-def class_option(argument):
+def class_option(argument: str) -> Sequence[str]:
     """
     Convert the argument into a list of ID-compatible strings and return it.
     (Directive option conversion function.)
@@ -220,7 +224,7 @@ def single_char_or_unicode(argument: str) -> str:
     return char
 
 
-def single_char_or_whitespace_or_unicode(argument):
+def single_char_or_whitespace_or_unicode(argument: str) -> str:
     """
     As with `single_char_or_unicode`, but "tab" and "space" are also supported.
     (Directive option conversion function.)
@@ -234,7 +238,7 @@ def single_char_or_whitespace_or_unicode(argument):
     return char
 
 
-def positive_int(argument):
+def positive_int(argument: str) -> int:
     """
     Converts the argument into an integer.  Raises ValueError for negative,
     zero, or non-integer values.  (Directive option conversion function.)
@@ -245,36 +249,7 @@ def positive_int(argument):
     return value
 
 
-def positive_int_list(argument):
-    """
-    Converts a space- or comma-separated list of values into a Python list
-    of integers.
-    (Directive option conversion function.)
-
-    Raises ValueError for non-positive-integer values.
-    """
-    if "," in argument:
-        entries = argument.split(",")
-    else:
-        entries = argument.split()
-    return [positive_int(entry) for entry in entries]
-
-
-def encoding(argument):
-    """
-    Verfies the encoding argument by lookup.
-    (Directive option conversion function.)
-
-    Raises ValueError for unknown encodings.
-    """
-    try:
-        codecs.lookup(argument)
-    except LookupError:
-        raise ValueError('unknown encoding: "%s"' % argument)
-    return argument
-
-
-def choice(argument, values):
+def choice(argument: str, values: Sequence[str]) -> str:
     """
     Directive option utility function, supplied to enable options whose
     argument must be a member of a finite set of possible values (must be
@@ -303,36 +278,285 @@ def choice(argument, values):
         )
 
 
-def format_values(values):
+def format_values(values: Sequence[str]) -> str:
     return '%s, or "%s"' % (", ".join(['"%s"' % s for s in values[:-1]]), values[-1])
 
 
-def value_or(values, other):
+class DirectiveError(Exception):
+
     """
-    Directive option conversion function.
+    Store a message and a system message level.
 
-    The argument can be any of `values` or `argument_type`.
+    To be thrown from inside directive code.
+
+    Do not instantiate directly -- use `Directive.directive_error()`
+    instead!
     """
 
-    def auto_or_other(argument):
-        if argument in values:
-            return argument
-        else:
-            return other(argument)
-
-    return auto_or_other
+    def __init__(self, level: int, message: str) -> None:
+        """Set error `message` and `level`"""
+        Exception.__init__(self)
+        self.level = level
+        self.msg = message
 
 
-def parser_name(argument):
+class Directive:
+
     """
-    Return a docutils parser whose name matches the argument.
-    (Directive option conversion function.)
+    Base class for reStructuredText directives.
 
-    Return `None`, if the argument evaluates to `False`.
+    The following attributes may be set by subclasses.  They are
+    interpreted by the directive parser (which runs the directive
+    class):
+
+    - `required_arguments`: The number of required arguments (default:
+      0).
+
+    - `optional_arguments`: The number of optional arguments (default:
+      0).
+
+    - `final_argument_whitespace`: A boolean, indicating if the final
+      argument may contain whitespace (default: False).
+
+    - `option_spec`: A dictionary, mapping known option names to
+      conversion functions such as `int` or `float` (default: {}, no
+      options).  Several conversion functions are defined in the
+      directives/__init__.py module.
+
+      Option conversion functions take a single parameter, the option
+      argument (a string or ``None``), validate it and/or convert it
+      to the appropriate form.  Conversion functions may raise
+      `ValueError` and `TypeError` exceptions.
+
+    - `has_content`: A boolean; True if content is allowed.  Client
+      code must handle the case where content is required but not
+      supplied (an empty content list will be supplied).
+
+    Arguments are normally single whitespace-separated words.  The
+    final argument may contain whitespace and/or newlines if
+    `final_argument_whitespace` is True.
+
+    If the form of the arguments is more complex, specify only one
+    argument (either required or optional) and set
+    `final_argument_whitespace` to True; the client code must do any
+    context-sensitive parsing.
+
+    When a directive implementation is being run, the directive class
+    is instantiated, and the `run()` method is executed.  During
+    instantiation, the following instance variables are set:
+
+    - ``name`` is the directive type or name (string).
+
+    - ``arguments`` is the list of positional arguments (strings).
+
+    - ``options`` is a dictionary mapping option names (strings) to
+      values (type depends on option conversion functions; see
+      `option_spec` above).
+
+    - ``content`` is a list of strings, the directive content line by line.
+
+    - ``lineno`` is the absolute line number of the first line
+      of the directive.
+
+    - ``content_offset`` is the line offset of the first line of the content from
+      the beginning of the current input.  Used when initiating a nested parse.
+
+    - ``block_text`` is a string containing the entire directive.
+
+    - ``state`` is the state which called the directive function.
+
+    - ``state_machine`` is the state machine which controls the state which called
+      the directive function.
+
+    Directive functions return a list of nodes which will be inserted
+    into the document tree at the point where the directive was
+    encountered.  This can be an empty list if there is nothing to
+    insert.
+
+    For ordinary directives, the list must contain body elements or
+    structural elements.  Some directives are intended specifically
+    for substitution definitions, and must return a list of `Text`
+    nodes and/or inline elements (suitable for inline insertion, in
+    place of the substitution reference).  Such directives must verify
+    substitution definition context, typically using code like this::
+
+        if not isinstance(state, states.SubstitutionDef):
+            error = state_machine.reporter.error(
+                'Invalid context: the "%s" directive can only be used '
+                'within a substitution definition.' % (name),
+                nodes.literal_block(block_text, block_text), line=lineno)
+            return [error]
     """
-    if not argument:
-        return None
-    try:
-        return parsers.get_parser_class(argument)
-    except ImportError:
-        raise ValueError('Unknown parser name "%s".' % argument)
+
+    # There is a "Creating reStructuredText Directives" how-to at
+    # <http://docutils.sf.net/docs/howto/rst-directives.html>.  If you
+    # update this docstring, please update the how-to as well.
+
+    required_arguments: int = 0
+    """Number of required directive arguments."""
+
+    optional_arguments: int = 0
+    """Number of optional arguments after the required arguments."""
+
+    final_argument_whitespace: bool = False
+    """May the final argument contain whitespace?"""
+
+    option_spec: Optional[Dict[str, Callable[[str], object]]] = None
+    """Mapping of option names to validator functions."""
+
+    has_content: bool = False
+    """May the directive have content?"""
+
+    def __init__(
+        self,
+        name: str,
+        arguments: List[str],
+        options: Dict[str, str],
+        content: statemachine.StringList,
+        lineno: int,
+        content_offset: int,
+        block_text: str,
+        state: "states.RSTState",
+        state_machine: statemachine.StateMachine,
+    ) -> None:
+        self.name = name
+        self.arguments = arguments
+        self.options = options
+        self.content = content
+        self.lineno = lineno
+        self.content_offset = content_offset
+        self.block_text = block_text
+        self.state = state
+        self.state_machine = state_machine
+
+    def run(self) -> Sequence[nodes.Node]:
+        raise NotImplementedError("Must override run() is subclass.")
+
+    # Directive errors:
+
+    def directive_error(self, level: int, message: str) -> DirectiveError:
+        """
+        Return a DirectiveError suitable for being thrown as an exception.
+
+        Call "raise self.directive_error(level, message)" from within
+        a directive implementation to return one single system message
+        at level `level`, which automatically gets the directive block
+        and the line number added.
+
+        Preferably use the `debug`, `info`, `warning`, `error`, or `severe`
+        wrapper methods, e.g. ``self.error(message)`` to generate an
+        ERROR-level directive error.
+        """
+        return DirectiveError(level, message)
+
+    def debug(self, message: str) -> DirectiveError:
+        return self.directive_error(0, message)
+
+    def info(self, message: str) -> DirectiveError:
+        return self.directive_error(1, message)
+
+    def warning(self, message: str) -> DirectiveError:
+        return self.directive_error(2, message)
+
+    def error(self, message: str) -> DirectiveError:
+        return self.directive_error(3, message)
+
+    def severe(self, message: str) -> DirectiveError:
+        return self.directive_error(4, message)
+
+    # Convenience methods:
+
+    def assert_has_content(self) -> None:
+        """
+        Throw an ERROR-level DirectiveError if the directive doesn't
+        have contents.
+        """
+        if not self.content:
+            raise self.error(
+                'Content block expected for the "%s" directive; '
+                "none found." % self.name
+            )
+
+
+class Replace(Directive):
+
+    has_content = True
+
+    def run(self) -> Sequence[nodes.Node]:
+        if not isinstance(self.state, states.SubstitutionDef):
+            raise self.error(
+                'Invalid context: the "%s" directive can only be used within '
+                "a substitution definition." % self.name
+            )
+        self.assert_has_content()
+        text = "\n".join(self.content)
+        element = nodes.Element(text)
+        self.state.nested_parse(self.content, self.content_offset, element)
+        # element might contain [paragraph] + system_message(s)
+        node = None
+        messages: List[Union[nodes.Text, nodes.Element]] = []
+        for elem in element:
+            if not node and isinstance(elem, nodes.paragraph):
+                node = elem
+            elif isinstance(elem, nodes.system_message):
+                elem["backrefs"] = []
+                messages.append(elem)
+            else:
+                raise self.error(
+                    'Error in "%s" directive: may contain a single paragraph '
+                    "only." % (self.name)
+                )
+        if node:
+            return messages + node.children
+        return messages
+
+
+class Unicode(Directive):
+
+    r"""
+    Convert Unicode character codes (numbers) to characters.  Codes may be
+    decimal numbers, hexadecimal numbers (prefixed by ``0x``, ``x``, ``\x``,
+    ``U+``, ``u``, or ``\u``; e.g. ``U+262E``), or XML-style numeric character
+    entities (e.g. ``&#x262E;``).  Text following ".." is a comment and is
+    ignored.  Spaces are ignored, and any other text remains as-is.
+    """
+
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {"trim": flag, "ltrim": flag, "rtrim": flag}
+
+    comment_pattern = re.compile(r"( |\n|^)\.\. ")
+
+    def run(self) -> Sequence[nodes.Node]:
+        if not isinstance(self.state, states.SubstitutionDef):
+            raise self.error(
+                'Invalid context: the "%s" directive can only be used within '
+                "a substitution definition." % self.name
+            )
+        assert isinstance(self.state_machine, states.NestedStateMachine)
+        substitution_definition = self.state_machine.node
+        if "trim" in self.options:
+            substitution_definition.attributes["ltrim"] = 1
+            substitution_definition.attributes["rtrim"] = 1
+        if "ltrim" in self.options:
+            substitution_definition.attributes["ltrim"] = 1
+        if "rtrim" in self.options:
+            substitution_definition.attributes["rtrim"] = 1
+        codes = self.comment_pattern.split(self.arguments[0])[0].split()
+        element = nodes.Element()
+        for code in codes:
+            try:
+                decoded = unicode_code(code)
+            except ValueError as error:
+                raise self.error("Invalid character code: %s\n%s" % (code, error))
+            element += nodes.Text(decoded)
+        return element.children
+
+
+def directive(
+    directive_name: str,
+    language_module: object,
+    document: nodes.document,
+) -> Tuple[Optional[Type[Any]], List[object]]:
+    raise NotImplementedError("No context activated")

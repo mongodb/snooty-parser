@@ -22,18 +22,9 @@ from typing import (
     Union,
 )
 
-import docutils.frontend
-import docutils.nodes
-import docutils.parsers.rst
-import docutils.parsers.rst.directives
-import docutils.parsers.rst.directives.misc
-import docutils.parsers.rst.roles
-import docutils.parsers.rst.states
-import docutils.statemachine
-import docutils.utils
 from typing_extensions import Protocol
 
-from . import n, specparser, util
+from . import n, specparser, tinydocutils, util
 from .diagnostics import Diagnostic, IncorrectLinkSyntax, IncorrectMonospaceSyntax
 from .flutter import LoadError, check_type, checked
 from .gizaparser import nodes
@@ -46,11 +37,11 @@ RoleHandlerType = Callable[
         str,
         str,
         int,
-        docutils.parsers.rst.states.Inliner,
+        tinydocutils.states.Inliner,
         Dict[str, object],
         List[object],
     ],
-    Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]],
+    Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]],
 ]
 PAT_EXPLICIT_TITLE = re.compile(
     r"^(?P<label>.*?)\s*(?<!\x00)<(?P<target>.*?)>$", re.DOTALL
@@ -69,23 +60,10 @@ DOMAIN_RESOLUTION_SEQUENCE = ("mongodb", "std", "")
 #: Handler function type for docutils roles
 RoleHandler = Callable[..., Any]
 
-
-# Monkey patch out the docutils "classifier" node
-class _ClassifierDelimiterPatch:
-    def split(self, text: str) -> List[str]:
-        return [text]
-
-
-docutils.parsers.rst.states.Text.classifier_delimiter = _ClassifierDelimiterPatch()
-
-# Monkey patch out the docutils name mutatation. We handle this ourselves
-docutils.nodes.fully_normalize_name = docutils.nodes.whitespace_normalize_name
-docutils.parsers.rst.states.normalize_name = docutils.nodes.fully_normalize_name
-
 # Docutils by default will move existing label names into a node key called "dupnames".
 # We don't want it to do this: we just want docutils to be a dumb parser, since we handle
 # references and such in our own logic.
-docutils.nodes.dupname = lambda node, name: None
+tinydocutils.nodes.dupname = lambda node, name: None
 
 
 def unescape_backslashes(text: str) -> str:
@@ -166,18 +144,18 @@ class CardGroupDefinition(nodes.Node):
     cards: List[CardDefinition]
 
 
-class directive_argument(docutils.nodes.General, docutils.nodes.TextElement):
+class directive_argument(tinydocutils.nodes.General, tinydocutils.nodes.TextElement):
     pass
 
 
-class target_identifier(docutils.nodes.Inline, docutils.nodes.TextElement):
+class target_identifier(tinydocutils.nodes.Inline, tinydocutils.nodes.TextElement):
     """Docutils node representing the title which should be used for refs to this node's
     parent target, if no explicit title is given."""
 
     pass
 
 
-class directive(docutils.nodes.General, docutils.nodes.Element):
+class directive(tinydocutils.nodes.General, tinydocutils.nodes.Element):
     def __init__(self, domain: str, name: str) -> None:
         super(directive, self).__init__()
         self["domain"] = domain
@@ -190,11 +168,11 @@ class target_directive(directive):
     pass
 
 
-class code(docutils.nodes.General, docutils.nodes.FixedTextElement):
+class code(tinydocutils.nodes.General, tinydocutils.nodes.FixedTextElement):
     pass
 
 
-class role(docutils.nodes.Inline, docutils.nodes.Element):
+class role(tinydocutils.nodes.Inline, tinydocutils.nodes.Element):
     """Docutils node representing a role."""
 
     def __init__(
@@ -214,7 +192,7 @@ class ref_role(role):
     pass
 
 
-class snooty_diagnostic(docutils.nodes.Element):
+class snooty_diagnostic(tinydocutils.nodes.Element):
     def __init__(self, diagnostic: Diagnostic) -> None:
         super().__init__("")
         self["diagnostic"] = diagnostic
@@ -225,10 +203,10 @@ def handle_role_null(
     rawtext: str,
     text: str,
     lineno: int,
-    inliner: docutils.parsers.rst.states.Inliner,
+    inliner: tinydocutils.states.Inliner,
     options: Dict[str, object] = {},
     content: List[object] = [],
-) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+) -> Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]]:
     """Handle unnamed roles by raising a warning."""
     target, label = parse_explicit_title(text)
     if label is not None:
@@ -238,7 +216,7 @@ def handle_role_null(
 
     return (
         [
-            docutils.nodes.literal(rawtext, text),
+            tinydocutils.nodes.literal(rawtext, text),
             snooty_diagnostic(diagnostic),
         ],
         [],
@@ -257,12 +235,12 @@ class TextRoleHandler:
         rawtext: str,
         text: str,
         lineno: int,
-        inliner: docutils.parsers.rst.states.Inliner,
+        inliner: tinydocutils.states.Inliner,
         options: Dict[str, object] = {},
         content: List[object] = [],
-    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    ) -> Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]]:
         node = role(self.domain, typ, lineno, None)
-        node.append(docutils.nodes.Text(text))
+        node.append(tinydocutils.nodes.Text(text))
         return [node], []
 
 
@@ -278,14 +256,14 @@ class ExplicitTitleRoleHandler:
         rawtext: str,
         text: str,
         lineno: int,
-        inliner: docutils.parsers.rst.states.Inliner,
+        inliner: tinydocutils.states.Inliner,
         options: Dict[str, object] = {},
         content: List[object] = [],
-    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    ) -> Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]]:
         target, label = parse_explicit_title(text)
         if label is not None:
             node = role(self.domain, typ, lineno, target)
-            node.append(docutils.nodes.Text(label))
+            node.append(tinydocutils.nodes.Text(label))
         else:
             node = role(self.domain, typ, lineno, target)
 
@@ -293,15 +271,16 @@ class ExplicitTitleRoleHandler:
 
 
 FORMATTING_MAP = {
-    specparser.FormattingType.strong: docutils.nodes.strong,
-    specparser.FormattingType.emphasis: docutils.nodes.emphasis,
-    specparser.FormattingType.monospace: docutils.nodes.literal,
+    specparser.FormattingType.strong: tinydocutils.nodes.strong,
+    specparser.FormattingType.emphasis: tinydocutils.nodes.emphasis,
+    specparser.FormattingType.monospace: tinydocutils.nodes.literal,
 }
 
 
 def format_node(
-    node: docutils.nodes.Node, formatting: AbstractSet[specparser.FormattingType]
-) -> docutils.nodes.Node:
+    node: tinydocutils.nodes.ConcreteNode,
+    formatting: AbstractSet[specparser.FormattingType],
+) -> tinydocutils.nodes.ConcreteNode:
     """Format a docutils node with a set of inline formatting roles."""
 
     for hint in formatting:
@@ -312,7 +291,7 @@ def format_node(
 
 def layer_formatting(
     formatting: AbstractSet[specparser.FormattingType],
-) -> Optional[docutils.nodes.Node]:
+) -> Optional[tinydocutils.nodes.ConcreteNode]:
     """Create a nested sequence of formatting nodes."""
     node = None
     for hint in formatting:
@@ -335,10 +314,10 @@ class RefRoleHandler:
         rawtext: str,
         text: str,
         lineno: int,
-        inliner: docutils.parsers.rst.states.Inliner,
+        inliner: tinydocutils.states.Inliner,
         options: Dict[str, object] = {},
         content: List[object] = [],
-    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    ) -> Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]]:
         target, label = parse_explicit_title(text)
 
         flag = ""
@@ -358,12 +337,14 @@ class RefRoleHandler:
 
             target = ".".join(target.rsplit(None, 1))
 
-        node: docutils.nodes.Element = ref_role(self.domain, self.name, lineno, target)
+        node: tinydocutils.nodes.Element = ref_role(
+            self.domain, self.name, lineno, target
+        )
 
-        label_node: Optional[docutils.nodes.Node] = None
+        label_node: Optional[tinydocutils.nodes.ConcreteNode] = None
 
         if label:
-            label_node = docutils.nodes.Text(label)
+            label_node = tinydocutils.nodes.Text(label)
             if self.format:
                 label_node = format_node(label_node, self.format)
         else:
@@ -399,10 +380,10 @@ class LinkRoleHandler:
         rawtext: str,
         text: str,
         lineno: int,
-        inliner: docutils.parsers.rst.states.Inliner,
+        inliner: tinydocutils.states.Inliner,
         options: Dict[str, object] = {},
         content: List[object] = [],
-    ) -> Tuple[List[docutils.nodes.Node], List[docutils.nodes.Node]]:
+    ) -> Tuple[List[tinydocutils.nodes.Node], List[tinydocutils.nodes.Node]]:
         target, label = parse_explicit_title(text)
 
         if typ == "rfc" and not label:
@@ -413,7 +394,7 @@ class LinkRoleHandler:
             url = self.assert_trailing_slash(url)
         if not label:
             label = target
-        node: docutils.nodes.Node = docutils.nodes.reference(
+        node: tinydocutils.nodes.ConcreteNode = tinydocutils.nodes.reference(
             label,
             label,
             internal=False,
@@ -459,11 +440,11 @@ def parse_linenos(term: str, max_val: int) -> List[Tuple[int, int]]:
     return results
 
 
-class BaseDocutilsDirective(docutils.parsers.rst.Directive):
+class BaseDocutilsDirective(tinydocutils.directives.Directive):
     directive_spec: specparser.Directive
     required_arguments = 0
 
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
 
         rstobject_spec = self.directive_spec.rstobject
@@ -519,7 +500,9 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
                     targets.append((prefix + arg_id, arg_id))
 
             # title is the node that should be presented at this point in the doctree
-            title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
+            title_node: tinydocutils.nodes.ConcreteNode = tinydocutils.nodes.Text(
+                self.arguments[0]
+            )
             if rstobject_spec.format is not None:
                 title_node = format_node(title_node, rstobject_spec.format)
             node.append(directive_argument(self.arguments[0], "", title_node))
@@ -527,7 +510,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             for target_id, target_title in targets:
                 identifier_node = target_identifier()
                 identifier_node["ids"] = [target_id]
-                identifier_node.append(docutils.nodes.Text(target_title))
+                identifier_node.append(tinydocutils.nodes.Text(target_title))
                 node.append(identifier_node)
 
             # Append list of supported fields
@@ -543,6 +526,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             else:
                 node["date"] = date
         else:
+            assert source is not None
             self.parse_argument(node, source, line)
 
         # Parse the content
@@ -570,7 +554,9 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
         ):
             content_lines = prepare_viewlist(self.arguments[0])
             self.state.nested_parse(
-                docutils.statemachine.ViewList(content_lines, source=self.arguments[0]),
+                tinydocutils.statemachine.StringList(
+                    content_lines, source=self.arguments[0]
+                ),
                 self.content_offset,
                 node,
                 match_titles=True,
@@ -583,7 +569,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
             argument.source, argument.line = source, line
             node.append(argument)
 
-    def add_name(self, node: docutils.nodes.Node) -> None:
+    def add_name(self, node: tinydocutils.nodes.Node) -> None:
         """Docutils by default will, if a "name" option is given to a directive,
         change the shape of the node. We don't want that and it muddles up higher layers."""
         pass
@@ -609,7 +595,7 @@ class BaseDocutilsDirective(docutils.parsers.rst.Directive):
 
 
 def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
-    lines = docutils.statemachine.string2lines(
+    lines = tinydocutils.statemachine.string2lines(
         text, tab_width=4, convert_whitespace=True
     )
 
@@ -625,7 +611,7 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
 
 
 class BaseCardGroupDirective(BaseDocutilsDirective):
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         parsed, diagnostic = load_yaml(None, "\n".join(self.content))
         if diagnostic is not None:
             diagnostic.start = (diagnostic.start[0] + self.lineno, diagnostic.start[1])
@@ -651,12 +637,14 @@ class BaseCardGroupDirective(BaseDocutilsDirective):
         # Default to card type "small" if type is not specified
         options["type"] = self.options.get("type", "small")
 
+        assert source is not None
+
         for child in loaded.cards:
             node.append(self.make_card_node(source, child))
 
         return [node]
 
-    def make_card_node(self, source: str, child: CardDefinition) -> docutils.nodes.Node:
+    def make_card_node(self, source: str, child: CardDefinition) -> directive:
         """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
         line = self.lineno + child.line
 
@@ -677,11 +665,11 @@ class BaseCardGroupDirective(BaseDocutilsDirective):
 
 
 class BaseTabsDirective(BaseDocutilsDirective):
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         # Support the old-style tabset definition where the tabset is embedded in the
         # directive's name.
         if "tabset" in self.options:
-            tabset = self.options["tabset"]
+            tabset: Optional[str] = self.options["tabset"]
         else:
             tabset = self.name.split("-", 1)[-1]
 
@@ -729,6 +717,8 @@ class BaseTabsDirective(BaseDocutilsDirective):
             if tabset:
                 options["tabset"] = tabset
 
+            assert source is not None
+
             for child in loaded.tabs:
                 node.append(self.make_tab_node(child.id, child.name, source, child))
 
@@ -748,7 +738,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
 
     def make_tab_node(
         self, tabid: str, title: Optional[str], source: str, child: LegacyTabDefinition
-    ) -> docutils.nodes.Node:
+    ) -> directive:
         """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
         line = self.lineno + child.line
 
@@ -770,7 +760,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
 
         content_lines = prepare_viewlist(child.content)
         self.state.nested_parse(
-            docutils.statemachine.ViewList(content_lines, source=source),
+            tinydocutils.statemachine.StringList(content_lines, source=source),
             self.content_offset,
             node,
             match_titles=True,
@@ -779,8 +769,8 @@ class BaseTabsDirective(BaseDocutilsDirective):
         return node
 
 
-class BaseCodeDirective(docutils.parsers.rst.Directive):
-    def run(self) -> List[docutils.nodes.Node]:
+class BaseCodeDirective(tinydocutils.directives.Directive):
+    def run(self) -> List[tinydocutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         copyable = "copyable" not in self.options or self.options["copyable"]
         linenos = "linenos" in self.options
@@ -811,7 +801,7 @@ class BaseCodeDirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-class BaseCodeIODirective(docutils.parsers.rst.Directive):
+class BaseCodeIODirective(tinydocutils.directives.Directive):
     """Special handling for code input/output directives.
 
     These directives can either take in a filepath or raw code content. If a filepath
@@ -821,7 +811,7 @@ class BaseCodeIODirective(docutils.parsers.rst.Directive):
 
     optional_arguments = 1
 
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         copyable = "copyable" not in self.options or self.options["copyable"]
         linenos = "linenos" in self.options
@@ -832,7 +822,7 @@ class BaseCodeIODirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
 
         if self.arguments:
-            title_node: docutils.nodes.Node = docutils.nodes.Text(self.arguments[0])
+            title_node = tinydocutils.nodes.Text(self.arguments[0])
             node.append(directive_argument(self.arguments[0], "", title_node))
         else:
             try:
@@ -863,7 +853,7 @@ class BaseCodeIODirective(docutils.parsers.rst.Directive):
         return [node]
 
 
-class BaseVersionDirective(docutils.parsers.rst.Directive):
+class BaseVersionDirective(tinydocutils.directives.Directive):
     """Special handling for version change directives.
 
     These directives include one required argument and an optional argument on the next line.
@@ -874,7 +864,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
     required_arguments = 1
     optional_arguments = 1
 
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         node = directive("", self.name)
         node.document = self.state.document
@@ -883,7 +873,7 @@ class BaseVersionDirective(docutils.parsers.rst.Directive):
 
         if self.arguments:
             arguments = " ".join(self.arguments).split(None, 1)
-            textnodes = []
+            textnodes: List[tinydocutils.nodes.ConcreteNode] = []
             for argument_text in arguments:
                 text, messages = self.state.inline_text(argument_text, self.lineno)
                 textnodes.extend(text)
@@ -908,7 +898,7 @@ class DeprecatedVersionDirective(BaseVersionDirective):
     optional_arguments = 1
 
 
-class BaseTocTreeDirective(docutils.parsers.rst.Directive):
+class BaseTocTreeDirective(tinydocutils.directives.Directive):
     """Special handling for toctree directives.
 
     Produces a node that includes an `entries` property, represented as a list of objects. Each entry in entries includes:
@@ -918,7 +908,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
     final_argument_whitespace = True
 
-    def run(self) -> List[docutils.nodes.Node]:
+    def run(self) -> List[tinydocutils.nodes.Node]:
         source, line = self.state_machine.get_source_and_line(self.lineno)
         node = directive("", self.name)
         node.document = self.state.document
@@ -926,7 +916,10 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         node["options"] = self.options
 
         entries: List[n.TocTreeDirectiveEntry] = []
-        errors: List[docutils.nodes.Node] = []
+        errors: List[tinydocutils.nodes.Node] = []
+
+        assert source is not None
+
         for child in self.content:
             entry, err = self.make_toc_entry(source, child)
             errors.extend(err)
@@ -938,7 +931,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
 
     def make_toc_entry(
         self, source: str, child: str
-    ) -> Tuple[Optional[n.TocTreeDirectiveEntry], List[docutils.nodes.Node]]:
+    ) -> Tuple[Optional[n.TocTreeDirectiveEntry], List[tinydocutils.nodes.Node]]:
         """Parse entry for either url or slug and optional title"""
         match = PAT_EXPLICIT_TITLE.match(child)
         title: Optional[str] = None
@@ -968,7 +961,7 @@ class BaseTocTreeDirective(docutils.parsers.rst.Directive):
         return n.TocTreeDirectiveEntry(title, url, slug, ref_project), []
 
 
-class NoTransformRstParser(docutils.parsers.rst.Parser):
+class NoTransformRstParser(tinydocutils.Parser):
     def get_transforms(self) -> List[object]:
         return []
 
@@ -978,14 +971,14 @@ class Visitor(Protocol):
         self,
         project_config: ProjectConfig,
         docpath: PurePath,
-        document: docutils.nodes.document,
+        document: tinydocutils.nodes.document,
     ) -> None:
         ...
 
-    def dispatch_visit(self, node: docutils.nodes.Node) -> None:
+    def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
         ...
 
-    def dispatch_departure(self, node: docutils.nodes.Node) -> None:
+    def dispatch_departure(self, node: tinydocutils.nodes.Node) -> None:
         ...
 
     def add_diagnostics(self, diagnostics: Iterable[Diagnostic]) -> None:
@@ -1041,7 +1034,7 @@ class Registry:
         self,
         directive_name: str,
         language_module: object,
-        document: docutils.nodes.document,
+        document: tinydocutils.nodes.document,
     ) -> Tuple[Optional[Type[Any]], List[object]]:
         # Remove the built-in directives we don't want
         domain_name, directive_name = util.split_domain(directive_name)
@@ -1070,8 +1063,8 @@ class Registry:
     def activate(self) -> None:
         """Unfortunately, the docutils API uses global state for dispatching directives
         and roles. Bind the docutils dispatchers to this registry."""
-        docutils.parsers.rst.directives.directive = self.lookup_directive
-        docutils.parsers.rst.roles.role = self.lookup_role
+        tinydocutils.directives.directive = self.lookup_directive
+        tinydocutils.roles.role = self.lookup_role
 
     @classmethod
     def get(cls, default_domain: Optional[str]) -> "Registry":
@@ -1086,7 +1079,7 @@ class Registry:
         return registry
 
 
-SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
+SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[tinydocutils.directives.Directive]] = {
     "code-block": BaseCodeDirective,
     "code": BaseCodeDirective,
     "input": BaseCodeIODirective,
@@ -1102,10 +1095,10 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[docutils.parsers.rst.Directive]] = {
 
 def make_docutils_directive_handler(
     directive: specparser.Directive,
-    base_class: Type[docutils.parsers.rst.Directive],
+    base_class: Type[tinydocutils.directives.Directive],
     name: str,
     options: Dict[str, object],
-) -> Type[docutils.parsers.rst.Directive]:
+) -> Type[tinydocutils.directives.Directive]:
     optional_args = 0
     required_args = 0
 
@@ -1196,8 +1189,8 @@ def register_spec_with_docutils(
         builder.add_directive(tabs_name, DocutilsDirective)
 
     # Docutils builtins
-    builder.add_directive("unicode", docutils.parsers.rst.directives.misc.Unicode)
-    builder.add_directive("replace", docutils.parsers.rst.directives.misc.Replace)
+    builder.add_directive("unicode", tinydocutils.directives.Unicode)
+    builder.add_directive("replace", tinydocutils.directives.Replace)
 
     # Define roles
     builder.add_role("", handle_role_null)
@@ -1247,12 +1240,12 @@ class Parser(Generic[_V]):
         text, diagnostics = self.project_config.read(path, text)
 
         parser = NoTransformRstParser()
-        settings = docutils.frontend.OptionParser(
-            components=(docutils.parsers.rst.Parser,)
+        settings = tinydocutils.frontend.OptionParser(
+            components=(tinydocutils.Parser,)
         ).get_default_values()
         settings.report_level = 10000
         settings.halt_level = 10000
-        document = docutils.utils.new_document(str(path), settings)
+        document = tinydocutils.utils.new_document(str(path), settings)
 
         parser.parse(text, document)
 
