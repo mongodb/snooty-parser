@@ -74,10 +74,10 @@ __docformat__ = "reStructuredText"
 
 from typing import Any, Callable, List, Optional, Tuple
 
-from . import utils
+from . import nodes
 
 
 def role(
-    role_name: str, language_module: object, lineno: int, reporter: utils.Reporter
-) -> Tuple[Optional[Callable[..., Any]], List[object]]:
+    role_name: str, lineno: int, reporter: nodes.Reporter
+) -> Tuple[Optional[Callable[..., Any]], List[nodes.system_message]]:
     raise NotImplementedError("Registry not initialized")

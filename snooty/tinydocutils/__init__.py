@@ -101,8 +101,9 @@ class Parser(parsers.Parser):
         # provide fallbacks in case the document has only generic settings
         self.document.settings.setdefault("syntax_highlight", "long")
         self.statemachine = states.RSTStateMachine(
-            state_classes=self.state_classes,
-            initial_state=self.initial_state,
+            state_config=statemachine.StateConfiguration(
+                self.state_classes, self.initial_state
+            ),
             debug=document.reporter.debug_flag,
         )
         inputlines = statemachine.string2lines(
@@ -111,6 +112,6 @@ class Parser(parsers.Parser):
             convert_whitespace=True,
         )
 
-        self.statemachine.run(inputlines, document, inliner=self.inliner)
+        self.statemachine.run_rst(inputlines, document, inliner=self.inliner)
 
         self.finish_parse()

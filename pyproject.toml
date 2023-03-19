@@ -38,7 +38,6 @@ multi_line_output = 3
 python_version = "3.8"
 mypy_path = "stubs"
 strict_equality = true
-exclude = ["snooty/tinydocutils/states.py"]
 
 [tool.pytest.ini_options]
 testpaths = [

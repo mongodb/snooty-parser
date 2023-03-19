@@ -401,7 +401,7 @@ class Directive:
     final_argument_whitespace: bool = False
     """May the final argument contain whitespace?"""
 
-    option_spec: Optional[Dict[str, Callable[[str], object]]] = None
+    option_spec: Optional[Dict[str, Callable[[Optional[str]], object]]] = None
     """Mapping of option names to validator functions."""
 
     has_content: bool = False
@@ -411,7 +411,7 @@ class Directive:
         self,
         name: str,
         arguments: List[str],
-        options: Dict[str, str],
+        options: Dict[str, object],
         content: statemachine.StringList,
         lineno: int,
         content_offset: int,
@@ -550,13 +550,12 @@ class Unicode(Directive):
                 decoded = unicode_code(code)
             except ValueError as error:
                 raise self.error("Invalid character code: %s\n%s" % (code, error))
-            element += nodes.Text(decoded)
+            element.append(nodes.Text(decoded))
         return element.children
 
 
 def directive(
     directive_name: str,
-    language_module: object,
     document: nodes.document,
 ) -> Tuple[Optional[Type[Any]], List[object]]:
     raise NotImplementedError("No context activated")

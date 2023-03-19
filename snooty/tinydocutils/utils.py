@@ -12,36 +12,9 @@ __docformat__ = "reStructuredText"
 import itertools
 import sys
 import unicodedata
-from typing import (
-    IO,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from . import frontend, nodes
-
-
-class ErrorOutput:
-    def __init__(self, stream: Optional[IO[str]] = None) -> None:
-        self.stream = stream or sys.stderr
-
-    def write(self, message: str) -> None:
-        self.stream.write(message)
-
-
-class SystemMessage(Exception):
-    def __init__(self, system_message: nodes.system_message, level: int) -> None:
-        Exception.__init__(self, system_message.astext())
-        self.level = level
+from . import nodes
 
 
 class DataError(Exception):
@@ -68,225 +41,9 @@ class BadOptionError(ExtensionOptionError):
     pass
 
 
-def get_source_line(node: nodes.Node) -> Tuple[Optional[str], Optional[int]]:
-    """
-    Return the "source" and "line" attributes from the `node` given or from
-    its closest ancestor.
-    """
-    cursor: Optional[nodes.Node] = node
-    while cursor:
-        if cursor.source or cursor.line:
-            return cursor.source, cursor.line
-        cursor = cursor.parent
-    return None, None
-
-
-class Reporter:
-
-    """
-    Info/warning/error reporter and ``system_message`` element generator.
-
-    Five levels of system messages are defined, along with corresponding
-    methods: `debug()`, `info()`, `warning()`, `error()`, and `severe()`.
-
-    There is typically one Reporter object per process.  A Reporter object is
-    instantiated with thresholds for reporting (generating warnings) and
-    halting processing (raising exceptions), a switch to turn debug output on
-    or off, and an I/O stream for warnings.  These are stored as instance
-    attributes.
-
-    When a system message is generated, its level is compared to the stored
-    thresholds, and a warning or error is generated as appropriate.  Debug
-    messages are produced if the stored debug switch is on, independently of
-    other thresholds.  Message output is sent to the stored warning stream if
-    not set to ''.
-
-    The Reporter class also employs a modified form of the "Observer" pattern
-    [GoF95]_ to track system messages generated.  The `attach_observer` method
-    should be called before parsing, with a bound method or function which
-    accepts system messages.  The observer can be removed with
-    `detach_observer`, and another added in its place.
-
-    .. [GoF95] Gamma, Helm, Johnson, Vlissides. *Design Patterns: Elements of
-       Reusable Object-Oriented Software*. Addison-Wesley, Reading, MA, USA,
-       1995.
-    """
-
-    levels = ("DEBUG", "INFO", "WARNING", "ERROR", "SEVERE")
-    """List of names for system message levels, indexed by level."""
-
-    # system message level constants:
-    (DEBUG_LEVEL, INFO_LEVEL, WARNING_LEVEL, ERROR_LEVEL, SEVERE_LEVEL) = range(5)
-
-    def __init__(
-        self,
-        source: str,
-        report_level: int,
-        halt_level: int,
-        stream: Optional[Union[IO[str], ErrorOutput]] = None,
-        debug: bool = False,
-    ) -> None:
-        """
-        :Parameters:
-            - `source`: The path to or description of the source data.
-            - `report_level`: The level at or above which warning output will
-              be sent to `stream`.
-            - `halt_level`: The level at or above which `SystemMessage`
-              exceptions will be raised, halting execution.
-            - `debug`: Show debug (level=0) system messages?
-            - `stream`: Where warning output is sent.  Can be file-like (has a
-              ``.write`` method), a string (file name, opened for writing),
-              '' (empty string) or `False` (for discarding all stream messages)
-              or `None` (implies `sys.stderr`; default).
-        """
-
-        self.source = source
-        """The path to or description of the source data."""
-
-        self.debug_flag = debug
-        """Show debug (level=0) system messages?"""
-
-        self.report_level = report_level
-        """The level at or above which warning output will be sent
-        to `self.stream`."""
-
-        self.halt_level = halt_level
-        """The level at or above which `SystemMessage` exceptions
-        will be raised, halting execution."""
-
-        if not isinstance(stream, ErrorOutput):
-            stream = ErrorOutput(stream)
-
-        self.stream = stream
-        """Where warning output is sent."""
-
-        self.observers: List[Callable[[object], None]] = []
-        """List of bound methods or functions to call with each system_message
-        created."""
-
-        self.max_level = -1
-        """The highest level system message generated so far."""
-
-        self.get_source_and_line: Optional[
-            Callable[[Optional[int]], Tuple[str, int]]
-        ] = None
-
-    def attach_observer(self, observer: Callable[[object], None]) -> None:
-        """
-        The `observer` parameter is a function or bound method which takes one
-        argument, a `nodes.system_message` instance.
-        """
-        self.observers.append(observer)
-
-    def detach_observer(self, observer: Callable[[object], None]) -> None:
-        self.observers.remove(observer)
-
-    def notify_observers(self, message: object) -> None:
-        for observer in self.observers:
-            observer(message)
-
-    def system_message(
-        self, level: int, message: str, *children: nodes.ConcreteNode, **kwargs: object
-    ) -> nodes.system_message:
-        """
-        Return a system_message object.
-
-        Raise an exception or generate a warning if appropriate.
-        """
-        # `message` can be a `string`, `unicode`, or `Exception` instance.
-        if isinstance(message, Exception):
-            message = str(message)
-
-        attributes = kwargs.copy()
-        if "base_node" in kwargs:
-            base_node = kwargs["base_node"]
-            assert isinstance(base_node, nodes.Node)
-            source, line = get_source_line(base_node)
-            del attributes["base_node"]
-            if source is not None:
-                attributes.setdefault("source", source)
-            if line is not None:
-                attributes.setdefault("line", line)
-                # assert source is not None, "node has line- but no source-argument"
-        if not "source" in attributes:  # 'line' is absolute line number
-            try:  # look up (source, line-in-source)
-                assert self.get_source_and_line is not None
-                source, line = self.get_source_and_line(
-                    cast(int, attributes.get("line"))
-                )
-            except AttributeError:
-                source, line = None, None
-            if source is not None:
-                attributes["source"] = source
-            if line is not None:
-                attributes["line"] = line
-        # assert attributes['line'] is not None, (message, kwargs)
-        # assert attributes['source'] is not None, (message, kwargs)
-        attributes.setdefault("source", self.source)
-
-        msg = nodes.system_message(
-            message, level=level, type=self.levels[level], *children, **attributes
-        )
-        if self.stream and (
-            level >= self.report_level
-            or self.debug_flag
-            and level == self.DEBUG_LEVEL
-            or level >= self.halt_level
-        ):
-            self.stream.write(msg.astext() + "\n")
-        if level >= self.halt_level:
-            raise SystemMessage(msg, level)
-        if level > self.DEBUG_LEVEL or self.debug_flag:
-            self.notify_observers(msg)
-        self.max_level = max(level, self.max_level)
-        return msg
-
-    def debug(
-        self, message: str, *args: Any, **kwargs: Any
-    ) -> Optional[nodes.system_message]:
-        """
-        Level-0, "DEBUG": an internal reporting issue. Typically, there is no
-        effect on the processing. Level-0 system messages are handled
-        separately from the others.
-        """
-        if self.debug_flag:
-            return self.system_message(self.DEBUG_LEVEL, message, *args, **kwargs)
-
-        return None
-
-    def info(self, message: str, *args: Any, **kwargs: Any) -> nodes.system_message:
-        """
-        Level-1, "INFO": a minor issue that can be ignored. Typically there is
-        no effect on processing, and level-1 system messages are not reported.
-        """
-        return self.system_message(self.INFO_LEVEL, message, *args, **kwargs)
-
-    def warning(self, message: str, *args: Any, **kwargs: Any) -> nodes.system_message:
-        """
-        Level-2, "WARNING": an issue that should be addressed. If ignored,
-        there may be unpredictable problems with the output.
-        """
-        return self.system_message(self.WARNING_LEVEL, message, *args, **kwargs)
-
-    def error(self, message: str, *args: Any, **kwargs: Any) -> nodes.system_message:
-        """
-        Level-3, "ERROR": an error that should be addressed. If ignored, the
-        output will contain errors.
-        """
-        return self.system_message(self.ERROR_LEVEL, message, *args, **kwargs)
-
-    def severe(self, message: str, *args: Any, **kwargs: Any) -> nodes.system_message:
-        """
-        Level-4, "SEVERE": a severe error that must be addressed. If ignored,
-        the output will contain severe errors. Typically level-4 system
-        messages are turned into exceptions which halt processing.
-        """
-        return self.system_message(self.SEVERE_LEVEL, message, *args, **kwargs)
-
-
 def extract_extension_options(
-    field_list: Sequence[nodes.field],
-    options_spec: Mapping[str, Callable[[object], object]],
+    field_list: nodes.field_list,
+    options_spec: Mapping[str, Callable[[Optional[str]], object]],
 ) -> Dict[str, object]:
     """
     Return a dictionary mapping extension option names to converted values.
@@ -313,7 +70,9 @@ def extract_extension_options(
     return option_dict
 
 
-def extract_options(field_list: Sequence[nodes.field]) -> Sequence[Tuple[str, object]]:
+def extract_options(
+    field_list: nodes.field_list,
+) -> Sequence[Tuple[str, Optional[str]]]:
     """
     Return a list of option (name, value) pairs from field names & bodies.
 
@@ -328,6 +87,7 @@ def extract_options(field_list: Sequence[nodes.field]) -> Sequence[Tuple[str, ob
     """
     option_list = []
     for field in field_list:
+        assert isinstance(field, nodes.field)
         if len(field[0].astext().split()) != 1:
             raise BadOptionError(
                 "extension option field name may not contain multiple words"
@@ -353,8 +113,8 @@ def extract_options(field_list: Sequence[nodes.field]) -> Sequence[Tuple[str, ob
 
 
 def assemble_option_dict(
-    option_list: Iterable[Tuple[str, object]],
-    options_spec: Mapping[str, Callable[[object], object]],
+    option_list: Iterable[Tuple[str, Optional[str]]],
+    options_spec: Mapping[str, Callable[[Optional[str]], object]],
 ) -> Dict[str, object]:
     """
     Return a mapping of option names to values.
@@ -431,54 +191,6 @@ def extract_name_value(line: str) -> List[Tuple[str, object]]:
                 line = line[space + 1 :].lstrip()
         attlist.append((attname.lower(), data))
     return attlist
-
-
-def new_reporter(source_path: str, settings: frontend.OptionParser) -> Reporter:
-    """
-    Return a new Reporter object.
-
-    :Parameters:
-        `source` : string
-            The path to or description of the source text of the document.
-        `settings` : optparse.Values object
-            Runtime settings.
-    """
-    reporter = Reporter(
-        source_path,
-        settings.report_level,
-        settings.halt_level,
-        stream=settings.warning_stream,
-        debug=settings.debug,
-    )
-    return reporter
-
-
-def new_document(
-    source_path: str, settings: Optional[frontend.OptionParser] = None
-) -> nodes.document:
-    """
-    Return a new empty document object.
-
-    :Parameters:
-        `source_path` : string
-            The path to or description of the source text of the document.
-        `settings` : optparse.Values object
-            Runtime settings.  If none are provided, a default core set will
-            be used.  If you will use the document object with any Docutils
-            components, you must provide their default settings as well.  For
-            example, if parsing rST, at least provide the rst-parser settings,
-            obtainable as follows::
-
-                settings = docutils.frontend.OptionParser(
-                    components=(docutils.parsers.rst.Parser,)
-                    ).get_default_values()
-    """
-    if settings is None:
-        settings = frontend.OptionParser().get_default_values()
-    reporter = new_reporter(source_path, settings)
-    document = nodes.document(settings, reporter, source=source_path)
-    document.note_source(source_path, -1)
-    return document
 
 
 def escape2null(text: str) -> str:

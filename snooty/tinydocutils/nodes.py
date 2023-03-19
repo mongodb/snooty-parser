@@ -23,8 +23,10 @@ hierarchy.
 __docformat__ = "reStructuredText"
 
 import re
+import sys
 import unicodedata
 from typing import (
+    IO,
     Any,
     Callable,
     Dict,
@@ -356,20 +358,6 @@ class Element(Node):
     nodes), indexing by integer.  To get the first child node, use::
 
         element[0]
-
-    Elements may be constructed using the ``+=`` operator.  To add one new
-    child node to element, do::
-
-        element += node
-
-    This is equivalent to ``element.append(node)``.
-
-    To add a list of multiple child nodes at once, use the same ``+=``
-    operator::
-
-        element += [node1, node2]
-
-    This is equivalent to ``element.extend([node1, node2])``.
     """
 
     basic_attributes = ("ids", "classes", "names", "dupnames")
@@ -542,22 +530,6 @@ class Element(Node):
                 "slice, or an attribute name string"
             )
 
-    def __add__(self, other: List["ConcreteNode"]) -> "List[ConcreteNode]":
-        return self.children + other
-
-    def __radd__(self, other: List["ConcreteNode"]) -> "List[ConcreteNode]":
-        return other + self.children
-
-    def __iadd__(
-        self, other: "Union[ConcreteNode, Iterable[ConcreteNode], None]"
-    ) -> "Element":
-        """Append a node or a list of nodes to `self.children`."""
-        if isinstance(other, Node):
-            self.append(other)
-        elif other is not None:
-            self.extend(other)
-        return self
-
     def __iter__(self) -> Iterator[Union[Text, "Element"]]:
         return iter(self.children)
 
@@ -581,10 +553,17 @@ class Element(Node):
         return self.attributes.get(key, failobj)
 
     def append(self, item: "ConcreteNode") -> None:
+        if not isinstance(item, Node):
+            print(item)
+            assert False
         self.setup_child(item)
         self.children.append(item)
 
     def extend(self, item: Iterable["ConcreteNode"]) -> None:
+        if not all(isinstance(child, Node) for child in item):
+            print(item)
+            assert False
+
         for node in item:
             self.append(node)
 
@@ -811,7 +790,7 @@ class Targetable(Resolvable):
 
     referenced = 0
 
-    indirect_reference_name = None
+    indirect_reference_name: Optional[str] = None
     """Holds the whitespace_normalized_name (contains mixed case) of a target.
     Required for MoinMoin/reST compatibility."""
 
@@ -835,7 +814,7 @@ class document(Root, Structural, Element):
     """
 
     def __init__(
-        self, settings: frontend.OptionParser, reporter: Any, source: str
+        self, settings: frontend.OptionParser, reporter: "Reporter", source: str
     ) -> None:
         Element.__init__(self, source=source)
 
@@ -918,12 +897,12 @@ class document(Root, Structural, Element):
         state["transformer"] = None
         return state
 
-    def set_id(self, node: Element, msgnode: Optional[Node] = None) -> str:
+    def set_id(self, node: Element, msgnode: "Optional[Element]" = None) -> str:
         for id in cast(Sequence[str], node["ids"]):
             if id in self.ids and self.ids[id] is not node:
                 msg = self.reporter.severe('Duplicate ID: "%s".' % id)
-                if msgnode != None:
-                    msgnode += msg
+                if msgnode is not None:
+                    msgnode.append(msg)
         if not node["ids"]:
             for name in node["names"]:
                 id = self.settings.id_prefix + make_id(name)
@@ -946,7 +925,7 @@ class document(Root, Structural, Element):
         self,
         node: Element,
         id: str,
-        msgnode: Optional[Node] = None,
+        msgnode: "Optional[Element]" = None,
         explicit: bool = False,
     ) -> None:
         """
@@ -992,7 +971,7 @@ class document(Root, Structural, Element):
         node: Element,
         id: str,
         name: str,
-        msgnode: Optional[Node],
+        msgnode: "Optional[Element]",
         explicit: bool,
     ) -> None:
         old_id = self.nameids[name]
@@ -1014,14 +993,14 @@ class document(Root, Structural, Element):
                     if level > 1:
                         dupname(old_node, name)
                         self.nameids[name] = None
-                msg = self.reporter.system_message(
+                msg = self.reporter.make_system_message(
                     level,
                     'Duplicate explicit target name: "%s".' % name,
                     backrefs=[id],
                     base_node=node,
                 )
-                if msgnode != None:
-                    msgnode += msg
+                if msgnode is not None:
+                    msgnode.append(msg)
                 dupname(node, name)
             else:
                 self.nameids[name] = id
@@ -1040,18 +1019,18 @@ class document(Root, Structural, Element):
                 backrefs=[id],
                 base_node=node,
             )
-            if msgnode != None:
-                msgnode += msg
+            if msgnode is not None:
+                msgnode.append(msg)
 
     # "note" here is an imperative verb: "take note of".
     def note_implicit_target(
-        self, target: "target", msgnode: Optional[ConcreteNode] = None
+        self, target: "Element", msgnode: "Optional[Element]" = None
     ) -> None:
         id = self.set_id(target, msgnode)
         self.set_name_id_map(target, id, msgnode, explicit=False)
 
     def note_explicit_target(
-        self, target: "target", msgnode: Optional[ConcreteNode] = None
+        self, target: "Element", msgnode: "Optional[Element]" = None
     ) -> None:
         id = self.set_id(target, msgnode)
         self.set_name_id_map(target, id, msgnode, explicit=True)
@@ -1105,7 +1084,7 @@ class document(Root, Structural, Element):
     ) -> None:
         subref["refname"] = whitespace_normalize_name(refname)
 
-    def note_source(self, source: str, offset: Optional[int]) -> None:
+    def note_source(self, source: Optional[str], offset: Optional[int]) -> None:
         self.current_source = source
         if offset is None:
             self.current_line = offset
@@ -1336,19 +1315,18 @@ class math_block(General, FixedTextElement):
 
 
 class line_block(General, Element):
-    pass
+    def lines(self) -> Iterable["line"]:
+        for child in self.children:
+            assert isinstance(child, line)
+            yield child
 
 
 class line(Part, TextElement):
 
-    indent = None
+    indent: int = 0
 
 
 class block_quote(General, Element):
-    pass
-
-
-class attribution(Part, TextElement):
     pass
 
 
@@ -1821,10 +1799,279 @@ def pseudo_quoteattr(value: str) -> str:
     return '"%s"' % value
 
 
-#
-#
-# Local Variables:
-# indent-tabs-mode: nil
-# sentence-end-double-space: t
-# fill-column: 78
-# End:
+def get_source_line(node: Node) -> Tuple[Optional[str], Optional[int]]:
+    """
+    Return the "source" and "line" attributes from the `node` given or from
+    its closest ancestor.
+    """
+    cursor: Optional[Node] = node
+    while cursor:
+        if cursor.source or cursor.line:
+            return cursor.source, cursor.line
+        cursor = cursor.parent
+    return None, None
+
+
+class SystemMessage(Exception):
+    def __init__(self, system_message: system_message, level: int) -> None:
+        Exception.__init__(self, system_message.astext())
+        self.level = level
+
+
+class ErrorOutput:
+    def __init__(self, stream: Optional[IO[str]] = None) -> None:
+        self.stream = stream or sys.stderr
+
+    def write(self, message: str) -> None:
+        self.stream.write(message)
+
+
+class Reporter:
+
+    """
+    Info/warning/error reporter and ``system_message`` element generator.
+
+    Five levels of system messages are defined, along with corresponding
+    methods: `debug()`, `info()`, `warning()`, `error()`, and `severe()`.
+
+    There is typically one Reporter object per process.  A Reporter object is
+    instantiated with thresholds for reporting (generating warnings) and
+    halting processing (raising exceptions), a switch to turn debug output on
+    or off, and an I/O stream for warnings.  These are stored as instance
+    attributes.
+
+    When a system message is generated, its level is compared to the stored
+    thresholds, and a warning or error is generated as appropriate.  Debug
+    messages are produced if the stored debug switch is on, independently of
+    other thresholds.  Message output is sent to the stored warning stream if
+    not set to ''.
+
+    The Reporter class also employs a modified form of the "Observer" pattern
+    [GoF95]_ to track system messages generated.  The `attach_observer` method
+    should be called before parsing, with a bound method or function which
+    accepts system messages.  The observer can be removed with
+    `detach_observer`, and another added in its place.
+
+    .. [GoF95] Gamma, Helm, Johnson, Vlissides. *Design Patterns: Elements of
+       Reusable Object-Oriented Software*. Addison-Wesley, Reading, MA, USA,
+       1995.
+    """
+
+    levels = ("DEBUG", "INFO", "WARNING", "ERROR", "SEVERE")
+    """List of names for system message levels, indexed by level."""
+
+    # system message level constants:
+    (DEBUG_LEVEL, INFO_LEVEL, WARNING_LEVEL, ERROR_LEVEL, SEVERE_LEVEL) = range(5)
+
+    def __init__(
+        self,
+        source: str,
+        report_level: int,
+        halt_level: int,
+        stream: Optional[Union[IO[str], ErrorOutput]] = None,
+        debug: bool = False,
+    ) -> None:
+        """
+        :Parameters:
+            - `source`: The path to or description of the source data.
+            - `report_level`: The level at or above which warning output will
+              be sent to `stream`.
+            - `halt_level`: The level at or above which `SystemMessage`
+              exceptions will be raised, halting execution.
+            - `debug`: Show debug (level=0) system messages?
+            - `stream`: Where warning output is sent.  Can be file-like (has a
+              ``.write`` method), a string (file name, opened for writing),
+              '' (empty string) or `False` (for discarding all stream messages)
+              or `None` (implies `sys.stderr`; default).
+        """
+
+        self.source = source
+        """The path to or description of the source data."""
+
+        self.debug_flag = debug
+        """Show debug (level=0) system messages?"""
+
+        self.report_level = report_level
+        """The level at or above which warning output will be sent
+        to `self.stream`."""
+
+        self.halt_level = halt_level
+        """The level at or above which `SystemMessage` exceptions
+        will be raised, halting execution."""
+
+        if not isinstance(stream, ErrorOutput):
+            stream = ErrorOutput(stream)
+
+        self.stream = stream
+        """Where warning output is sent."""
+
+        self.observers: List[Callable[[object], None]] = []
+        """List of bound methods or functions to call with each system_message
+        created."""
+
+        self.max_level = -1
+        """The highest level system message generated so far."""
+
+        self.get_source_and_line: Optional[
+            Callable[[Optional[int]], Tuple[str, int]]
+        ] = None
+
+    def attach_observer(self, observer: Callable[[object], None]) -> None:
+        """
+        The `observer` parameter is a function or bound method which takes one
+        argument, a `nodes.system_message` instance.
+        """
+        self.observers.append(observer)
+
+    def detach_observer(self, observer: Callable[[object], None]) -> None:
+        self.observers.remove(observer)
+
+    def notify_observers(self, message: object) -> None:
+        for observer in self.observers:
+            observer(message)
+
+    def make_system_message(
+        self, level: int, message: str, *children: ConcreteNode, **kwargs: object
+    ) -> system_message:
+        """
+        Return a system_message object.
+
+        Raise an exception or generate a warning if appropriate.
+        """
+        # `message` can be a `string`, `unicode`, or `Exception` instance.
+        if isinstance(message, Exception):
+            message = str(message)
+
+        attributes = kwargs.copy()
+        if "base_node" in kwargs:
+            base_node = kwargs["base_node"]
+            assert isinstance(base_node, Node)
+            source, line = get_source_line(base_node)
+            del attributes["base_node"]
+            if source is not None:
+                attributes.setdefault("source", source)
+            if line is not None:
+                attributes.setdefault("line", line)
+                # assert source is not None, "node has line- but no source-argument"
+        if not "source" in attributes:  # 'line' is absolute line number
+            try:  # look up (source, line-in-source)
+                assert self.get_source_and_line is not None
+                source, line = self.get_source_and_line(
+                    cast(int, attributes.get("line"))
+                )
+            except AttributeError:
+                source, line = None, None
+            if source is not None:
+                attributes["source"] = source
+            if line is not None:
+                attributes["line"] = line
+        # assert attributes['line'] is not None, (message, kwargs)
+        # assert attributes['source'] is not None, (message, kwargs)
+        attributes.setdefault("source", self.source)
+
+        msg = system_message(
+            message, level=level, type=self.levels[level], *children, **attributes
+        )
+        if self.stream and (
+            level >= self.report_level
+            or self.debug_flag
+            and level == self.DEBUG_LEVEL
+            or level >= self.halt_level
+        ):
+            self.stream.write(msg.astext() + "\n")
+        if level >= self.halt_level:
+            raise SystemMessage(msg, level)
+        if level > self.DEBUG_LEVEL or self.debug_flag:
+            self.notify_observers(msg)
+        self.max_level = max(level, self.max_level)
+        return msg
+
+    def debug(
+        self, message: str, *args: Any, **kwargs: Any
+    ) -> Optional[system_message]:
+        """
+        Level-0, "DEBUG": an internal reporting issue. Typically, there is no
+        effect on the processing. Level-0 system messages are handled
+        separately from the others.
+        """
+        if self.debug_flag:
+            return self.make_system_message(self.DEBUG_LEVEL, message, *args, **kwargs)
+
+        return None
+
+    def info(self, message: str, *args: Any, **kwargs: Any) -> system_message:
+        """
+        Level-1, "INFO": a minor issue that can be ignored. Typically there is
+        no effect on processing, and level-1 system messages are not reported.
+        """
+        return self.make_system_message(self.INFO_LEVEL, message, *args, **kwargs)
+
+    def warning(self, message: str, *args: Any, **kwargs: Any) -> system_message:
+        """
+        Level-2, "WARNING": an issue that should be addressed. If ignored,
+        there may be unpredictable problems with the output.
+        """
+        return self.make_system_message(self.WARNING_LEVEL, message, *args, **kwargs)
+
+    def error(self, message: str, *args: Any, **kwargs: Any) -> system_message:
+        """
+        Level-3, "ERROR": an error that should be addressed. If ignored, the
+        output will contain errors.
+        """
+        return self.make_system_message(self.ERROR_LEVEL, message, *args, **kwargs)
+
+    def severe(self, message: str, *args: Any, **kwargs: Any) -> system_message:
+        """
+        Level-4, "SEVERE": a severe error that must be addressed. If ignored,
+        the output will contain severe errors. Typically level-4 system
+        messages are turned into exceptions which halt processing.
+        """
+        return self.make_system_message(self.SEVERE_LEVEL, message, *args, **kwargs)
+
+
+def new_reporter(source_path: str, settings: frontend.OptionParser) -> Reporter:
+    """
+    Return a new Reporter object.
+
+    :Parameters:
+        `source` : string
+            The path to or description of the source text of the document.
+        `settings` : optparse.Values object
+            Runtime settings.
+    """
+    reporter = Reporter(
+        source_path,
+        settings.report_level,
+        settings.halt_level,
+        stream=settings.warning_stream,
+        debug=settings.debug,
+    )
+    return reporter
+
+
+def new_document(
+    source_path: str, settings: Optional[frontend.OptionParser] = None
+) -> document:
+    """
+    Return a new empty document object.
+
+    :Parameters:
+        `source_path` : string
+            The path to or description of the source text of the document.
+        `settings` : optparse.Values object
+            Runtime settings.  If none are provided, a default core set will
+            be used.  If you will use the document object with any Docutils
+            components, you must provide their default settings as well.  For
+            example, if parsing rST, at least provide the rst-parser settings,
+            obtainable as follows::
+
+                settings = docutils.frontend.OptionParser(
+                    components=(docutils.parsers.rst.Parser,)
+                    ).get_default_values()
+    """
+    if settings is None:
+        settings = frontend.OptionParser().get_default_values()
+    reporter = new_reporter(source_path, settings)
+    doc = document(settings, reporter, source=source_path)
+    doc.note_source(source_path, -1)
+    return doc

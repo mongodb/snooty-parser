@@ -55,6 +55,10 @@ class OptionParser:
         self.raw_enabled = False
         self.line_length_limit = 10000
 
+        self.character_level_inline_markup = False
+
+        self.rfc_base_url = "http://tools.ietf.org/html/"
+
     def get_default_values(self) -> "OptionParser":
         return self
 

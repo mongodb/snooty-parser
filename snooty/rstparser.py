@@ -669,7 +669,7 @@ class BaseTabsDirective(BaseDocutilsDirective):
         # Support the old-style tabset definition where the tabset is embedded in the
         # directive's name.
         if "tabset" in self.options:
-            tabset: Optional[str] = self.options["tabset"]
+            tabset = self.options["tabset"]
         else:
             tabset = self.name.split("-", 1)[-1]
 
@@ -777,9 +777,9 @@ class BaseCodeDirective(tinydocutils.directives.Directive):
 
         try:
             n_lines = len(self.content)
-            emphasize_lines = parse_linenos(
-                self.options.get("emphasize-lines", ""), n_lines
-            )
+            emphasize_lines_options = self.options.get("emphasize-lines", "")
+            assert isinstance(emphasize_lines_options, str)
+            emphasize_lines = parse_linenos(emphasize_lines_options, n_lines)
         except ValueError as err:
             error_node = self.state.document.reporter.error(str(err), line=self.lineno)
             return [error_node]
@@ -827,9 +827,9 @@ class BaseCodeIODirective(tinydocutils.directives.Directive):
         else:
             try:
                 n_lines = len(self.content)
-                emphasize_lines = parse_linenos(
-                    self.options.get("emphasize-lines", ""), n_lines
-                )
+                emphasize_lines_options = self.options.get("emphasize-lines", "")
+                assert isinstance(emphasize_lines_options, str)
+                emphasize_lines = parse_linenos(emphasize_lines_options, n_lines)
             except ValueError as err:
                 error_node = self.state.document.reporter.error(
                     str(err), line=self.lineno
@@ -1033,7 +1033,6 @@ class Registry:
     def lookup_directive(
         self,
         directive_name: str,
-        language_module: object,
         document: tinydocutils.nodes.document,
     ) -> Tuple[Optional[Type[Any]], List[object]]:
         # Remove the built-in directives we don't want
@@ -1048,8 +1047,8 @@ class Registry:
         return None, []
 
     def lookup_role(
-        self, role_name: str, language_module: object, lineno: int, reporter: object
-    ) -> Tuple[Optional[RoleHandler], List[object]]:
+        self, role_name: str, lineno: int, reporter: tinydocutils.nodes.Reporter
+    ) -> Tuple[Optional[RoleHandler], List[tinydocutils.nodes.system_message]]:
         domain_name, role_name = util.split_domain(role_name)
         if domain_name:
             return self.domains[domain_name].roles.get(role_name, None), []
@@ -1245,7 +1244,7 @@ class Parser(Generic[_V]):
         ).get_default_values()
         settings.report_level = 10000
         settings.halt_level = 10000
-        document = tinydocutils.utils.new_document(str(path), settings)
+        document = tinydocutils.nodes.new_document(str(path), settings)
 
         parser.parse(text, document)
 
