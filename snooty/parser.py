@@ -405,9 +405,7 @@ class JSONVisitor:
             self.state.append(n.Transition((line,)))
         elif isinstance(node, tinydocutils.nodes.table):
             raise tinydocutils.nodes.SkipNode()
-        elif isinstance(
-            node, (tinydocutils.nodes.problematic, tinydocutils.nodes.label)
-        ):
+        elif isinstance(node, tinydocutils.nodes.label):
             raise tinydocutils.nodes.SkipNode()
         elif isinstance(node, tinydocutils.nodes.comment):
             self.state.append(n.Comment((line,), []))

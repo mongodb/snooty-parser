@@ -1527,10 +1527,6 @@ class inline(Inline, TextElement):
     pass
 
 
-class problematic(Inline, TextElement):
-    pass
-
-
 class generated(Inline, TextElement):
     pass
 

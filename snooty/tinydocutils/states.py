@@ -513,17 +513,7 @@ class Inliner:
             line=lineno,
         )
         text = unescape(string[matchstart:matchend], True)
-        prb = self.problematic(text, text, msg)
-        return string[:matchstart], [prb], string[matchend:], [msg], ""
-
-    def problematic(
-        self: Any, text: str, rawsource: str, message: Any
-    ) -> nodes.problematic:
-        msgid = self.document.set_id(message, self.parent)
-        problematic = nodes.problematic(rawsource, text, refid=msgid)
-        prbid = self.document.set_id(problematic)
-        message.add_backref(prbid)
-        return problematic
+        return string[:matchstart], [], string[matchend:], [msg], ""
 
     def emphasis(
         self, match: Match[str], lineno: int
@@ -566,9 +556,7 @@ class Inliner:
                         "prefix and suffix present; only one allowed).",
                         line=lineno,
                     )
-                    text = unescape(string[rolestart:textend], True)
-                    prb = self.problematic(text, text, msg)
-                    return string[:rolestart], [prb], string[textend:], [msg]
+                    return string[:rolestart], [], string[textend:], [msg]
                 role = endmatch.group("suffix")[1:-1]
                 position = "suffix"
             escaped = endmatch.string[: endmatch.start(1)]
@@ -580,9 +568,7 @@ class Inliner:
                         "reference suffix." % position,
                         line=lineno,
                     )
-                    text = unescape(string[rolestart:textend], True)
-                    prb = self.problematic(text, text, msg)
-                    return string[:rolestart], [prb], string[textend:], [msg]
+                    return string[:rolestart], [], string[textend:], [msg]
                 return self.phrase_ref(
                     string[:matchstart], string[textend:], rawsource, escaped
                 )
@@ -595,9 +581,7 @@ class Inliner:
             "without end-string.",
             line=lineno,
         )
-        text = unescape(string[matchstart:matchend], True)
-        prb = self.problematic(text, text, msg)
-        return string[:matchstart], [prb], string[matchend:], [msg]
+        return string[:matchstart], [], string[matchend:], [msg]
 
     def phrase_ref(
         self, before: str, after: str, rawsource: str, escaped: str
@@ -694,7 +678,7 @@ class Inliner:
             msg = self.reporter.error(
                 'Unknown interpreted text role "%s".' % role, line=lineno
             )
-            return ([self.problematic(rawsource, rawsource, msg)], messages + [msg])
+            return ([], messages + [msg])
 
     def literal(
         self, match: Match[str], lineno: int
