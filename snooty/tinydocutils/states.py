@@ -18,7 +18,6 @@ the reStructuredText parser.  It defines the following:
     - `EnumeratedList`: Second+ enumerated_list list_items.
     - `FieldList`: Second+ fields.
     - `OptionList`: Second+ option_list_items.
-    - `RFC2822List`: Second+ RFC2822-style fields.
     - `ExtensionOptions`: Parses directive option fields.
     - `Explicit`: Second+ explicit markup constructs.
     - `SubstitutionDef`: For embedded directives in substitution definitions.
@@ -2622,61 +2621,6 @@ class Body(RSTState):
         return [match.string], "Text", []
 
 
-class RFC2822Body(Body):
-
-    """
-    RFC2822 headers are only valid as the first constructs in documents.  As
-    soon as anything else appears, the `Body` state should take over.
-    """
-
-    patterns = Body.patterns.copy()  # can't modify the original
-    patterns["rfc2822"] = re.compile(r"[!-9;-~]+:( +|$)")
-    initial_transitions: List[Union[str, Tuple[str, str]]] = [
-        (name, "Body") if isinstance(name, str) else name
-        for name in Body.initial_transitions
-    ]
-    initial_transitions.insert(-1, ("rfc2822", "Body"))  # just before 'text'
-
-    def rfc2822(
-        self, match: Match[str], context: List[str], next_state: str
-    ) -> statemachine.TransitionResult:
-        """RFC2822-style field list item."""
-        assert self.state_machine.input_lines is not None
-        fieldlist = nodes.field_list(classes=["rfc2822"])
-        self.parent.append(fieldlist)
-        field, blank_finish = self.rfc2822_field(match)
-        fieldlist.append(field)
-        offset = self.state_machine.line_offset + 1  # next line
-        newline_offset, blank_finish = self.nested_list_parse(
-            self.state_machine.input_lines[offset:],
-            input_offset=self.state_machine.abs_line_offset() + 1,
-            node=fieldlist,
-            initial_state="RFC2822List",
-            blank_finish=blank_finish,
-        )
-        self.goto_line(newline_offset)
-        if not blank_finish:
-            self.parent.append(self.unindent_warning("RFC2822-style field list"))
-        return [], next_state, []
-
-    def rfc2822_field(self, match: Match[str]) -> Tuple[nodes.field, bool]:
-
-        name = match.string[: match.string.find(":")]
-        (
-            indented,
-            indent,
-            line_offset,
-            blank_finish,
-        ) = self.state_machine.get_first_known_indented(match.end(), until_blank=True)
-        fieldnode = nodes.field()
-        fieldnode.append(nodes.field_name(name, name))
-        fieldbody = nodes.field_body("\n".join(indented))
-        fieldnode.append(fieldbody)
-        if indented:
-            self.nested_parse(indented, input_offset=line_offset, node=fieldbody)
-        return fieldnode, blank_finish
-
-
 class SpecializedBody(Body):
 
     """
@@ -2861,23 +2805,6 @@ class OptionList(SpecializedBody, HaveBlankFinish):
         self.parent.append(option_list_item)
         self.blank_finish = blank_finish
         return [], next_state, []
-
-
-class RFC2822List(SpecializedBody, RFC2822Body, HaveBlankFinish):
-
-    """Second and subsequent RFC2822-style field_list fields."""
-
-    patterns = RFC2822Body.patterns
-    initial_transitions = RFC2822Body.initial_transitions
-
-    def rfc2822(
-        self, match: Match[str], context: List[str], next_state: str
-    ) -> statemachine.TransitionResult:
-        """RFC2822-style field list item."""
-        field, blank_finish = self.rfc2822_field(match)
-        self.parent.append(field)
-        self.blank_finish = blank_finish
-        return [], "RFC2822List", []
 
 
 class ExtensionOptions(FieldList):
@@ -3407,7 +3334,5 @@ state_classes: Sequence[Type[StateWS]] = (
     Definition,
     Line,
     SubstitutionDef,
-    RFC2822Body,
-    RFC2822List,
 )
 """Standard set of State classes used to start `RSTStateMachine`."""
