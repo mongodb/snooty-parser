@@ -562,6 +562,8 @@ class StateMachine:
         - `debug`: a boolean; produce verbose output if true (nonzero).
         """
 
+        self.match_titles = False
+
         self.input_lines: Optional[StringList] = None
         """`StringList` of input lines (without newlines).
         Filled by `self.run()`."""

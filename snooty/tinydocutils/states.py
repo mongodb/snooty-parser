@@ -131,6 +131,15 @@ from .utils import (
     unescape,
 )
 
+
+class StyleKind(NamedTuple):
+    underline: str
+    overline: Optional[str]
+
+    def length(self) -> int:
+        return 1 if self.overline is None else 2
+
+
 RegexDefinitionGroup = Tuple[
     str, str, str, Sequence[Union[str, "RegexDefinitionGroup"]]
 ]
@@ -692,7 +701,7 @@ class Inliner:
         return before, inlines, remaining, sysmessages
 
     def inline_internal_target(
-        self: Any, match: Match[str], lineno: int
+        self, match: Match[str], lineno: int
     ) -> Tuple[str, List[nodes.ConcreteNode], str, List[nodes.system_message]]:
         before, inlines, remaining, sysmessages, endstring = self.inline_obj(
             match, lineno, self.patterns.target, nodes.target
@@ -864,7 +873,7 @@ class StateMachineMemo:
     def __init__(self, document: nodes.document, inliner: Inliner) -> None:
         self.document = document
         self.reporter = document.reporter
-        self.title_styles: List[Tuple[str, str]] = []
+        self.title_styles: List[StyleKind] = []
         self.section_level = 0
         self.section_bubble_up_kludge = False
         self.inliner = inliner
@@ -1079,7 +1088,7 @@ class RSTState(StateWS):
         self,
         title: str,
         source: str,
-        style: Tuple[str, str],
+        style: StyleKind,
         lineno: int,
         messages: Sequence[nodes.system_message],
     ) -> None:
@@ -1087,9 +1096,7 @@ class RSTState(StateWS):
         if self.check_subsection(source, style, lineno):
             self.new_subsection(title, lineno, messages)
 
-    def check_subsection(
-        self, source: str, style: Tuple[str, str], lineno: int
-    ) -> bool:
+    def check_subsection(self, source: str, style: StyleKind, lineno: int) -> bool:
         """
         Check for a valid subsection header.  Return 1 (true) or None (false).
 
@@ -1119,11 +1126,11 @@ class RSTState(StateWS):
                 return False
         if level <= mylevel:  # sibling or supersection
             memo.section_level = level  # bubble up to parent section
-            if len(style) == 2:
+            if style.overline is not None:
                 memo.section_bubble_up_kludge = True
 
             # back up 2 lines for underline title, 3 for overline title
-            self.state_machine.previous_line(len(style) + 1)
+            self.state_machine.previous_line(style.length() + 1)
             raise EOFError  # let parent section re-evaluate
         if level == mylevel + 1:  # immediate subsection
             return True
@@ -2544,7 +2551,7 @@ class Body(RSTState):
         nodelist.extend(errors)
         return nodelist, blank_finish
 
-    def explicit_list(self: Any, blank_finish: bool) -> None:
+    def explicit_list(self, blank_finish: bool) -> None:
         """
         Create a nested state machine for a series of explicit markup
         constructs (including anonymous hyperlink targets).
@@ -2587,7 +2594,7 @@ class Body(RSTState):
         return [target], blank_finish
 
     def line(
-        self: Any, match: Match[str], context: List[str], next_state: str
+        self, match: Match[str], context: List[str], next_state: str
     ) -> statemachine.TransitionResult:
         """Section title overline or transition marker."""
 
@@ -2956,7 +2963,7 @@ class Text(RSTState):
         return [], "Body", []
 
     def underline(
-        self: Any, match: Match[str], context: List[str], next_state: str
+        self, match: Match[str], context: List[str], next_state: str
     ) -> statemachine.TransitionResult:
         """Section title."""
 
@@ -3002,7 +3009,7 @@ class Text(RSTState):
             self.parent.extend(messages)
             self.parent.append(msg)
             return [], next_state, []
-        style = underline[0]
+        style = StyleKind(underline[0], None)
         context[:] = []
         self.section(title, source, style, lineno - 1, messages)
         return [], next_state, []
@@ -3273,7 +3280,7 @@ class Line(SpecializedText):
                     line=lineno,
                 )
                 messages.append(msg)
-        style = (overline[0], underline[0])
+        style = StyleKind(underline[0], overline[0])
         self.eofcheck = False  # @@@ not sure this is correct
         self.section(title.lstrip(), source, style, lineno + 1, messages)
         self.eofcheck = True
