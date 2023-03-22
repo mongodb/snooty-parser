@@ -1258,7 +1258,7 @@ def _upperalpha_to_int(s: str, _zero: int = (ord("A") - 1)) -> int:
 
 
 def _lowerroman_to_int(s: str) -> int:
-    return roman.fromRoman(s.upper())
+    return roman.from_roman(s.upper())
 
 
 class Body(RSTState):
@@ -1302,7 +1302,7 @@ class Body(RSTState):
                 "loweralpha": _loweralpha_to_int,
                 "upperalpha": _upperalpha_to_int,
                 "lowerroman": _lowerroman_to_int,
-                "upperroman": roman.fromRoman,
+                "upperroman": roman.from_roman,
             }
 
             self.sequenceregexps = {}
@@ -1528,8 +1528,8 @@ class Body(RSTState):
         else:
             try:
                 ordinal = self.enum.converters[sequence](text)
-            except roman.InvalidRomanNumeralError as err:
-                raise ParserError("Roman numeral error: " + str(err))
+            except ValueError as err:
+                raise ParserError("Roman numeral error: " + str(err)) from err
         return format, sequence, text, ordinal
 
     def is_enumerated_list_item(
@@ -1587,8 +1587,8 @@ class Body(RSTState):
                 enumerator = chr(ordinal + ord("a") - 1)
             elif sequence.endswith("roman"):
                 try:
-                    enumerator = roman.toRoman(ordinal)
-                except roman.RomanError:
+                    enumerator = roman.to_roman(ordinal)
+                except ValueError:
                     return None
             else:  # shouldn't happen
                 raise ParserError('unknown enumerator sequence: "%s"' % sequence)
