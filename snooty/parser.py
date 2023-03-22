@@ -84,6 +84,9 @@ from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
+NO_AMBIGUOUS_LITERAL_DIAGNOSTICS = (
+    os.environ.get("SNOOTY_NO_AMBIGUOUS_LITERAL_DIAGNOSTICS", "0") == "1"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -749,14 +752,15 @@ class JSONVisitor:
                     )
                     return loc
 
-                remaining_matches = [str(lineno) for lineno in matching_lines]
-                if remaining_matches:
-                    self.diagnostics.append(
-                        AmbiguousLiteralInclude(
-                            f'"{text}" matches in multiple places in {filepath}: lines {",".join([str(loc)] + remaining_matches)}',
-                            line,
+                if not NO_AMBIGUOUS_LITERAL_DIAGNOSTICS:
+                    remaining_matches = [str(lineno) for lineno in matching_lines]
+                    if remaining_matches:
+                        self.diagnostics.append(
+                            AmbiguousLiteralInclude(
+                                f'"{text}" matches in multiple places in {filepath}: lines {",".join([str(loc)] + remaining_matches)}',
+                                line,
+                            )
                         )
-                    )
                 return loc
 
             # Locate the start_after query
