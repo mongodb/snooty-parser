@@ -279,7 +279,7 @@ def unescape(
         return text
 
 
-class Text(Node, str):
+class Text(Node):
 
     """
     Instances are terminal nodes (leaves) containing text only; no child
@@ -292,18 +292,13 @@ class Text(Node, str):
     children: "Sequence[ConcreteNode]" = ()
     """Text nodes have no children, and cannot have children."""
 
-    def __new__(cls, data: str, rawsource: Optional[str] = None) -> "Text":
-        """Prevent the rawsource argument from propagating to str."""
-        if isinstance(data, bytes):
-            raise TypeError("expecting str data, not bytes")
-        return str.__new__(cls, data)
-
-    def __init__(self, data: Any, rawsource: str = "") -> None:
+    def __init__(self, value: str, rawsource: str = "") -> None:
+        self.value = value
         self.rawsource = rawsource
         """The raw text from which this element was constructed."""
 
     def shortrepr(self, maxlen: int = 18) -> str:
-        data: str = self
+        data: str = self.value
         if len(data) > maxlen:
             data = data[: maxlen - 4] + " ..."
         return "<%s: %r>" % (self.tagname, str(data))
@@ -312,7 +307,7 @@ class Text(Node, str):
         return self.shortrepr(maxlen=68)
 
     def astext(self) -> str:
-        return unescape(self)
+        return unescape(self.value)
 
     # Note about __unicode__: The implementation of __unicode__ here,
     # and the one raising NotImplemented in the superclass Node had

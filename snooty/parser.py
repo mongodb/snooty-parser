@@ -262,7 +262,7 @@ class JSONVisitor:
                 self.state.append(directive)
         elif isinstance(node, tinydocutils.nodes.Text):
             # docutils will inject \0000 characters into text nodes when there are escape characters
-            text = str(node).replace("\x00", "")
+            text = node.value.replace("\x00", "")
             self.state.append(n.Text((line,), text))
             return
         elif isinstance(node, tinydocutils.nodes.literal_block):

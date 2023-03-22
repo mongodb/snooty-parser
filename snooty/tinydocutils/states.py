@@ -3102,7 +3102,7 @@ class Text(RSTState):
         for i in range(len(text_nodes)):
             node = text_nodes[i]
             if isinstance(node, nodes.Text):
-                parts = self.classifier_delimiter.split(node)
+                parts = self.classifier_delimiter.split(node.value)
                 if len(parts) == 1:
                     node_list[-1].append(node)
                 else:
