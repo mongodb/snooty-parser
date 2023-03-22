@@ -2,6 +2,7 @@
 
 Usage:
   snooty build [--no-caching] <source-path> [--output=<path>] [options]
+  snooty watch [--no-caching] <source-path>
   snooty [--no-caching] language-server
 
 Options:
