@@ -44,11 +44,6 @@ from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
-SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
-
-COLL_DOCUMENTS = "documents"
-COLL_METADATA = "metadata"
-COLL_ASSETS = "assets"
 
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
 
