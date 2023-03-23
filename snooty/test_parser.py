@@ -2660,8 +2660,7 @@ This is an autonumbered footnote [#]_ in use.
 def test_toctree() -> None:
     project_root = ROOT_PATH.joinpath("test_project")
     path = project_root.joinpath(Path("source/test.rst")).resolve()
-    [project_config, project_config_diagnostics] = ProjectConfig.open(
-        project_root)
+    [project_config, project_config_diagnostics] = ProjectConfig.open(project_root)
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
@@ -3413,8 +3412,7 @@ here is an invalid character sequence\x80 oh noooo
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
-        assert [(type(d), d.start[0])
-                for d in diagnostics] == [(CannotOpenFile, 2)]
+        assert [(type(d), d.start[0]) for d in diagnostics] == [(CannotOpenFile, 2)]
 
 
 def test_valid_icon() -> None:

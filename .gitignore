@@ -11,6 +11,3 @@ htmlcov/
 dist/
 .docs
 .vscode
-
-# virtual environment
-venv

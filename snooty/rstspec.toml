@@ -59,8 +59,8 @@ ${4:   :align:
 """
 
 # Intended for use on the ecosystem landing page only
-# deprecated
 [directive."mongodb:drivers-index-tiles"]
+deprecated = true
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
