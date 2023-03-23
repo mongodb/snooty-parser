@@ -52,7 +52,7 @@ class Node:
 
     """Abstract base class of nodes in a document tree."""
 
-    parent: "Optional[Node]" = None
+    parent: "Optional[Element]" = None
     """Back-reference to the Node immediately containing this Node."""
 
     source: Optional[str] = None
@@ -102,15 +102,6 @@ class Node:
     def astext(self) -> str:
         """Return a string representation of this Node."""
         raise NotImplementedError
-
-    def setup_child(self, child: "Node") -> None:
-        child.parent = self
-        if self.document:
-            child.document = self.document
-            if child.source is None:
-                child.source = self.document.current_source
-            if child.line is None:
-                child.line = self.document.current_line
 
     def walkabout(self, visitor: "NodeVisitor") -> bool:
         """
@@ -524,6 +515,15 @@ class Element(Node):
             ["%s%s\n" % (indent * level, self.starttag())]
             + [child.pformat(indent, level + 1) for child in self.children]
         )
+
+    def setup_child(self, child: "Node") -> None:
+        child.parent = self
+        if self.document:
+            child.document = self.document
+            if child.source is None:
+                child.source = self.document.current_source
+            if child.line is None:
+                child.line = self.document.current_line
 
 
 ConcreteNode = Union[Text, Element]
@@ -1478,7 +1478,7 @@ class Reporter:
         """The highest level system message generated so far."""
 
         self.get_source_and_line: Optional[
-            Callable[[Optional[int]], Tuple[str, int]]
+            Callable[[Optional[int]], Tuple[Optional[str], int]]
         ] = None
 
     def attach_observer(self, observer: Callable[[object], None]) -> None:

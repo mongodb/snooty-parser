@@ -1034,17 +1034,17 @@ class Registry:
         self,
         directive_name: str,
         document: tinydocutils.nodes.document,
-    ) -> Tuple[Optional[Type[Any]], List[object]]:
+    ) -> Optional[Type[tinydocutils.directives.Directive]]:
         # Remove the built-in directives we don't want
         domain_name, directive_name = util.split_domain(directive_name)
         if domain_name:
-            return self.domains[domain_name].directives.get(directive_name, None), []
+            return self.domains[domain_name].directives.get(directive_name, None)
 
         for domain in self.domain_sequence:
             if directive_name in domain.directives:
-                return domain.directives.get(directive_name, None), []
+                return domain.directives.get(directive_name, None)
 
-        return None, []
+        return None
 
     def lookup_role(
         self, role_name: str, lineno: int, reporter: tinydocutils.nodes.Reporter

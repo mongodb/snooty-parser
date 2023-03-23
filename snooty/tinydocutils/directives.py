@@ -9,18 +9,7 @@ This package contains directive implementation modules.
 __docformat__ = "reStructuredText"
 
 import re
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Type, Union
 
 from . import nodes, statemachine, states
 from .utils import escape2null, split_escaped_whitespace, unescape
@@ -447,7 +436,7 @@ class Unicode(Directive):
                 'Invalid context: the "%s" directive can only be used within '
                 "a substitution definition." % self.name
             )
-        assert isinstance(self.state_machine, states.NestedStateMachine)
+        assert isinstance(self.state_machine, states.RSTStateMachine)
         substitution_definition = self.state_machine.node
         if "trim" in self.options:
             substitution_definition.attributes["ltrim"] = 1
@@ -470,5 +459,5 @@ class Unicode(Directive):
 def directive(
     directive_name: str,
     document: nodes.document,
-) -> Tuple[Optional[Type[Any]], List[object]]:
+) -> Optional[Type[Directive]]:
     raise NotImplementedError("No context activated")

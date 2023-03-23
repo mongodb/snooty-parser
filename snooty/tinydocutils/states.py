@@ -8,7 +8,7 @@ the reStructuredText parser.  It defines the following:
 
 :Classes:
     - `RSTStateMachine`: reStructuredText parser's entry point.
-    - `NestedStateMachine`: recursive StateMachine.
+    - `RSTStateMachine`: recursive StateMachine.
     - `RSTState`: reStructuredText State superclass.
     - `Inliner`: For parsing inline markup.
     - `Body`: Generic classifier of the first line of a block.
@@ -103,7 +103,6 @@ __docformat__ = "reStructuredText"
 
 import re
 from typing import (
-    Any,
     Callable,
     Dict,
     Iterable,
@@ -881,19 +880,11 @@ class RSTStateMachine(StateMachine):
         self.document = document
         self.attach_observer(document.note_source)
         self.reporter = self.memo.reporter
-        self.node = document
+        self.node: nodes.Element = document
         results = self.run_sm(
             input_lines, input_offset, input_source=document["source"]
         )
         assert results == [], "RSTStateMachine.run() results should be empty!"
-
-
-class NestedStateMachine(StateMachine):
-
-    """
-    StateMachine run from within other StateMachine runs, to parse nested
-    document structures.
-    """
 
     def run_nested_sm(
         self,
@@ -915,7 +906,7 @@ class NestedStateMachine(StateMachine):
         self.reporter = memo.reporter
         self.node = node
         results = StateMachine.run_sm(self, input_lines, input_offset)
-        assert results == [], "NestedStateMachine.run() results should be " "empty!"
+        assert results == [], "RSTStateMachine.run() results should be " "empty!"
         return results
 
     def get_blank_finish_state(
@@ -937,8 +928,8 @@ class RSTState(State):
     BLANK_PAT = re.compile(" *$")
     INDENT_PAT = re.compile(" +")
 
-    nested_sm = NestedStateMachine
-    nested_sm_cache: List[NestedStateMachine] = []
+    nested_sm = RSTStateMachine
+    nested_sm_cache: List[RSTStateMachine] = []
 
     def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
         super().__init__(state_machine, debug)
@@ -952,10 +943,10 @@ class RSTState(State):
             "indent": (self.INDENT_PAT, self.indent, own_type),
         }
 
-    def runtime_init(self: Any) -> None:
+    def runtime_init(self) -> None:
         State.runtime_init(self)
+        assert isinstance(self.state_machine, RSTStateMachine)
         memo = self.state_machine.memo
-        assert isinstance(memo, StateMachineMemo)
         self.memo = memo
         self.reporter = memo.reporter
         self.inliner = memo.inliner
@@ -1005,7 +996,7 @@ class RSTState(State):
                 pass
         if not state_machine:
             assert state_config is not None
-            state_machine = NestedStateMachine(state_config, debug=self.debug)
+            state_machine = RSTStateMachine(state_config, debug=self.debug)
         state_machine.run_nested_sm(
             block, input_offset, memo=self.memo, node=node, match_titles=match_titles
         )
@@ -1030,7 +1021,7 @@ class RSTState(State):
         blank_finish_state: Optional[Type[statemachine.State]] = None,
         extra_settings: Dict[str, object] = {},
         match_titles: bool = False,
-        state_machine_class: Optional[Type[NestedStateMachine]] = None,
+        state_machine_class: Optional[Type[RSTStateMachine]] = None,
         state_config: Optional[statemachine.StateConfiguration] = None,
     ) -> Tuple[int, bool]:
         """
@@ -2215,8 +2206,7 @@ class Body(RSTState):
     ) -> Tuple[Sequence[nodes.ConcreteNode], bool]:
         """Returns a 2-tuple: list of nodes, and a "blank finish" boolean."""
         type_name = match.group(1)
-        directive_class, messages = directives.directive(type_name, self.document)
-        self.parent.extend(messages)
+        directive_class = directives.directive(type_name, self.document)
         if directive_class:
             return self.run_directive(directive_class, match, type_name, option_presets)
         else:
@@ -2942,7 +2932,9 @@ class LineBlock(SpecializedBody, HaveBlankFinish):
         lineno = self.state_machine.abs_line_number()
         line, messages, blank_finish = self.line_block_line(match, lineno)
         self.parent.append(line)
-        self.parent.parent.extend(messages)
+        grandparent = self.parent.parent
+        assert grandparent is not None
+        grandparent.extend(messages)
         self.blank_finish = blank_finish
         return [], next_state, []
 
@@ -3061,7 +3053,7 @@ class Text(RSTState):
         )
         self.parent.extend(paragraph)
         if literalnext:
-            self.parent.append(self.literal_block())
+            self.parent.extend(self.literal_block())
         return [], Body, []
 
     def eof(self, context: List[str]) -> List[str]:
