@@ -34,6 +34,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Union,
@@ -111,53 +112,7 @@ class Node:
             if child.line is None:
                 child.line = self.document.current_line
 
-    def walk(self, visitor: Any) -> bool:
-        """
-        Traverse a tree of `Node` objects, calling the
-        `dispatch_visit()` method of `visitor` when entering each
-        node.  (The `walkabout()` method is similar, except it also
-        calls the `dispatch_departure()` method before exiting each
-        node.)
-
-        This tree traversal supports limited in-place tree
-        modifications.  Replacing one node with one or more nodes is
-        OK, as is removing an element.  However, if the node removed
-        or replaced occurs after the current node, the old node will
-        still be traversed, and any new nodes will not.
-
-        Within ``visit`` methods (and ``depart`` methods for
-        `walkabout()`), `TreePruningException` subclasses may be raised
-        (`SkipChildren`, `SkipSiblings`, `SkipNode`, `SkipDeparture`).
-
-        Parameter `visitor`: A `NodeVisitor` object, containing a
-        ``visit`` implementation for each `Node` subclass encountered.
-
-        Return true if we should stop the traversal.
-        """
-        stop = False
-        try:
-            try:
-                visitor.dispatch_visit(self)
-            except (SkipChildren, SkipNode):
-                return stop
-            except SkipDeparture:  # not applicable; ignore
-                pass
-
-            assert isinstance(self, Element)
-            children = self.children
-
-            try:
-                for child in children[:]:
-                    if child.walk(visitor):
-                        stop = True
-                        break
-            except SkipSiblings:
-                pass
-        except StopTraversal:
-            stop = True
-        return stop
-
-    def walkabout(self, visitor: Any) -> bool:
+    def walkabout(self, visitor: "NodeVisitor") -> bool:
         """
         Perform a tree traversal similarly to `Node.walk()` (which
         see), except also call the `dispatch_departure()` method
@@ -1191,7 +1146,7 @@ class substitution_reference(Inline, TextElement):
 # ========================================
 
 
-class NodeVisitor:
+class NodeVisitor(Protocol):
 
     """
     "Visitor" pattern [GoF95]_ abstract superclass implementation for
@@ -1220,36 +1175,11 @@ class NodeVisitor:
        1995.
     """
 
-    def __init__(self, document: document) -> None:
-        self.document = document
+    def dispatch_visit(self, node: Node) -> None:
+        ...
 
-    def dispatch_visit(self, node: ConcreteNode) -> None:
-        """
-        Call self."``visit_`` + node class name" with `node` as
-        parameter.  If the ``visit_...`` method does not exist, call
-        self.unknown_visit.
-        """
-        node_name = node.__class__.__name__
-        method = getattr(self, "visit_" + node_name)
-        self.document.reporter.debug(
-            "docutils.nodes.NodeVisitor.dispatch_visit calling %s for %s"
-            % (method.__name__, node_name)
-        )
-        method(node)
-
-    def dispatch_departure(self, node: ConcreteNode) -> None:
-        """
-        Call self."``depart_`` + node class name" with `node` as
-        parameter.  If the ``depart_...`` method does not exist, call
-        self.unknown_departure.
-        """
-        node_name = node.__class__.__name__
-        method = getattr(self, "depart_" + node_name)
-        self.document.reporter.debug(
-            "docutils.nodes.NodeVisitor.dispatch_departure calling %s for %s"
-            % (method.__name__, node_name)
-        )
-        method(node)
+    def dispatch_departure(self, node: Node) -> None:
+        ...
 
 
 class TreePruningException(Exception):
