@@ -15,7 +15,6 @@ this module defines the following classes:
 Exception classes:
 
 - `StateMachineError`
-- `UnknownStateError`
 - `DuplicateStateError`
 - `UnknownTransitionError`
 - `DuplicateTransitionError`
@@ -124,16 +123,19 @@ from . import nodes
 
 TransitionTuple = Tuple[
     Pattern[str],
-    Callable[[Match[str], List[str], str], Tuple[List[str], str, List[str]]],
-    str,
+    Callable[
+        [Match[str], List[str], Type["State"]],
+        Tuple[List[str], "Type[State]", List[str]],
+    ],
+    "Type[State]",
 ]
 
-TransitionResult = Tuple[List[str], str, List[str]]
+TransitionResult = Tuple[List[str], "Type[State]", List[str]]
 
 
 class StateConfiguration(NamedTuple):
     state_classes: "Sequence[Type[State]]"
-    initial_state: str
+    initial_state: "Type[State]"
 
 
 class StringList:
@@ -578,7 +580,7 @@ class StateMachine:
         self.current_state = state_config.initial_state
         """The name of the current state (key to `self.states`)."""
 
-        self.states: Dict[str, State] = {}
+        self.states: Dict[Type[State], State] = {}
         """Mapping of {state_name: State_object}."""
 
         for state_class in state_config.state_classes:
@@ -601,7 +603,7 @@ class StateMachine:
         input_offset: int = 0,
         context: Optional[List[str]] = None,
         input_source: Optional[str] = None,
-        initial_state: Optional[str] = None,
+        initial_state: "Optional[Type[State]]" = None,
     ) -> List[str]:
         """
         Run the state machine on `input_lines`. Return results (a list).
@@ -638,7 +640,7 @@ class StateMachine:
                 % (self.line_offset, "\n| ".join(self.input_lines)),
                 file=self._stderr,
             )
-        transitions = None
+        transitions: Optional[Sequence[str]] = None
         results: List[str] = []
         state = self.get_state()
         if self.debug:
@@ -675,26 +677,25 @@ class StateMachine:
                     results.extend(result)
             except TransitionCorrection as exception:
                 self.previous_line()  # back up for another try
-                transitions = (exception.args[0],)
+                transitions = (exception.transition,)
                 if self.debug:
                     print(
                         "\nStateMachine.run: TransitionCorrection to "
                         'state "%s", transition %s.'
-                        % (state.__class__.__name__, transitions[0]),
+                        % (state.__class__.__name__, transitions),
                         file=self._stderr,
                     )
                 continue
             except StateCorrection as exception:
                 self.previous_line()  # back up for another try
-                next_state = exception.args[0]
-                if len(exception.args) == 1:
-                    transitions = None
-                else:
-                    transitions = (exception.args[1],)
+                next_state = exception.new_state
+                transitions = (
+                    None if exception.transition is None else (exception.transition,)
+                )
                 if self.debug:
                     print(
                         "\nStateMachine.run: StateCorrection to state "
-                        '"%s", transition %s.' % (next_state, transitions),
+                        '"%s", transition %s.' % (next_state.__name__, transitions),
                         file=self._stderr,
                     )
             else:
@@ -703,16 +704,14 @@ class StateMachine:
         self.observers = []
         return results
 
-    def get_state(self, next_state: Optional[str] = None) -> "State":
+    def get_state(self, next_state: "Optional[Type[State]]" = None) -> "State":
         """
         Return current state object; set it first if `next_state` given.
 
         Parameter `next_state`: a string, the name of the next state.
-
-        Exception: `UnknownStateError` raised if `next_state` unknown.
         """
         if next_state:
-            if self.debug and next_state != self.current_state:
+            if self.debug and next_state is not self.current_state:
                 print(
                     "\nStateMachine.get_state: Changing state from "
                     '"%s" to "%s" (input line %s).'
@@ -720,10 +719,7 @@ class StateMachine:
                     file=self._stderr,
                 )
             self.current_state = next_state
-        try:
-            return self.states[self.current_state]
-        except KeyError:
-            raise UnknownStateError(self.current_state)
+        return self.states[self.current_state]
 
     def next_line(self, n: int = 1) -> str:
         """Load `self.line` with the `n`'th next line and return it."""
@@ -843,7 +839,7 @@ class StateMachine:
         context: List[str],
         state: "State",
         transitions: Optional[Sequence[str]] = None,
-    ) -> Tuple[List[str], str, List[str]]:
+    ) -> Tuple[List[str], "Type[State]", List[str]]:
         """
         Examine one line of input for a transition match & execute its method.
 
@@ -902,10 +898,9 @@ class StateMachine:
         Exception: `DuplicateStateError` raised if `state_class` was already
         added.
         """
-        statename = state_class.__name__
-        if statename in self.states:
-            raise DuplicateStateError(statename)
-        self.states[statename] = state_class(self, self.debug)
+        if state_class in self.states:
+            raise DuplicateStateError(state_class)
+        self.states[state_class] = state_class(self, self.debug)
 
     def runtime_init(self) -> None:
         """
@@ -1089,7 +1084,7 @@ class State:
     be a string or a compiled `re` pattern. Override in subclasses.
     """
 
-    initial_transitions: Sequence[Tuple[str, Optional[str]]] = ()
+    initial_transitions: "Sequence[Tuple[str, Optional[Type[State]]]]" = ()
     """
     A list of transitions to initialize when a `State` is instantiated.
     Each entry is either a transition name string, or a (transition name, next
@@ -1152,9 +1147,7 @@ class State:
         if self.nested_sm is None:
             self.nested_sm = self.state_machine.__class__
         if self.state_config is None:
-            self.state_config = StateConfiguration(
-                [self.__class__], self.__class__.__name__
-            )
+            self.state_config = StateConfiguration([self.__class__], self.__class__)
 
     def runtime_init(self) -> None:
         """
@@ -1216,7 +1209,7 @@ class State:
             raise UnknownTransitionError(name)
 
     def make_transition(
-        self, name: str, next_state: Optional[str] = None
+        self, name: str, next_state: "Optional[Type[State]]" = None
     ) -> TransitionTuple:
         """
         Make & return a transition tuple based on `name`.
@@ -1233,13 +1226,13 @@ class State:
           (i.e., continue with the same state).
         """
         if next_state is None:
-            next_state = self.__class__.__name__
+            next_state = self.__class__
         pattern = self.patterns[name]
         method = getattr(self, name)
         return (pattern, method, next_state)
 
     def make_transitions(
-        self, name_list: Sequence[Tuple[str, Optional[str]]]
+        self, name_list: "Sequence[Tuple[str, Optional[Type[State]]]]"
     ) -> Tuple[List[str], Dict[str, TransitionTuple]]:
         """
         Return a list of transition names and a transition mapping.
@@ -1276,7 +1269,7 @@ class State:
         return []
 
     def nop(
-        self, match: Match[str], context: List[str], next_state: str
+        self, match: Match[str], context: List[str], next_state: "Type[State]"
     ) -> TransitionResult:
         """
         A "do nothing" transition method.
@@ -1311,7 +1304,7 @@ class StateWS(State):
     """Patterns for default whitespace transitions.  May be overridden in
     subclasses."""
 
-    ws_initial_transitions: Sequence[Tuple[str, Optional[str]]] = (
+    ws_initial_transitions: Sequence[Tuple[str, Optional[Type[State]]]] = (
         ("blank", None),
         ("indent", None),
     )
@@ -1334,17 +1327,13 @@ class StateWS(State):
         self.add_transitions(names, transitions)
 
     def blank(
-        self, match: Match[str], context: List[str], next_state: str
+        self, match: Match[str], context: List[str], next_state: Type[State]
     ) -> TransitionResult:
         """Handle blank lines. Does nothing. Override in subclasses."""
         return self.nop(match, context, next_state)
 
 
 class StateMachineError(Exception):
-    pass
-
-
-class UnknownStateError(StateMachineError):
     pass
 
 
@@ -1372,6 +1361,9 @@ class TransitionCorrection(Exception):
     Raise with one argument, the new transition name.
     """
 
+    def __init__(self, transition: str) -> None:
+        self.transition = transition
+
 
 class StateCorrection(Exception):
 
@@ -1381,6 +1373,10 @@ class StateCorrection(Exception):
     Raise with one or two arguments: new state name, and an optional new
     transition name.
     """
+
+    def __init__(self, new_state: Type[State], transition: Optional[str]) -> None:
+        self.new_state = new_state
+        self.transition = transition
 
 
 def string2lines(

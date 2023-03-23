@@ -918,8 +918,10 @@ class NestedStateMachine(StateMachine):
         assert results == [], "NestedStateMachine.run() results should be " "empty!"
         return results
 
-    def get_blank_finish_state(self, name: str) -> HaveBlankFinish:
-        state = self.states[name]
+    def get_blank_finish_state(
+        self, state_class: Type[statemachine.State]
+    ) -> HaveBlankFinish:
+        state = self.states[state_class]
         assert isinstance(state, HaveBlankFinish)
         return state
 
@@ -938,7 +940,7 @@ class RSTState(StateWS):
     def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
         self.state_config = statemachine.StateConfiguration(
             state_classes,
-            "Body",
+            Body,
         )
         StateWS.__init__(self, state_machine, debug)
 
@@ -1015,9 +1017,9 @@ class RSTState(StateWS):
         block: statemachine.StringList,
         input_offset: int,
         node: nodes.Element,
-        initial_state: str,
+        initial_state: Type[statemachine.State],
         blank_finish: bool,
-        blank_finish_state: Optional[str] = None,
+        blank_finish_state: Optional[Type[statemachine.State]] = None,
         extra_settings: Dict[str, object] = {},
         match_titles: bool = False,
         state_machine_class: Optional[Type[NestedStateMachine]] = None,
@@ -1325,7 +1327,7 @@ class Body(RSTState):
         "line": re.compile(r"(%(nonalphanum7bit)s)\1* *$" % pats),
         "text": re.compile(r""),
     }
-    initial_transitions: Sequence[Tuple[str, Optional[str]]] = (
+    initial_transitions: Sequence[Tuple[str, Optional[Type[statemachine.State]]]] = (
         ("bullet", None),
         ("enumerator", None),
         ("field_marker", None),
@@ -1339,7 +1341,10 @@ class Body(RSTState):
     )
 
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Block quote."""
 
@@ -1361,7 +1366,10 @@ class Body(RSTState):
         return elements
 
     def bullet(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Bullet list item."""
         bulletlist = nodes.bullet_list()
@@ -1376,7 +1384,7 @@ class Body(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=bulletlist,
-            initial_state="BulletList",
+            initial_state=BulletList,
             blank_finish=blank_finish,
         )
         self.goto_line(new_line_offset)
@@ -1403,7 +1411,10 @@ class Body(RSTState):
         return listitem, blank_finish
 
     def enumerator(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Enumerated List Item"""
         format, sequence, text, ordinal = self.parse_enumerator(match)
@@ -1434,7 +1445,7 @@ class Body(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=enumlist,
-            initial_state="EnumeratedList",
+            initial_state=EnumeratedList,
             blank_finish=blank_finish,
             extra_settings={
                 "lastordinal": ordinal,
@@ -1576,7 +1587,10 @@ class Body(RSTState):
         return next_enumerator, auto_enumerator
 
     def field_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Field list item."""
         field_list = nodes.field_list()
@@ -1591,7 +1605,7 @@ class Body(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=field_list,
-            initial_state="FieldList",
+            initial_state=FieldList,
             blank_finish=blank_finish,
         )
         self.goto_line(newline_offset)
@@ -1633,7 +1647,10 @@ class Body(RSTState):
         self.nested_parse(indented, input_offset=offset, node=node)
 
     def option_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Option list item."""
         optionlist = nodes.option_list()
@@ -1663,7 +1680,7 @@ class Body(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=optionlist,
-            initial_state="OptionList",
+            initial_state=OptionList,
             blank_finish=blank_finish,
         )
         self.goto_line(newline_offset)
@@ -1738,7 +1755,10 @@ class Body(RSTState):
         return optlist
 
     def doctest(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
 
         data = "\n".join(self.state_machine.get_text_block())
@@ -1749,7 +1769,10 @@ class Body(RSTState):
         return [], next_state, []
 
     def line_block(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """First line of a line block."""
         block = nodes.line_block()
@@ -1767,7 +1790,7 @@ class Body(RSTState):
                 self.state_machine.input_lines[offset:],
                 input_offset=self.state_machine.abs_line_offset() + 1,
                 node=block,
-                initial_state="LineBlock",
+                initial_state=LineBlock,
                 blank_finish=False,
             )
             self.goto_line(new_line_offset)
@@ -1889,7 +1912,7 @@ class Body(RSTState):
             self.constructs: Sequence[
                 Tuple[
                     Callable[
-                        ["Body", Match[str]], Tuple[Sequence[nodes.ConcreteNode], bool]
+                        [Body, Match[str]], Tuple[Sequence[nodes.ConcreteNode], bool]
                     ],
                     Pattern[str],
                 ]
@@ -2111,7 +2134,7 @@ class Body(RSTState):
             block,
             input_offset=offset,
             node=substitution_node,
-            initial_state="SubstitutionDef",
+            initial_state=SubstitutionDef,
             blank_finish=blank_finish,
         )
         i = 0
@@ -2364,7 +2387,7 @@ class Body(RSTState):
         """
         node = nodes.field_list()
         newline_offset, blank_finish = self.nested_list_parse(
-            datalines, 0, node, initial_state="ExtensionOptions", blank_finish=True
+            datalines, 0, node, initial_state=ExtensionOptions, blank_finish=True
         )
         if newline_offset != len(datalines):  # incomplete parse of block
             raise MarkupError("invalid option block")
@@ -2494,7 +2517,10 @@ class Body(RSTState):
     )
 
     def explicit_markup(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Footnotes, hyperlink targets, directives, comments."""
         nodelist, blank_finish = self.explicit_construct(match)
@@ -2533,7 +2559,7 @@ class Body(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=self.parent,
-            initial_state="Explicit",
+            initial_state=Explicit,
             blank_finish=blank_finish,
             match_titles=self.state_machine.match_titles,
         )
@@ -2542,7 +2568,10 @@ class Body(RSTState):
             self.parent.append(self.unindent_warning("Explicit markup"))
 
     def anonymous(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Anonymous hyperlink targets."""
         nodelist, blank_finish = self.anonymous_target(match)
@@ -2565,12 +2594,15 @@ class Body(RSTState):
         return [target], blank_finish
 
     def line(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Section title overline or transition marker."""
 
         if self.state_machine.match_titles:
-            return [match.string], "Line", []
+            return [match.string], Line, []
         elif match.string.strip() == "::":
             raise statemachine.TransitionCorrection("text")
         elif len(match.string.strip()) < 4:
@@ -2593,10 +2625,13 @@ class Body(RSTState):
             return [], next_state, []
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Titles, definition lists, paragraphs."""
-        return [match.string], "Text", []
+        return [match.string], Text, []
 
 
 class SpecializedBody(Body):
@@ -2624,7 +2659,10 @@ class SpecializedBody(Body):
     """
 
     def invalid_input(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Not a compound element member. Abort this state machine."""
 
@@ -2632,62 +2670,98 @@ class SpecializedBody(Body):
         raise EOFError
 
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def bullet(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def enumerator(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def field_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def option_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def doctest(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def line_block(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def explicit_markup(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def anonymous(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def line(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def blank(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
@@ -2697,7 +2771,10 @@ class BulletList(SpecializedBody, HaveBlankFinish):
     """Second and subsequent bullet_list list_items."""
 
     def bullet(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Bullet list item."""
         if match.string[0] != self.parent["bullet"]:
@@ -2714,10 +2791,13 @@ class DefinitionList(SpecializedBody):
     """Second and subsequent definition_list_items."""
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Definition lists."""
-        return [match.string], "Definition", []
+        return [match.string], Definition, []
 
 
 class EnumeratedList(SpecializedBody, HaveBlankFinish):
@@ -2725,7 +2805,10 @@ class EnumeratedList(SpecializedBody, HaveBlankFinish):
     """Second and subsequent enumerated_list list_items."""
 
     def enumerator(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Enumerated list item."""
         format, sequence, text, ordinal = self.parse_enumerator(
@@ -2759,7 +2842,10 @@ class FieldList(SpecializedBody, HaveBlankFinish):
     """Second and subsequent field_list fields."""
 
     def field_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Field list field."""
         field, blank_finish = self.field(match)
@@ -2773,7 +2859,10 @@ class OptionList(SpecializedBody, HaveBlankFinish):
     """Second and subsequent option_list option_list_items."""
 
     def option_marker(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Option list item."""
         try:
@@ -2812,7 +2901,10 @@ class LineBlock(SpecializedBody, HaveBlankFinish):
     """Second and subsequent lines of a line_block."""
 
     def line_block(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """New line of line block."""
 
@@ -2829,7 +2921,10 @@ class Explicit(SpecializedBody, HaveBlankFinish):
     """Second and subsequent explicit markup construct."""
 
     def explicit_markup(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Footnotes, hyperlink targets, directives, comments."""
         nodelist, blank_finish = self.explicit_construct(match)
@@ -2838,7 +2933,10 @@ class Explicit(SpecializedBody, HaveBlankFinish):
         return [], next_state, []
 
     def anonymous(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Anonymous hyperlink targets."""
         nodelist, blank_finish = self.anonymous_target(match)
@@ -2862,7 +2960,10 @@ class SubstitutionDef(Body, HaveBlankFinish):
     initial_transitions = (("embedded_directive", None), ("text", None))
 
     def embedded_directive(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         nodelist, blank_finish = self.directive(match, alt=self.parent["names"][0])
         self.parent.extend(nodelist)
@@ -2872,7 +2973,10 @@ class SubstitutionDef(Body, HaveBlankFinish):
         raise EOFError
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
 
         if not self.state_machine.at_eof():
@@ -2889,10 +2993,13 @@ class Text(RSTState):
     """
 
     patterns = {"underline": Body.patterns["line"], "text": re.compile(r"")}
-    initial_transitions = [("underline", "Body"), ("text", "Body")]
+    initial_transitions = [("underline", Body), ("text", Body)]
 
     def blank(
-        self, match: Optional[Match[str]], context: List[str], next_state: Optional[str]
+        self,
+        match: Optional[Match[str]],
+        context: List[str],
+        next_state: Optional[Type[statemachine.State]],
     ) -> statemachine.TransitionResult:
         """End of paragraph."""
         # NOTE: self.paragraph returns [ node, system_message(s) ], literalnext
@@ -2903,7 +3010,7 @@ class Text(RSTState):
         self.parent.extend(paragraph)
         if literalnext:
             self.parent.append(self.literal_block())
-        return [], "Body", []
+        return [], Body, []
 
     def eof(self, context: List[str]) -> List[str]:
         if context:
@@ -2911,7 +3018,10 @@ class Text(RSTState):
         return []
 
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Definition list item."""
         definitionlist = nodes.definition_list()
@@ -2924,17 +3034,20 @@ class Text(RSTState):
             self.state_machine.input_lines[offset:],
             input_offset=self.state_machine.abs_line_offset() + 1,
             node=definitionlist,
-            initial_state="DefinitionList",
+            initial_state=DefinitionList,
             blank_finish=blank_finish,
-            blank_finish_state="Definition",
+            blank_finish_state=Definition,
         )
         self.goto_line(newline_offset)
         if not blank_finish:
             self.parent.append(self.unindent_warning("Definition list"))
-        return [], "Body", []
+        return [], Body, []
 
     def underline(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Section title."""
 
@@ -2986,7 +3099,10 @@ class Text(RSTState):
         return [], next_state, []
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Paragraph."""
         startline = self.state_machine.abs_line_number() - 1
@@ -3101,28 +3217,43 @@ class SpecializedText(Text):
         return []
 
     def invalid_input(
-        self, match: Optional[Match[str]], context: List[str], next_state: Optional[str]
+        self,
+        match: Optional[Match[str]],
+        context: List[str],
+        next_state: Optional[Type[statemachine.State]],
     ) -> statemachine.TransitionResult:
         """Not a compound element member. Abort this state machine."""
         raise EOFError
 
     def blank(
-        self, match: Optional[Match[str]], context: List[str], next_state: Optional[str]
+        self,
+        match: Optional[Match[str]],
+        context: List[str],
+        next_state: Optional[Type[statemachine.State]],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def underline(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.invalid_input(match, context, next_state)
 
@@ -3137,13 +3268,16 @@ class Definition(SpecializedText, HaveBlankFinish):
         return []
 
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Definition list item."""
         itemnode, blank_finish = self.definition_list_item(context)
         self.parent.append(itemnode)
         self.blank_finish = blank_finish
-        return [], "DefinitionList", []
+        return [], DefinitionList, []
 
 
 class Line(SpecializedText):
@@ -3174,7 +3308,10 @@ class Line(SpecializedText):
         return []
 
     def blank(
-        self, match: Optional[Match[str]], context: List[str], next_state: Optional[str]
+        self,
+        match: Optional[Match[str]],
+        context: List[str],
+        next_state: Optional[Type[statemachine.State]],
     ) -> statemachine.TransitionResult:
         """Transition marker."""
 
@@ -3186,10 +3323,13 @@ class Line(SpecializedText):
         transition.source = src
         transition.line = srcline - 1
         self.parent.append(transition)
-        return [], "Body", []
+        return [], Body, []
 
     def text(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Potential over- & underlined title."""
 
@@ -3210,7 +3350,7 @@ class Line(SpecializedText):
                     line=lineno,
                 )
                 self.parent.append(msg)
-                return [], "Body", []
+                return [], Body, []
         source = "%s\n%s\n%s" % (overline, title, underline)
         overline = overline.rstrip()
         underline = underline.rstrip()
@@ -3225,7 +3365,7 @@ class Line(SpecializedText):
                     line=lineno,
                 )
                 self.parent.append(msg)
-                return [], "Body", []
+                return [], Body, []
         elif overline != underline:
             blocktext = overline + "\n" + title + "\n" + underline
             if len(overline.rstrip()) < 4:
@@ -3237,7 +3377,7 @@ class Line(SpecializedText):
                     line=lineno,
                 )
                 self.parent.append(msg)
-                return [], "Body", []
+                return [], Body, []
         title = title.rstrip()
         messages = []
         if column_width(title) > len(overline):
@@ -3255,16 +3395,22 @@ class Line(SpecializedText):
         self.eofcheck = False  # @@@ not sure this is correct
         self.section(title.lstrip(), source, style, lineno + 1, messages)
         self.eofcheck = True
-        return [], "Body", []
+        return [], Body, []
 
     # indented title
     def indent(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         return self.text(match, context, next_state)
 
     def underline(
-        self, match: Match[str], context: List[str], next_state: str
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         overline = context[0]
         assert self.state_machine.line is not None
@@ -3278,7 +3424,7 @@ class Line(SpecializedText):
             line=lineno,
         )
         self.parent.append(msg)
-        return [], "Body", []
+        return [], Body, []
 
     def short_overline(
         self, context: List[str], blocktext: str, lineno: int, lines: int = 1
@@ -3295,7 +3441,7 @@ class Line(SpecializedText):
 
         self.state_machine.previous_line(lines)
         context[:] = []
-        raise statemachine.StateCorrection("Body", "text")
+        raise statemachine.StateCorrection(Body, "text")
 
 
 state_classes: Sequence[Type[StateWS]] = (

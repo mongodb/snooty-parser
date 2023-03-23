@@ -80,7 +80,7 @@ class Parser(parsers.Parser):
     """The reStructuredText parser."""
 
     def __init__(self, inliner: Optional[states.Inliner] = None) -> None:
-        self.initial_state = "Body"
+        self.initial_state = states.Body
         self.state_classes = states.state_classes
         self.inliner = inliner
 
