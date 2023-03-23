@@ -1325,17 +1325,17 @@ class Body(RSTState):
         "line": re.compile(r"(%(nonalphanum7bit)s)\1* *$" % pats),
         "text": re.compile(r""),
     }
-    initial_transitions: Sequence[Union[str, Tuple[str, str]]] = (
-        "bullet",
-        "enumerator",
-        "field_marker",
-        "option_marker",
-        "doctest",
-        "line_block",
-        "explicit_markup",
-        "anonymous",
-        "line",
-        "text",
+    initial_transitions: Sequence[Tuple[str, Optional[str]]] = (
+        ("bullet", None),
+        ("enumerator", None),
+        ("field_marker", None),
+        ("option_marker", None),
+        ("doctest", None),
+        ("line_block", None),
+        ("explicit_markup", None),
+        ("anonymous", None),
+        ("line", None),
+        ("text", None),
     )
 
     def indent(
@@ -2859,7 +2859,7 @@ class SubstitutionDef(Body, HaveBlankFinish):
         ),
         "text": re.compile(r""),
     }
-    initial_transitions = ["embedded_directive", "text"]
+    initial_transitions = (("embedded_directive", None), ("text", None))
 
     def embedded_directive(
         self, match: Match[str], context: List[str], next_state: str

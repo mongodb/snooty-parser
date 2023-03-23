@@ -19,8 +19,6 @@ Exception classes:
 - `DuplicateStateError`
 - `UnknownTransitionError`
 - `DuplicateTransitionError`
-- `TransitionPatternNotFound`
-- `TransitionMethodNotFound`
 - `UnexpectedIndentationError`
 - `TransitionCorrection`: Raised to switch to another transition.
 - `StateCorrection`: Raised to switch to another state & transition.
@@ -1091,7 +1089,7 @@ class State:
     be a string or a compiled `re` pattern. Override in subclasses.
     """
 
-    initial_transitions: Sequence[Union[str, Tuple[str, str]]] = ()
+    initial_transitions: Sequence[Tuple[str, Optional[str]]] = ()
     """
     A list of transitions to initialize when a `State` is instantiated.
     Each entry is either a transition name string, or a (transition name, next
@@ -1233,27 +1231,15 @@ class State:
         - `next_state`: a string, the name of the next `State` object for this
           transition. A value of ``None`` (or absent) implies no state change
           (i.e., continue with the same state).
-
-        Exceptions: `TransitionPatternNotFound`, `TransitionMethodNotFound`.
         """
         if next_state is None:
             next_state = self.__class__.__name__
-        try:
-            pattern = self.patterns[name]
-            if not hasattr(pattern, "match"):
-                pattern = self.patterns[name] = re.compile(pattern)
-        except KeyError:
-            raise TransitionPatternNotFound(
-                "%s.patterns[%r]" % (self.__class__.__name__, name)
-            )
-        try:
-            method = getattr(self, name)
-        except AttributeError:
-            raise TransitionMethodNotFound("%s.%s" % (self.__class__.__name__, name))
+        pattern = self.patterns[name]
+        method = getattr(self, name)
         return (pattern, method, next_state)
 
     def make_transitions(
-        self, name_list: Sequence[Union[str, Tuple[str, str]]]
+        self, name_list: Sequence[Tuple[str, Optional[str]]]
     ) -> Tuple[List[str], Dict[str, TransitionTuple]]:
         """
         Return a list of transition names and a transition mapping.
@@ -1264,13 +1250,9 @@ class State:
         """
         names: List[str] = []
         transitions: Dict[str, TransitionTuple] = {}
-        for namestate in name_list:
-            if isinstance(namestate, str):
-                transitions[namestate] = self.make_transition(namestate)
-                names.append(namestate)
-            else:
-                transitions[namestate[0]] = self.make_transition(*namestate)
-                names.append(namestate[0])
+        for name, next_state in name_list:
+            transitions[name] = self.make_transition(name, next_state)
+            names.append(name)
         return names, transitions
 
     def bof(self, context: List[str]) -> Tuple[List[str], List[str]]:
@@ -1329,7 +1311,10 @@ class StateWS(State):
     """Patterns for default whitespace transitions.  May be overridden in
     subclasses."""
 
-    ws_initial_transitions = ("blank", "indent")
+    ws_initial_transitions: Sequence[Tuple[str, Optional[str]]] = (
+        ("blank", None),
+        ("indent", None),
+    )
     """Default initial whitespace transitions, added before those listed in
     `State.initial_transitions`.  May be overridden in subclasses."""
 
@@ -1372,14 +1357,6 @@ class UnknownTransitionError(StateMachineError):
 
 
 class DuplicateTransitionError(StateMachineError):
-    pass
-
-
-class TransitionPatternNotFound(StateMachineError):
-    pass
-
-
-class TransitionMethodNotFound(StateMachineError):
     pass
 
 
