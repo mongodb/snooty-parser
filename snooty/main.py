@@ -1,13 +1,13 @@
 """Snooty.
 
 Usage:
-  snooty build [--no-caching] <source-path> [<mongodb-url>] [--output=<path>] [options]
+  snooty build [--no-caching] <source-path> [--output=<path>] [options]
   snooty watch [--no-caching] <source-path>
   snooty [--no-caching] language-server
 
 Options:
   -h --help                 Show this screen.
-  --output=<path>             The path to which the output manifest should be written.
+  --output=<path>           The path to which the output manifest should be written.
   --commit=<commit_hash>    Commit hash of build.
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
   --no-caching              Disable HTTP response caching.
@@ -19,7 +19,6 @@ Environment variables:
   SNOOTY_PERF_SUMMARY       0, 1 where 0 is default
 
 """
-import getpass
 import json
 import logging
 import multiprocessing
@@ -27,13 +26,10 @@ import os
 import sys
 import zipfile
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Set, Union
 
 import bson
-import pymongo
-import tomli
 import watchdog.events
 import watchdog.observers
 from docopt import docopt
@@ -44,16 +40,11 @@ from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend
 from .types import BuildIdentifierSet, ProjectConfig
-from .util import PACKAGE_ROOT, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
+from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
-SNOOTY_ENV = os.getenv("SNOOTY_ENV", "development")
-
-COLL_DOCUMENTS = "documents"
-COLL_METADATA = "metadata"
-COLL_ASSETS = "assets"
 
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
 
@@ -188,102 +179,6 @@ class Backend(ProjectBackend):
         pass
 
 
-class MongoBackend(Backend):
-    def __init__(self, connection: pymongo.MongoClient) -> None:
-        super(MongoBackend, self).__init__()
-        self.client = connection
-        self.db = self._config_db()
-
-        self.pending_writes: Dict[
-            str, List[Union[pymongo.UpdateOne, pymongo.ReplaceOne]]
-        ] = defaultdict(list)
-
-    def _config_db(self) -> str:
-        with PACKAGE_ROOT.joinpath("config.toml").open("rb") as f:
-            config = tomli.load(f)
-            db_name = config["environments"][SNOOTY_ENV]["db"]
-            assert isinstance(db_name, str)
-            return db_name
-
-    def on_update_metadata(
-        self,
-        prefix: List[str],
-        build_identifiers: BuildIdentifierSet,
-        field: Dict[str, SerializableType],
-    ) -> None:
-        property_name_with_prefix = "/".join(prefix)
-
-        # Construct filter for retrieving build documents
-        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": property_name_with_prefix,
-            **self.construct_build_identifiers_filter(build_identifiers),
-        }
-
-        # Write to Atlas if field is not an empty dictionary
-        if field:
-            field["created_at"] = datetime.utcnow()
-            self.client[self.db][COLL_METADATA].update_one(
-                document_filter, {"$set": field}, upsert=True
-            )
-
-    def flush(self) -> None:
-        for collection_name, pending_writes in self.pending_writes.items():
-            self.client[self.db][collection_name].bulk_write(
-                pending_writes, ordered=False
-            )
-        self.pending_writes.clear()
-
-    def handle_document(
-        self,
-        build_identifiers: BuildIdentifierSet,
-        page_id: FileId,
-        fully_qualified_pageid: str,
-        document: Dict[str, Any],
-    ) -> None:
-        # Add the created_at field for a TTL index
-        document["created_at"] = datetime.utcnow()
-
-        document_filter: Dict[str, Union[str, Dict[str, Any]]] = {
-            "page_id": fully_qualified_pageid,
-            **self.construct_build_identifiers_filter(build_identifiers),
-        }
-
-        self.pending_writes[COLL_DOCUMENTS].append(
-            pymongo.ReplaceOne(document_filter, document, upsert=True)
-        )
-
-    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
-        self.pending_writes[COLL_ASSETS].append(
-            pymongo.UpdateOne(
-                {"_id": checksum},
-                {
-                    "$setOnInsert": {
-                        "_id": checksum,
-                        "data": data,
-                    }
-                },
-                upsert=True,
-            )
-        )
-
-    def close(self) -> None:
-        if self.client:
-            print("Closing connection...")
-            self.client.close()
-
-    @staticmethod
-    def construct_build_identifiers_filter(
-        build_identifiers: BuildIdentifierSet,
-    ) -> Dict[str, Union[str, Dict[str, Any]]]:
-        """Given a dictionary of build identifiers associated with build, construct
-        a filter to properly query MongoDB for associated documents.
-        """
-        return {
-            key: (value if value else {"$exists": False})
-            for (key, value) in build_identifiers.items()
-        }
-
-
 class ZipBackend(Backend):
     def __init__(self, zip: zipfile.ZipFile) -> None:
         super(ZipBackend, self).__init__()
@@ -382,17 +277,11 @@ def main() -> None:
         language_server.start()
         return
 
-    url = args["<mongodb-url>"]
     output_path = args["--output"]
 
-    connection: Optional[pymongo.MongoClient] = None
-
-    if url:
-        connection = pymongo.MongoClient(url, password=getpass.getpass())
-        backend: Backend = MongoBackend(connection)
-    elif output_path:
+    if output_path:
         zf = zipfile.ZipFile(os.path.expanduser(output_path), mode="w")
-        backend = ZipBackend(zf)
+        backend: Backend = ZipBackend(zf)
     else:
         backend = Backend()
 

@@ -16,7 +16,7 @@ pyyaml = "^5.3"
 python-jsonrpc-server = "^0.3.4"
 networkx = ">=2.4 <3"
 docopt = "^0.6.2"
-pymongo = {extras = ["srv", "tls"], version = "^4.3.2"}
+pymongo = "^4.3.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

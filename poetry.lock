@@ -963,4 +963,4 @@ watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12" # Because of PyInstaller :(
-content-hash = "cdf095a32d4e4215c7df1e1f1908aef7ad4dd090102f251def40dce539391e51"
+content-hash = "f038c0f2d77cb7c730cbff2df9212b1c8ebc224021957753419158bb44acadce"
