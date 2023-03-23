@@ -410,12 +410,6 @@ class StringList:
         """Break link between this list and parent list."""
         self.parent = None
 
-    def xitems(self) -> Iterator[Tuple[str, int, str]]:
-        """Return iterator yielding (source, offset, value) tuples."""
-        for (value, (source, offset)) in zip(self.data, self.items):
-            assert source is not None
-            yield (source, offset, value)
-
     def trim_left(self, length: int, start: int = 0, end: int = sys.maxsize) -> None:
         """
         Trim `length` characters off the beginning of each item, in-place,
@@ -759,10 +753,6 @@ class StateMachine:
         """Return 1 if the input is at or past end-of-file."""
         assert self.input_lines is not None
         return self.line_offset >= len(self.input_lines) - 1
-
-    def at_bof(self) -> bool:
-        """Return 1 if the input is at or before beginning-of-file."""
-        return self.line_offset <= 0
 
     def previous_line(self, n: int = 1) -> Optional[str]:
         """Load `self.line` with the `n`'th previous line and return it."""

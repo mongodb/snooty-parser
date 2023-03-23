@@ -39,7 +39,6 @@ class OptionParser:
         self.components = components
         self.warning_stream = sys.stderr
         self.debug = False
-        self.error_encoding = "utf-8"
 
         self.settings: Dict[str, Optional[str]] = {}
 
@@ -47,17 +46,10 @@ class OptionParser:
         self.report_level = 1
         self.trim_footnote_reference_space = False
         self.tab_width = 8
-        self.language_code = "en"
         self.id_prefix = ""
         self.auto_id_prefix = "id"
 
-        self.file_insertion_enabled = False
-        self.raw_enabled = False
-        self.line_length_limit = 10000
-
         self.character_level_inline_markup = False
-
-        self.rfc_base_url = "http://tools.ietf.org/html/"
 
     def get_default_values(self) -> "OptionParser":
         return self

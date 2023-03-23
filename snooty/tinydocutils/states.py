@@ -144,10 +144,6 @@ RegexDefinitionGroup = Tuple[
     str, str, str, Sequence[Union[str, "RegexDefinitionGroup"]]
 ]
 
-OptionSpec = Dict[str, Callable[[str], object]]
-
-DirectiveConstructor = Callable[..., directives.Directive]
-
 
 class HaveBlankFinish:
     def __init__(self) -> None:
@@ -159,14 +155,6 @@ class ApplicationError(Exception):
 
 
 class MarkupError(DataError):
-    pass
-
-
-class UnknownInterpretedRoleError(DataError):
-    pass
-
-
-class InterpretedRoleNotImplementedError(DataError):
     pass
 
 
@@ -609,9 +597,6 @@ class Inliner:
                 aliastype = "name"
                 alias = normalize_name(unescape(aliastext[:-1]))
                 target = nodes.target(match.group(1), refname=alias)
-                target.indirect_reference_name = whitespace_normalize_name(
-                    unescape(aliastext[:-1])
-                )
             else:
                 aliastype = "uri"
                 # remove unescaped whitespace
@@ -621,7 +606,6 @@ class Inliner:
                 if alias.endswith(r"\_"):
                     alias = alias[:-2] + "_"
                 target = nodes.target(match.group(1), refuri=alias)
-                target.referenced = 1
             if not aliastext:
                 raise ApplicationError("problem with embedded link: %r" % aliastext)
             if not text:
@@ -661,7 +645,6 @@ class Inliner:
                 else:
                     reference["refuri"] = alias
                     self.document.note_explicit_target(target, self.parent)
-                # target.note_referenced_by(name=refname)
                 node_list.append(target)
             else:
                 reference["refname"] = refname
@@ -814,17 +797,6 @@ class Inliner:
             return [reference]
         else:  # not a valid scheme
             raise MarkupMismatch
-
-    rfc_url = "rfc%d.html"
-
-    def rfc_reference(self, match: Match[str], lineno: int) -> List[nodes.reference]:
-        text = match.group(0)
-        if text.startswith("RFC"):
-            rfcnum = int(unescape(match.group("rfcnum")))
-            ref = self.document.settings.rfc_base_url + self.rfc_url % rfcnum
-        else:
-            raise MarkupMismatch
-        return [nodes.reference(unescape(text, True), text, refuri=ref)]
 
     def implicit_inline(self, text: str, lineno: int) -> List[nodes.ConcreteNode]:
         """
@@ -2036,7 +2008,6 @@ class Body(RSTState):
         target_type, data = self.parse_target(block)
         if target_type == "refname":
             target = nodes.target(block_text, "", refname=normalize_name(data))
-            target.indirect_reference_name = data
             self.add_target(target_name, "", target, lineno)
             self.document.note_indirect_target(target)
             return target

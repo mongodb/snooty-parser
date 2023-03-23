@@ -79,19 +79,8 @@ class Parser(parsers.Parser):
 
     """The reStructuredText parser."""
 
-    supported = ("restructuredtext", "rst", "rest", "restx", "rtxt", "rstx")
-    """Aliases this parser supports."""
-
-    config_section = "restructuredtext parser"
-    config_section_dependencies = ("parsers",)
-
-    def __init__(
-        self, rfc2822: bool = False, inliner: Optional[states.Inliner] = None
-    ) -> None:
-        if rfc2822:
-            self.initial_state = "RFC2822Body"
-        else:
-            self.initial_state = "Body"
+    def __init__(self, inliner: Optional[states.Inliner] = None) -> None:
+        self.initial_state = "Body"
         self.state_classes = states.state_classes
         self.inliner = inliner
 

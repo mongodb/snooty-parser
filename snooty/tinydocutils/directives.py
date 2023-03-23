@@ -39,32 +39,6 @@ def flag(argument: Optional[str]) -> None:
         return None
 
 
-def unchanged_required(argument: Optional[str]) -> str:
-    """
-    Return the argument text, unchanged.
-    (Directive option conversion function.)
-
-    Raise ``ValueError`` if no argument is found.
-    """
-    if argument is None:
-        raise ValueError("argument required but none supplied")
-    else:
-        return argument  # unchanged!
-
-
-def unchanged(argument: Optional[str]) -> str:
-    """
-    Return the argument text, unchanged.
-    (Directive option conversion function.)
-
-    No argument implies empty string ("").
-    """
-    if argument is None:
-        return ""
-    else:
-        return argument  # unchanged!
-
-
 def path(argument: Optional[str]) -> str:
     """
     Return the path argument unwrapped (with newlines removed).
@@ -131,10 +105,6 @@ def get_measure(argument: str, units: Iterable[str]) -> str:
     return match.group(1) + match.group(2)
 
 
-def length_or_unitless(argument: str) -> str:
-    return get_measure(argument, length_units + [""])
-
-
 def length_or_percentage_or_unitless(argument: str, default: str = "") -> str:
     """
     Return normalized string of a length or percentage unit.
@@ -160,25 +130,6 @@ def length_or_percentage_or_unitless(argument: str, default: str = "") -> str:
         except ValueError:
             # raise ValueError with list of valid units:
             return get_measure(argument, length_units + ["%"])
-
-
-def class_option(argument: str) -> Sequence[str]:
-    """
-    Convert the argument into a list of ID-compatible strings and return it.
-    (Directive option conversion function.)
-
-    Raise ``ValueError`` if no argument is found.
-    """
-    if argument is None:
-        raise ValueError("argument required but none supplied")
-    names = argument.split()
-    class_names = []
-    for name in names:
-        class_name = nodes.make_id(name)
-        if not class_name:
-            raise ValueError('cannot make "%s" into a class name' % name)
-        class_names.append(class_name)
-    return class_names
 
 
 unicode_pattern = re.compile(
@@ -209,44 +160,6 @@ def unicode_code(code: str) -> str:
                 return code
     except OverflowError as detail:
         raise ValueError("code too large (%s)" % detail)
-
-
-def single_char_or_unicode(argument: str) -> str:
-    """
-    A single character is returned as-is.  Unicode characters codes are
-    converted as in `unicode_code`.  (Directive option conversion function.)
-    """
-    char = unicode_code(argument)
-    if len(char) > 1:
-        raise ValueError(
-            "%r invalid; must be a single character or " "a Unicode code" % char
-        )
-    return char
-
-
-def single_char_or_whitespace_or_unicode(argument: str) -> str:
-    """
-    As with `single_char_or_unicode`, but "tab" and "space" are also supported.
-    (Directive option conversion function.)
-    """
-    if argument == "tab":
-        char = "\t"
-    elif argument == "space":
-        char = " "
-    else:
-        char = single_char_or_unicode(argument)
-    return char
-
-
-def positive_int(argument: str) -> int:
-    """
-    Converts the argument into an integer.  Raises ValueError for negative,
-    zero, or non-integer values.  (Directive option conversion function.)
-    """
-    value = int(argument)
-    if value < 1:
-        raise ValueError("negative or zero value; must be positive")
-    return value
 
 
 def choice(argument: str, values: Sequence[str]) -> str:

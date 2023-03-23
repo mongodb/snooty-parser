@@ -98,14 +98,6 @@ class Node:
         """
         raise NotImplementedError
 
-    def copy(self) -> "Node":
-        """Return a copy of self."""
-        raise NotImplementedError
-
-    def deepcopy(self) -> "Node":
-        """Return a deep copy of self (also copying children)."""
-        raise NotImplementedError
-
     def astext(self) -> str:
         """Return a string representation of this Node."""
         raise NotImplementedError
@@ -263,14 +255,11 @@ class Node:
 
 
 # definition moved here from `utils` to avoid circular import dependency
-def unescape(
-    text: str, restore_backslashes: bool = False, respect_whitespace: bool = False
-) -> str:
+def unescape(text: str, restore_backslashes: bool = False) -> str:
     """
     Return a string with nulls removed or restored to backslashes.
     Backslash-escaped spaces are also removed.
     """
-    # `respect_whitespace` is ignored (since introduction 2016-12-16)
     if restore_backslashes:
         return text.replace("\x00", "\\")
     else:
@@ -308,21 +297,6 @@ class Text(Node):
 
     def astext(self) -> str:
         return unescape(self.value)
-
-    # Note about __unicode__: The implementation of __unicode__ here,
-    # and the one raising NotImplemented in the superclass Node had
-    # to be removed when changing Text to a subclass of unicode instead
-    # of UserString, since there is no way to delegate the __unicode__
-    # call to the superclass unicode:
-    # unicode itself does not have __unicode__ method to delegate to
-    # and calling str(self) or unicode.__new__ directly creates
-    # an infinite loop
-
-    def copy(self) -> "Text":
-        return self.__class__(str(self), rawsource=self.rawsource)
-
-    def deepcopy(self) -> "Text":
-        return self.copy()
 
     def pformat(self, indent: str = "    ", level: int = 0) -> str:
         indent = indent * level
@@ -369,9 +343,6 @@ class Element(Node):
     list_attributes = basic_attributes + local_attributes
     """List attributes, automatically initialized to empty lists for
     all nodes."""
-
-    known_attributes = list_attributes + ("source", "rawsource")
-    """List attributes that are known to the Element base class."""
 
     child_text_separator = "\n\n"
     """Separator for child nodes, used by `astext()` method."""
@@ -584,9 +555,6 @@ class Element(Node):
         else:
             return True
 
-    def clear(self) -> None:
-        self.children = []
-
     def replace(self, old: "ConcreteNode", new: Node) -> None:
         """Replace one child `Node` with another child or children."""
         index = self.index(old)
@@ -601,53 +569,6 @@ class Element(Node):
             ["%s%s\n" % (indent * level, self.starttag())]
             + [child.pformat(indent, level + 1) for child in self.children]
         )
-
-    def copy(self) -> "Element":
-        obj = self.__class__(rawsource=self.rawsource, **self.attributes)
-        obj._document = self._document
-        obj.source = self.source
-        obj.line = self.line
-        return obj
-
-    def deepcopy(self) -> "Element":
-        copy = self.copy()
-        copy.extend([child.deepcopy() for child in self.children])
-        return copy
-
-    def note_referenced_by(
-        self, name: Optional[str] = None, id: Optional[str] = None
-    ) -> None:
-        """Note that this Element has been referenced by its name
-        `name` or id `id`."""
-        self.referenced = 1
-        # Element.expect_referenced_by_* dictionaries map names or ids
-        # to nodes whose ``referenced`` attribute is set to true as
-        # soon as this node is referenced by the given name or id.
-        # Needed for target propagation.
-        by_name = getattr(self, "expect_referenced_by_name", {}).get(name)
-        by_id = getattr(self, "expect_referenced_by_id", {}).get(id)
-        if by_name:
-            assert name is not None
-            by_name.referenced = 1
-        if by_id:
-            assert id is not None
-            by_id.referenced = 1
-
-    @classmethod
-    def is_not_list_attribute(cls, attr: str) -> bool:
-        """
-        Returns True if and only if the given attribute is NOT one of the
-        basic list attributes defined for all Elements.
-        """
-        return attr not in cls.list_attributes
-
-    @classmethod
-    def is_not_known_attribute(cls, attr: str) -> bool:
-        """
-        Returns True if and only if the given attribute is NOT recognized by
-        this class.
-        """
-        return attr not in cls.known_attributes
 
 
 ConcreteNode = Union[Text, Element]
@@ -700,22 +621,6 @@ class FixedTextElement(TextElement):
         self.attributes["xml:space"] = "preserve"
 
 
-# ========
-#  Mixins
-# ========
-
-
-class Resolvable:
-
-    resolved = 0
-
-
-class BackLinkable:
-    def add_backref(self, refid: str) -> None:
-        assert isinstance(self, Element)
-        self["backrefs"].append(refid)
-
-
 # ====================
 #  Element Categories
 # ====================
@@ -733,14 +638,6 @@ class PreBibliographic:
     """Category of Node which may occur before Bibliographic Nodes."""
 
 
-class Bibliographic:
-    pass
-
-
-class Decorative(PreBibliographic):
-    pass
-
-
 class Structural:
     pass
 
@@ -753,45 +650,8 @@ class General(Body):
     pass
 
 
-class Sequential(Body):
-    """List-like elements."""
-
-
-class Admonition(Body):
-    pass
-
-
-class Special(Body):
-    """Special internal body elements."""
-
-
-class Invisible(PreBibliographic):
-    """Internal elements that don't appear in output."""
-
-
-class Part:
-    pass
-
-
 class Inline:
     pass
-
-
-class Referential(Resolvable):
-    pass
-
-
-class Targetable(Resolvable):
-
-    referenced = 0
-
-    indirect_reference_name: Optional[str] = None
-    """Holds the whitespace_normalized_name (contains mixed case) of a target.
-    Required for MoinMoin/reST compatibility."""
-
-
-class Labeled:
-    """Contains a `label` as its first element."""
 
 
 # ==============
@@ -828,15 +688,8 @@ class document(Root, Structural, Element):
         self.indirect_targets: List[target] = []
         """List of indirect target nodes."""
 
-        self.substitution_names: Dict[str, str] = {}
-        """Mapping of case-normalized substitution names to case-sensitive
-        names."""
-
         self.refnames: Dict[str, List[Node]] = {}
         """Mapping of names to lists of referencing nodes."""
-
-        self.refids: Dict[str, List[Node]] = {}
-        """Mapping of ids to lists of referencing nodes."""
 
         self.nameids: Dict[str, Optional[str]] = {}
         """Mapping of names to unique id's."""
@@ -871,12 +724,6 @@ class document(Root, Structural, Element):
 
         self.citations: List[citation] = []
         """List of citation nodes."""
-
-        self.autofootnote_start = 1
-        """Initial auto-numbered footnote number."""
-
-        self.symbol_footnote_start = 0
-        """Initial symbol footnote symbol index."""
 
         self.id_start = 1
         """Initial ID number."""
@@ -1086,9 +933,6 @@ class document(Root, Structural, Element):
         else:
             self.current_line = offset + 1
 
-    def copy(self) -> "Element":
-        return self.__class__(self.settings, self.reporter, **self.attributes)
-
 
 # ================
 #  Title Elements
@@ -1099,63 +943,6 @@ class title(Titular, PreBibliographic, TextElement):
     pass
 
 
-class subtitle(Titular, PreBibliographic, TextElement):
-    pass
-
-
-class rubric(Titular, TextElement):
-    pass
-
-
-# ========================
-#  Bibliographic Elements
-# ========================
-
-
-class docinfo(Bibliographic, Element):
-    pass
-
-
-class author(Bibliographic, TextElement):
-    pass
-
-
-class authors(Bibliographic, Element):
-    pass
-
-
-class organization(Bibliographic, TextElement):
-    pass
-
-
-class address(Bibliographic, FixedTextElement):
-    pass
-
-
-class contact(Bibliographic, TextElement):
-    pass
-
-
-class version(Bibliographic, TextElement):
-    pass
-
-
-class revision(Bibliographic, TextElement):
-    pass
-
-
-class status(Bibliographic, TextElement):
-    pass
-
-
-class date(Bibliographic, TextElement):
-    pass
-
-
-class copyright(Bibliographic, TextElement):
-    pass
-
-
 # =====================
 #  Structural Elements
 # =====================
@@ -1163,37 +950,6 @@ class copyright(Bibliographic, TextElement):
 
 class section(Structural, Element):
     pass
-
-
-class topic(Structural, Element):
-
-    """
-    Topics are terminal, "leaf" mini-sections, like block quotes with titles,
-    or textual figures.  A topic is just like a section, except that it has no
-    subsections, and it doesn't have to conform to section placement rules.
-
-    Topics are allowed wherever body elements (list, table, etc.) are allowed,
-    but only at the top level of a section or document.  Topics cannot nest
-    inside topics, sidebars, or body elements; you can't have a topic inside a
-    table, list, block quote, etc.
-    """
-
-
-class sidebar(Structural, Element):
-
-    """
-    Sidebars are like miniature, parallel documents that occur inside other
-    documents, providing related or reference material.  A sidebar is
-    typically offset by a border and "floats" to the side of the page; the
-    document's main text may flow around it.  Sidebars can also be likened to
-    super-footnotes; their content is outside of the flow of the document's
-    main text.
-
-    Sidebars are allowed wherever body elements (list, table, etc.) are
-    allowed, but only at the top level of a section or document.  Sidebars
-    cannot nest inside sidebars, topics, or body elements; you can't have a
-    sidebar inside a table, list, block quote, etc.
-    """
 
 
 class transition(Structural, Element):
@@ -1209,91 +965,83 @@ class paragraph(General, TextElement):
     pass
 
 
-class compound(General, Element):
+class bullet_list(Element):
     pass
 
 
-class container(General, Element):
+class enumerated_list(Element):
     pass
 
 
-class bullet_list(Sequential, Element):
+class list_item(Element):
     pass
 
 
-class enumerated_list(Sequential, Element):
+class definition_list(Element):
     pass
 
 
-class list_item(Part, Element):
+class definition_list_item(Element):
     pass
 
 
-class definition_list(Sequential, Element):
+class term(TextElement):
     pass
 
 
-class definition_list_item(Part, Element):
+class classifier(TextElement):
     pass
 
 
-class term(Part, TextElement):
+class definition(Element):
     pass
 
 
-class classifier(Part, TextElement):
+class field_list(Element):
     pass
 
 
-class definition(Part, Element):
+class field(Element):
     pass
 
 
-class field_list(Sequential, Element):
+class field_name(TextElement):
     pass
 
 
-class field(Part, Element):
+class field_body(Element):
     pass
 
 
-class field_name(Part, TextElement):
-    pass
-
-
-class field_body(Part, Element):
-    pass
-
-
-class option(Part, Element):
+class option(Element):
 
     child_text_separator = ""
 
 
-class option_argument(Part, TextElement):
+class option_argument(TextElement):
     def astext(self) -> str:
         return cast(str, self.get("delimiter", " ")) + TextElement.astext(self)
 
 
-class option_group(Part, Element):
+class option_group(Element):
 
     child_text_separator = ", "
 
 
-class option_list(Sequential, Element):
+class option_list(Element):
     pass
 
 
-class option_list_item(Part, Element):
+class option_list_item(Element):
 
     child_text_separator = "  "
 
 
-class option_string(Part, TextElement):
+class option_string(TextElement):
     pass
 
 
-class description(Part, Element):
+class description(Element):
     pass
 
 
@@ -1305,10 +1053,6 @@ class doctest_block(General, FixedTextElement):
     pass
 
 
-class math_block(General, FixedTextElement):
-    pass
-
-
 class line_block(General, Element):
     def lines(self) -> Iterable["line"]:
         for child in self.children:
@@ -1316,7 +1060,7 @@ class line_block(General, Element):
             yield child
 
 
-class line(Part, TextElement):
+class line(TextElement):
 
     indent: int = 0
 
@@ -1325,79 +1069,43 @@ class block_quote(General, Element):
     pass
 
 
-class attention(Admonition, Element):
+class error(Element):
     pass
 
 
-class caution(Admonition, Element):
+class note(Element):
     pass
 
 
-class danger(Admonition, Element):
+class hint(Element):
     pass
 
 
-class error(Admonition, Element):
+class warning(Element):
     pass
 
 
-class important(Admonition, Element):
+class comment(FixedTextElement):
     pass
 
 
-class note(Admonition, Element):
+class substitution_definition(TextElement):
     pass
 
 
-class tip(Admonition, Element):
+class target(Inline, TextElement):
     pass
 
 
-class hint(Admonition, Element):
+class footnote(General, Element):
     pass
 
 
-class warning(Admonition, Element):
+class citation(General, Element):
     pass
 
 
-class admonition(Admonition, Element):
-    pass
-
-
-class comment(Special, Invisible, FixedTextElement):
-    pass
-
-
-class substitution_definition(Special, Invisible, TextElement):
-    pass
-
-
-class target(Special, Invisible, Inline, TextElement, Targetable):
-    pass
-
-
-class footnote(General, BackLinkable, Element, Labeled, Targetable):
-    pass
-
-
-class citation(General, BackLinkable, Element, Labeled, Targetable):
-    pass
-
-
-class label(Part, TextElement):
-    pass
-
-
-class figure(General, Element):
-    pass
-
-
-class caption(Part, TextElement):
-    pass
-
-
-class legend(Part, Element):
+class label(TextElement):
     pass
 
 
@@ -1405,31 +1113,15 @@ class table(General, Element):
     pass
 
 
-class tgroup(Part, Element):
+class caption(TextElement):
     pass
 
 
-class colspec(Part, Element):
+class entry(Element):
     pass
 
 
-class thead(Part, Element):
-    pass
-
-
-class tbody(Part, Element):
-    pass
-
-
-class row(Part, Element):
-    pass
-
-
-class entry(Part, Element):
-    pass
-
-
-class system_message(Special, BackLinkable, PreBibliographic, Element):
+class system_message(PreBibliographic, Element):
 
     """
     System message element.
@@ -1478,51 +1170,19 @@ class literal(Inline, TextElement):
     pass
 
 
-class reference(General, Inline, Referential, TextElement):
+class reference(Inline, General, TextElement):
     pass
 
 
-class footnote_reference(Inline, Referential, TextElement):
+class footnote_reference(Inline, TextElement):
     pass
 
 
-class citation_reference(Inline, Referential, TextElement):
+class citation_reference(Inline, TextElement):
     pass
 
 
 class substitution_reference(Inline, TextElement):
-    pass
-
-
-class title_reference(Inline, TextElement):
-    pass
-
-
-class abbreviation(Inline, TextElement):
-    pass
-
-
-class acronym(Inline, TextElement):
-    pass
-
-
-class superscript(Inline, TextElement):
-    pass
-
-
-class subscript(Inline, TextElement):
-    pass
-
-
-class math(Inline, TextElement):
-    pass
-
-
-class inline(Inline, TextElement):
-    pass
-
-
-class generated(Inline, TextElement):
     pass
 
 
@@ -1645,17 +1305,6 @@ class SkipDeparture(TreePruningException):
     pass
 
 
-class NodeFound(TreePruningException):
-
-    """
-    Raise to indicate that the target of a search has been found.  This
-    exception must be caught by the client; it is not caught by the traversal
-    code.
-    """
-
-    pass
-
-
 class StopTraversal(TreePruningException):
 
     """
@@ -1705,8 +1354,6 @@ def make_id(string: str) -> str:
     .. _CSS1 spec: http://www.w3.org/TR/REC-CSS1
     """
     id = string.lower()
-    if not isinstance(id, str):
-        id = id.decode()
     id = id.translate(_non_id_translate_digraphs)
     id = id.translate(_non_id_translate)
     # get rid of non-ascii characters.
@@ -1767,9 +1414,6 @@ _non_id_translate_digraphs = {
 def dupname(node: Element, name: str) -> None:
     node["dupnames"].append(name)
     node["names"].remove(name)
-    # Assume that this method is referenced, even though it isn't; we
-    # don't want to throw unnecessary system_messages.
-    node.referenced = 1
 
 
 def whitespace_normalize_name(name: str) -> str:
@@ -1929,10 +1573,6 @@ class Reporter:
 
         Raise an exception or generate a warning if appropriate.
         """
-        # `message` can be a `string`, `unicode`, or `Exception` instance.
-        if isinstance(message, Exception):
-            message = str(message)
-
         attributes = kwargs.copy()
         if "base_node" in kwargs:
             base_node = kwargs["base_node"]

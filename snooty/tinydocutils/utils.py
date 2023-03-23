@@ -12,16 +12,12 @@ __docformat__ = "reStructuredText"
 import itertools
 import sys
 import unicodedata
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 from . import nodes
 
 
 class DataError(Exception):
-    pass
-
-
-class NameValueError(DataError):
     pass
 
 
@@ -149,50 +145,6 @@ def assemble_option_dict(
     return options
 
 
-def extract_name_value(line: str) -> List[Tuple[str, object]]:
-    """
-    Return a list of (name, value) from a line of the form "name=value ...".
-
-    :Exception:
-        `NameValueError` for invalid input (missing name, missing data, bad
-        quotes, etc.).
-    """
-    attlist: List[Tuple[str, object]] = []
-    while line:
-        equals = line.find("=")
-        if equals == -1:
-            raise NameValueError('missing "="')
-        attname = line[:equals].strip()
-        if equals == 0 or not attname:
-            raise NameValueError('missing attribute name before "="')
-        line = line[equals + 1 :].lstrip()
-        if not line:
-            raise NameValueError('missing value after "%s="' % attname)
-        if line[0] in "'\"":
-            endquote = line.find(line[0], 1)
-            if endquote == -1:
-                raise NameValueError(
-                    'attribute "%s" missing end quote (%s)' % (attname, line[0])
-                )
-            if len(line) > endquote + 1 and line[endquote + 1].strip():
-                raise NameValueError(
-                    'attribute "%s" end quote (%s) not followed by '
-                    "whitespace" % (attname, line[0])
-                )
-            data = line[1:endquote]
-            line = line[endquote + 1 :].lstrip()
-        else:
-            space = line.find(" ")
-            if space == -1:
-                data = line
-                line = ""
-            else:
-                data = line[:space]
-                line = line[space + 1 :].lstrip()
-        attlist.append((attname.lower(), data))
-    return attlist
-
-
 def escape2null(text: str) -> str:
     """Return a string with escape-backslashes converted to nulls."""
     parts = []
@@ -239,22 +191,6 @@ def find_combining_chars(text: str) -> Sequence[int]:
 
     """
     return [i for i, c in enumerate(text) if unicodedata.combining(c)]
-
-
-def column_indices(text: str) -> Sequence[int]:
-    """Indices of Unicode string `text` when skipping combining characters.
-
-    >>> from docutils.utils import column_indices
-    >>> column_indices(u'A t̆ab̆lĕ')
-    [0, 1, 2, 4, 5, 7, 8]
-
-    """
-    # TODO: account for asian wide chars here instead of using dummy
-    # replacements in the tableparser?
-    string_indices: List[Optional[int]] = list(range(len(text)))
-    for index in find_combining_chars(text):
-        string_indices[index] = None
-    return [i for i in string_indices if i is not None]
 
 
 east_asian_widths = {
