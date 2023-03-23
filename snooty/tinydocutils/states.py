@@ -121,7 +121,7 @@ from typing import (
 from . import directives, frontend, nodes, roles, roman, statemachine, urischemes, utils
 from .nodes import fully_normalize_name as normalize_name
 from .nodes import whitespace_normalize_name
-from .statemachine import StateMachine, StateWS
+from .statemachine import State, StateMachine
 from .utils import (
     DataError,
     PunctuationChars,
@@ -926,7 +926,7 @@ class NestedStateMachine(StateMachine):
         return state
 
 
-class RSTState(StateWS):
+class RSTState(State):
 
     """
     reStructuredText State superclass.
@@ -934,18 +934,26 @@ class RSTState(StateWS):
     Contains methods used by all State subclasses.
     """
 
+    BLANK_PAT = re.compile(" *$")
+    INDENT_PAT = re.compile(" +")
+
     nested_sm = NestedStateMachine
     nested_sm_cache: List[NestedStateMachine] = []
 
     def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
         self.state_config = statemachine.StateConfiguration(
             state_classes,
             Body,
         )
-        StateWS.__init__(self, state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+        }
 
     def runtime_init(self: Any) -> None:
-        StateWS.runtime_init(self)
+        State.runtime_init(self)
         memo = self.state_machine.memo
         assert isinstance(memo, StateMachineMemo)
         self.memo = memo
@@ -1198,6 +1206,23 @@ class RSTState(StateWS):
             line=lineno,
         )
 
+    def blank(
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
+    ) -> statemachine.TransitionResult:
+        """Handle blank lines. Does nothing. Override in subclasses."""
+        return self.nop(match, context, next_state)
+
+    def indent(
+        self,
+        match: Match[str],
+        context: List[str],
+        next_state: Type[statemachine.State],
+    ) -> statemachine.TransitionResult:
+        raise NotImplementedError()
+
 
 def build_regexp(definition: RegexDefinitionGroup) -> Pattern[str]:
     """
@@ -1313,32 +1338,38 @@ class Body(RSTState):
             re.escape(enum.formatinfo[format].suffix),
         )
 
-    patterns = {
-        "bullet": re.compile("[-+*\u2022\u2023\u2043]( +|$)"),
-        "enumerator": re.compile(r"(%(parens)s|%(rparen)s|%(period)s)( +|$)" % pats),
-        "field_marker": re.compile(
-            r":(?![: ])([^:\\]|\\.|:(?!([ `]|$)))*(?<! ):( +|$)"
-        ),
-        "option_marker": re.compile(r"%(option)s(, %(option)s)*(  +| ?$)" % pats),
-        "doctest": re.compile(r">>>( +|$)"),
-        "line_block": re.compile(r"\|( +|$)"),
-        "explicit_markup": re.compile(r"\.\.( +|$)"),
-        "anonymous": re.compile(r"__( +|$)"),
-        "line": re.compile(r"(%(nonalphanum7bit)s)\1* *$" % pats),
-        "text": re.compile(r""),
-    }
-    initial_transitions: Sequence[Tuple[str, Optional[Type[statemachine.State]]]] = (
-        ("bullet", None),
-        ("enumerator", None),
-        ("field_marker", None),
-        ("option_marker", None),
-        ("doctest", None),
-        ("line_block", None),
-        ("explicit_markup", None),
-        ("anonymous", None),
-        ("line", None),
-        ("text", None),
-    )
+    BULLET_PAT = re.compile("[-+*\u2022\u2023\u2043]( +|$)")
+    ENUMERATOR_PAT = re.compile(r"(%(parens)s|%(rparen)s|%(period)s)( +|$)" % pats)
+    FIELD_MARKER_PAT = re.compile(r":(?![: ])([^:\\]|\\.|:(?!([ `]|$)))*(?<! ):( +|$)")
+    OPTION_MARKER_PAT = re.compile(r"%(option)s(, %(option)s)*(  +| ?$)" % pats)
+    DOCTEST_PAT = re.compile(r">>>( +|$)")
+    LINE_BLOCK_PAT = re.compile(r"\|( +|$)")
+    EXPLICIT_MARKUP_PAT = re.compile(r"\.\.( +|$)")
+    ANONYMOUS_PAT = re.compile(r"__( +|$)")
+    LINE_PAT = re.compile(r"(%(nonalphanum7bit)s)\1* *$" % pats)
+    TEXT_PAT = re.compile(r"")
+
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "bullet": (self.BULLET_PAT, self.bullet, own_type),
+            "enumerator": (self.ENUMERATOR_PAT, self.enumerator, own_type),
+            "field_marker": (self.FIELD_MARKER_PAT, self.field_marker, own_type),
+            "option_marker": (self.OPTION_MARKER_PAT, self.option_marker, own_type),
+            "doctest": (self.DOCTEST_PAT, self.doctest, own_type),
+            "line_block": (self.LINE_BLOCK_PAT, self.line_block, own_type),
+            "explicit_markup": (
+                self.EXPLICIT_MARKUP_PAT,
+                self.explicit_markup,
+                own_type,
+            ),
+            "anonymous": (self.ANONYMOUS_PAT, self.anonymous, own_type),
+            "line": (self.LINE_PAT, self.line, own_type),
+            "text": (self.TEXT_PAT, self.text, own_type),
+        }
 
     def indent(
         self,
@@ -2335,7 +2366,7 @@ class Body(RSTState):
     ) -> Tuple[Dict[str, object], statemachine.StringList]:
         options = option_presets.copy()
         for i, line in enumerate(arg_block):
-            if re.match(Body.patterns["field_marker"], line):
+            if re.match(Body.FIELD_MARKER_PAT, line):
                 opt_block: statemachine.StringList = arg_block[i:]
                 arg_block = arg_block[:i]
                 break
@@ -2951,13 +2982,24 @@ class SubstitutionDef(Body, HaveBlankFinish):
     Parser for the contents of a substitution_definition element.
     """
 
-    patterns = {
-        "embedded_directive": re.compile(
-            r"(%s)::( +|$)" % Inliner.simplename, re.UNICODE
-        ),
-        "text": re.compile(r""),
-    }
-    initial_transitions = (("embedded_directive", None), ("text", None))
+    EMBEDDED_DIRECTIVE_PAT = re.compile(
+        r"(%s)::( +|$)" % Inliner.simplename, re.UNICODE
+    )
+    TEXT_PAT = re.compile(r"")
+
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "embedded_directive": (
+                self.EMBEDDED_DIRECTIVE_PAT,
+                self.embedded_directive,
+                own_type,
+            ),
+            "text": (self.TEXT_PAT, self.text, own_type),
+        }
 
     def embedded_directive(
         self,
@@ -2992,8 +3034,18 @@ class Text(RSTState):
     Could be a paragraph, a definition list item, or a title.
     """
 
-    patterns = {"underline": Body.patterns["line"], "text": re.compile(r"")}
-    initial_transitions = [("underline", Body), ("text", Body)]
+    UNDERLINE_PAT = Body.LINE_PAT
+    TEXT_PAT = re.compile(r"")
+
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "underline": (self.UNDERLINE_PAT, self.underline, Body),
+            "text": (self.TEXT_PAT, self.text, Body),
+        }
 
     def blank(
         self,
@@ -3212,6 +3264,16 @@ class SpecializedText(Text):
     subclasses to re-enable.
     """
 
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "underline": (self.UNDERLINE_PAT, self.underline, Body),
+            "text": (self.TEXT_PAT, self.text, Body),
+        }
+
     def eof(self, context: List[str]) -> List[str]:
         """Incomplete construct."""
         return []
@@ -3262,6 +3324,16 @@ class Definition(SpecializedText, HaveBlankFinish):
 
     """Second line of potential definition_list_item."""
 
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "underline": (self.UNDERLINE_PAT, self.underline, Body),
+            "text": (self.TEXT_PAT, self.text, Body),
+        }
+
     def eof(self, context: List[str]) -> List[str]:
         """Not a definition."""
         self.state_machine.previous_line(2)  # so parent SM can reassess
@@ -3288,6 +3360,16 @@ class Line(SpecializedText):
 
     eofcheck = True  # @@@ ???
     """Set to 0 while parsing sections, so that we don't catch the EOF."""
+
+    def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
+        super().__init__(state_machine, debug)
+        own_type = self.__class__
+        self.transitions = {
+            "blank": (self.BLANK_PAT, self.blank, own_type),
+            "indent": (self.INDENT_PAT, self.indent, own_type),
+            "underline": (self.UNDERLINE_PAT, self.underline, Body),
+            "text": (self.TEXT_PAT, self.text, Body),
+        }
 
     def eof(self, context: List[str]) -> List[str]:
         """Transition marker at end of section or document."""
@@ -3444,7 +3526,7 @@ class Line(SpecializedText):
         raise statemachine.StateCorrection(Body, "text")
 
 
-state_classes: Sequence[Type[StateWS]] = (
+state_classes: Sequence[Type[State]] = (
     Body,
     BulletList,
     DefinitionList,

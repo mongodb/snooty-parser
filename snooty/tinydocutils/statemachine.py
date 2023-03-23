@@ -106,6 +106,7 @@ import unicodedata
 from typing import (
     Callable,
     Dict,
+    Iterable,
     Iterator,
     List,
     Match,
@@ -838,7 +839,7 @@ class StateMachine:
         self,
         context: List[str],
         state: "State",
-        transitions: Optional[Sequence[str]] = None,
+        transitions: Optional[Iterable[str]] = None,
     ) -> Tuple[List[str], "Type[State]", List[str]]:
         """
         Examine one line of input for a transition match & execute its method.
@@ -859,14 +860,14 @@ class StateMachine:
         When there is no match, ``state.no_match()`` is called and its return
         value is returned.
         """
-        if transitions is None:
-            transitions = state.transition_order
         if self.debug:
             print(
                 '\nStateMachine.check_line: state="%s", transitions=%r.'
                 % (state.__class__.__name__, transitions),
                 file=self._stderr,
             )
+        if transitions is None:
+            transitions = state.transitions
         for name in transitions:
             pattern, method, next_state = state.transitions[name]
             assert self.line is not None
@@ -1078,19 +1079,6 @@ class State:
     take care of constructing the list of transitions.
     """
 
-    patterns: Dict[str, Pattern[str]] = {}
-    """
-    {Name: pattern} mapping, used by `make_transition()`. Each pattern may
-    be a string or a compiled `re` pattern. Override in subclasses.
-    """
-
-    initial_transitions: "Sequence[Tuple[str, Optional[Type[State]]]]" = ()
-    """
-    A list of transitions to initialize when a `State` is instantiated.
-    Each entry is either a transition name string, or a (transition name, next
-    state name) pair. See `make_transitions()`. Override in subclasses.
-    """
-
     nested_sm: Optional[Type[StateMachine]] = None
     """
     The `StateMachine` class for handling nested processing.
@@ -1124,19 +1112,7 @@ class State:
         - `debug`: a boolean; produce verbose output if true.
         """
 
-        self.transition_order: List[str] = []
-        """A list of transition names in search order."""
-
         self.transitions: Dict[str, TransitionTuple] = {}
-        """
-        A mapping of transition names to 3-tuples containing
-        (compiled_pattern, transition_method, next_state_name). Initialized as
-        an instance attribute dynamically (instead of as a class attribute)
-        because it may make forward references to patterns and methods in this
-        or other classes.
-        """
-
-        self.add_initial_transitions()
 
         self.state_machine: StateMachine = state_machine
         """A reference to the controlling `StateMachine` object."""
@@ -1155,98 +1131,6 @@ class State:
         `self.state_machine.run()`.
         """
         pass
-
-    def add_initial_transitions(self) -> None:
-        """Make and add transitions listed in `self.initial_transitions`."""
-        if self.initial_transitions:
-            names, transitions = self.make_transitions(self.initial_transitions)
-            self.add_transitions(names, transitions)
-
-    def add_transitions(
-        self, names: Sequence[str], transitions: Dict[str, TransitionTuple]
-    ) -> None:
-        """
-        Add a list of transitions to the start of the transition list.
-
-        Parameters:
-
-        - `names`: a list of transition names.
-        - `transitions`: a mapping of names to transition tuples.
-
-        Exceptions: `DuplicateTransitionError`, `UnknownTransitionError`.
-        """
-        for name in names:
-            if name in self.transitions:
-                raise DuplicateTransitionError(name)
-            if name not in transitions:
-                raise UnknownTransitionError(name)
-        self.transition_order[:0] = names
-        self.transitions.update(transitions)
-
-    def add_transition(self, name: str, transition: TransitionTuple) -> None:
-        """
-        Add a transition to the start of the transition list.
-
-        Parameter `transition`: a ready-made transition 3-tuple.
-
-        Exception: `DuplicateTransitionError`.
-        """
-        if name in self.transitions:
-            raise DuplicateTransitionError(name)
-        self.transition_order[:0] = [name]
-        self.transitions[name] = transition
-
-    def remove_transition(self, name: str) -> None:
-        """
-        Remove a transition by `name`.
-
-        Exception: `UnknownTransitionError`.
-        """
-        try:
-            del self.transitions[name]
-            self.transition_order.remove(name)
-        except:
-            raise UnknownTransitionError(name)
-
-    def make_transition(
-        self, name: str, next_state: "Optional[Type[State]]" = None
-    ) -> TransitionTuple:
-        """
-        Make & return a transition tuple based on `name`.
-
-        This is a convenience function to simplify transition creation.
-
-        Parameters:
-
-        - `name`: a string, the name of the transition pattern & method. This
-          `State` object must have a method called '`name`', and a dictionary
-          `self.patterns` containing a key '`name`'.
-        - `next_state`: a string, the name of the next `State` object for this
-          transition. A value of ``None`` (or absent) implies no state change
-          (i.e., continue with the same state).
-        """
-        if next_state is None:
-            next_state = self.__class__
-        pattern = self.patterns[name]
-        method = getattr(self, name)
-        return (pattern, method, next_state)
-
-    def make_transitions(
-        self, name_list: "Sequence[Tuple[str, Optional[Type[State]]]]"
-    ) -> Tuple[List[str], Dict[str, TransitionTuple]]:
-        """
-        Return a list of transition names and a transition mapping.
-
-        Parameter `name_list`: a list, where each entry is either a transition
-        name string, or a 1- or 2-tuple (transition name, optional next state
-        name).
-        """
-        names: List[str] = []
-        transitions: Dict[str, TransitionTuple] = {}
-        for name, next_state in name_list:
-            transitions[name] = self.make_transition(name, next_state)
-            names.append(name)
-        return names, transitions
 
     def bof(self, context: List[str]) -> Tuple[List[str], List[str]]:
         """
@@ -1278,59 +1162,6 @@ class State:
         simple state changes (actionless transitions).
         """
         return context, next_state, []
-
-
-class StateWS(State):
-
-    """
-    State superclass specialized for whitespace (blank lines & indents).
-
-    Use this class with `StateMachineWS`.  The transitions 'blank' (for blank
-    lines) and 'indent' (for indented text blocks) are added automatically,
-    before any other transitions.  The transition method `blank()` handles
-    blank lines and `indent()` handles nested indented blocks.  Indented
-    blocks trigger a new state machine to be created by `indent()` and run.
-    The class of the state machine to be created is in `indent_sm`, and the
-    constructor keyword arguments are in the dictionary `indent_sm_kwargs`.
-
-    The methods `known_indent()` and `firstknown_indent()` are provided for
-    indented blocks where the indent (all lines' and first line's only,
-    respectively) is known to the transition method, along with the attributes
-    `known_indent_sm` and `known_indent_sm_kwargs`.  Neither transition method
-    is triggered automatically.
-    """
-
-    ws_patterns = {"blank": re.compile(" *$"), "indent": re.compile(" +")}
-    """Patterns for default whitespace transitions.  May be overridden in
-    subclasses."""
-
-    ws_initial_transitions: Sequence[Tuple[str, Optional[Type[State]]]] = (
-        ("blank", None),
-        ("indent", None),
-    )
-    """Default initial whitespace transitions, added before those listed in
-    `State.initial_transitions`.  May be overridden in subclasses."""
-
-    def add_initial_transitions(self) -> None:
-        """
-        Add whitespace-specific transitions before those defined in subclass.
-
-        Extends `State.add_initial_transitions()`.
-        """
-        State.add_initial_transitions(self)
-        patterns: Optional[Dict[str, Pattern[str]]] = self.patterns
-        if patterns is None:
-            patterns = {}
-            self.patterns = patterns
-        patterns.update(self.ws_patterns)
-        names, transitions = self.make_transitions(self.ws_initial_transitions)
-        self.add_transitions(names, transitions)
-
-    def blank(
-        self, match: Match[str], context: List[str], next_state: Type[State]
-    ) -> TransitionResult:
-        """Handle blank lines. Does nothing. Override in subclasses."""
-        return self.nop(match, context, next_state)
 
 
 class StateMachineError(Exception):
