@@ -142,6 +142,7 @@ def test_card() -> None:
 .. card-group::
    :columns: 3
    :layout: carousel
+   :type: drivers
 
    .. card::
       :headline: Develop Applications

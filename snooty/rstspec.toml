@@ -10,6 +10,7 @@ banner_variant = ["info", "warning", "danger"]
 card_layout = ["default", "carousel"]
 card_style = ["default", "compact", "extra-compact"]
 card_type = ["small", "large"]
+card_group_type = ["default", "drivers"]
 charts_theme = ["light", "dark"]
 guide_categories = ["Getting Started"]
 mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
@@ -59,6 +60,7 @@ ${4:   :align:
 
 # Intended for use on the ecosystem landing page only
 [directive."mongodb:drivers-index-tiles"]
+deprecated = true
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
@@ -630,6 +632,7 @@ help = """Container to hold a group of cards"""
 options.columns = "nonnegative_integer"
 options.layout = "card_layout"
 options.style = "card_style"
+options.type = "card_group_type"
 example = """.. card-group::
    ${1::columns: 2}
    :layout: ${3:|default,carousel| (Optional)}
