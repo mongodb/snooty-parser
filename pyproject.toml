@@ -8,7 +8,6 @@ readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12" # Because of PyInstaller :(
-docutils = ">=0.16 <0.18"
 watchdog = "^1.0"
 requests = "^2.24"
 tomli = "^2.0"

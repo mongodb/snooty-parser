@@ -32,14 +32,12 @@ from typing import (
     cast,
 )
 
-import docutils.nodes
-import docutils.utils
 import networkx
 import requests.exceptions
 import watchdog.events
 from yaml import safe_load
 
-from . import gizaparser, n, rstparser, specparser, util
+from . import gizaparser, n, rstparser, specparser, tinydocutils, util
 from .cache import Cache
 from .diagnostics import (
     AmbiguousLiteralInclude,
@@ -90,13 +88,13 @@ NO_AMBIGUOUS_LITERAL_DIAGNOSTICS = (
 logger = logging.getLogger(__name__)
 
 
-def eligible_for_paragraph_to_block_substitution(node: docutils.nodes.Node) -> bool:
+def eligible_for_paragraph_to_block_substitution(node: tinydocutils.nodes.Node) -> bool:
     """Test if a docutils node should emit a BlockSubstitutionReference *instead* of a normal
     Paragraph."""
     return (
-        isinstance(node, docutils.nodes.paragraph)
+        isinstance(node, tinydocutils.nodes.paragraph)
         and len(node.children) == 1
-        and isinstance(node.children[0], docutils.nodes.substitution_reference)
+        and isinstance(node.children[0], tinydocutils.nodes.substitution_reference)
     )
 
 
@@ -156,7 +154,7 @@ class JSONVisitor:
         self,
         project_config: ProjectConfig,
         docpath: PurePath,
-        document: docutils.nodes.document,
+        document: tinydocutils.nodes.document,
     ) -> None:
         self.project_config = project_config
         self.docpath = docpath
@@ -166,35 +164,37 @@ class JSONVisitor:
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
 
+        # print(document)
+
         # It's possible for pages to synthetically create other pages that don't
         # exist in the filesystem
         self.synthetic_pages: Dict[FileId, str] = {}
 
-    def dispatch_visit(self, node: docutils.nodes.Node) -> None:
-        line = util.get_line(node)
+    def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
+        line = node.get_line()
 
-        if isinstance(node, docutils.nodes.definition):
+        if isinstance(node, tinydocutils.nodes.definition):
             return
-        if isinstance(node, docutils.nodes.field_list):
+        if isinstance(node, tinydocutils.nodes.field_list):
             top = self.state[-1]
             if isinstance(top, n.Root):
                 for field in node.children:
                     key = field.children[0].astext()
                     value = field.children[1].astext()
                     top.options[key] = value
-                raise docutils.nodes.SkipNode()
+                raise tinydocutils.nodes.SkipNode()
 
             self.state.append(n.FieldList((line,), []))
             return
-        elif isinstance(node, docutils.nodes.document):
+        elif isinstance(node, tinydocutils.nodes.document):
             self.state.append(
                 n.Root((0,), [], self.project_config.get_fileid(self.docpath), {})
             )
             return
-        elif isinstance(node, docutils.nodes.field):
+        elif isinstance(node, tinydocutils.nodes.field):
             field_name = node.children[0].astext()
             field_list = node.parent
-            assert isinstance(field_list, docutils.nodes.field_list)
+            assert isinstance(field_list, tinydocutils.nodes.field_list)
             rstobject = field_list.parent
             if isinstance(rstobject, rstparser.directive):
                 try:
@@ -216,7 +216,7 @@ class JSONVisitor:
                     self.diagnostics.append(
                         InvalidField(
                             f"""Field {field_name} not supported by directive {rstobject["name"]}""",
-                            util.get_line(node.children[0]),
+                            node.children[0].get_line(),
                         )
                     )
             else:
@@ -224,15 +224,15 @@ class JSONVisitor:
                 self.diagnostics.append(
                     InvalidField(
                         f"""Field {field_name} must be used in a valid directive""",
-                        util.get_line(node.children[0]),
+                        node.children[0].get_line(),
                     )
                 )
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.field_name):
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.field_body):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.field_name):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.field_body):
             # Omit the field_body wrapper, but parse its children
-            raise docutils.nodes.SkipDeparture()
+            raise tinydocutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.code):
             doc = n.Code(
                 (line,),
@@ -248,37 +248,35 @@ class JSONVisitor:
             top_of_state = self.state[-1]
             assert isinstance(top_of_state, n.Parent)
             top_of_state.children.append(doc)
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.block_quote):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.block_quote):
             # We are uninterested in docutils blockquotes: they're too easy to accidentally
             # invoke. Treat them as an error.
-            self.diagnostics.append(
-                UnexpectedIndentation(util.get_line(node.children[0]))
-            )
-            raise docutils.nodes.SkipDeparture()
+            self.diagnostics.append(UnexpectedIndentation(node.children[0].get_line()))
+            raise tinydocutils.nodes.SkipDeparture()
         elif isinstance(node, rstparser.target_directive):
             self.state.append(n.Target((line,), [], node["domain"], node["name"], None))
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
             if directive:
                 self.state.append(directive)
-        elif isinstance(node, docutils.nodes.Text):
+        elif isinstance(node, tinydocutils.nodes.Text):
             # docutils will inject \0000 characters into text nodes when there are escape characters
-            text = str(node).replace("\x00", "")
+            text = node.value.replace("\x00", "")
             self.state.append(n.Text((line,), text))
             return
-        elif isinstance(node, docutils.nodes.literal_block):
+        elif isinstance(node, tinydocutils.nodes.literal_block):
             self.diagnostics.append(
-                RemovedLiteralBlockSyntax(util.get_line(node.children[0]))
+                RemovedLiteralBlockSyntax(node.children[0].get_line())
             )
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.literal):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.literal):
             self.state.append(n.Literal((line,), []))
             return
-        elif isinstance(node, docutils.nodes.emphasis):
+        elif isinstance(node, tinydocutils.nodes.emphasis):
             self.state.append(n.Emphasis((line,), []))
             return
-        elif isinstance(node, docutils.nodes.strong):
+        elif isinstance(node, tinydocutils.nodes.strong):
             self.state.append(n.Strong((line,), []))
             return
         elif isinstance(node, rstparser.ref_role):
@@ -308,13 +306,13 @@ class JSONVisitor:
             role = n.Role((line,), [], node["domain"], role_name, target, flag)
             self.state.append(role)
             return
-        elif isinstance(node, docutils.nodes.target):
+        elif isinstance(node, tinydocutils.nodes.target):
             assert (
                 len(node["ids"]) <= 1
             ), f"Too many ids in this node: {self.docpath} {node}"
             if not node["ids"]:
-                self.diagnostics.append(InvalidURL(util.get_line(node)))
-                raise docutils.nodes.SkipNode()
+                self.diagnostics.append(InvalidURL(node.get_line()))
+                raise tinydocutils.nodes.SkipNode()
 
             node_id = node["names"][0]
 
@@ -326,13 +324,13 @@ class JSONVisitor:
             self.state.append(n.Target((line,), children, "std", "label", None))
         elif isinstance(node, rstparser.target_identifier):
             self.state.append(n.TargetIdentifier((line,), [], node["ids"]))
-        elif isinstance(node, docutils.nodes.definition_list):
+        elif isinstance(node, tinydocutils.nodes.definition_list):
             self.state.append(n.DefinitionList((line,), []))
-        elif isinstance(node, docutils.nodes.definition_list_item):
+        elif isinstance(node, tinydocutils.nodes.definition_list_item):
             self.state.append(n.DefinitionListItem((line,), [], []))
-        elif isinstance(node, docutils.nodes.bullet_list):
+        elif isinstance(node, tinydocutils.nodes.bullet_list):
             self.state.append(n.ListNode((line,), [], n.ListEnumType.unordered, None))
-        elif isinstance(node, docutils.nodes.enumerated_list):
+        elif isinstance(node, tinydocutils.nodes.enumerated_list):
             self.state.append(
                 n.ListNode(
                     (line,),
@@ -341,17 +339,17 @@ class JSONVisitor:
                     node["start"] if "start" in node else None,
                 )
             )
-        elif isinstance(node, docutils.nodes.list_item):
+        elif isinstance(node, tinydocutils.nodes.list_item):
             assert isinstance(
                 self.state[-1], n.ListNode
             ), "Attempting to place a list item in a non-list context"
             self.state.append(n.ListNodeItem((line,), []))
-        elif isinstance(node, docutils.nodes.title):
+        elif isinstance(node, tinydocutils.nodes.title):
             # Attach an anchor ID to this section
             assert node.parent
             title_id = util.make_html5_id(node.astext().strip()).lower()
             self.state.append(n.Heading((line,), [], title_id))
-        elif isinstance(node, docutils.nodes.reference):
+        elif isinstance(node, tinydocutils.nodes.reference):
             self.state.append(
                 n.Reference(
                     (line,),
@@ -360,13 +358,13 @@ class JSONVisitor:
                     node["refname"] if "refname" in node else None,
                 )
             )
-        elif isinstance(node, docutils.nodes.substitution_definition):
+        elif isinstance(node, tinydocutils.nodes.substitution_definition):
             try:
                 name = node["names"][0]
                 self.state.append(n.SubstitutionDefinition((line,), [], name))
             except IndexError:
                 pass
-        elif isinstance(node, docutils.nodes.substitution_reference):
+        elif isinstance(node, tinydocutils.nodes.substitution_reference):
             if node.parent and eligible_for_paragraph_to_block_substitution(
                 node.parent
             ):
@@ -377,60 +375,60 @@ class JSONVisitor:
             else:
                 self.state.append(n.SubstitutionReference((line,), [], node["refname"]))
 
-            raise docutils.nodes.SkipChildren()
-        elif isinstance(node, docutils.nodes.paragraph):
+            raise tinydocutils.nodes.SkipChildren()
+        elif isinstance(node, tinydocutils.nodes.paragraph):
             if eligible_for_paragraph_to_block_substitution(node):
                 # We don't want a paragraph node here: instead, we'll (next) create a BlockSubstitutionReference node
-                raise docutils.nodes.SkipDeparture()
+                raise tinydocutils.nodes.SkipDeparture()
             self.state.append(n.Paragraph((line,), []))
-        elif isinstance(node, docutils.nodes.footnote):
+        elif isinstance(node, tinydocutils.nodes.footnote):
             # Autonumbered footnotes do not have a refname
             name = node["names"] if "names" in node else None
             if isinstance(name, list):
                 name = name[0] if name else None
             self.state.append(n.Footnote((line,), [], node["ids"][0], name))
-        elif isinstance(node, docutils.nodes.footnote_reference):
+        elif isinstance(node, tinydocutils.nodes.footnote_reference):
             # Autonumbered footnotes do not have a refname
             refname = node["refname"] if "refname" in node else None
             self.state.append(n.FootnoteReference((line,), [], node["ids"][0], refname))
-        elif isinstance(node, docutils.nodes.section):
+        elif isinstance(node, tinydocutils.nodes.section):
             self.state.append(n.Section((line,), []))
         elif isinstance(node, rstparser.directive_argument):
             self.state.append(n.DirectiveArgument((line,), []))
-        elif isinstance(node, docutils.nodes.term):
+        elif isinstance(node, tinydocutils.nodes.term):
             self.state.append(_DefinitionListTerm((line,), []))
-        elif isinstance(node, docutils.nodes.line_block):
+        elif isinstance(node, tinydocutils.nodes.line_block):
             self.state.append(n.LineBlock((line,), []))
-        elif isinstance(node, docutils.nodes.line):
+        elif isinstance(node, tinydocutils.nodes.line):
             self.state.append(n.Line((line,), []))
-        elif isinstance(node, docutils.nodes.transition):
+        elif isinstance(node, tinydocutils.nodes.transition):
             self.state.append(n.Transition((line,)))
-        elif isinstance(node, docutils.nodes.table):
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, (docutils.nodes.problematic, docutils.nodes.label)):
-            raise docutils.nodes.SkipNode()
-        elif isinstance(node, docutils.nodes.comment):
+        elif isinstance(node, tinydocutils.nodes.table):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.label):
+            raise tinydocutils.nodes.SkipNode()
+        elif isinstance(node, tinydocutils.nodes.comment):
             self.state.append(n.Comment((line,), []))
-        elif isinstance(node, docutils.nodes.system_message):
+        elif isinstance(node, tinydocutils.nodes.system_message):
             level = int(node["level"])
             if level >= 2:
                 level = Diagnostic.Level.from_docutils(level)
                 msg = node[0].astext()
-                diagnostic = DocUtilsParseError(msg, util.get_line(node))
+                diagnostic = DocUtilsParseError(msg, node.get_line())
                 diagnostic.severity = level
                 self.diagnostics.append(diagnostic)
-            raise docutils.nodes.SkipNode()
+            raise tinydocutils.nodes.SkipNode()
         elif isinstance(node, rstparser.snooty_diagnostic):
             self.diagnostics.append(node["diagnostic"])
-            raise docutils.nodes.SkipNode()
+            raise tinydocutils.nodes.SkipNode()
         else:
-            lineno = util.get_line(node)
+            lineno = node.get_line()
             raise NotImplementedError(
                 f"Unknown node type: {node.__class__.__name__} at {self.docpath}:{lineno}"
             )
 
-    def dispatch_departure(self, node: docutils.nodes.Node) -> None:
-        if len(self.state) == 1 or isinstance(node, docutils.nodes.definition):
+    def dispatch_departure(self, node: tinydocutils.nodes.Node) -> None:
+        if len(self.state) == 1 or isinstance(node, tinydocutils.nodes.definition):
             return
 
         popped = self.state.pop()
@@ -492,7 +490,7 @@ class JSONVisitor:
                 return
 
             if len(popped.children) != 1:
-                self.diagnostics.append(MalformedGlossary(util.get_line(node)))
+                self.diagnostics.append(MalformedGlossary(node.get_line()))
                 return
 
             if popped.options.get("sorted", False):
@@ -512,7 +510,7 @@ class JSONVisitor:
                 item.term.append(target)
 
         elif isinstance(popped, n.Directive) and popped.name == "step":
-            popped.children = [n.Section((util.get_line(node),), popped.children)]
+            popped.children = [n.Section((node.get_line(),), popped.children)]
 
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
@@ -579,7 +577,7 @@ class JSONVisitor:
         )
 
     def handle_directive(
-        self, node: docutils.nodes.Node, line: int
+        self, node: rstparser.directive, line: int
     ) -> Optional[n.Node]:
         name = node["name"]
         domain = node["domain"]
@@ -875,7 +873,7 @@ class JSONVisitor:
 
         elif name == "include":
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                self.diagnostics.append(ExpectedPathArg(name, node.get_line()))
                 return doc
 
             fileid, path = util.reroot_path(
@@ -884,14 +882,14 @@ class JSONVisitor:
 
         elif name == "sharedinclude":
             if argument_text is None:
-                self.diagnostics.append(ExpectedPathArg(name, util.get_line(node)))
+                self.diagnostics.append(ExpectedPathArg(name, node.get_line()))
                 return doc
 
             if self.project_config.sharedinclude_root is None:
                 self.diagnostics.append(
                     ConfigurationProblem(
                         "To use sharedinclude, you must provide a 'sharedinclude_root' option in snooty.toml",
-                        util.get_line(node),
+                        node.get_line(),
                     )
                 )
                 return doc
@@ -903,7 +901,7 @@ class JSONVisitor:
                 response = util.HTTPCache.singleton().get(url)
             except requests.exceptions.RequestException as err:
                 self.diagnostics.append(
-                    CannotOpenFile(Path(argument_text), str(err), util.get_line(node))
+                    CannotOpenFile(Path(argument_text), str(err), node.get_line())
                 )
                 return doc
 
@@ -940,7 +938,7 @@ class JSONVisitor:
 
             if not image_argument:
                 # Warn writers that an image is suggested, but do not require
-                self.diagnostics.append(ImageSuggested(name, util.get_line(node)))
+                self.diagnostics.append(ImageSuggested(name, node.get_line()))
             else:
                 self.validate_and_add_asset(doc, image_argument, line)
 
@@ -981,7 +979,7 @@ class JSONVisitor:
         elif MULTIPLE_FORWARD_SLASHES.search(url_argument) is not None:
             self.diagnostics.append(MalformedRelativePath(url_argument, line))
 
-    def validate_doc_role(self, node: docutils.nodes.Node) -> str:
+    def validate_doc_role(self, node: rstparser.role) -> str:
         """Validate target for doc role, and perform some normalization."""
         target: str = node["target"]
         if PurePosixPath(target) == PurePosixPath("/"):
@@ -995,7 +993,7 @@ class JSONVisitor:
         if not resolved_target_path.is_file():
             self.diagnostics.append(
                 CannotOpenFile(
-                    resolved_target_path, os.strerror(errno.ENOENT), util.get_line(node)
+                    resolved_target_path, os.strerror(errno.ENOENT), node.get_line()
                 )
             )
 
@@ -1003,18 +1001,18 @@ class JSONVisitor:
 
     @staticmethod
     def validate_list_table_item(
-        node: docutils.nodes.Node, expected_num_columns: int
+        node: tinydocutils.nodes.Node, expected_num_columns: int
     ) -> Sequence[Diagnostic]:
         """Validate list-table structure"""
         if (
-            isinstance(node, docutils.nodes.bullet_list)
+            isinstance(node, tinydocutils.nodes.bullet_list)
             and len(node.children) != expected_num_columns
         ):
             msg = (
                 f'Expected "{expected_num_columns}" columns, saw "{len(node.children)}"'
             )
             return [
-                InvalidTableStructure(msg, util.get_line(node) + len(node.children) - 1)
+                InvalidTableStructure(msg, node.get_line() + len(node.children) - 1)
             ]
 
         return []
@@ -1032,7 +1030,7 @@ class JSONVisitor:
         node.children = new_children
         return
 
-    def validate_icon_role(self, node: docutils.nodes.Node) -> None:
+    def validate_icon_role(self, node: rstparser.role) -> None:
         """
         Validate target for icon role
         Checks for included icon file in root path
@@ -1054,7 +1052,7 @@ class JSONVisitor:
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
         if target_icon_classname not in ICON_SET:
             self.diagnostics.append(
-                IconMustBeDefined(target_icon_classname, util.get_line(node))
+                IconMustBeDefined(target_icon_classname, node.get_line())
             )
         return
 
@@ -1173,17 +1171,17 @@ def _validate_io_code_block_children(node: n.Directive) -> List[Diagnostic]:
 class InlineJSONVisitor(JSONVisitor):
     """A JSONVisitor subclass which does not emit block nodes."""
 
-    def dispatch_visit(self, node: docutils.nodes.Node) -> None:
-        if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, (docutils.nodes.Inline, docutils.nodes.system_message)
+    def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
+        if isinstance(node, tinydocutils.nodes.Body) and not isinstance(
+            node, (tinydocutils.nodes.Inline, tinydocutils.nodes.system_message)
         ):
             return
 
         JSONVisitor.dispatch_visit(self, node)
 
-    def dispatch_departure(self, node: docutils.nodes.Node) -> None:
-        if isinstance(node, docutils.nodes.Body) and not isinstance(
-            node, (docutils.nodes.Inline, docutils.nodes.system_message)
+    def dispatch_departure(self, node: tinydocutils.nodes.Node) -> None:
+        if isinstance(node, tinydocutils.nodes.Body) and not isinstance(
+            node, (tinydocutils.nodes.Inline, tinydocutils.nodes.system_message)
         ):
             return
 

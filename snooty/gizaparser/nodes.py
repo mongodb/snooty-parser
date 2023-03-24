@@ -23,10 +23,9 @@ from typing import (
     cast,
 )
 
-import docutils.nodes
 import networkx
 
-from .. import n
+from .. import n, tinydocutils
 from ..diagnostics import (
     CannotOpenFile,
     Diagnostic,
@@ -402,7 +401,9 @@ class HeadingMixin(Node):
         # to be unique, but it's not possible to do so in a repeatable fashion
         # without seeing the whole page, so doing that has to fall to the
         # renderer.
-        heading_id = docutils.nodes.make_id("".join(node.get_text() for node in result))
+        heading_id = tinydocutils.nodes.make_id(
+            "".join(node.get_text() for node in result)
+        )
 
         heading = n.Heading((self.line,), [], heading_id)
         heading.children = result

@@ -22,13 +22,10 @@ from typing import (
     cast,
 )
 
-import docutils.nodes
-import docutils.parsers.rst
-import docutils.parsers.rst.directives
 import tomli
 from typing_extensions import Protocol
 
-from . import util
+from . import tinydocutils, util
 from .flutter import check_type, checked
 
 #: Types of formatting that can be applied to a role.
@@ -114,11 +111,11 @@ RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
 #: docutils option validation function for each of the above primitive types
 VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.integer: int,
-    PrimitiveType.nonnegative_integer: docutils.parsers.rst.directives.nonnegative_int,
+    PrimitiveType.nonnegative_integer: tinydocutils.directives.nonnegative_int,
     PrimitiveType.path: util.option_string,
-    PrimitiveType.uri: docutils.parsers.rst.directives.uri,
+    PrimitiveType.uri: tinydocutils.directives.uri,
     PrimitiveType.string: util.option_string,
-    PrimitiveType.length: docutils.parsers.rst.directives.length_or_percentage_or_unitless,
+    PrimitiveType.length: tinydocutils.directives.length_or_percentage_or_unitless,
     PrimitiveType.boolean: util.option_bool,
     PrimitiveType.flag: util.option_flag,
     PrimitiveType.linenos: util.option_string,
@@ -340,7 +337,7 @@ class Spec:
         elif isinstance(option_spec, PrimitiveType):
             return VALIDATORS[option_spec]
         elif isinstance(option_spec, str) and option_spec in self.enum:
-            return lambda argument: docutils.parsers.rst.directives.choice(
+            return lambda argument: tinydocutils.directives.choice(
                 argument, self.enum[cast(str, option_spec)]
             )
 
