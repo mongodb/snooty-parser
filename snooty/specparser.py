@@ -57,10 +57,6 @@ PrimitiveType = Enum(
 )
 PrimitiveRoleType = Enum("PrimitiveRoleType", ("text", "explicit_title"))
 
-#: Spec definition of a role: this can be either a PrimitiveRoleType, or
-#: an object requiring additional configuration.
-RoleType = Union["PrimitiveRoleType", "LinkRoleType", "RefRoleType"]
-
 #: docutils option validation function for each of the above primitive types
 VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.integer: int,
@@ -153,6 +149,11 @@ class RefRoleType:
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
+
+
+#: Spec definition of a role: this can be either a PrimitiveRoleType, or
+#: an object requiring additional configuration.
+RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
 
 
 @checked
