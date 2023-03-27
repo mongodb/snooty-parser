@@ -701,9 +701,9 @@ example = """.. mongo-web-shell::
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "string", "uri"]
-options.uses-rst = "flag"
 options.uses-realm = "flag"
 options.preview = "flag"
+options.api-version = "string"
 
 [directive."mongodb:operation"]
 content_type = "block"
