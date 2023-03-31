@@ -1594,6 +1594,9 @@ def test_roles() -> None:
         """
 .. binary:: mongod
 
+.. readconcern:: snapshot
+   :hidden:
+
 * :manual:`/introduction/`
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
@@ -1610,10 +1613,14 @@ def test_roles() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root fileid="test.rst">
+        r"""<root fileid="test.rst">
             <target domain="mongodb" name="binary">
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
                 <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
+            </target>
+            <target domain="mongodb" name="readconcern" hidden="True">
+                <directive_argument><literal><text>snapshot</text></literal></directive_argument>
+                <target_identifier ids="['readconcern.snapshot']"><text>snapshot</text></target_identifier>
             </target>
             <list enumtype="unordered">
             <listItem>

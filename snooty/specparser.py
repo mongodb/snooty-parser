@@ -37,6 +37,51 @@ TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
 #: Types of formatting to which date directives must conform.
 DateFormattingType = Enum("DateType", ("iso_8601"))
 
+_T = TypeVar("_T", bound="_Inheritable")
+_V = TypeVar("_V")
+SPEC_VERSION = 0
+StringOrStringlist = Union[List[str], str, None]
+PrimitiveType = Enum(
+    "PrimitiveType",
+    (
+        "integer",
+        "nonnegative_integer",
+        "path",
+        "uri",
+        "string",
+        "length",
+        "boolean",
+        "flag",
+        "linenos",
+    ),
+)
+PrimitiveRoleType = Enum("PrimitiveRoleType", ("text", "explicit_title"))
+
+#: docutils option validation function for each of the above primitive types
+VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
+    PrimitiveType.integer: int,
+    PrimitiveType.nonnegative_integer: tinydocutils.directives.nonnegative_int,
+    PrimitiveType.path: util.option_string,
+    PrimitiveType.uri: tinydocutils.directives.uri,
+    PrimitiveType.string: util.option_string,
+    PrimitiveType.length: tinydocutils.directives.length_or_percentage_or_unitless,
+    PrimitiveType.boolean: util.option_bool,
+    PrimitiveType.flag: util.option_flag,
+    PrimitiveType.linenos: util.option_string,
+}
+
+#: Option types can be a primitive type (PrimitiveType), an enum
+#: defined in the spec, or a union of those.
+ArgumentType = Union[List[Union[PrimitiveType, str]], PrimitiveType, str, None]
+
+
+class MissingDict(Dict[str, _V]):
+    pass
+
+
+class MissingList(List[ArgumentType]):
+    pass
+
 
 class _Inheritable(Protocol):
     inherit: Optional[str]
@@ -53,6 +98,28 @@ class DateType:
     """Configuration for a directive that specifies a date"""
 
     date: DateFormattingType = field(default=DateFormattingType.iso_8601)
+
+
+@checked
+@dataclass
+class Meta:
+    """Meta information about the file as a whole."""
+
+    version: int
+
+
+@checked
+@dataclass
+class DirectiveOption:
+    type: ArgumentType
+    required: bool = field(default=False)
+
+
+@checked
+@dataclass
+class TabDefinition:
+    id: str
+    title: str
 
 
 @checked
@@ -84,76 +151,9 @@ class RefRoleType:
     )
 
 
-_T = TypeVar("_T", bound=_Inheritable)
-_V = TypeVar("_V")
-SPEC_VERSION = 0
-StringOrStringlist = Union[List[str], str, None]
-PrimitiveType = Enum(
-    "PrimitiveType",
-    (
-        "integer",
-        "nonnegative_integer",
-        "path",
-        "uri",
-        "string",
-        "length",
-        "boolean",
-        "flag",
-        "linenos",
-    ),
-)
-PrimitiveRoleType = Enum("PrimitiveRoleType", ("text", "explicit_title"))
-
 #: Spec definition of a role: this can be either a PrimitiveRoleType, or
 #: an object requiring additional configuration.
 RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
-
-#: docutils option validation function for each of the above primitive types
-VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
-    PrimitiveType.integer: int,
-    PrimitiveType.nonnegative_integer: tinydocutils.directives.nonnegative_int,
-    PrimitiveType.path: util.option_string,
-    PrimitiveType.uri: tinydocutils.directives.uri,
-    PrimitiveType.string: util.option_string,
-    PrimitiveType.length: tinydocutils.directives.length_or_percentage_or_unitless,
-    PrimitiveType.boolean: util.option_bool,
-    PrimitiveType.flag: util.option_flag,
-    PrimitiveType.linenos: util.option_string,
-}
-
-#: Option types can be a primitive type (PrimitiveType), an enum
-#: defined in the spec, or a union of those.
-ArgumentType = Union[List[Union[PrimitiveType, str]], PrimitiveType, str, None]
-
-
-class MissingDict(Dict[str, _V]):
-    pass
-
-
-class MissingList(List[ArgumentType]):
-    pass
-
-
-@checked
-@dataclass
-class Meta:
-    """Meta information about the file as a whole."""
-
-    version: int
-
-
-@checked
-@dataclass
-class DirectiveOption:
-    type: ArgumentType
-    required: bool = field(default=False)
-
-
-@checked
-@dataclass
-class TabDefinition:
-    id: str
-    title: str
 
 
 @checked
@@ -226,6 +226,9 @@ class RstObject:
     deprecated: bool = field(default=False)
     name: str = field(default="")
     fields: List[ArgumentType] = field(default_factory=MissingList)
+    options: Dict[str, Union[DirectiveOption, ArgumentType]] = field(
+        default_factory=MissingDict
+    )
     format: Set[FormattingType] = field(
         default_factory=lambda: {FormattingType.monospace}
     )
@@ -240,7 +243,7 @@ class RstObject:
             required_context=None,
             domain=self.domain,
             deprecated=self.deprecated,
-            options={},
+            options=self.options,
             fields=[],
             name=self.name,
             rstobject=self,
