@@ -507,7 +507,6 @@ class Inliner:
             "Inline %s start-string without end-string." % nodeclass.__name__,
             line=lineno,
         )
-        text = unescape(string[matchstart:matchend], True)
         return string[:matchstart], [], string[matchend:], [msg], ""
 
     def emphasis(
@@ -734,10 +733,12 @@ class Inliner:
         remaining = string[match.end("whole") :]
         if match.group("citationlabel"):
             citation_node = nodes.citation_reference("[%s]_" % label, refname=refname)
+            return_node: nodes.Element = citation_node
             citation_node.append(nodes.Text(label))
             self.document.note_citation_ref(citation_node)
         else:
             refnode = nodes.footnote_reference("[%s]_" % label)
+            return_node = refnode
             if refname[0] == "#":
                 refname = refname[1:]
                 refnode["auto"] = 1
@@ -753,7 +754,7 @@ class Inliner:
                 self.document.note_footnote_ref(refnode)
             if self.document.settings.trim_footnote_reference_space:
                 before = before.rstrip()
-        return (before, [refnode], remaining, [])
+        return (before, [return_node], remaining, [])
 
     def reference(
         self, match: Match[str], lineno: int, anonymous: bool = False
