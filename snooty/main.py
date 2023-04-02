@@ -129,6 +129,9 @@ class Backend(ProjectBackend):
             asset for asset in page.static_assets if asset.can_upload()
         ]
 
+        # Sort for repeatable builds
+        uploadable_assets.sort(key=lambda asset: asset.key)
+
         document = {
             "page_id": fully_qualified_pageid,
             "filename": page_id.as_posix(),
@@ -205,12 +208,12 @@ class ZipBackend(Backend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
-        self.zip.writestr(
-            f"documents/{page_id.without_known_suffix}.bson", bson.encode(document)
-        )
+        info = zipfile.ZipInfo(f"documents/{page_id.without_known_suffix}.bson")
+        self.zip.writestr(info, bson.encode(document))
 
     def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
-        self.zip.writestr(f"assets/{checksum}", data)
+        info = zipfile.ZipInfo(f"assets/{checksum}")
+        self.zip.writestr(info, data)
 
     def on_update_metadata(
         self,
@@ -222,9 +225,16 @@ class ZipBackend(Backend):
             self.metadata.update(field)
 
     def flush(self) -> None:
-        for key, diagnostics in self.diagnostics.items():
+        # Pages can have their diagnostics inserted in any order. Sort for repeatability.
+        sorted_keys = sorted(self.diagnostics.keys())
+
+        for key in sorted_keys:
+            diagnostics = self.diagnostics[key]
+            # ZipInfo defaults to a timestamp of 1980. We do not want to encode the actual mtime
+            # to ensure repeatable builds.
+            info = zipfile.ZipInfo(f"diagnostics/{key.as_posix()}.bson")
             self.zip.writestr(
-                f"diagnostics/{key.as_posix()}.bson",
+                info,
                 bson.encode(
                     {
                         "diagnostics": [
@@ -235,7 +245,8 @@ class ZipBackend(Backend):
             )
 
     def close(self) -> None:
-        self.zip.writestr("site.bson", bson.encode(self.metadata))
+        zipinfo = zipfile.ZipInfo("site.bson")
+        self.zip.writestr(zipinfo, bson.encode(self.metadata))
         self.zip.close()
 
 
