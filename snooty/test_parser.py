@@ -2,6 +2,7 @@ from pathlib import Path
 
 from . import rstparser
 from .diagnostics import (
+    AmbiguousLiteralInclude,
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
@@ -141,6 +142,7 @@ def test_card() -> None:
 .. card-group::
    :columns: 3
    :layout: carousel
+   :type: drivers
 
    .. card::
       :headline: Develop Applications
@@ -1215,6 +1217,32 @@ for (i = 0; i &lt; 10; i++) {
         (CannotOpenFile, True)
     ]
 
+    # Test that literalinclude start-after/end-before matching doesn't incorrectly match subsets of a given line (DOP-3531)
+    # This prevents incorrectly greedy matching of e.g. "sampleAggregation" when what you want is "sample"
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_prefixes.c
+    :start-after: begin sample
+    :end-before: end sample
+        """,
+    )
+    page.finish(diagnostics)
+    assert [type(x) for x in diagnostics] == [
+        AmbiguousLiteralInclude,
+        AmbiguousLiteralInclude,
+    ]
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="literalinclude" start-after="begin sample" end-before="end sample">
+        <text>/test_parser/includes/sample_prefixes.c</text>
+        <code copyable="True">sampleContent</code>
+        </directive>
+        </root>""",
+    )
+
 
 def test_include() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
@@ -1566,6 +1594,9 @@ def test_roles() -> None:
         """
 .. binary:: mongod
 
+.. readconcern:: snapshot
+   :hidden:
+
 * :manual:`/introduction/`
 * :manual:`Introduction to MongoDB </introduction/>`
 * :rfc:`1149`
@@ -1582,10 +1613,14 @@ def test_roles() -> None:
     assert diagnostics == []
     check_ast_testing_string(
         page.ast,
-        """<root fileid="test.rst">
+        r"""<root fileid="test.rst">
             <target domain="mongodb" name="binary">
                 <directive_argument><literal><text>mongod</text></literal></directive_argument>
                 <target_identifier ids="['bin.mongod']"><text>mongod</text></target_identifier>
+            </target>
+            <target domain="mongodb" name="readconcern" hidden="True">
+                <directive_argument><literal><text>snapshot</text></literal></directive_argument>
+                <target_identifier ids="['readconcern.snapshot']"><text>snapshot</text></target_identifier>
             </target>
             <list enumtype="unordered">
             <listItem>

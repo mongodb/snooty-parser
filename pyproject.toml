@@ -8,7 +8,6 @@ readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12" # Because of PyInstaller :(
-docutils = ">=0.16 <0.18"
 watchdog = "^1.0"
 requests = "^2.24"
 tomli = "^2.0"
@@ -16,7 +15,7 @@ pyyaml = "^5.3"
 python-jsonrpc-server = "^0.3.4"
 networkx = ">=2.4 <3"
 docopt = "^0.6.2"
-pymongo = {extras = ["srv", "tls"], version = "^4.3.2"}
+pymongo = "^4.3.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

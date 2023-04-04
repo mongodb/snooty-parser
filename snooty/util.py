@@ -38,14 +38,12 @@ from typing import (
     cast,
 )
 
-import docutils.nodes
-import docutils.parsers.rst.directives
 import requests
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
 
-from . import n
+from . import n, tinydocutils
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -128,26 +126,6 @@ def get_files(
             # Detect and ignore symlinks outside of our jail
             if is_relative_to(path.resolve(), must_be_relative_to):
                 yield path
-
-
-def get_line(node: docutils.nodes.Node) -> int:
-    """Return the first line number we can find in node's ancestry."""
-
-    def line_of_node(node: docutils.nodes.Node) -> Optional[int]:
-        """Sometimes you need node['line']. Sometimes you need node.line.
-        Sometimes you want to just run away and herd yaks."""
-        if isinstance(node, docutils.nodes.Element) and "line" in node:
-            return cast(int, node["line"])
-
-        return node.line
-
-    while line_of_node(node) is None:
-        if node.parent is None:
-            # This is probably a document node
-            return 0
-        node = node.parent
-
-    return cast(int, line_of_node(node)) - 1
 
 
 def ast_dive(ast: n.Node) -> Iterator[n.Node]:
@@ -286,6 +264,17 @@ class FileWatcher:
             return sum(len(w) for w in self.directories.values())
 
 
+def option_bool(argument: Optional[str]) -> bool:
+    """
+    Check for a valid boolean option return it. If no argument is given,
+    treat it as a flag, and return True.
+    """
+    if argument and argument.strip():
+        output = tinydocutils.directives.choice(argument, ("true", "false"))
+        return output == "true"
+    return True
+
+
 def option_string(argument: Optional[str]) -> Optional[str]:
     """
     Check for a valid string option and return it. If no argument is given,
@@ -294,17 +283,6 @@ def option_string(argument: Optional[str]) -> Optional[str]:
     if argument and argument.strip():
         return argument
     raise ValueError("Must supply string argument to option")
-
-
-def option_bool(argument: Optional[str]) -> bool:
-    """
-    Check for a valid boolean option return it. If no argument is given,
-    treat it as a flag, and return True.
-    """
-    if argument and argument.strip():
-        output = docutils.parsers.rst.directives.choice(argument, ("true", "false"))
-        return output == "true"
-    return True
 
 
 def option_flag(argument: Optional[str]) -> bool:
@@ -637,3 +615,11 @@ def damerau_levenshtein_distance(a: str, b: str) -> int:
         da[a[i - 1]] = i
 
     return matrix_get(len(a), len(b))
+
+
+def lines_contain(haystack: Iterable[str], needle: str) -> Iterator[int]:
+    """Check if a sequence of lines contains a specific needle, where the needle
+    is surrounded only by non-word characters. If there's a match, yield the index
+    of the line where the match succeeded. Repeat for each line."""
+    pat = re.compile(rf"^\W*{re.escape(needle)}\W*$")
+    yield from (idx for idx, line in enumerate(haystack) if pat.match(line))
