@@ -3527,3 +3527,28 @@ def test_invalid_icon() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
+
+
+# def test_openapi_changelog() -> None:
+#     path = ROOT_PATH.joinpath(Path("test.rst"))
+#     project_config = ProjectConfig(ROOT_PATH, "", source="./")
+#     parser = rstparser.Parser(project_config, JSONVisitor)
+
+#     page, diagnostics = parse_rst(
+#         parser,
+#         path,
+#         """
+# .. openapi-changelog::
+#     :api-version: 2.0
+# """,
+#     )
+#     page.finish(diagnostics)
+#     assert diagnostics == []
+#     print(page.ast)
+#     check_ast_testing_string(
+#         page.ast,
+#         """<root fileid="test.rst">
+#         <directive domain="mongodb" name="openapi-changelog" option="2.0">
+#         </directive>
+#         </root>""",
+#     )

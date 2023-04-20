@@ -712,6 +712,11 @@ options.uses-realm = "flag"
 options.preview = "flag"
 options.api-version = "string"
 
+[directive."mongodb:openapi-changelog"]
+help = """Create OpenAPI changelog page."""
+argument_type = "string"
+options.api-version = "string"
+
 [directive."mongodb:operation"]
 content_type = "block"
 options.hash = "string"
