@@ -58,6 +58,7 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingAssociatedToc,
     MissingChild,
+    MissingOption,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -721,8 +722,9 @@ class JSONVisitor:
                 return doc
 
             if api_version:
-                doc.options["source_type"] = "atlas"
                 return doc
+            else:
+                self.diagnostics.append(MissingOption(name, line))
 
         elif name == "literalinclude" or name == "input" or name == "output":
             if name == "literalinclude":

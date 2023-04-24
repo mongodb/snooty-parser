@@ -1054,7 +1054,7 @@ class OpenAPIChangelogHandler(Handler):
         self.has_changelog_directive = False
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.has_contents_directive = False
+        self.has_changelog_directive = False
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "openapi-changelog":
