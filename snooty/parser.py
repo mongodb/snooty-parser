@@ -660,6 +660,7 @@ class JSONVisitor:
                     )
 
         elif name == "openapi":
+            print("openapi alone")
             # OpenAPI directive is parsed here and prepped for OAS module within autobuilder
             # the module is responsible for building OpenAPI specs and AST, post parse
             uses_realm = options.get("uses-realm", False)
@@ -710,6 +711,19 @@ class JSONVisitor:
                 self.diagnostics.append(
                     CannotOpenFile(Path(argument_text), err.strerror, line)
                 )
+                return doc
+
+        elif name == "openapi-changelog":
+            print("here??! ")
+            # Version Changelog will be dependent on present api-version option
+            api_version = options.get("api-version", None)
+
+            if not argument_text == "cloud":
+                self.diagnostics.append(ExpectedPathArg(name, line))
+                return doc
+
+            if api_version:
+                doc.options["source_type"] = "atlas"
                 return doc
 
         elif name == "literalinclude" or name == "input" or name == "output":
