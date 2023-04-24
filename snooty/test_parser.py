@@ -8,6 +8,7 @@ from .diagnostics import (
     DocUtilsParseError,
     ErrorParsingYAMLFile,
     ExpectedPathArg,
+    ExpectedStringArg,
     IconMustBeDefined,
     IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
@@ -3527,3 +3528,23 @@ def test_invalid_icon() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
+
+
+def test_invalid_string_argument() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+.. openapi-changelog::
+   :api-version: 2.0
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    print(diagnostics)
+    assert isinstance(diagnostics[0], ExpectedStringArg)

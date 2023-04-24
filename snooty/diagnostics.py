@@ -105,6 +105,25 @@ class ExpectedPathArg(Diagnostic):
         self.name = name
 
 
+class ExpectedStringArg(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        expectedArg: str,
+        receivedArg: Union[str, None],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f'"{name}" expected argument: "{expectedArg}" but received "{receivedArg}"',
+            start,
+            end,
+        )
+        self.name = name
+
+
 class UnnamedPage(Diagnostic):
     severity = Diagnostic.Level.error
 

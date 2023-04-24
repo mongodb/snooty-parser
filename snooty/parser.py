@@ -46,6 +46,7 @@ from .diagnostics import (
     Diagnostic,
     DocUtilsParseError,
     ExpectedPathArg,
+    ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
     ImageSuggested,
@@ -717,14 +718,16 @@ class JSONVisitor:
             # Version Changelog will be dependent on present api-version option
             api_version = options.get("api-version", None)
 
-            if not argument_text == "cloud":
-                self.diagnostics.append(ExpectedPathArg(name, line))
+            if argument_text != "cloud":
+                self.diagnostics.append(
+                    ExpectedStringArg(name, "cloud", argument_text, line)
+                )
                 return doc
 
             if api_version:
                 return doc
-            else:
-                self.diagnostics.append(MissingOption(name, line))
+
+            self.diagnostics.append(MissingOption(name, line))
 
         elif name == "literalinclude" or name == "input" or name == "output":
             if name == "literalinclude":
