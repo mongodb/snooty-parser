@@ -117,7 +117,7 @@ class ExpectedStringArg(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f'"{name}" expected argument: "{expectedArg}" but received "{receivedArg}"',
+            f'"{name}" expected argument "{expectedArg}", but received "{receivedArg}"',
             start,
             end,
         )
