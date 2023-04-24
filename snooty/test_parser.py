@@ -7,6 +7,7 @@ from .diagnostics import (
     Diagnostic,
     DocUtilsParseError,
     ErrorParsingYAMLFile,
+    ExpectedOption,
     ExpectedPathArg,
     ExpectedStringArg,
     IconMustBeDefined,
@@ -3548,3 +3549,22 @@ def test_invalid_string_argument() -> None:
     assert len(diagnostics) == 1
     print(diagnostics)
     assert isinstance(diagnostics[0], ExpectedStringArg)
+
+
+def test_missing_expected_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+.. openapi-changelog:: cloud
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    print(diagnostics)
+    assert isinstance(diagnostics[0], ExpectedOption)

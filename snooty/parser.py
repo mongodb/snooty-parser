@@ -45,6 +45,7 @@ from .diagnostics import (
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
+    ExpectedOption,
     ExpectedPathArg,
     ExpectedStringArg,
     FetchError,
@@ -59,7 +60,6 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingAssociatedToc,
     MissingChild,
-    MissingOption,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -727,7 +727,7 @@ class JSONVisitor:
             if api_version:
                 return doc
 
-            self.diagnostics.append(MissingOption(name, line))
+            self.diagnostics.append(ExpectedOption(name, "api-version", line))
 
         elif name == "literalinclude" or name == "input" or name == "output":
             if name == "literalinclude":
