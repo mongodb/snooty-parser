@@ -2667,9 +2667,11 @@ def test_openapi_changelog_duplicates() -> None:
             Path(
                 "source/reference/api-changelog.txt"
             ): """
-.. openapi:: cloud
+.. openapi-changelog:: cloud
+   :api-version: 2.0
 
-.. openapi:: cloud
+.. openapi-changelog:: cloud
+   :api-version: 2.0
             """,
         }
     ) as result:

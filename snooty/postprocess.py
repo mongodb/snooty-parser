@@ -1066,6 +1066,8 @@ class OpenAPIChangelogHandler(Handler):
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
+            self.has_changelog_directive = True
+            return
 
 
 class IAHandler(Handler):
