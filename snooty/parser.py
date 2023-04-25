@@ -45,7 +45,9 @@ from .diagnostics import (
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
+    ExpectedOption,
     ExpectedPathArg,
+    ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
     ImageSuggested,
@@ -711,6 +713,21 @@ class JSONVisitor:
                     CannotOpenFile(Path(argument_text), err.strerror, line)
                 )
                 return doc
+
+        elif name == "openapi-changelog":
+            # Version Changelog will be dependent on present api-version option
+            api_version = options.get("api-version", None)
+
+            if argument_text != "cloud":
+                self.diagnostics.append(
+                    ExpectedStringArg(name, "cloud", argument_text, line)
+                )
+                return doc
+
+            if api_version:
+                return doc
+
+            self.diagnostics.append(ExpectedOption(name, "api-version", line))
 
         elif name == "literalinclude" or name == "input" or name == "output":
             if name == "literalinclude":

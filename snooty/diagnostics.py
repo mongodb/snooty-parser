@@ -81,6 +81,19 @@ class UnexpectedIndentation(Diagnostic, MakeCorrectionMixin):
         return [".. blockquote::"]
 
 
+class ExpectedOption(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        option: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(f'"{name}" missing expected option "{option}"', start, end)
+
+
 class InvalidURL(Diagnostic):
     severity = Diagnostic.Level.error
 
@@ -102,6 +115,25 @@ class ExpectedPathArg(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(f'"{name}" expected a path argument', start, end)
+        self.name = name
+
+
+class ExpectedStringArg(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        name: str,
+        expectedArg: str,
+        receivedArg: Union[str, None],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f'"{name}" expected argument "{expectedArg}", but received "{receivedArg}"',
+            start,
+            end,
+        )
         self.name = name
 
 

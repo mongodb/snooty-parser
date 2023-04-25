@@ -1046,6 +1046,30 @@ class OpenAPIHandler(Handler):
         )
 
 
+class OpenAPIChangelogHandler(Handler):
+    """Constructs metadata for OpenAPI content pages."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.has_changelog_directive = False
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.has_changelog_directive = False
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "openapi-changelog":
+            return
+
+        if isinstance(node, n.Directive) and node.name == "openapi-changelog":
+            if self.has_changelog_directive:
+                self.context.diagnostics[fileid_stack.current].append(
+                    DuplicateDirective(node.name, node.start[0])
+                )
+                return
+            self.has_changelog_directive = True
+            return
+
+
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -1577,6 +1601,7 @@ class Postprocessor:
             BannerHandler,
             GuidesHandler,
             OpenAPIHandler,
+            OpenAPIChangelogHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

@@ -2659,3 +2659,22 @@ def test_openapi_invalid_version() -> None:
         diagnostics = result.diagnostics[FileId("reference/api-resources-spec/v3.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], InvalidVersion)
+
+
+def test_openapi_changelog_duplicates() -> None:
+    with make_test(
+        {
+            Path(
+                "source/reference/api-changelog.txt"
+            ): """
+.. openapi-changelog:: cloud
+   :api-version: 2.0
+
+.. openapi-changelog:: cloud
+   :api-version: 2.0
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("reference/api-changelog.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicateDirective)
