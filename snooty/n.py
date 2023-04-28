@@ -100,7 +100,7 @@ class Node:
         """Serialize this AST node into a form that can be passed to json.dumps()."""
         result: SerializedNode = {
             "type": self.type,
-            "position": {"start": {"line": self.span[0]}},
+            # "position": {"start": {"line": self.span[0]}},
         }
 
         for field in dataclasses.fields(self):

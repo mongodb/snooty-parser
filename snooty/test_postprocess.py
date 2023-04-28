@@ -92,7 +92,7 @@ Page One Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="index.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Page One Title'}], 'slug': '/page1'}, {'title': [{'type': 'text', 'position': {'start': {'line': 6}}, 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': True}]">
+<root fileid="index.txt" ia="[{'title': [{'type': 'text', 'value': 'Page One Title'}], 'slug': '/page1'}, {'title': [{'type': 'text', 'value': 'Snooty Item'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': True}]">
 <directive name="ia">
 <directive name="entry" url="/page1" />
 <directive name="entry" url="https://docs.mongodb.com/snooty/" project-name="snooty" primary="True">
@@ -118,7 +118,7 @@ Page One Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page1.txt" ia="[{'title': [{'type': 'text', 'position': {'start': {'line': 15}}, 'value': 'Snooty Item Two'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': False}]">
+<root fileid="page1.txt" ia="[{'title': [{'type': 'text', 'value': 'Snooty Item Two'}], 'project_name': 'snooty', 'url': 'https://docs.mongodb.com/snooty/', 'primary': False}]">
 <section>
 <heading id="page-one-title"><text>Page One Title</text></heading>
 <directive name="ia">
@@ -857,7 +857,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'MongoDB Shell'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<root fileid="tabs.txt" selectors="{'drivers': {'shell': [{'type': 'text', 'value': 'MongoDB Shell'}], 'python': [{'type': 'text', 'value': 'Python'}]}}">
 <directive name="tabs-pillstrip"><text>languages</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="shell"><text>MongoDB Shell</text>
@@ -922,7 +922,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs-two.txt" selectors="{'drivers': {'c': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'C'}], 'nodejs': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Node.js'}]}}">
+<root fileid="tabs-two.txt" selectors="{'drivers': {'c': [{'type': 'text', 'value': 'C'}], 'nodejs': [{'type': 'text', 'value': 'Node.js'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" hidden="True" tabset="drivers">
 <directive name="tab" tabid="c"><text>C</text>
@@ -1044,7 +1044,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs-five.txt" selectors="{'platforms': {'windows': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Windows'}], 'macos': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'macOS'}], 'linux': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Linux'}]}}">
+<root fileid="tabs-five.txt" selectors="{'platforms': {'windows': [{'type': 'text', 'value': 'Windows'}], 'macos': [{'type': 'text', 'value': 'macOS'}], 'linux': [{'type': 'text', 'value': 'Linux'}]}}">
 <directive name="tabs-selector"><text>platforms</text></directive>
 <directive name="tabs" hidden="True" tabset="platforms">
 <directive name="tab" tabid="windows"><text>Windows</text>
@@ -1100,7 +1100,7 @@ def test_language_selector() -> None:
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="tabs-six.txt" selectors="{'drivers': {'java-sync': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Java (Sync)'}], 'python': [{'type': 'text', 'position': {'start': {'line': 3}}, 'value': 'Python'}]}}">
+<root fileid="tabs-six.txt" selectors="{'drivers': {'java-sync': [{'type': 'text', 'value': 'Java (Sync)'}], 'python': [{'type': 'text', 'value': 'Python'}]}}">
 <directive name="tabs-selector"><text>drivers</text></directive>
 <directive name="tabs" tabset="drivers">
 <directive name="tab" tabid="java-sync"><text>Java (Sync)</text>
@@ -1990,7 +1990,7 @@ A Heading
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}]}]">
+<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'value': 'Third Heading'}]}]">
 <section>
 <heading id="title"><text>Title</text></heading>
 <directive name="contents" depth="2" />
