@@ -293,7 +293,7 @@ class IncludeHandler(Handler):
         if start_index > end_index:
             raise Exception("start-after text should precede end-before text")
         # Remove sibling nodes preceding and succeeding the nodes containing the bounds in their subtrees
-        return nodes[start_index: end_index + 1], any_start, any_end
+        return nodes[start_index : end_index + 1], any_start, any_end
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name not in {
@@ -330,8 +330,7 @@ class IncludeHandler(Handler):
         assert include_page is not None
         ast = include_page.ast
         assert isinstance(ast, n.Parent)
-        deep_copy_children: MutableSequence[n.Node] = [
-            util.fast_deep_copy(ast)]
+        deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
 
         # TODO: Move subgraphing implementation into parse layer, where we can
         # ideally take subgraph of the raw RST
@@ -480,8 +479,7 @@ class ContentsHandler(Handler):
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
-                ContentsHandler.HeadingData(
-                    self.current_depth, node.id, node.children)
+                ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -492,8 +490,7 @@ class ContentsHandler(Handler):
 class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.selectors: Dict[str,
-                             List[Dict[str, MutableSequence[n.Text]]]] = {}
+        self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
@@ -540,8 +537,7 @@ class TabsSelectorHandler(Handler):
         for tabset_name, tabsets in self.selectors.items():
             if len(tabsets) == 0:
                 # Warn if tabs-selector is used without corresponding tabset
-                self.context.diagnostics[fileid_stack.current].append(
-                    ExpectedTabs(0))
+                self.context.diagnostics[fileid_stack.current].append(ExpectedTabs(0))
                 return
             if not all(len(t) == len(tabsets[0]) for t in tabsets):
                 # If all tabsets are not the same length, identify tabs that do not appear in every tabset
@@ -769,16 +765,14 @@ class GuidesHandler(Handler):
     def add_guides_metadata(self, document: Dict[str, SerializableType]) -> None:
         """Adds the guides-related metadata to the project's metadata document"""
         if self.chapters:
-            document["chapters"] = {k: asdict(v)
-                                    for k, v in self.chapters.items()}
+            document["chapters"] = {k: asdict(v) for k, v in self.chapters.items()}
 
         if self.guides:
             slug_title_mapping = self.context[HeadingHandler].slug_title_mapping
             for slug, title in slug_title_mapping.items():
                 if slug in self.guides:
                     self.guides[slug].title = title
-            document["guides"] = {k: v.serialize()
-                                  for k, v in self.guides.items()}
+            document["guides"] = {k: v.serialize() for k, v in self.guides.items()}
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -1155,8 +1149,7 @@ class IAHandler(Handler):
             if len(entry.argument) > 0:
                 title = entry.argument
             elif slug:
-                title = self.context[HeadingHandler].get_title(
-                    clean_slug(slug)) or []
+                title = self.context[HeadingHandler].get_title(clean_slug(slug)) or []
 
             project_name = entry.options.get("project-name")
             if project_name and not url:
@@ -1183,8 +1176,7 @@ class IAHandler(Handler):
                     url,
                     slug,
                     project_name,
-                    bool(entry.options.get("primary", False)
-                         ) if project_name else None,
+                    bool(entry.options.get("primary", False)) if project_name else None,
                 )
             )
 
@@ -1203,8 +1195,7 @@ class SubstitutionHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.project_config = context[ProjectConfig]
-        self.substitution_definitions: Dict[str,
-                                            MutableSequence[n.InlineNode]] = {}
+        self.substitution_definitions: Dict[str, MutableSequence[n.InlineNode]] = {}
         self.include_replacement_definitions: List[
             Dict[str, MutableSequence[n.Node]]
         ] = []
@@ -1249,8 +1240,7 @@ class SubstitutionHandler(Handler):
                 node.children = inline_substitution
             else:
                 # Save node in order to populate it at the end of the page
-                self.unreplaced_nodes.append(
-                    (node, fileid_stack.current, node.span[0]))
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
 
             if self.seen_definitions is not None:
                 self.seen_definitions.add(node.name)
@@ -1261,8 +1251,7 @@ class SubstitutionHandler(Handler):
                 node.children = block_substitution
             else:
                 # Save node in order to populate it at the end of the page
-                self.unreplaced_nodes.append(
-                    (node, fileid_stack.current, node.span[0]))
+                self.unreplaced_nodes.append((node, fileid_stack.current, node.span[0]))
 
             if self.seen_definitions is not None:
                 self.seen_definitions.add(node.name)
@@ -1467,8 +1456,7 @@ class RefsHandler(Handler):
                     candidate_descriptions.append(candidate.url)
 
             self.context.diagnostics[fileid_stack.current].append(
-                AmbiguousTarget(node.name, node.target,
-                                candidate_descriptions, line)
+                AmbiguousTarget(node.name, node.target, candidate_descriptions, line)
             )
 
         # Choose the most recently-defined target candidate if it is ambiguous
@@ -1492,7 +1480,7 @@ class RefsHandler(Handler):
                 node_to_abbreviate = cloned_title_nodes[0]
                 if isinstance(node_to_abbreviate, n.Text):
                     index = node_to_abbreviate.value.rfind(".")
-                    new_value = node_to_abbreviate.value[index + 1:].strip()
+                    new_value = node_to_abbreviate.value[index + 1 :].strip()
 
                     if new_value:
                         node_to_abbreviate.value = new_value
@@ -1728,8 +1716,7 @@ class Postprocessor:
     def run_event_parser(
         self,
         node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
-        page_listeners: Iterable[Tuple[str,
-                                       Callable[[FileIdStack, Page], None]]] = (),
+        page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
         event_parser = EventParser(self.cancellation_token)
         for event, node_listener in node_listeners:
@@ -1874,8 +1861,7 @@ class Postprocessor:
                     ref_project_pair = (entry.title, entry.ref_project)
                     if ref_project_pair in external_nodes:
                         context.diagnostics[fileid].append(
-                            DuplicatedExternalToc(
-                                entry.ref_project, ast.span[0])
+                            DuplicatedExternalToc(entry.ref_project, ast.span[0])
                         )
                     external_nodes.add(ref_project_pair)
                 if entry.url:
