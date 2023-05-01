@@ -1317,19 +1317,17 @@ class SubstitutionHandler(Handler):
         # If we're injecting inline nodes, wrap them in a paragraph. Coalesce adjacent
         # inline elements into a single paragraph.
         output: List[n.Node] = []
-        current_paragraph: List[n.InlineNode] = []
+        current_paragraph: MutableSequence[n.Node] = []
         for element in result:
             if isinstance(element, n.InlineNode):
                 current_paragraph.append(element)
             else:
                 if current_paragraph:
-                    # type: ignore
                     output.append(n.Paragraph(node.span, current_paragraph))
                     current_paragraph = []
                 output.append(element)
 
         if current_paragraph:
-            # type: ignore
             output.append(n.Paragraph(node.span, current_paragraph))
 
         return output
