@@ -18,6 +18,7 @@ from .diagnostics import (
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
+    InvalidVersion,
     MakeCorrectionMixin,
     MalformedGlossary,
     MalformedRelativePath,
@@ -3568,3 +3569,23 @@ def test_missing_expected_option() -> None:
     assert len(diagnostics) == 1
     print(diagnostics)
     assert isinstance(diagnostics[0], ExpectedOption)
+
+
+def test_invalid_changelog_option() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+.. openapi-changelog:: cloud
+   :api-version: 1.0
+""",
+    )
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    print(diagnostics)
+    assert isinstance(diagnostics[0], InvalidVersion)

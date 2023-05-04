@@ -1034,7 +1034,9 @@ class OpenAPIHandler(Handler):
                 ):
                     major_versions = []
                 self.context.diagnostics[fileid_stack.current].append(
-                    InvalidVersion(api_version, major_versions, node.start[0])
+                    InvalidVersion(
+                        "openapi", api_version, major_versions, node.start[0]
+                    )
                 )
                 return
 
