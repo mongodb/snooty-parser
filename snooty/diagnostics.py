@@ -826,13 +826,14 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
 
     def __init__(
         self,
+        directive: str,
         api_version: str,
         major_versions: Sequence[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Invalid OpenAPI Version Option ({api_version}) specified in options""",
+            f"""Invalid OpenAPI Version option ({api_version}) specified for directive {directive}""",
             start,
             end,
         )
