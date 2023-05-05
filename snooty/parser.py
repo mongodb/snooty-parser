@@ -56,7 +56,6 @@ from .diagnostics import (
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
-    InvalidVersion,
     MalformedGlossary,
     MalformedRelativePath,
     MissingAssociatedToc,
@@ -726,10 +725,6 @@ class JSONVisitor:
                 return doc
 
             if api_version:
-                if api_version != "2.0":
-                    self.diagnostics.append(
-                        InvalidVersion("openapi-changelog", api_version, ["2.0"], line)
-                    )
                 return doc
 
             self.diagnostics.append(ExpectedOption(name, "api-version", line))

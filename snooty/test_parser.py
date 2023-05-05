@@ -18,7 +18,6 @@ from .diagnostics import (
     InvalidLiteralInclude,
     InvalidTableStructure,
     InvalidURL,
-    InvalidVersion,
     MakeCorrectionMixin,
     MalformedGlossary,
     MalformedRelativePath,
@@ -3588,4 +3587,4 @@ def test_invalid_changelog_option() -> None:
     page.finish(diagnostics)
     assert len(diagnostics) == 1
     print(diagnostics)
-    assert isinstance(diagnostics[0], InvalidVersion)
+    assert isinstance(diagnostics[0], DocUtilsParseError)

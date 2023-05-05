@@ -12,7 +12,6 @@ charts_theme = ["light", "dark"]
 devhub_type = ["article", "quickstart", "how-to", "video", "live"]
 guide_categories = ["Getting Started"]
 mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
-output_format = ["html"]
 procedure_styles = ["normal", "connected"]
 user_level = ["beginner", "intermediate", "advanced"]
 
