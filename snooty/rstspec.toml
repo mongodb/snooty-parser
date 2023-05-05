@@ -1681,6 +1681,14 @@ prefix = "datalakeconf-atlas"
 help = """Data Lake AWS Configuration Object"""
 prefix = "datalakeconf-aws"
 
+[rstobject."mongodb:datalakeconf-azure"]
+help = """Data Lake Azure Configuration Object"""
+prefix = "datalakeconf-azure"
+
+[rstobject."mongodb:datalakeconf-gcp"]
+help = """Data Lake GCP Configuration Object"""
+prefix = "datalakeconf-gcp"
+
 [rstobject."mongodb:datalakeconf-http"]
 help = """Data Lake HTTP Configuration Object"""
 prefix = "datalakeconf-http"
