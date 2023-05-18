@@ -53,6 +53,7 @@ from .diagnostics import (
     InvalidTocTree,
     InvalidVersion,
     MissingChild,
+    MissingFacet,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -1543,6 +1544,48 @@ class RefsHandler(Handler):
 
         node.children = [deepcopy(node) for node in title]
 
+class FacetsHandler(Handler):
+    """Builds page.facets depending on facets found on nodes on this page"""
+    # TODO: should be able to handle facet propagation from project/directory/page -> page in the future
+    # when taxonomy and function of facets (propagation) are decided
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.facets = {}
+        self.target = self.facets
+        self.removal_nodes: List[n.Node] = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if (
+            not isinstance(node, n.Directive)
+            or node.name != "facet"
+        ):
+            return
+        # TODO: convert taxonomy and validate here
+        # if node.name not in []: 
+        #     self.context.diagnostics[fileid_stack.current].append(
+        #         MissingFacet(node.name, node.span[0]) # TODO: make diagnostic
+        #     )
+        #     return
+        facet_node = {
+            'name': node.options.get('values')
+        }
+        if not self.target.get(node.options['name']):
+            self.target[node.options['name']] = []
+        self.target[node.options['name']].append(facet_node)
+        if node.children:
+            self.target = facet_node
+        self.removal_nodes.append(node)
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.facets = {}
+        self.target = self.facets
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        page.facets = self.facets
+        for facet_node in self.removal_nodes:
+            if page.ast.children.__contains__(facet_node):
+                page.ast.children.remove(facet_node)
+
 
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
@@ -1604,6 +1647,7 @@ class Postprocessor:
             GuidesHandler,
             OpenAPIHandler,
             OpenAPIChangelogHandler,
+            FacetsHandler
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

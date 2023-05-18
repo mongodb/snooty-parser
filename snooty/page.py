@@ -30,6 +30,7 @@ class Page:
     output_filename: str
     source: str
     ast: n.Root
+    facets: Optional[List[n.Facet]] = None
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
@@ -41,6 +42,7 @@ class Page:
         output_filename: Optional[str],
         source: str,
         ast: Optional[n.Root] = None,
+        facets: Optional[n.Facet] = None
     ) -> "Page":
         if output_filename is None:
             output_filename = source_path.name
