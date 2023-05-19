@@ -841,3 +841,17 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
 
     def did_you_mean(self) -> List[str]:
         return list(self.major_versions)
+
+
+class MissingFacet(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        facet_name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Facet specified is not a valid facet: {facet_name}""", start, end
+        )

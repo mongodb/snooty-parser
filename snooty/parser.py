@@ -60,6 +60,7 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingAssociatedToc,
     MissingChild,
+    MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -519,6 +520,16 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "step":
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
+    def handle_facet(self, node: rstparser.directive, line: int) -> None:
+        try:
+            specparser.TaxonomySpec.validate_key_value_pairs(node)
+        except KeyError:
+            self.diagnostics.append(
+                MissingFacet(
+                    f"{node['options']['name']}:{node['options']['values']}", line
+                )
+            )
+
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
         line = node.start[0]
@@ -973,7 +984,8 @@ class JSONVisitor:
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
 
-        return doc
+        elif name == "facet":
+            self.handle_facet(node, line)
 
     def validate_and_add_asset(
         self, doc: n.Directive, image_argument: str, line: int
