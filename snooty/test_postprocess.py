@@ -2679,6 +2679,7 @@ def test_openapi_changelog_duplicates() -> None:
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], DuplicateDirective)
 
+
 def test_facets() -> None:
     with make_test(
         {
@@ -2707,21 +2708,12 @@ Facets
             """
         }
     ) as result:
-        page = result.pages[FileId('index.txt')]
+        page = result.pages[FileId("index.txt")]
         facets = page.facets
         assert facets is not None
         assert facets == {
-            "genres": [{
-                "name": "reference"
-            },{
-                "name": "tutorial"
-            }],
-            "target_platforms": [{
-                "name": "atlas",
-                "versions": [{
-                    "name": "v1.2"
-                }]
-            }]
+            "genres": [{"name": "reference"}, {"name": "tutorial"}],
+            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
         }
         check_ast_testing_string(
             page.ast,
@@ -2731,5 +2723,5 @@ Facets
     <heading id="facets"><text>Facets</text></heading>
   </section>
 </root>
-            """
+            """,
         )
