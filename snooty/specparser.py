@@ -25,7 +25,7 @@ from typing import (
 import tomli
 from typing_extensions import Protocol
 
-from . import n, tinydocutils, util
+from . import tinydocutils, util
 from .flutter import check_type, checked
 
 #: Types of formatting that can be applied to a role.
@@ -266,27 +266,18 @@ class RstObject:
 @dataclass
 class TaxonomySpec:
 
-    TAXONOMY: ClassVar[Optional[Dict[str, List[TAXONOMY]]]] = None
+    TAXONOMY: ClassVar[Dict[str, Any]] = {}
 
     @classmethod
-    def get_taxonomy(cls) -> "TaxonomySpec":
-        if cls.TAXONOMY is None:
+    def get_taxonomy(cls) -> Dict[str, Any]:
+        if not cls.TAXONOMY:
             path = util.PACKAGE_ROOT.joinpath("taxonomy.toml")
             cls.TAXONOMY = tomli.loads(path.read_text(encoding="utf-8"))
         return cls.TAXONOMY
 
-    # def validate_key_value_pairs(selections: List[tuple[str, str]]) -> None:
     @classmethod
-    def validate_key_value_pairs(cls, node: n.Directive) -> None:
+    def validate_key_value_pairs(cls, facet_str_pairs: List[tuple[str, str]]) -> None:
         cls.get_taxonomy()
-        ref: n.Directive = node  # 'facet'
-        facet_str_pairs: List[tuple[str, str]] = [
-            [ref["options"]["name"], ref["options"]["values"]]
-        ]
-
-        while ref.parent and ref.parent.get("name") == "facet":
-            ref = ref.parent
-            facet_str_pairs.append([ref["options"]["name"], ref["options"]["values"]])
         taxonomy_ref = cls.TAXONOMY
         try:
             while len(facet_str_pairs) > 0:

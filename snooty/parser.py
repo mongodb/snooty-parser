@@ -522,7 +522,18 @@ class JSONVisitor:
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         try:
-            specparser.TaxonomySpec.validate_key_value_pairs(node)
+            ref: Union[rstparser.directive, tinydocutils.nodes.Element] = node
+            facet_str_pairs: List[tuple[str, str]] = [
+                (ref["options"]["name"], ref["options"]["values"])
+            ]
+
+            while ref.parent and ref.parent.get("name") == "facet":
+                ref = ref.parent
+                facet_str_pairs.append(
+                    (ref["options"]["name"], ref["options"]["values"])
+                )
+
+            specparser.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
         except KeyError:
             self.diagnostics.append(
                 MissingFacet(
@@ -986,6 +997,8 @@ class JSONVisitor:
 
         elif name == "facet":
             self.handle_facet(node, line)
+
+        return doc
 
     def validate_and_add_asset(
         self, doc: n.Directive, image_argument: str, line: int
