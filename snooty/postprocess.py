@@ -53,7 +53,6 @@ from .diagnostics import (
     InvalidTocTree,
     InvalidVersion,
     MissingChild,
-    MissingFacet,
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
@@ -1552,23 +1551,22 @@ class FacetsHandler(Handler):
     # when taxonomy and function of facets (propagation) are decided
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.facets = {}
-        self.target = self.facets
+
+        self.facets: Dict[str, Union[List[object], str]] = {}
+        self.target: Dict[str, Union[List[object], str]] = self.facets
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        # TODO: convert taxonomy and validate here
-        # if node.name not in []:
-        #     self.context.diagnostics[fileid_stack.current].append(
-        #         MissingFacet(node.name, node.span[0]) # TODO: make diagnostic
-        #     )
-        #     return
-        facet_node = {"name": node.options.get("values")}
+        facet_node: Dict[str, Union[List[object], str]] = {
+            "name": node.options.get("values", "")
+        }
         if not self.target.get(node.options["name"]):
             self.target[node.options["name"]] = []
-        self.target[node.options["name"]].append(facet_node)
+        target_list = self.target[node.options["name"]]
+        if isinstance(target_list, list):
+            target_list.append(facet_node)
         if node.children:
             self.target = facet_node
         self.removal_nodes.append(node)
