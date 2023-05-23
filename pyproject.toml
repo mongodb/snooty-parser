@@ -9,7 +9,7 @@ readme = "README.rst"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12" # Because of PyInstaller :(
 watchdog = "^1.0"
-requests = "^2.24"
+requests = "^2.31"
 tomli = "^2.0"
 pyyaml = "^5.3"
 python-jsonrpc-server = "^0.3.4"
