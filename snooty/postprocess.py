@@ -329,6 +329,9 @@ class IncludeHandler(Handler):
         include_page = self.pages.get(include_fileid)
         assert include_page is not None
         ast = include_page.ast
+        self.context.pages[fileid_stack.root].static_assets.update(
+            include_page.static_assets
+        )
         assert isinstance(ast, n.Parent)
         deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
 
