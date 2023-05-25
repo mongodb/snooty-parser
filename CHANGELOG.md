@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add support and validation for the `openapi-changelog` directive (DOP-3660, DOP-3661, DOP-3663).
+
+### Fixed
+
+- Correctly emit the `static_assets` field in each page's AST (DOP-3729).
+
 ## [v0.14.0] - 2023-04-06
 
 ## [v0.13.18] - 2023-03-02
