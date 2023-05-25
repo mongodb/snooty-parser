@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.1] - 2023-05-25
+
 ### Added
 
 - Add support and validation for the `openapi-changelog` directive (DOP-3660, DOP-3661, DOP-3663).
