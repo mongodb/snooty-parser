@@ -14,9 +14,9 @@ card_group_type = ["default", "drivers"]
 charts_theme = ["light", "dark"]
 guide_categories = ["Getting Started"]
 mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
-output_format = ["html"]
 procedure_styles = ["normal", "connected"]
 user_level = ["beginner", "intermediate", "advanced"]
+changelog_versions = ["2.0"]
 
 [directive.default-domain]
 argument_type = "string"
@@ -711,6 +711,11 @@ argument_type = ["path", "string", "uri"]
 options.uses-realm = "flag"
 options.preview = "flag"
 options.api-version = "string"
+
+[directive."mongodb:openapi-changelog"]
+help = """Create OpenAPI changelog page."""
+argument_type = "string"
+options.api-version = "changelog_versions"
 
 [directive."mongodb:operation"]
 content_type = "block"
@@ -1727,6 +1732,7 @@ platforms = [
 ]
 drivers = [
   {id = "shell", title = "MongoDB Shell"},
+  {id = "atlas-ui", title = "MongoDB Atlas"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
