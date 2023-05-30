@@ -1740,6 +1740,8 @@ drivers = [
   {id = "go", title = "Go"},
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
+  {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
+  {id = "kotlin-sync", title = "Kotlin (Sync)"},
   {id = "motor", title = "Motor"},
   {id = "nodejs", title = "Node.js"},
   {id = "perl", title = "Perl"},
