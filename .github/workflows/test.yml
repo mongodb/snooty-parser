@@ -28,6 +28,24 @@ jobs:
       run: python3 -m poetry install
     - name: Run tests
       run: make test
+  testPackage:
+    strategy:
+      matrix:
+        platform: [ubuntu-20.04, macos-latest]
+        python-version: ['3.11']
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: 'x64'
+    - name: Setup poetry
+      run: python3 -m pip install poetry
+    - name: Install dependencies
+      run: python3 -m poetry install
     - name: Build package
       id: build_package
       run: make package
