@@ -58,7 +58,7 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 	git add snooty/__init__.py CHANGELOG.md
 	git commit -m "Bump to v${BUMP_TO_VERSION}"
 	$(MAKE) test
-	git tag -s -m "Release v${BUMP_TO_VERSION}" "v${BUMP_TO_VERSION}"
+	git tag -m "Release v${BUMP_TO_VERSION}" "v${BUMP_TO_VERSION}"
 
 	if [ -n "${PUSH_TO}" ]; then git push "${PUSH_TO}" "v${BUMP_TO_VERSION}"; fi
 
