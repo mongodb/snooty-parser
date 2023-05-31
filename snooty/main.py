@@ -29,6 +29,9 @@ from collections import defaultdict
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Set, Union
 
+if sys.version_info <= (3, 10):
+    __import__("pyston").enable()
+
 import bson
 import watchdog.events
 import watchdog.observers

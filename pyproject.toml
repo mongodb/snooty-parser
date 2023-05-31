@@ -16,6 +16,7 @@ python-jsonrpc-server = "^0.3.4"
 networkx = ">=2.4 <3"
 docopt = "^0.6.2"
 pymongo = "^4.3.2"
+pyston = { version = "^2.3.5", python = "<3.11" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

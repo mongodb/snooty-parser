@@ -25,7 +25,7 @@ dist/snooty/.EXISTS: pyproject.toml snooty/*.py snooty/gizaparser/*.py
 	-rm -rf snooty.dist dist
 	mkdir dist
 	echo 'from snooty import main; main.main()' > snootycli.py
-	poetry run python3 -m PyInstaller -n snooty snootycli.py
+	poetry run python3 -m PyInstaller --hidden-import pyston -n snooty snootycli.py
 	rm snootycli.py
 	install -m644 snooty/config.toml snooty/rstspec.toml LICENSE* dist/snooty/
 	touch $@

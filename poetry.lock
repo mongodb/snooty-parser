@@ -688,6 +688,31 @@ snappy = ["python-snappy"]
 zstd = ["zstandard"]
 
 [[package]]
+name = "pyston"
+version = "2.3.5"
+description = "A JIT for Python"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyston-2.3.5-cp310-cp310-macosx_10_16_x86_64.whl", hash = "sha256:deb9dac7f8f67d1b2dc709300e1d8fda51bbc1375957509f58e1dc4459324ea7"},
+    {file = "pyston-2.3.5-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:d33602480ff742a45e21413377123bcead27c5ea11b06efaf0260ccb60633da3"},
+    {file = "pyston-2.3.5-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b93ddaed1e62b8bd261e531f3356590014822f7451619000c6b9efe699dd148f"},
+    {file = "pyston-2.3.5-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:30caaee3b58d92817efa2cd4f32c24289dd5f4ddf9b5b4ec5b62ed564230ca8a"},
+    {file = "pyston-2.3.5-cp37-cp37m-macosx_10_16_x86_64.whl", hash = "sha256:5ea981d286de250467e48fd8d80d461acd1e4f27cd10775478206b273045c58d"},
+    {file = "pyston-2.3.5-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:44211f95ba99f4d6bd5fc5e27aba834644ba0277554fc52f9a98672720c3ff17"},
+    {file = "pyston-2.3.5-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3805cac00fde2791408d09a988b32911009dcd86a8215a17d9a85dd83fe1c662"},
+    {file = "pyston-2.3.5-cp38-cp38-macosx_10_16_x86_64.whl", hash = "sha256:cab90f5bf4646c6de85c25763762dcfa94d209de955173b3f83e3c108d39028f"},
+    {file = "pyston-2.3.5-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:c2bddc7ea4755476ec9b75af94a63346ff6d2f34225dff73bb48c8a9f38795da"},
+    {file = "pyston-2.3.5-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bf36e6bdb84417b3291052e9156e8dfb03c3ec4879973bf7a47253fef24506d7"},
+    {file = "pyston-2.3.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:539ad38ecd392cf60586122db2af45c22fc01fd83dc466ef05e3de7cfb79adb2"},
+    {file = "pyston-2.3.5-cp39-cp39-macosx_10_16_x86_64.whl", hash = "sha256:5872e66a4583d56d9555caf6fa1959a33437593a75bf22c982e535d9e742dd38"},
+    {file = "pyston-2.3.5-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:a64edbcbf9494ee0e0c230544929d274a2705798abf0e298d82317dbfa5449e9"},
+    {file = "pyston-2.3.5-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:eb1f88d0594edc40b7d7fc4880e0aef33a69c97b4af0b14c91e8b5f4847ac618"},
+    {file = "pyston-2.3.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f983b89f0f79ee527f2cadf167bc8c72b3e1c40574f71f12717a4cb13c75ed47"},
+]
+
+[[package]]
 name = "pytest"
 version = "7.2.1"
 description = "pytest: simple powerful testing with Python"
@@ -951,4 +976,4 @@ watchmedo = ["PyYAML (>=3.10)", "argh (>=0.24.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12" # Because of PyInstaller :(
-content-hash = "a0737bb2dc1185458e18e5a173d2a434a3f21891394a44dfd12f526c5a9989a8"
+content-hash = "16bf1bb98b4b4d1cf8cf4170b82c59106295b37bb3678fed9ca472385ccf3b27"
