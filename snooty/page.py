@@ -1,27 +1,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import List, Optional, Set
+from typing import Optional, Set
 
 from . import n
-from .diagnostics import Diagnostic
 from .n import FileId
-from .target_database import EmptyProjectInterface, ProjectInterface
 from .types import StaticAsset
-
-
-class PendingTask:
-    """A thunk which will be executed in the main process after the full tree is
-    constructed. This should primarily be used to execute tasks which may need
-    to mutate state from the main process (e.g. caches or dependency graphs)."""
-
-    def __init__(self, node: n.Node) -> None:
-        self.node = node
-
-    def __call__(
-        self, diagnostics: List[Diagnostic], project: ProjectInterface
-    ) -> None:
-        """Perform an action in the main process once the tree has been built."""
-        pass
 
 
 @dataclass
@@ -31,7 +14,6 @@ class Page:
     source: str
     ast: n.Root
     static_assets: Set[StaticAsset] = field(default_factory=set)
-    pending_tasks: List[PendingTask] = field(default_factory=list)
     category: Optional[str] = None
 
     @classmethod
@@ -59,14 +41,3 @@ class Page:
                 PurePath(self.category), self.output_filename
             )
         return self.source_path
-
-    def finish(
-        self, diagnostics: List[Diagnostic], project: Optional[ProjectInterface] = None
-    ) -> None:
-        """Finish all pending tasks for this page. This should be run in the main process."""
-        for task in self.pending_tasks:
-            task(
-                diagnostics, project if project is not None else EmptyProjectInterface()
-            )
-
-        self.pending_tasks.clear()

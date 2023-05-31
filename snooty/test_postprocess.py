@@ -200,7 +200,7 @@ Guides
             <text>Guides</text>
         </heading>
         <directive domain="mongodb" name="chapters">
-            <directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." icon="/path/to/icon.png" checksum="0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8">
+            <directive domain="mongodb" name="chapter" description="This is the description for the Atlas chapter." icon="/path/to/icon.png">
                 <text>Atlas</text>
                 <directive domain="mongodb" name="guide">
                     <text>/path/to/guide1.txt</text>
