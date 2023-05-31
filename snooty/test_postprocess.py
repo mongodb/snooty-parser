@@ -2700,6 +2700,7 @@ def test_static_assets() -> None:
             "figure.blob"
         ]
 
+
 def test_facets() -> None:
     with make_test(
         {
