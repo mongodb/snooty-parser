@@ -2710,15 +2710,19 @@ def test_facets() -> None:
 .. facet::
    :name: genres
    :values: reference
+
 .. facet::
    :name: genres
    :values: tutorial
+
 .. facet::
    :name: target_platforms
    :values: atlas
+
    .. facet::
       :name: versions
       :values: v1.2
+
 ===========================
 Facets
 ===========================
