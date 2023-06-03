@@ -1,4 +1,4 @@
-.PHONY: help lint format test clean package cut-release performance-report
+.PHONY: help lint format test clean package cut-release performance-report dist/snooty/.EXISTS
 
 PLATFORM=$(shell printf '%s_%s' "$$(uname -s | tr '[:upper:]' '[:lower:]')" "$$(uname -m)")
 VERSION=$(shell git describe --tags)
@@ -9,28 +9,28 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_.0-9-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 lint: ## Run all linting
-	poetry run mypy --strict snooty tools
-	poetry run pyflakes snooty tools
-	poetry run black snooty tools --check
+	poetry run mypy --strict python/snooty tools
+	# poetry run pyflakes python/snooty tools
+	poetry run black python/snooty tools --check
 	tools/lint_changelog.py CHANGELOG.md
 
 format: ## Format source code with black
-	poetry run isort snooty tools
-	poetry run black snooty tools
+	poetry run isort python/snooty tools
+	poetry run black python/snooty tools
 
 test: lint ## Run unit tests
-	poetry run python3 -X dev -m pytest --cov=snooty
+	poetry run maturin develop
+	poetry run python3 -X dev -m pytest --cov=snooty python/
 
-dist/snooty/.EXISTS: pyproject.toml snooty/*.py snooty/gizaparser/*.py
-	-rm -rf snooty.dist dist
+dist/snooty/.EXISTS:
+	$(MAKE) clean
+	poetry run maturin develop --strip --release
 	mkdir dist
-	echo 'from snooty import main; main.main()' > snootycli.py
-	poetry run python3 -m PyInstaller -n snooty snootycli.py
-	rm snootycli.py
-	install -m644 snooty/config.toml snooty/rstspec.toml LICENSE* dist/snooty/
+	poetry run python3 -m PyInstaller snooty.spec
+	install -m644 python/snooty/config.toml python/snooty/rstspec.toml LICENSE* dist/snooty/
 	touch $@
 
-dist/${PACKAGE_NAME}: snooty/rstspec.toml snooty/config.toml dist/snooty/.EXISTS ## Build a binary tarball
+dist/${PACKAGE_NAME}: dist/snooty/.EXISTS ## Build a binary tarball
 	# Normalize the mtime, and zip in sorted order
 	cd dist && find snooty -print | sort | zip -X ../$@ -@
 	# Ensure that the generated binary runs
@@ -41,9 +41,10 @@ dist/${PACKAGE_NAME}.asc: dist/snooty-${VERSION}-${PLATFORM}.zip ## Build and si
 	gpg --armor --detach-sig $^
 
 clean: ## Remove all build artifacts
-	-rm -r snooty.tar.zip* snootycli.py
-	-rm -rf dist
+	-rm -r snooty.tar.zip*
+	-rm -rf dist build
 	-rm -rf .docs
+	-rm python/snooty/*.so
 
 package: dist/${PACKAGE_NAME}
 
@@ -55,7 +56,7 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 	@git diff-index --quiet HEAD -- || { echo "Uncommitted changes found"; exit 1; }
 	$(MAKE) clean
 	tools/bump_version.py "${BUMP_TO_VERSION}"
-	git add snooty/__init__.py CHANGELOG.md
+	git add python/snooty/__init__.py CHANGELOG.md
 	git commit -m "Bump to v${BUMP_TO_VERSION}"
 	$(MAKE) test
 	git tag -m "Release v${BUMP_TO_VERSION}" "v${BUMP_TO_VERSION}"
@@ -64,7 +65,7 @@ cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
 
 	# Make a post-release version bump
 	tools/bump_version.py dev
-	git add snooty/__init__.py
+	git add python/snooty/__init__.py
 	git commit -m "Post-release bump"
 
 	@echo

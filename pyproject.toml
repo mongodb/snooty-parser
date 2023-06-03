@@ -22,10 +22,11 @@ pytest = "^7.1.1"
 pytest-cov = "^4.0.0"
 black = "^22.3.0"
 pyflakes = "^2.4"
-mypy = "^1.0"
+mypy = "^1.0.0"
 pyinstaller = "^5.6"
 isort = "^5.10.1"
 types-requests = "^2.26.1"
+maturin = "^0.14.15"
 
 [tool.poetry.scripts]
 snooty = "snooty.main:main"
@@ -39,6 +40,11 @@ python_version = "3.8"
 mypy_path = "stubs"
 strict_equality = true
 
+[tool.maturin]
+manifest-path = "rust/Cargo.toml"
+python-source = "python"
+features = ["pyo3/extension-module"]
+
 [tool.pytest.ini_options]
 testpaths = [
     "snooty",
@@ -46,5 +52,5 @@ testpaths = [
 ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
