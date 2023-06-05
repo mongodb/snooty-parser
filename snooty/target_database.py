@@ -20,10 +20,8 @@ from typing import (
 )
 
 import requests.exceptions
-from typing_extensions import Protocol
 
 from . import intersphinx, n, specparser, util
-from .cache import Cache
 from .n import FileId
 from .types import ProjectConfig, normalize_target
 
@@ -252,20 +250,3 @@ class TargetDatabase:
         db = cls()
         failed_urls = db.reset(config)
         return db, failed_urls
-
-
-class ProjectInterface(Protocol):
-    expensive_operation_cache: Cache[FileId]
-    targets: TargetDatabase
-
-
-@dataclass
-class EmptyProjectInterface:
-    """An empty ProjectInterface implementation for testing."""
-
-    expensive_operation_cache: Cache[FileId]
-    targets: TargetDatabase
-
-    def __init__(self) -> None:
-        self.expensive_operation_cache = Cache()
-        self.targets = TargetDatabase()

@@ -135,7 +135,7 @@ class Backend(ProjectBackend):
             "ast": page.ast.serialize(),
             "source": page.source,
             "static_assets": [
-                {"checksum": asset.get_checksum(), "key": asset.key}
+                {"checksum": asset.safe_key, "key": asset.key}
                 for asset in uploadable_assets
             ],
         }
@@ -145,12 +145,12 @@ class Backend(ProjectBackend):
         )
 
         for static_asset in uploadable_assets:
-            checksum = static_asset.get_checksum()
-            if checksum in self.assets_written:
+            name = static_asset.safe_key
+            if name in self.assets_written:
                 continue
 
-            self.assets_written.add(checksum)
-            self.handle_asset(checksum, static_asset.data)
+            self.assets_written.add(name)
+            self.handle_asset(name, static_asset.data)
 
     def on_update_metadata(
         self,
@@ -175,7 +175,7 @@ class Backend(ProjectBackend):
     ) -> None:
         pass
 
-    def handle_asset(self, checksum: str, asset: Union[str, bytes]) -> None:
+    def handle_asset(self, name: str, asset: Union[str, bytes]) -> None:
         pass
 
 
@@ -209,8 +209,8 @@ class ZipBackend(Backend):
             f"documents/{page_id.without_known_suffix}.bson", bson.encode(document)
         )
 
-    def handle_asset(self, checksum: str, data: Union[str, bytes]) -> None:
-        self.zip.writestr(f"assets/{checksum}", data)
+    def handle_asset(self, name: str, data: Union[str, bytes]) -> None:
+        self.zip.writestr(f"assets/{name}", data)
 
     def on_update_metadata(
         self,

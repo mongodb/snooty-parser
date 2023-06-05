@@ -164,7 +164,7 @@ def test_text_doc_get_page_ast() -> None:
             </target>
             <section>
             <heading id="guides"><text>Guides</text></heading>
-            <directive name="figure" alt="Sample images" checksum="10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947">
+            <directive name="figure" alt="Sample images">
             <text>"""
             + "/images/compass-create-database.png"
             + """</text></directive>
