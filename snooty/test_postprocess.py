@@ -2699,3 +2699,50 @@ def test_static_assets() -> None:
         assert [x.key for x in result.pages[FileId("index.txt")].static_assets] == [
             "figure.blob"
         ]
+
+
+def test_facets() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. facet::
+   :name: genres
+   :values: reference
+
+.. facet::
+   :name: genres
+   :values: tutorial
+
+.. facet::
+   :name: target_platforms
+   :values: atlas
+
+   .. facet::
+      :name: versions
+      :values: v1.2
+
+===========================
+Facets
+===========================
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        facets = page.facets
+        assert facets is not None
+        assert facets == {
+            "genres": [{"name": "reference"}, {"name": "tutorial"}],
+            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
+        }
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+  <section>
+    <heading id="facets"><text>Facets</text></heading>
+  </section>
+</root>
+            """,
+        )

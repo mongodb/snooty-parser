@@ -63,7 +63,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, SerializedNode
 from .page import Page
 from .target_database import TargetDatabase
 from .types import ProjectConfig
@@ -1547,6 +1547,44 @@ class RefsHandler(Handler):
         node.children = [deepcopy(node) for node in title]
 
 
+class FacetsHandler(Handler):
+    """Builds page.facets depending on facets found on nodes on this page"""
+
+    # TODO: should be able to handle facet propagation from project/directory/page -> page in the future
+    # when taxonomy and function of facets (propagation) are decided
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+
+        self.facets: SerializedNode = {}
+        self.target: SerializedNode = self.facets
+        self.removal_nodes: List[n.Node] = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "facet":
+            return
+        facet_node: SerializedNode = {"name": node.options.get("values", "")}
+        if not self.target.get(node.options["name"]):
+            self.target[node.options["name"]] = []
+        target_list = self.target[node.options["name"]]
+        if isinstance(target_list, list):
+            target_list.append(facet_node)
+        if node.children:
+            self.target = facet_node
+        self.removal_nodes.append(node)
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.facets = {}
+        self.target = self.facets
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        page.facets = self.facets
+        for facet_node in self.removal_nodes:
+            try:
+                page.ast.children.remove(facet_node)
+            except ValueError:
+                pass
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -1607,6 +1645,7 @@ class Postprocessor:
             GuidesHandler,
             OpenAPIHandler,
             OpenAPIChangelogHandler,
+            FacetsHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

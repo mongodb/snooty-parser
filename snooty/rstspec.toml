@@ -775,6 +775,16 @@ help = "The amount of time that it would take to go through the guide content in
 argument_type = {type = "nonnegative_integer", required = true}
 example = """.. time:: 15"""
 
+[directive."mongodb:facet"]
+help = "The name and value of search facets that apply to this page. Use nested facets to represent hierarchy"
+content_type = "block"
+options.name = {type = "string", required = true}
+options.values = {type = "string", required = true}
+example = """.. facet::
+   :type: ${1:name_of_type}
+   :values: ${2:value1, value2, value3}
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
