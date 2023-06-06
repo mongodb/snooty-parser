@@ -274,6 +274,7 @@ class TargetPlatformDefinition:
     name: str
     versions: List[FacetDefinition]
 
+
 @checked
 @dataclass
 class TaxonomySpec:
