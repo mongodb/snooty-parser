@@ -37,7 +37,7 @@ import requests.exceptions
 import watchdog.events
 from yaml import safe_load
 
-from . import gizaparser, n, rstparser, specparser, tinydocutils, util
+from . import gizaparser, n, rstparser, specparser, taxonomy, tinydocutils, util
 from .cache import Cache
 from .diagnostics import (
     AmbiguousLiteralInclude,
@@ -533,7 +533,7 @@ class JSONVisitor:
                     (ref["options"]["name"], ref["options"]["values"])
                 )
 
-            specparser.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
+            taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
         except KeyError:
             self.diagnostics.append(
                 MissingFacet(
