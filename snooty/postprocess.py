@@ -1581,8 +1581,10 @@ class FacetsHandler(Handler):
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         page.facets = self.facets
         for facet_node in self.removal_nodes:
-            if page.ast.children.__contains__(facet_node):
+            try:
                 page.ast.children.remove(facet_node)
+            except ValueError:
+                pass
 
 
 class PostprocessorResult(NamedTuple):

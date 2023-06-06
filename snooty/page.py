@@ -42,7 +42,6 @@ class Page:
         output_filename: Optional[str],
         source: str,
         ast: Optional[n.Root] = None,
-        facets: Optional[n.Facet] = None,
     ) -> "Page":
         if output_filename is None:
             output_filename = source_path.name

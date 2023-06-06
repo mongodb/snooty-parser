@@ -508,11 +508,3 @@ class Transition(Node):
 class Table(Parent[Node]):
     __slots__ = ()
     type = "table"
-
-
-@dataclass
-class Facet(Parent[Node]):
-    __slots__ = ("name", "values")
-    type = "facet"
-    name: str
-    values: List[str]
