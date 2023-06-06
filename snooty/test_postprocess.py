@@ -2680,8 +2680,6 @@ def test_openapi_changelog_duplicates() -> None:
         assert isinstance(diagnostics[0], DuplicateDirective)
 
 
-<<<<<<< HEAD
-=======
 def test_static_assets() -> None:
     with make_test(
         {
@@ -2703,7 +2701,6 @@ def test_static_assets() -> None:
         ]
 
 
->>>>>>> master
 def test_facets() -> None:
     with make_test(
         {
