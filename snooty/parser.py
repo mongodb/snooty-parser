@@ -275,7 +275,9 @@ class JSONVisitor:
             return
         elif isinstance(node, tinydocutils.nodes.literal_block):
             self.diagnostics.append(
-                RemovedLiteralBlockSyntax(node.children[0].get_line())
+                RemovedLiteralBlockSyntax(
+                    node.children[0].get_line() if node.children else line
+                )
             )
             raise tinydocutils.nodes.SkipNode()
         elif isinstance(node, tinydocutils.nodes.literal):

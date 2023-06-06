@@ -138,6 +138,7 @@ class Backend(ProjectBackend):
                 {"checksum": asset.get_checksum(), "key": asset.key}
                 for asset in uploadable_assets
             ],
+            "facets": page.facets,
         }
 
         self.handle_document(

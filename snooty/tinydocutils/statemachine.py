@@ -803,12 +803,12 @@ class StateMachine:
             offset = self.line_offset
         else:
             offset = lineno - self.input_offset - 1
-        try:
-            assert self.input_lines is not None
-            src, srcoffset = self.input_lines.info(offset)
-            assert srcoffset is not None
+
+        assert self.input_lines is not None
+        src, srcoffset = self.input_lines.info(offset)
+        if srcoffset is not None:
             srcline: Optional[int] = srcoffset + 1
-        except TypeError:
+        else:
             # line is None if index is "Just past the end"
             src, srcline = self.get_source_and_line(offset + self.input_offset)
             assert srcline is not None

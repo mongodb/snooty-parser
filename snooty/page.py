@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Set, Union
 
 from . import n
 from .diagnostics import Diagnostic
-from .n import FileId
+from .n import FileId, SerializedNode
 from .target_database import EmptyProjectInterface, ProjectInterface
 from .types import StaticAsset
 
@@ -33,6 +33,7 @@ class Page:
     facets: Dict[str, Union[List[object], str]] = field(default_factory=dict)
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
+    facets: Optional[SerializedNode] = None
     category: Optional[str] = None
 
     @classmethod

@@ -63,7 +63,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, SerializedNode
 from .page import Page
 from .target_database import TargetDatabase
 from .types import ProjectConfig
@@ -329,6 +329,9 @@ class IncludeHandler(Handler):
         include_page = self.pages.get(include_fileid)
         assert include_page is not None
         ast = include_page.ast
+        self.context.pages[fileid_stack.root].static_assets.update(
+            include_page.static_assets
+        )
         assert isinstance(ast, n.Parent)
         deep_copy_children: MutableSequence[n.Node] = [util.fast_deep_copy(ast)]
 
@@ -1552,16 +1555,14 @@ class FacetsHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
-        self.facets: Dict[str, Union[List[object], str]] = {}
-        self.target: Dict[str, Union[List[object], str]] = self.facets
+        self.facets: SerializedNode = {}
+        self.target: SerializedNode = self.facets
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        facet_node: Dict[str, Union[List[object], str]] = {
-            "name": node.options.get("values", "")
-        }
+        facet_node: SerializedNode = {"name": node.options.get("values", "")}
         if not self.target.get(node.options["name"]):
             self.target[node.options["name"]] = []
         target_list = self.target[node.options["name"]]
@@ -1578,8 +1579,10 @@ class FacetsHandler(Handler):
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         page.facets = self.facets
         for facet_node in self.removal_nodes:
-            if page.ast.children.__contains__(facet_node):
+            try:
                 page.ast.children.remove(facet_node)
+            except ValueError:
+                pass
 
 
 class PostprocessorResult(NamedTuple):

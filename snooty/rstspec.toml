@@ -1742,6 +1742,7 @@ platforms = [
 ]
 drivers = [
   {id = "shell", title = "MongoDB Shell"},
+  {id = "atlas-ui", title = "MongoDB Atlas"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
@@ -1749,6 +1750,8 @@ drivers = [
   {id = "go", title = "Go"},
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
+  {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
+  {id = "kotlin-sync", title = "Kotlin (Sync)"},
   {id = "motor", title = "Motor"},
   {id = "nodejs", title = "Node.js"},
   {id = "perl", title = "Perl"},

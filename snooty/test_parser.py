@@ -22,6 +22,7 @@ from .diagnostics import (
     MalformedGlossary,
     MalformedRelativePath,
     MissingFacet,
+    RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     UnexpectedIndentation,
     UnknownTabID,
@@ -3590,6 +3591,35 @@ def test_invalid_changelog_option() -> None:
     print(diagnostics)
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+
+def test_standalone_literal_block() -> None:
+    # Issues here discovered in DOP-3753
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"::",
+    )
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], RemovedLiteralBlockSyntax)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        r"""
+foo
+
+::
+
+bar
+""",
+    )
+
+    page.finish(diagnostics)
+    assert isinstance(diagnostics[0], RemovedLiteralBlockSyntax)
 
 def test_invalid_facets() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))

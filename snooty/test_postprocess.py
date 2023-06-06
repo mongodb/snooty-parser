@@ -2680,6 +2680,30 @@ def test_openapi_changelog_duplicates() -> None:
         assert isinstance(diagnostics[0], DuplicateDirective)
 
 
+<<<<<<< HEAD
+=======
+def test_static_assets() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. include:: /foo.rst
+            """,
+            Path(
+                "source/foo.rst"
+            ): """
+.. figure:: figure.blob
+            """,
+            Path("source/figure.blob"): r"",
+        }
+    ) as result:
+        assert [x.key for x in result.pages[FileId("index.txt")].static_assets] == [
+            "figure.blob"
+        ]
+
+
+>>>>>>> master
 def test_facets() -> None:
     with make_test(
         {
