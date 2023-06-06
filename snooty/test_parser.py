@@ -3592,7 +3592,6 @@ def test_invalid_changelog_option() -> None:
 
 
 def test_invalid_facets() -> None:
-    print("test")
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)

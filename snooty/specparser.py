@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import dataclasses
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import (
     Any,
@@ -264,21 +264,32 @@ class RstObject:
 
 @checked
 @dataclass
+class FacetDefinition:
+    name: str
+
+
+@checked
+@dataclass
+class TargetPlatformDefinition:
+    name: str
+    versions: List[FacetDefinition]
+
+@checked
+@dataclass
 class TaxonomySpec:
 
-    TAXONOMY: ClassVar[Dict[str, Any]] = {}
+    genres: List[FacetDefinition]
+    target_platforms: List[TargetPlatformDefinition]
 
     @classmethod
-    def get_taxonomy(cls) -> Dict[str, Any]:
-        if not cls.TAXONOMY:
-            path = util.PACKAGE_ROOT.joinpath("taxonomy.toml")
-            cls.TAXONOMY = tomli.loads(path.read_text(encoding="utf-8"))
-        return cls.TAXONOMY
+    def get_taxonomy(cls) -> TaxonomySpec:
+        path = util.PACKAGE_ROOT.joinpath("taxonomy.toml")
+        taxonomy = check_type(cls, tomli.loads(path.read_text(encoding="utf-8")))
+        return taxonomy
 
     @classmethod
     def validate_key_value_pairs(cls, facet_str_pairs: List[tuple[str, str]]) -> None:
-        cls.get_taxonomy()
-        taxonomy_ref = cls.TAXONOMY
+        taxonomy_ref = asdict(cls.get_taxonomy())
         try:
             while len(facet_str_pairs) > 0:
                 key, value = facet_str_pairs.pop()
