@@ -63,7 +63,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, SerializedNode
 from .page import Page
 from .target_database import TargetDatabase
 from .types import ProjectConfig
@@ -1555,16 +1555,14 @@ class FacetsHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
-        self.facets: Dict[str, Union[List[object], str]] = {}
-        self.target: Dict[str, Union[List[object], str]] = self.facets
+        self.facets: SerializedNode = {}
+        self.target: SerializedNode = self.facets
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        facet_node: Dict[str, Union[List[object], str]] = {
-            "name": node.options.get("values", "")
-        }
+        facet_node: SerializedNode = {"name": node.options.get("values", "")}
         if not self.target.get(node.options["name"]):
             self.target[node.options["name"]] = []
         target_list = self.target[node.options["name"]]
