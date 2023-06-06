@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Optional, Set, Union
+from typing import List, Optional, Set
 
 from . import n
 from .diagnostics import Diagnostic
@@ -30,7 +30,6 @@ class Page:
     output_filename: str
     source: str
     ast: n.Root
-    facets: Dict[str, Union[List[object], str]] = field(default_factory=dict)
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     facets: Optional[SerializedNode] = None
@@ -43,7 +42,6 @@ class Page:
         output_filename: Optional[str],
         source: str,
         ast: Optional[n.Root] = None,
-        facets: Optional[n.Facet] = None,
     ) -> "Page":
         if output_filename is None:
             output_filename = source_path.name

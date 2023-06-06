@@ -3621,6 +3621,7 @@ bar
     page.finish(diagnostics)
     assert isinstance(diagnostics[0], RemovedLiteralBlockSyntax)
 
+
 def test_invalid_facets() -> None:
     path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "")
