@@ -63,6 +63,18 @@ class Diagnostic:
         diag["message"] = self.message
         return diag
 
+    def __eq__(self, other: object) -> bool:
+        if type(self) != type(other):
+            return False
+
+        assert isinstance(other, Diagnostic)
+
+        return (
+            self.message == other.message
+            and self.start == other.start
+            and self.end == other.end
+        )
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({repr(self.message)}, {repr(self.start)})"
 
