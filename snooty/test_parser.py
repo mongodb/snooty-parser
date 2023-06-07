@@ -21,6 +21,7 @@ from .diagnostics import (
     MakeCorrectionMixin,
     MalformedGlossary,
     MalformedRelativePath,
+    MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     UnexpectedIndentation,
@@ -3619,3 +3620,33 @@ bar
 
     page.finish(diagnostics)
     assert isinstance(diagnostics[0], RemovedLiteralBlockSyntax)
+
+
+def test_invalid_facets() -> None:
+    path = ROOT_PATH.joinpath(Path("test.rst"))
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. facet::
+    :name: dne
+    :values: dne
+
+.. facet::
+    :name: genres
+    :values: reference
+
+    .. facet::
+        :name: version
+        :values: dne
+
+""",
+    )
+    page.finish(diagnostics)
+    print(diagnostics)
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], MissingFacet)
+    assert isinstance(diagnostics[1], MissingFacet)

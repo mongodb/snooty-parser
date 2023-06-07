@@ -37,7 +37,7 @@ import requests.exceptions
 import watchdog.events
 from yaml import safe_load
 
-from . import gizaparser, n, rstparser, specparser, tinydocutils, util
+from . import gizaparser, n, rstparser, specparser, taxonomy, tinydocutils, util
 from .cache import Cache
 from .diagnostics import (
     AmbiguousLiteralInclude,
@@ -60,6 +60,7 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingAssociatedToc,
     MissingChild,
+    MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
@@ -521,6 +522,27 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "step":
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
+    def handle_facet(self, node: rstparser.directive, line: int) -> None:
+        try:
+            ref: Union[rstparser.directive, tinydocutils.nodes.Element] = node
+            facet_str_pairs: List[tuple[str, str]] = [
+                (ref["options"]["name"], ref["options"]["values"])
+            ]
+
+            while ref.parent and ref.parent.get("name") == "facet":
+                ref = ref.parent
+                facet_str_pairs.append(
+                    (ref["options"]["name"], ref["options"]["values"])
+                )
+
+            taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
+        except KeyError:
+            self.diagnostics.append(
+                MissingFacet(
+                    f"{node['options']['name']}:{node['options']['values']}", line
+                )
+            )
+
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
         line = node.start[0]
@@ -974,6 +996,9 @@ class JSONVisitor:
                 self.validate_and_add_asset(doc, image_argument, line)
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
+
+        elif name == "facet":
+            self.handle_facet(node, line)
 
         return doc
 
