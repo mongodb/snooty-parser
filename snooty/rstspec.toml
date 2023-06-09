@@ -1233,9 +1233,16 @@ type = {link = "https://www.mongodb.com/docs/v5.3%s", ensure_trailing_slash = tr
 [role."v6.0"]
 type = {link = "https://www.mongodb.com/docs/v6.0%s", ensure_trailing_slash = true}
 
+[role."v7.0"]
+type = {link = "https://www.mongodb.com/docs/v7.0%s", ensure_trailing_slash = true}
+
 [role."rapid"]
 help = """Links to the latest rapid release and will not be pinned to a specific manual version"""
 type = {link = "https://www.mongodb.com/docs/rapid%s", ensure_trailing_slash = true}
+
+[role."upcoming"]
+help = """Links to the upcoming manual release documentation and will not be pinned to a specific manual version"""
+type = {link = "https://www.mongodb.com/docs/upcoming%s", ensure_trailing_slash = true}
 
 [role.website]
 help = """Link to a page in the MongoDB website."""
