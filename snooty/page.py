@@ -30,10 +30,10 @@ class Page:
     output_filename: str
     source: str
     ast: n.Root
-    facets: Optional[SerializedNode] = field(default=None)
-    category: Optional[str] = field(default=None)
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
+    facets: Optional[SerializedNode] = field(default=None)
+    category: Optional[str] = field(default=None)
 
     @classmethod
     def create(

@@ -6,7 +6,7 @@ from .parser import Project
 from .test_project import Backend
 
 
-def test_persistance() -> None:
+def test_persistence() -> None:
     backend = Backend()
     with Project(
         Path("test_data/test_project_embedding_includes/"), backend, {}

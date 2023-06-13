@@ -118,12 +118,10 @@ class PageDatabase:
 
         with self._lock:
             with other._lock:
-                print("Foo1")
-                if self._parsed != other._parsed:
-                    return False
-
-                print("Foo1")
-                return self._orphan_diagnostics == other._orphan_diagnostics
+                return (
+                    self._parsed == other._parsed
+                    and self._orphan_diagnostics == other._orphan_diagnostics
+                )
 
     def merge_diagnostics(
         self, *others: Dict[FileId, List[Diagnostic]]
