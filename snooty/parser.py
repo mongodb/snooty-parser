@@ -7,7 +7,6 @@ import json
 import logging
 import multiprocessing
 import os
-import queue
 import re
 import subprocess
 import threading
@@ -19,7 +18,6 @@ from functools import partial
 from pathlib import Path, PurePath, PurePosixPath
 from typing import (
     Any,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -72,6 +70,7 @@ from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
+from .page_database import PageDatabase
 from .postprocess import Postprocessor, PostprocessorResult
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
@@ -1344,146 +1343,6 @@ class ProjectBackend:
         pass
 
 
-class PageDatabase:
-    """A database of FileId->Page mappings that ensures the postprocessing pipeline
-    is run correctly. Raw parsed pages are added, flush() is called, then postprocessed
-    pages can be accessed.
-
-    All methods are thread-safe, but data returned should not be mutated by more than one
-    thread."""
-
-    def __init__(self, postprocessor_factory: Callable[[], Postprocessor]) -> None:
-        self._lock = threading.Lock()
-
-        self.postprocessor_factory = postprocessor_factory
-        self._parsed: Dict[FileId, Tuple[Page, FileId, List[Diagnostic]]] = {}
-        self._orphan_diagnostics: Dict[FileId, List[Diagnostic]] = {}
-        self.__cached = PostprocessorResult({}, {}, {}, TargetDatabase())
-        self.__changed_pages: Set[FileId] = set()
-
-        def start(
-            cancellation_token: threading.Event,
-            args: Postprocessor,
-        ) -> PostprocessorResult:
-            with self._lock:
-                if not self.__changed_pages:
-                    return self.__cached
-
-                with util.PerformanceLogger.singleton().start("copy"):
-                    copied_pages = {}
-                    for k, v in self._parsed.items():
-                        if cancellation_token.is_set():
-                            raise util.CancelledException()
-
-                        copied_pages[k] = util.fast_deep_copy(v[0])
-
-            with util.PerformanceLogger.singleton().start("postprocessing"):
-                result = args.run(copied_pages, cancellation_token)
-
-            with self._lock:
-                self.__cached = result
-                self.__changed_pages.clear()
-
-            return result
-
-        self.worker: util.WorkerLauncher[
-            Postprocessor, PostprocessorResult
-        ] = util.WorkerLauncher("postprocessor", start)
-
-    def set_orphan_diagnostics(self, key: FileId, value: List[Diagnostic]) -> None:
-        """Some diagnostics can't be associated with a parsed Page because of underlying
-        problems like invalid YAML syntax. These are orphan diagnostics, and we need
-        to track them too."""
-        with self._lock:
-            self._orphan_diagnostics[key] = value
-
-    def __setitem__(
-        self, key: FileId, value: Tuple[Page, FileId, List[Diagnostic]]
-    ) -> None:
-        """Set a raw parsed page."""
-        with self._lock:
-            self._parsed[key] = value
-            self.__changed_pages.add(key)
-
-    def get(self, key: FileId) -> Optional[Page]:
-        try:
-            return self[key]
-        except KeyError:
-            return None
-
-    def __getitem__(self, key: FileId) -> Page:
-        """If the postprocessor has been run since modifications were made, fetch a postprocessed page."""
-        with self._lock:
-            assert not self.__changed_pages
-            return self.__cached.pages[key]
-
-    def __contains__(self, key: FileId) -> bool:
-        """Check if a given page exists in the parsed set."""
-        with self._lock:
-            return key in self._parsed
-
-    def __delitem__(self, key: FileId) -> None:
-        with self._lock:
-            try:
-                del self._parsed[key]
-            except KeyError:
-                pass
-
-            try:
-                del self._orphan_diagnostics[key]
-            except KeyError:
-                pass
-
-    def merge_diagnostics(
-        self, *others: Dict[FileId, List[Diagnostic]]
-    ) -> Dict[FileId, List[Diagnostic]]:
-        with self._lock:
-            result: Dict[FileId, List[Diagnostic]] = {
-                v[1]: list(v[2]) for v in self._parsed.values()
-            }
-
-            for key, diagnostics in self._orphan_diagnostics.items():
-                if key in result:
-                    result[key].extend(diagnostics)
-                else:
-                    result[key] = list(diagnostics)
-
-        all_keys: Set[FileId] = set()
-        for other in others:
-            all_keys.update(other.keys())
-
-        for key in all_keys:
-            try:
-                lst = result[key]
-            except KeyError:
-                lst = []
-                result[key] = lst
-            for other in others:
-                try:
-                    lst.extend(other[key])
-                except KeyError:
-                    pass
-
-        return result
-
-    def flush(
-        self,
-    ) -> queue.Queue[Tuple[Optional[PostprocessorResult], Optional[Exception]]]:
-        """Run the postprocessor if and only if any pages have changed, and return postprocessing results."""
-        postprocessor = self.postprocessor_factory()
-        return self.worker.run(postprocessor)
-
-    def flush_and_wait(self) -> PostprocessorResult:
-        result, exception = self.flush().get()
-        if exception:
-            raise exception
-        assert result is not None
-        return result
-
-    def cancel(self) -> None:
-        self.worker.cancel()
-
-
 class _Project:
     """Internal representation of a Snooty project with no data locking."""
 
@@ -1600,8 +1459,9 @@ class _Project:
 
         self.prefix = [self.config.name, username, branch]
 
-        self.pages = PageDatabase(
-            lambda: Postprocessor(self.config, self.targets.copy_clean_slate())
+        self.pages = PageDatabase()
+        self.postprocessor_factory = lambda: Postprocessor(
+            self.config, self.targets.copy_clean_slate()
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
@@ -1615,7 +1475,7 @@ class _Project:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
-        result = self.pages.flush_and_wait()
+        result = self.pages.flush_and_wait(self.postprocessor_factory)
         page = result.pages[fileid]
         assert isinstance(page.ast, n.Parent)
         return page.ast
@@ -1823,7 +1683,7 @@ class _Project:
 
     def postprocess(self) -> PostprocessorResult:
         logger.debug("Starting self.pages.flush_and_wait()")
-        result = self.pages.flush_and_wait()
+        result = self.pages.flush_and_wait(self.postprocessor_factory)
 
         merged_diagnostics = self.pages.merge_diagnostics(
             result.diagnostics, self.initialization_diagnostics

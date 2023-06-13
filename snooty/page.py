@@ -32,8 +32,8 @@ class Page:
     ast: n.Root
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
-    facets: Optional[SerializedNode] = None
-    category: Optional[str] = None
+    facets: Optional[SerializedNode] = field(default=None)
+    category: Optional[str] = field(default=None)
 
     @classmethod
     def create(
