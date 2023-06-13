@@ -1494,10 +1494,10 @@ type = {link = "https://quay.io/mongodb%s"}
 type = {link = "https://quay.io/repository/mongodb%s"}
 
 [role."oas-atlas-tag"]
-type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/#tag%s"}
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag%s"}
 
 [role."oas-atlas-op"]
-type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/#operation%s"}
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#operation%s"}
 
 [role."atlascli"]
 help = """Link to a page in the Atlas CLI documentation."""
