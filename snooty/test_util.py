@@ -1,9 +1,10 @@
+import copy
 import os
 import sys
 import threading
 import time
 from pathlib import Path, PurePath, PurePosixPath
-from typing import Tuple
+from typing import Dict, Optional, Sequence, Set, Tuple, Union
 
 import pytest
 
@@ -192,3 +193,44 @@ def test_damerau_levenshtein_distance() -> None:
     assert util.damerau_levenshtein_distance("foo", "fooa") == 1
     assert util.damerau_levenshtein_distance("foo", "ofo") == 1
     assert util.damerau_levenshtein_distance("foo", "xoao") == 2
+
+
+def test_structural_hash() -> None:
+    import dataclasses
+    import enum
+
+    from . import specparser
+
+    # Test specparser.Spec
+    objhash = util.structural_hash(specparser.Spec.get())
+    copied = copy.deepcopy(specparser.Spec.get())
+    assert util.structural_hash(copied) == objhash
+    copied.directive["input"].options["dedent"].reverse()  # type: ignore
+    assert util.structural_hash(copied) != objhash
+
+    # Test a synthetic example just to make sure nothing blows up
+    class Enum(enum.Enum):
+        foo = 1
+        bar = 2
+
+    @dataclasses.dataclass
+    class Root:
+        r: "Optional[Root]"
+        l: Sequence[Enum]
+        d: Dict[str, Enum]
+        s: Set[Union[int, float]]
+
+    data = Root(
+        Root(None, [Enum.foo], {"foobar": Enum.bar}, set([1, 1.2])),
+        (Enum.bar,),
+        {},
+        set(),
+    )
+    assert util.structural_hash(data) == util.structural_hash(
+        Root(
+            Root(None, [Enum.foo], {"foobar": Enum.bar}, set([1, 1.2])),
+            (Enum.bar,),
+            {},
+            set(),
+        )
+    )

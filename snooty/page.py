@@ -1,3 +1,4 @@
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import List, Optional, Set
@@ -30,6 +31,7 @@ class Page:
     output_filename: str
     source: str
     ast: n.Root
+    blake2b: str
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     facets: Optional[SerializedNode] = field(default=None)
@@ -49,7 +51,13 @@ class Page:
         if ast is None:
             ast = n.Root((0,), [], FileId(source_path), {})
 
-        return Page(source_path, output_filename, source, ast)
+        return Page(
+            source_path,
+            output_filename,
+            source,
+            ast,
+            hashlib.blake2b(bytes(source, "utf-8")).hexdigest(),
+        )
 
     def fake_full_path(self) -> PurePath:
         """Return a fictitious path (hopefully) uniquely identifying this output artifact."""

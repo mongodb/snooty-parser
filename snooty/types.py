@@ -144,21 +144,27 @@ class ProjectConfig:
     eol: bool = field(default=False)
     source: str = field(default="source")
     banners: List[BannerConfig] = field(default_factory=list)
-    # banner_nodes contains parsed banner nodes with target data
-    banner_nodes: List[ParsedBannerConfig] = field(default_factory=list)
     constants: Dict[str, Union[str, int, float]] = field(default_factory=dict)
     deprecated_versions: Optional[Dict[str, List[str]]] = field(default=None)
     intersphinx: List[str] = field(default_factory=list)
     sharedinclude_root: Optional[str] = field(default=None)
     substitutions: Dict[str, str] = field(default_factory=dict)
-    # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
-    substitution_nodes: Dict[str, List[n.InlineNode]] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
     associated_products: List[AssociatedProduct] = field(default_factory=list)
+
+    # banner_nodes contains parsed banner nodes with target data
+    banner_nodes: List[ParsedBannerConfig] = field(
+        default_factory=list, metadata={"nohash": True}
+    )
+
+    # substitution_nodes contains a parsed representation of the substitutions member, and is populated on Project initialization.
+    substitution_nodes: Dict[str, List[n.InlineNode]] = field(
+        default_factory=dict, metadata={"nohash": True}
+    )
 
     @property
     def source_path(self) -> Path:

@@ -35,7 +35,16 @@ import requests.exceptions
 import watchdog.events
 from yaml import safe_load
 
-from . import gizaparser, n, rstparser, specparser, taxonomy, tinydocutils, util
+from . import (
+    gizaparser,
+    n,
+    parse_cache,
+    rstparser,
+    specparser,
+    taxonomy,
+    tinydocutils,
+    util,
+)
 from .cache import Cache
 from .diagnostics import (
     AmbiguousLiteralInclude,
@@ -165,8 +174,6 @@ class JSONVisitor:
         self.diagnostics: List[Diagnostic] = []
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
-
-        # print(document)
 
         # It's possible for pages to synthetically create other pages that don't
         # exist in the filesystem
@@ -1355,6 +1362,8 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
+        self.cache_file = parse_cache.ParseCache(self.config)
+        self.cache = self.cache_file.read()
 
         # We might have found the project in a parent directory. Use that.
         root = self.config.root
@@ -1574,22 +1583,11 @@ class _Project:
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
         all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-        pool = multiprocessing.Pool(max_workers)
         with util.PerformanceLogger.singleton().start("parse rst"):
-            try:
-                paths = util.get_files(
-                    self.config.source_path, RST_EXTENSIONS, self.config.root
-                )
-                logger.debug("Processing rst files")
-                results = pool.imap_unordered(partial(parse_rst, self.parser), paths)
-                for sequence in results:
-                    for page, diagnostics in sequence:
-                        self._page_updated(page, diagnostics)
-            finally:
-                # We cannot use the multiprocessing.Pool context manager API due to the following:
-                # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
-                pool.close()
-                pool.join()
+            paths = util.get_files(
+                self.config.source_path, RST_EXTENSIONS, self.config.root
+            )
+            self.parse_rst_files(paths, max_workers)
 
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
@@ -1702,10 +1700,45 @@ class _Project:
 
         return result
 
-    def _page_updated(self, page: Page, diagnostics: List[Diagnostic]) -> None:
+    def parse_rst_files(
+        self, paths: Iterable[Path], max_workers: Optional[int] = None
+    ) -> None:
+        pool = multiprocessing.Pool(max_workers)
+        try:
+            logger.debug("Processing rst files")
+            cache_misses: List[Path] = []
+
+            hits = 0
+            for path in paths:
+                try:
+                    page, diagnostics = self.cache.get(self.config, path)
+                    self._page_updated(page, diagnostics)
+                    hits += 1
+                except KeyError:
+                    cache_misses.append(path)
+
+            logger.info("cache: %d hits and %d misses", hits, len(cache_misses))
+
+            results = pool.imap_unordered(partial(parse_rst, self.parser), cache_misses)
+            for sequence in results:
+                for page, diagnostics in sequence:
+                    self._page_updated(page, diagnostics)
+
+        finally:
+            # We cannot use the multiprocessing.Pool context manager API due to the following:
+            # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+            pool.close()
+            pool.join()
+
+    def update_cache(self, optimize: bool = False) -> None:
+        cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
+        self.pages.add_to_cache(cache)
+        self.cache_file.persist(cache, optimize=optimize)
+
+    def _page_updated(self, page: Page, diagnostics: Sequence[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
         # Finish any pending tasks
-        page.finish(diagnostics, self)
+        page.finish(list(diagnostics), self)
 
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
@@ -1745,14 +1778,15 @@ class _Project:
         )
 
         # Report to our backend
+        diagnostics_copy = list(diagnostics)
         self.pages[fileid] = (
             page,
             self.config.get_fileid(page.source_path),
-            diagnostics,
+            diagnostics_copy,
         )
         with self._backend_lock:
             self.backend.on_diagnostics(
-                self.config.get_fileid(page.source_path), diagnostics
+                self.config.get_fileid(page.source_path), diagnostics_copy
             )
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
@@ -1833,6 +1867,10 @@ class Project:
 
     def cancel_postprocessor(self) -> None:
         self._project.cancel_postprocessor()
+
+    def update_cache(self, optimize: bool = False) -> None:
+        with self._lock:
+            self._project.update_cache(optimize)
 
     def stop_monitoring(self) -> None:
         """Stop the filesystem monitoring thread associated with this project."""
