@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.2] - 2023-06-28
+
 ### Added
 
 - Groundwork for page facets (DOP-3688, #476).
