@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Groundwork for page facets (DOP-3688, #476).
+
+### Changed
+
+- Linux AMD64 builds are now powered by [Pyston](http://pyston.org/), providing a healthy roughly 20% performance bump over
+  CPython 3.11 (DOP-3746).
+
+### Fixed
+
+- Fix an incorrect assertion and a potential runtime exception that could be triggered by unusual reStructuredText (DOP-3753).
+
 ## [v0.14.1] - 2023-05-25
 
 ### Added
