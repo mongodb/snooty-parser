@@ -49,7 +49,7 @@ class CacheData:
             self.pages[(config.get_fileid(path).as_posix(), file_hash)]
         )
         assert isinstance(page, Page)
-        assert all(isinstance(x, diagnostics.Diagnostic) for x in diagnostics)
+        assert all(isinstance(x, Diagnostic) for x in diagnostics)
 
         return page, diagnostics
 
