@@ -496,7 +496,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         item = check_type(TextDocumentItem, textDocument)
         fileid = self.uri_to_fileid(item.uri)
-        page_path = self.project.get_full_path(fileid)
+        page_path = self.project.config.get_full_path(fileid)
         entry = WorkspaceEntry(fileid, item.uri, [])
         self.workspace[item.uri] = entry
         self.update_file(page_path, item.text)
@@ -509,7 +509,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(VersionedTextDocumentIdentifier, textDocument)
-        page_path = self.project.get_full_path(self.uri_to_fileid(identifier.uri))
+        page_path = self.project.config.get_full_path(
+            self.uri_to_fileid(identifier.uri)
+        )
         assert isinstance(contentChanges, list)
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
@@ -528,7 +530,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(TextDocumentIdentifier, textDocument)
-        page_path = self.project.get_full_path(self.uri_to_fileid(identifier.uri))
+        page_path = self.project.config.get_full_path(
+            self.uri_to_fileid(identifier.uri)
+        )
         del self.workspace[identifier.uri]
         self.update_file(page_path)
 

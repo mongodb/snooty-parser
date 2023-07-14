@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 PROTOCOL = 5
 
 
+class CacheMiss(Exception):
+    pass
+
+
 @dataclass
 class CacheData:
     specifier: Tuple[str, ...]
@@ -45,11 +49,29 @@ class CacheData:
 
         file_hash = hashlib.blake2b(path.read_bytes()).hexdigest()
 
-        page, diagnostics = pickle.loads(
-            self.pages[(config.get_fileid(path).as_posix(), file_hash)]
-        )
+        try:
+            page, diagnostics = pickle.loads(
+                self.pages[(config.get_fileid(path).as_posix(), file_hash)]
+            )
+        except KeyError as err:
+            raise CacheMiss() from err
+        except Exception as err:
+            logger.info("Error loading page from cache: %s", err)
+            raise CacheMiss()
+
         assert isinstance(page, Page)
         assert all(isinstance(x, Diagnostic) for x in diagnostics)
+
+        # Check page dependencies
+        for dep_fileid, dep_blake2b in page.dependencies.items():
+            dep_path = config.get_full_path(dep_fileid)
+            try:
+                actual_blake2b = hashlib.blake2b(dep_path.read_bytes()).hexdigest()
+            except OSError:
+                raise CacheMiss()
+
+            if dep_blake2b != actual_blake2b:
+                raise CacheMiss()
 
         return page, diagnostics
 
