@@ -639,7 +639,7 @@ def structural_hash(obj: object) -> bytes:
     serialization format in the process -- it's just here to prevent ambiguity. Structural hashes
     are subject to change and are not stable across releases.
 
-    Fields in dataclasses with ma metadata value of "nohash" are skipped."""
+    Fields in dataclasses with metadata value of "nohash" are skipped."""
     hasher = hashlib.blake2b()
     if isinstance(obj, (int, str, float, PurePath)):
         hasher.update(bytes("P" + str(obj), "utf-8"))

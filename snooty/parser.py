@@ -1738,7 +1738,8 @@ class _Project:
     def _page_updated(self, page: Page, diagnostics: Sequence[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
         # Finish any pending tasks
-        page.finish(list(diagnostics), self)
+        diagnostics_copy = list(diagnostics)
+        page.finish(diagnostics_copy, self)
 
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
@@ -1778,7 +1779,6 @@ class _Project:
         )
 
         # Report to our backend
-        diagnostics_copy = list(diagnostics)
         self.pages[fileid] = (
             page,
             self.config.get_fileid(page.source_path),
