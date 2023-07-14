@@ -736,6 +736,12 @@ hello world4</code></directive>
     )
     page.finish(diagnostics)
     assert diagnostics == []
+    assert page.dependencies == {
+        FileId(
+            "test_parser/includes/sample_code.py"
+        ): "f6a999ef69965870804279b80ec4e4f2d38c617175435ac68e5558dcf1dc5be3e15cf31217b0c62024eeef2f5ef94c7b575c84b5624abba6d3b4ae5fdbfa30e6"
+    }
+
     check_ast_testing_string(
         page.ast,
         """

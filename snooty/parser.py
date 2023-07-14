@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import errno
 import getpass
+import hashlib
 import json
 import logging
 import multiprocessing
@@ -172,6 +173,7 @@ class JSONVisitor:
         self.document = document
         self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
+        self.dependencies: Dict[FileId, Optional[str]] = {}
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
 
@@ -767,18 +769,25 @@ class JSONVisitor:
             if argument_text is None:
                 return doc
 
-            _, filepath = util.reroot_path(
+            objective_fileid, filepath = util.reroot_path(
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
+            self.dependencies[objective_fileid] = None
+
             # Attempt to read the literally included file
             try:
-                text = filepath.read_text(encoding="utf-8")
+                file_data = filepath.read_bytes()
             except OSError as err:
                 self.diagnostics.append(
                     CannotOpenFile(Path(argument_text), err.strerror, line)
                 )
                 return doc
+
+            self.dependencies[objective_fileid] = hashlib.blake2b(file_data).hexdigest()
+
+            try:
+                text = str(file_data, "utf-8")
             except UnicodeDecodeError as err:
                 self.diagnostics.append(
                     CannotOpenFile(Path(argument_text), str(err), line)
@@ -1127,6 +1136,7 @@ class JSONVisitor:
         visitor.diagnostics = self.diagnostics
         visitor.static_assets = self.static_assets
         visitor.pending = self.pending
+        visitor.dependencies = self.dependencies
         return visitor
 
 
@@ -1251,6 +1261,7 @@ def parse_rst(
     top_of_state = visitor.state[-1]
     assert isinstance(top_of_state, n.Root)
     page = Page.create(path, None, text, top_of_state)
+    page.dependencies = visitor.dependencies
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending
     result = [(page, visitor.diagnostics)]
@@ -1476,9 +1487,6 @@ class _Project:
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.expensive_operation_cache: Cache[FileId] = Cache()
         self.backend.on_config(self.config, branch)
-
-    def get_full_path(self, fileid: FileId) -> Path:
-        return self.config.source_path.joinpath(fileid)
 
     def get_page_ast(self, path: Path) -> n.Node:
         """Update page file (.txt) with current text and return fully populated page AST"""
@@ -1714,7 +1722,7 @@ class _Project:
                     page, diagnostics = self.cache.get(self.config, path)
                     self._page_updated(page, diagnostics)
                     hits += 1
-                except KeyError:
+                except parse_cache.CacheMiss:
                     cache_misses.append(path)
 
             logger.info("cache: %d hits and %d misses", hits, len(cache_misses))
@@ -1829,11 +1837,6 @@ class Project:
     @property
     def config(self) -> ProjectConfig:
         return self._project.config
-
-    def get_full_path(self, fileid: FileId) -> Path:
-        # We don't need to obtain a lock because this method only operates on
-        # _Project.root, which never changes after creation.
-        return self._project.get_full_path(fileid)
 
     def get_page_ast(self, path: Path) -> n.Node:
         """Return complete AST of page with updated text"""

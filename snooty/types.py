@@ -237,6 +237,9 @@ class ProjectConfig:
 
         return (text, diagnostics)
 
+    def get_full_path(self, fileid: FileId) -> Path:
+        return self.source_path.joinpath(fileid)
+
     @staticmethod
     def _substitute(
         source: str, constants: Dict[str, Union[str, int, float]]
