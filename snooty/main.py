@@ -3,6 +3,7 @@
 Usage:
   snooty build [--no-caching] <source-path> [--output=<path>] [options]
   snooty watch [--no-caching] <source-path>
+  snooty create-cache         <source-path>
   snooty [--no-caching] language-server
 
 Options:
@@ -292,6 +293,10 @@ def main() -> None:
 
     try:
         project.build()
+
+        if args["create-cache"]:
+            with PerformanceLogger.singleton().start("persist cache"):
+                project.update_cache()
 
         if os.environ.get("SNOOTY_PERF_SUMMARY", "0") == "1":
             PerformanceLogger.singleton().print(sys.stderr)

@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
-from . import util
+from . import parse_cache, util
 from .diagnostics import Diagnostic
 from .n import FileId
 from .page import Page
@@ -109,6 +109,15 @@ class PageDatabase:
                 del self._orphan_diagnostics[key]
             except KeyError:
                 pass
+
+    def add_to_cache(self, cache: parse_cache.CacheData) -> None:
+        with self._lock:
+            for data in self._parsed.values():
+                page, fileid, diagnostics = data
+                cache.set_page(page, diagnostics)
+
+            for fileid, diagnostics in self._orphan_diagnostics.items():
+                cache.set_orphan_diagnostics(fileid, diagnostics)
 
     def __eq__(self, other: object) -> bool:
         if type(self) != type(other):

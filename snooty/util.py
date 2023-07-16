@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import collections.abc
+import dataclasses
 import datetime
+import enum
+import hashlib
 import io
 import logging
 import os
@@ -53,6 +57,7 @@ PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
+EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
 
 PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__
 assert PACKAGE_ROOT_STRING is not None
@@ -418,18 +423,22 @@ class HTTPCache:
         if res.status_code == 304:
             return inventory_path.read_bytes()
 
-        # Atomically (re)write the cache file entry
-        try:
-            tempf = tempfile.NamedTemporaryFile(dir=self.cache_dir)
-            tempf.write(res.content)
-            os.replace(tempf.name, inventory_path)
-        finally:
-            try:
-                tempf.close()
-            except FileNotFoundError:
-                pass
+        atomic_write(inventory_path, res.content, self.cache_dir)
 
         return res.content
+
+
+def atomic_write(path: Path, data: bytes, temp_dir: Path) -> None:
+    """Atomically write a file."""
+    try:
+        tempf = tempfile.NamedTemporaryFile(dir=temp_dir)
+        tempf.write(data)
+        os.replace(tempf.name, path)
+    finally:
+        try:
+            tempf.close()
+        except FileNotFoundError:
+            pass
 
 
 class CancelledException(Exception):
@@ -623,3 +632,43 @@ def lines_contain(haystack: Iterable[str], needle: str) -> Iterator[int]:
     of the line where the match succeeded. Repeat for each line."""
     pat = re.compile(rf"^\W*{re.escape(needle)}\W*$")
     yield from (idx for idx, line in enumerate(haystack) if pat.match(line))
+
+
+def structural_hash(obj: object) -> bytes:
+    """Compute a hash of a nested set of dataclasses and primitive types. We form a kind of simple
+    serialization format in the process -- it's just here to prevent ambiguity. Structural hashes
+    are subject to change and are not stable across releases.
+
+    Fields in dataclasses with metadata value of "nohash" are skipped."""
+    hasher = hashlib.blake2b()
+    if isinstance(obj, (int, str, float, PurePath)):
+        hasher.update(bytes("P" + str(obj), "utf-8"))
+    elif dataclasses.is_dataclass(obj):
+        fields = dataclasses.fields(obj)
+        hasher.update(bytes(f"O{len(fields)}\x20", "utf-8"))
+        for field in sorted(fields, key=lambda x: x.name):
+            if not field.metadata.get("nohash"):
+                hasher.update(bytes(f"F{len(field.name)}\x20{field.name}", "utf-8"))
+                hasher.update(structural_hash(getattr(obj, field.name)))
+    elif isinstance(obj, (collections.abc.Sequence, collections.abc.Set)):
+        hasher.update(bytes(f"L{len(obj)}\x20", "utf-8"))
+        for member in obj:
+            child_hash = structural_hash(member)
+            hasher.update(bytes(f"E{len(child_hash)}\x20", "utf-8"))
+            hasher.update(child_hash)
+    elif isinstance(obj, collections.abc.Mapping):
+        hasher.update(bytes(f"M{len(obj)}\x20", "utf-8"))
+        for key, member in obj.items():
+            child_hash = structural_hash(member)
+            hasher.update(
+                bytes(f"E{len(key)}\x20{key}\x20{len(child_hash)}\x20", "utf-8")
+            )
+            hasher.update(child_hash)
+    elif isinstance(obj, enum.Enum):
+        hasher.update(bytes(str(obj), "utf-8"))
+    elif obj is None:
+        hasher.update(b"N")
+    else:
+        raise TypeError("Unhashable type", obj)
+
+    return hasher.digest()
