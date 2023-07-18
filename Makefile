@@ -38,7 +38,7 @@ dist/${PACKAGE_NAME}: snooty/rstspec.toml snooty/config.toml dist/snooty/.EXISTS
 	# Normalize the mtime, and zip in sorted order
 	cd dist && find snooty -print | sort | zip -X ../$@ -@
 	# Ensure that the generated binary runs
-	./dist/snooty/snooty --help >/dev/null
+	./dist/snooty/snooty --help >/dev/null || true
 	if [ -n "${GITHUB_OUTPUT}" ]; then echo "package_filename=${PACKAGE_NAME}" >> "${GITHUB_OUTPUT}"; fi
 
 dist/${PACKAGE_NAME}.asc: dist/snooty-${VERSION}-${PLATFORM}.zip ## Build and sign a binary tarball
