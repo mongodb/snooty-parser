@@ -29,6 +29,7 @@ def test_project() -> None:
     assert project_config.deprecated_versions == None
     assert project_config.associated_products == []
     assert len(project_diagnostics) == 0
+    assert project_config.canonical == None
 
     # Test valid project
     path = Path("test_data/test_project")
@@ -40,6 +41,7 @@ def test_project() -> None:
     assert project_config.associated_products[1].name == "test-name2"
     assert project_config.associated_products[1].versions == None
     assert project_config.name == "test_data"
+    assert project_config.canonical == "https://mongodb.com/docs/mongocli/install"
 
 
 def test_static_asset() -> None:

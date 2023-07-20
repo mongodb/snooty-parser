@@ -2509,6 +2509,31 @@ def test_target_quotes() -> None:
         )
 
 
+def test_canonical() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+======
+Test
+======
+
+This is a test intro
+            """,
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_name"
+title = "MongoDB title"
+canonical = "https://mongodb.com/docs/mongocli/install"
+            """,
+        }
+    ) as result:
+        metadata = cast(Dict[str, Any], result.metadata)
+        assert metadata["canonical"] == "https://mongodb.com/docs/mongocli/install"
+
+
 def test_metadata() -> None:
     with make_test(
         {

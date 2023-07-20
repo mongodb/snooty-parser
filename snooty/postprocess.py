@@ -1323,12 +1323,14 @@ class SubstitutionHandler(Handler):
                 current_paragraph.append(element)
             else:
                 if current_paragraph:
-                    output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+                    # type: ignore
+                    output.append(n.Paragraph(node.span, current_paragraph))
                     current_paragraph = []
                 output.append(element)
 
         if current_paragraph:
-            output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
+            # type: ignore
+            output.append(n.Paragraph(node.span, current_paragraph))
 
         return output
 
@@ -1670,6 +1672,9 @@ class Postprocessor:
         document: Dict[str, SerializableType] = {}
         document["title"] = project_config.title
         document["eol"] = project_config.eol if project_config.eol else False
+        document["canonical"] = (
+            project_config.canonical if project_config.canonical else None
+        )
         if project_config.deprecated_versions:
             document["deprecated_versions"] = project_config.deprecated_versions
         if project_config.associated_products:
