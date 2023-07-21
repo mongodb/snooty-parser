@@ -1323,14 +1323,12 @@ class SubstitutionHandler(Handler):
                 current_paragraph.append(element)
             else:
                 if current_paragraph:
-                    # type: ignore
-                    output.append(n.Paragraph(node.span, current_paragraph))
+                    output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
                     current_paragraph = []
                 output.append(element)
 
         if current_paragraph:
-            # type: ignore
-            output.append(n.Paragraph(node.span, current_paragraph))
+            output.append(n.Paragraph(node.span, current_paragraph))  # type: ignore
 
         return output
 
