@@ -91,6 +91,12 @@ class ParseCache:
         try:
             with path.open("rb") as f:
                 data = pickle.load(f)
+
+            assert isinstance(data, CacheData)
+            if not isinstance(data.specifier, tuple) or not all(
+                isinstance(x, str) for x in data.specifier
+            ):
+                raise TypeError("Invalid cache format")
         except Exception as err:
             logger.debug("Error loading cache file: %s", err)
             return CacheData(self_specifier)
@@ -103,7 +109,6 @@ class ParseCache:
             )
             return CacheData(self_specifier)
 
-        assert isinstance(data, CacheData)
         return data
 
     @property
