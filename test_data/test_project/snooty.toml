@@ -1,5 +1,6 @@
 name = "test_data"
 title = "MongoDB title"
+canonical = "https://mongodb.com/docs/mongocli/install"
 
 [substitutions]
 guides = "MongoDB Guides"

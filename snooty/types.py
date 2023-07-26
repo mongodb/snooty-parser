@@ -142,6 +142,7 @@ class ProjectConfig:
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
     eol: bool = field(default=False)
+    canonical: Optional[str] = field(default=None)
     source: str = field(default="source")
     banners: List[BannerConfig] = field(default_factory=list)
     constants: Dict[str, Union[str, int, float]] = field(default_factory=dict)
