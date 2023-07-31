@@ -242,7 +242,8 @@ class IncludeHandler(Handler):
         """Helper function to determine if the given node contains specified start-after or end-before text.
 
         Note: For now, we are only splicing included files based on Comments and TargetIdentifier nodes.
-        Comments have Text nodes as children; Labels have TargetIdentifiers as children."""
+        Comments have Text nodes as children; Labels have TargetIdentifiers as children.
+        """
         if isinstance(node, n.Comment):
             if node.children and isinstance(node.children[0], n.Text):
                 comment_text = node.children[0].get_text()
@@ -695,7 +696,8 @@ class BannerHandler(Handler):
 
     def __determine_banner_index(self, node: n.Parent[n.Node]) -> int:
         """Determine if there's a heading within the first level of the target insertion node's children.
-        If so, return the index position after the first detected heading. Otherwise, return 0."""
+        If so, return the index position after the first detected heading. Otherwise, return 0.
+        """
         return (
             next(
                 (
@@ -1567,13 +1569,21 @@ class FacetsHandler(Handler):
             self.target[node.options["name"]] = []
         target_list = self.target[node.options["name"]]
         if isinstance(target_list, list):
-            target_list.append(facet_node)
+            target_list.append(
+                facet_node
+            )  # do we want to merge lists? We think replace
+
         if node.children:
             self.target = facet_node
         self.removal_nodes.append(node)
 
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        pass
+
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.facets = {}
+        self.facets = (
+            page.facets
+        )  # Presumably, page.facets will contain the facets that exist in the facets.toml file
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -1630,7 +1640,8 @@ class Postprocessor:
     """Handles all postprocessing operations on parsed AST files.
 
     The only method that should be called on an instance of Postprocessor is run(). This method
-    handles calling all other methods and ensures that parse operations are run in the correct order."""
+    handles calling all other methods and ensures that parse operations are run in the correct order.
+    """
 
     PASSES: Sequence[Sequence[Type[Handler]]] = [
         [IncludeHandler],

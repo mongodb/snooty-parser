@@ -87,7 +87,12 @@ def is_relative_to(a: Path, b: Path) -> bool:
 
 
 def get_files(
-    root: Path, extensions: Container[str], must_be_relative_to: Optional[Path] = None
+    root: Path,
+    extensions: Container[str],
+    must_be_relative_to: Optional[Path] = None,
+    includes: Optional[
+        Set[str]
+    ] = None,  # adding this so that we can specifically parse the facets.toml and not snooty.toml
 ) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
     only filenames with the given extensions. Symlinks are followed, but
@@ -123,6 +128,9 @@ def get_files(
         seen.update(dirs_set)
 
         for name in files:
+            if name not in includes:
+                continue
+
             ext = os.path.splitext(name)[1]
             if ext not in extensions:
                 continue
@@ -318,7 +326,8 @@ def split_domain(name: str) -> Tuple[str, str]:
 
 def fast_deep_copy(v: _T) -> _T:
     """Time-efficiently create deep copy of trusted data.
-    This implementation currently invokes pickle, so should NOT be called on untrusted objects."""
+    This implementation currently invokes pickle, so should NOT be called on untrusted objects.
+    """
     return cast(_T, pickle.loads(pickle.dumps(v)))
 
 
@@ -572,7 +581,8 @@ class QueueDict(Generic[_K, _T]):
 
 def damerau_levenshtein_distance(a: str, b: str) -> int:
     """Derived from Wikipedia, the best possible source for an algorithm:
-    https://en.wikipedia.org/w/index.php?title=Damerau%E2%80%93Levenshtein_distance&oldid=1050388400#Distance_with_adjacent_transpositions"""
+    https://en.wikipedia.org/w/index.php?title=Damerau%E2%80%93Levenshtein_distance&oldid=1050388400#Distance_with_adjacent_transpositions
+    """
     # Strings are 1-indexed, and d is -1-indexed.
 
     da = {ch: 0 for ch in set(a).union(b)}
