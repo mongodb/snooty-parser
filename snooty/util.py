@@ -128,7 +128,7 @@ def get_files(
         seen.update(dirs_set)
 
         for name in files:
-            if name not in includes:
+            if includes and name not in includes:
                 continue
 
             ext = os.path.splitext(name)[1]

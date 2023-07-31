@@ -1560,10 +1560,15 @@ class FacetsHandler(Handler):
         self.facets: SerializedNode = {}
         self.target: SerializedNode = self.facets
         self.removal_nodes: List[n.Node] = []
+        self.node_parent_facet = None
+        self.page_parent_facet = None  # from facets.toml
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
+        if self.page_parent_facet and node.options["name"] in self.page_parent_facet:
+            self.page_parent_facet = self.page_parent_facet[node.options["name"]]
+
         facet_node: SerializedNode = {"name": node.options.get("values", "")}
         if not self.target.get(node.options["name"]):
             self.target[node.options["name"]] = []
@@ -1577,8 +1582,10 @@ class FacetsHandler(Handler):
             self.target = facet_node
         self.removal_nodes.append(node)
 
-    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        pass
+        self.parent_facet = facet_node
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node):
+        self.parent_facet = None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.facets = (

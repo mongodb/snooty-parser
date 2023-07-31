@@ -501,7 +501,6 @@ class JSONVisitor:
             isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
         ):
-
             definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
 
             if definition_list is None:
@@ -1442,7 +1441,6 @@ class _Project:
         # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
         for banner in self.config.banners:
             if banner.value:
-
                 options = {"variant": banner.variant}
                 banner_node = ParsedBannerConfig(
                     banner.targets,
@@ -1597,6 +1595,11 @@ class _Project:
             )
             self.parse_rst_files(paths, max_workers)
 
+        facet_paths = util.get_files(
+            self.config.source_path, (".toml"), self.config.root, {"facets.toml"}
+        )
+
+        self.parse_facet_files(facet_paths)
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
@@ -1707,6 +1710,9 @@ class _Project:
                 self.backend.set_diagnostics(fileid, diagnostics)
 
         return result
+
+    def parse_facet_files(self, facet_paths: Iterable[Path]):
+        pass
 
     def parse_rst_files(
         self, paths: Iterable[Path], max_workers: Optional[int] = None

@@ -81,7 +81,6 @@ Page One Title
 """,
         }
     ) as result:
-
         active_file = "index.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
         assert len(diagnostics) == 3
@@ -1613,7 +1612,6 @@ The following should be a code block:
 """,
         },
     ) as result:
-
         active_file = "inline.txt"
         assert not result.diagnostics[FileId(active_file)]
         page = result.pages[FileId(active_file)]
@@ -1853,7 +1851,6 @@ Reference `GitHub`_
             Path("source/fact-reference.rst"): "`docs link`_",
         },
     ) as result:
-
         active_file = "valid.txt"
         assert not result.diagnostics[FileId(active_file)]
         page = result.pages[FileId(active_file)]
@@ -2747,7 +2744,6 @@ def test_facets() -> None:
    .. facet::
       :name: versions
       :values: v1.2
-
 ===========================
 Facets
 ===========================
