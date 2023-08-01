@@ -1374,6 +1374,12 @@ type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 [role."js-sdk"]
 type = {link = "https://www.mongodb.com/docs/realm-sdks/js/latest/%s"}
 
+[role."realm-react-sdk"]
+type = {link = "https://www.mongodb.com/docs/realm-sdks/js/realm-react/latest/%s"}
+
+[role."js-web-sdk"]
+type = {link = "https://www.mongodb.com/docs/realm-sdks/js/realm-web/latest/%s"}
+
 [role."facebook"]
 type = {link = "https://developers.facebook.com/%s"}
 
