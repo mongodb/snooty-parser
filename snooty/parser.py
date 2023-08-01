@@ -12,7 +12,7 @@ import re
 import subprocess
 import threading
 import urllib.parse
-from collections import defaultdict
+from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -1585,6 +1585,28 @@ class _Project:
 
         del self.pages[fileid]
 
+    def propagate_facets(self):
+        root = self.config.source_path
+        parent_facets = None
+
+        for base, dirs, files in os.walk(root):
+            if "facets.toml" in files:
+                facet_path = Path(os.path.join(base, "facets.toml"))
+                facet_data = self.config.load_facet_file(facet_path)
+                parent_facets = facet_data
+
+            logger.info(parent_facets)
+            if parent_facets:
+                for file in files:
+                    ext = os.path.splitext(file)[1]
+                    if ext not in RST_EXTENSIONS:
+                        continue
+
+                    file_path = Path(os.path.join(base, file))
+
+                    fileid = self.config.get_fileid(file_path)
+                    logger.info(fileid)
+
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
@@ -1595,11 +1617,10 @@ class _Project:
             )
             self.parse_rst_files(paths, max_workers)
 
-        facet_paths = util.get_files(
-            self.config.source_path, (".toml"), self.config.root, {"facets.toml"}
-        )
+        # for k in self.pages._parsed:
+        #     logger.info(k.stem)
 
-        self.config.load_facet_files(facet_paths)
+        self.propagate_facets()
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
@@ -1710,9 +1731,6 @@ class _Project:
                 self.backend.set_diagnostics(fileid, diagnostics)
 
         return result
-
-    def parse_facet_files(self, facet_paths: Iterable[Path]):
-        pass
 
     def parse_rst_files(
         self, paths: Iterable[Path], max_workers: Optional[int] = None

@@ -157,7 +157,6 @@ class ProjectConfig:
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
     associated_products: List[AssociatedProduct] = field(default_factory=list)
-    facets: Dict[str, SerializedNode] = field(default_factory=dict)
 
     # banner_nodes contains parsed banner nodes with target data
     banner_nodes: List[ParsedBannerConfig] = field(
@@ -243,20 +242,21 @@ class ProjectConfig:
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
 
-    def load_facet_files(self, paths: Iterator[Path]):
+    def load_facet_file(self, path: Path):
         diagnostics: List[Diagnostic] = []
-        logger.info("LOADING FACET FILES")
-        for path in paths:
-            facet_dir = os.path.dirname(path.absolute())
-            logger.info(facet_dir)
-            try:
-                with path.open("rb") as f:
-                    data = tomli.load(f)
-                    self.facets[facet_dir] = data
-            except FileNotFoundError:
-                pass
-            except LoadError as err:
-                diagnostics.append(UnmarshallingError(str(err), 0))
+
+        try:
+            with path.open("rb") as f:
+                data = tomli.load(f)
+        except FileNotFoundError:
+            pass
+        except LoadError as err:
+            diagnostics.append(UnmarshallingError(str(err), 0))
+        return data, diagnostics
+
+    @staticmethod
+    def merge_facets(self, parent, child):
+        pass
 
     @staticmethod
     def _substitute(
