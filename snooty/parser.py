@@ -1610,7 +1610,9 @@ class _Project:
                     file_path = Path(os.path.join(base, file))
 
                     fileid = self.config.get_fileid(file_path)
-                    logger.info(fileid)
+                    page = self.pages.get(fileid)
+                    page.facets = parent_facets
+                    self._page_updated(page, [])
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
