@@ -241,7 +241,8 @@ class ProjectConfig:
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
 
-    def load_facet_file(self, path: Path):
+    @staticmethod
+    def load_facet_file(path: Path):
         diagnostics: List[Diagnostic] = []
 
         try:
