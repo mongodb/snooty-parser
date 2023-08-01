@@ -3649,10 +3649,15 @@ def test_invalid_facets() -> None:
         :name: version
         :values: dne
 
+.. facet::
+    :name: target_platforms
+    :values: atlas, dne
+
 """,
     )
     page.finish(diagnostics)
     print(diagnostics)
-    assert len(diagnostics) == 2
+    assert len(diagnostics) == 3
     assert isinstance(diagnostics[0], MissingFacet)
     assert isinstance(diagnostics[1], MissingFacet)
+    assert isinstance(diagnostics[2], MissingFacet)
