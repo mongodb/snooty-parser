@@ -12,7 +12,7 @@ import re
 import subprocess
 import threading
 import urllib.parse
-from collections import defaultdict, deque
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -1623,9 +1623,6 @@ class _Project:
                 self.config.source_path, RST_EXTENSIONS, self.config.root
             )
             self.parse_rst_files(paths, max_workers)
-
-        # for k in self.pages._parsed:
-        #     logger.info(k.stem)
 
         self.propagate_facets()
         # Categorize our YAML files
