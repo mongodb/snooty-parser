@@ -4,7 +4,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union, Iterator
 
 import tomli
 from typing_extensions import Protocol
@@ -18,7 +18,7 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, SerializedNode
 
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -156,6 +156,7 @@ class ProjectConfig:
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
     associated_products: List[AssociatedProduct] = field(default_factory=list)
+    facets: Dict[str, SerializedNode] = field(default_factory=dict)
 
     # banner_nodes contains parsed banner nodes with target data
     banner_nodes: List[ParsedBannerConfig] = field(
@@ -240,6 +241,19 @@ class ProjectConfig:
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
+
+    def load_facet_files(self, paths: Iterator[Path]):
+        diagnostics: List[Diagnostic] = []
+        for path in paths:
+            facet_dir = os.path.dirname(path.absolute())
+            try:
+                with path.open("rb") as f:
+                    data = tomli.load(f)
+                    self.facets[facet_dir] = data
+            except FileNotFoundError:
+                pass
+            except LoadError as err:
+                diagnostics.append(UnmarshallingError(str(err), 0))
 
     @staticmethod
     def _substitute(

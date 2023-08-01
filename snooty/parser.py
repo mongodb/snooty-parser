@@ -1599,7 +1599,7 @@ class _Project:
             self.config.source_path, (".toml"), self.config.root, {"facets.toml"}
         )
 
-        self.parse_facet_files(facet_paths)
+        self.config.load_facet_files(facet_paths)
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)

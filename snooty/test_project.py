@@ -69,6 +69,7 @@ def test() -> None:
     n_threads = len(threading.enumerate())
     with Project(Path("test_data/test_project"), backend, build_identifiers) as project:
         project.build()
+        print("hello")
         # Ensure that filesystem monitoring threads have been started
         assert len(threading.enumerate()) > n_threads
 
