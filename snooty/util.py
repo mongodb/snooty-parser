@@ -90,9 +90,6 @@ def get_files(
     root: Path,
     extensions: Container[str],
     must_be_relative_to: Optional[Path] = None,
-    includes: Optional[
-        Set[str]
-    ] = None,  # adding this so that we can specifically parse the facets.toml and not snooty.toml
 ) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
     only filenames with the given extensions. Symlinks are followed, but
@@ -130,9 +127,6 @@ def get_files(
         for name in files:
             ext = os.path.splitext(name)[1]
             if ext not in extensions:
-                continue
-
-            if includes and name not in includes:
                 continue
 
             path = Path(os.path.join(base, name))
