@@ -1592,15 +1592,14 @@ class _Project:
         for base, _, files in os.walk(root):
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facet = self.config.load_facet_file(facet_path)[0]
-
+                curr_facet, diagnostics = self.config.load_facet_file(facet_path)
+                logger.info(parent_facets)
                 if parent_facets:
                     parent_facets = self.config.merge_facets(parent_facets, curr_facet)
                     logger.info(parent_facets)
                 else:
                     parent_facets = curr_facet
 
-            logger.info(parent_facets)
             if parent_facets:
                 for file in files:
                     ext = os.path.splitext(file)[1]
@@ -1610,9 +1609,9 @@ class _Project:
                     file_path = Path(os.path.join(base, file))
 
                     fileid = self.config.get_fileid(file_path)
-                    page = self.pages.get(fileid)
+                    page = self.pages._parsed[fileid][0]
                     page.facets = parent_facets
-                    self._page_updated(page, [])
+                    self._page_updated(page, diagnostics)
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
@@ -1625,6 +1624,7 @@ class _Project:
             self.parse_rst_files(paths, max_workers)
 
         self.propagate_facets()
+
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
