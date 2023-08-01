@@ -1584,13 +1584,14 @@ class FacetsHandler(Handler):
 
         self.parent_facet = facet_node
 
-    def exit_node(self, fileid_stack: FileIdStack, node: n.Node):
-        self.parent_facet = None
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        pass
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.facets = (
-            page.facets
-        )  # Presumably, page.facets will contain the facets that exist in the facets.toml file
+        if page.facets:
+            self.facets = (
+                page.facets
+            )  # Presumably, page.facets will contain the propagated facets from the nearest facets.toml file
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:

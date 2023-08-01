@@ -3,3 +3,9 @@ name = "drivers"
 
   [[target_platforms.sub_platforms]]
   name = "c_driver"
+
+[[test_facet]]
+name = "test"
+
+[[test_facet.tested_nest]]
+name = "test_nest"

@@ -4,7 +4,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, Iterator, List, Match, MutableSequence, Optional, Tuple, Union
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 
 import tomli
 from typing_extensions import Protocol
@@ -242,7 +242,7 @@ class ProjectConfig:
         return self.source_path.joinpath(fileid)
 
     @staticmethod
-    def load_facet_file(path: Path):
+    def load_facet_file(path: Path) -> Tuple[SerializedNode, List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         try:
@@ -255,7 +255,7 @@ class ProjectConfig:
         return data, diagnostics
 
     @staticmethod
-    def merge_facets(parent: Dict, child: Dict):
+    def merge_facets(parent: SerializedNode, child: SerializedNode) -> SerializedNode:
         parent.update(child)
         return parent
 

@@ -1585,7 +1585,7 @@ class _Project:
 
         del self.pages[fileid]
 
-    def propagate_facets(self):
+    def propagate_facets(self) -> None:
         root = self.config.source_path
         parent_facets = None
 
