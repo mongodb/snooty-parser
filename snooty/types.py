@@ -1,5 +1,4 @@
 import hashlib
-import json
 import logging
 import os.path
 import re
@@ -255,8 +254,9 @@ class ProjectConfig:
         return data, diagnostics
 
     @staticmethod
-    def merge_facets(self, parent, child):
-        pass
+    def merge_facets(parent: Dict, child: Dict):
+        parent.update(child)
+        return parent
 
     @staticmethod
     def _substitute(

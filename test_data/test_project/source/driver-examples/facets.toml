@@ -2,4 +2,4 @@
 name = "drivers"
 
   [[target_platforms.sub_platforms]]
-  name = "c_driver"
+  name = "c++_driver"

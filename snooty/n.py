@@ -203,7 +203,8 @@ class Parent(Node, Generic[_N]):
         self, *types: "Type[Parent[Any]]"
     ) -> "Optional[Tuple[Node, Type[Parent[Any]]]]":
         """Ensure that this node's hierarchy matches, at each level, a given type. If there is a mismatch,
-        return the first node that fails validation, and the type that was expected at that level."""
+        return the first node that fails validation, and the type that was expected at that level.
+        """
         if not types:
             return None
 
