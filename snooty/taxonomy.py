@@ -11,13 +11,16 @@ from .flutter import check_type, checked
 @dataclass
 class FacetDefinition:
     name: str
+    display_name: Optional[str]
 
 
 @checked
 @dataclass
 class TargetPlatformDefinition:
     name: str
-    versions: List[FacetDefinition]
+    display_name: Optional[str]
+    sub_platforms: Optional[List[FacetDefinition]]
+    versions: Optional[List[FacetDefinition]]
 
 
 @checked
@@ -26,6 +29,7 @@ class TaxonomySpec:
 
     genres: List[FacetDefinition]
     target_platforms: List[TargetPlatformDefinition]
+    programming_languages: List[FacetDefinition]
 
     TAXONOMY_SPEC: ClassVar[Optional["TaxonomySpec"]] = None
 
