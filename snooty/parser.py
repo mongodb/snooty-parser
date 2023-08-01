@@ -1589,7 +1589,7 @@ class _Project:
         root = self.config.source_path
         parent_facets = None
 
-        for base, dirs, files in os.walk(root):
+        for base, _, files in os.walk(root):
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet = self.config.load_facet_file(facet_path)[0]
