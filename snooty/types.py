@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import os.path
 import re
@@ -244,8 +245,10 @@ class ProjectConfig:
 
     def load_facet_files(self, paths: Iterator[Path]):
         diagnostics: List[Diagnostic] = []
+        logger.info("LOADING FACET FILES")
         for path in paths:
             facet_dir = os.path.dirname(path.absolute())
+            logger.info(facet_dir)
             try:
                 with path.open("rb") as f:
                     data = tomli.load(f)

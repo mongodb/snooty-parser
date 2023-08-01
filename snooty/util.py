@@ -128,11 +128,11 @@ def get_files(
         seen.update(dirs_set)
 
         for name in files:
-            if includes and name not in includes:
-                continue
-
             ext = os.path.splitext(name)[1]
             if ext not in extensions:
+                continue
+
+            if includes and name not in includes:
                 continue
 
             path = Path(os.path.join(base, name))
