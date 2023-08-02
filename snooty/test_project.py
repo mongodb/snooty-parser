@@ -132,9 +132,11 @@ def test_facet_propagation() -> None:
     index_id = FileId("index.txt")
     index = backend.pages[index_id]
 
+    # NOTE: Temporarily ignoring the type errors as they will be addressed
+    # by changing the facets data type. This will be done in a later story
     assert index.facets is not None
     assert "target_platforms" in index.facets
-    assert index.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c_driver"
+    assert index.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c_driver"  # type: ignore
 
     driver_id = FileId("driver-examples/driver.rst")
     driver = backend.pages[driver_id]
@@ -142,7 +144,7 @@ def test_facet_propagation() -> None:
     assert driver.facets is not None
     assert "target_platforms" in driver.facets
     assert (
-        driver.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c++_driver"
+        driver.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c++_driver"  # type: ignore
     )
 
     nest_id = FileId("driver-examples/nest/nest.txt")
@@ -150,7 +152,7 @@ def test_facet_propagation() -> None:
 
     assert nest.facets is not None
     assert "target_platforms" in nest.facets
-    assert nest.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c#_driver"
+    assert nest.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c#_driver"  # type: ignore
 
 
 def test_merge_conflict() -> None:
