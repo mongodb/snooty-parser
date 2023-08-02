@@ -81,6 +81,7 @@ def test() -> None:
         code_length = 0
         checksums: List[str] = []
         index = backend.pages[index_id]
+
         assert len(index.static_assets) == 1
         assert not index.pending_tasks
         for node in ast_dive(index.ast):
@@ -121,6 +122,35 @@ def test() -> None:
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
+
+
+def test_facet_propagation() -> None:
+    backend = Backend()
+    project = Project(Path("test_data/test_project_facets"), backend, build_identifiers)
+    project.build()
+
+    index_id = FileId("index.txt")
+    index = backend.pages[index_id]
+
+    assert index.facets is not None
+    assert "target_platforms" in index.facets
+    assert index.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c_driver"
+
+    driver_id = FileId("driver-examples/driver.rst")
+    driver = backend.pages[driver_id]
+
+    assert driver.facets is not None
+    assert "target_platforms" in driver.facets
+    assert (
+        driver.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c++_driver"
+    )
+
+    nest_id = FileId("driver-examples/nest/nest.txt")
+    nest = backend.pages[nest_id]
+
+    assert nest.facets is not None
+    assert "target_platforms" in nest.facets
+    assert nest.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c#_driver"
 
 
 def test_merge_conflict() -> None:

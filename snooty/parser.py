@@ -6,6 +6,7 @@ import getpass
 import hashlib
 import json
 import logging
+import copy
 import multiprocessing
 import os
 import re
@@ -1593,13 +1594,12 @@ class _Project:
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facet_file(facet_path)
-                logger.info(parent_facets)
                 if parent_facets:
-                    parent_facets = self.config.merge_facets(parent_facets, curr_facet)
-                    logger.info(parent_facets)
+                    parent_facets = self.config.merge_facets(
+                        copy.deepcopy(parent_facets), curr_facet
+                    )
                 else:
                     parent_facets = curr_facet
-
             if parent_facets:
                 for file in files:
                     ext = os.path.splitext(file)[1]
@@ -1625,6 +1625,9 @@ class _Project:
 
         self.propagate_facets()
 
+        # for fileid in self.pages._parsed:
+        #     logger.info(self.pages._parsed[fileid][0].facets)
+        #     logger.info(fileid)
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
