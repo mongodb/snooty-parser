@@ -2744,6 +2744,7 @@ def test_facets() -> None:
    .. facet::
       :name: versions
       :values: v1.2
+
 ===========================
 Facets
 ===========================
@@ -2756,6 +2757,70 @@ Facets
         assert facets == {
             "genres": [{"name": "reference"}, {"name": "tutorial"}],
             "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
+        }
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+  <section>
+    <heading id="facets"><text>Facets</text></heading>
+  </section>
+</root>
+            """,
+        )
+
+
+def test_facets_with_facet_file() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. facet::
+   :name: genres
+   :values: reference
+
+.. facet::
+   :name: genres
+   :values: tutorial
+
+.. facet::
+   :name: target_platforms
+   :values: atlas
+
+   .. facet::
+      :name: versions
+      :values: v1.2
+
+===========================
+Facets
+===========================
+            """,
+            Path(
+                "source/facets.toml"
+            ): """
+[[target_platforms]]
+name = "drivers"
+
+[[target_platforms.sub_platforms]]
+name = "c_driver"
+
+[[test_facet]]
+name = "test"
+
+[[test_facet.tested_nest]]
+name = "test_nest"
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        facets = page.facets
+
+        assert facets is not None
+        assert facets == {
+            "genres": [{"name": "reference"}, {"name": "tutorial"}],
+            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
+            "test_facet": [{"name": "test", "tested_nest": [{"name": "test_nest"}]}],
         }
         check_ast_testing_string(
             page.ast,

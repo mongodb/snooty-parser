@@ -255,9 +255,14 @@ class ProjectConfig:
         return data, diagnostics
 
     @staticmethod
-    def merge_facets(parent: SerializedNode, child: SerializedNode) -> SerializedNode:
-        parent.update(child)
-        return parent
+    def merge_facets(
+        parent_facets: SerializedNode, child_facets: SerializedNode
+    ) -> SerializedNode:
+        merged_facets: SerializedNode = child_facets
+        for facet in parent_facets:
+            if facet not in merged_facets:
+                merged_facets[facet] = parent_facets[facet]
+        return merged_facets
 
     @staticmethod
     def _substitute(

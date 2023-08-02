@@ -6,7 +6,6 @@ import getpass
 import hashlib
 import json
 import logging
-import copy
 import multiprocessing
 import os
 import re
@@ -1595,9 +1594,7 @@ class _Project:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facet_file(facet_path)
                 if parent_facets:
-                    parent_facets = self.config.merge_facets(
-                        copy.deepcopy(parent_facets), curr_facet
-                    )
+                    parent_facets = self.config.merge_facets(parent_facets, curr_facet)
                 else:
                     parent_facets = curr_facet
             if parent_facets:

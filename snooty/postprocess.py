@@ -1560,14 +1560,10 @@ class FacetsHandler(Handler):
         self.facets: SerializedNode = {}
         self.target: SerializedNode = self.facets
         self.removal_nodes: List[n.Node] = []
-        self.node_parent_facet = None
-        self.page_parent_facet = None  # from facets.toml
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        if self.page_parent_facet and node.options["name"] in self.page_parent_facet:
-            self.page_parent_facet = self.page_parent_facet[node.options["name"]]
 
         facet_node: SerializedNode = {"name": node.options.get("values", "")}
         if not self.target.get(node.options["name"]):
@@ -1584,18 +1580,12 @@ class FacetsHandler(Handler):
 
         self.parent_facet = facet_node
 
-    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        pass
-
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        if page.facets:
-            self.facets = (
-                page.facets
-            )  # Presumably, page.facets will contain the propagated facets from the nearest facets.toml file
+        self.facets = {}
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        page.facets = self.facets
+        page.facets = ProjectConfig.merge_facets(page.facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
                 page.ast.children.remove(facet_node)
