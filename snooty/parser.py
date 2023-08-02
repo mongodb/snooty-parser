@@ -1624,10 +1624,6 @@ class _Project:
             self.parse_rst_files(paths, max_workers)
 
         self.propagate_facets()
-
-        # for fileid in self.pages._parsed:
-        #     logger.info(self.pages._parsed[fileid][0].facets)
-        #     logger.info(fileid)
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)
