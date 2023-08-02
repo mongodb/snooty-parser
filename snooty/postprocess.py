@@ -1570,15 +1570,11 @@ class FacetsHandler(Handler):
             self.target[node.options["name"]] = []
         target_list = self.target[node.options["name"]]
         if isinstance(target_list, list):
-            target_list.append(
-                facet_node
-            )  # do we want to merge lists? We think replace
+            target_list.append(facet_node)
 
         if node.children:
             self.target = facet_node
         self.removal_nodes.append(node)
-
-        self.parent_facet = facet_node
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.facets = {}

@@ -258,6 +258,13 @@ class ProjectConfig:
     def merge_facets(
         parent_facets: SerializedNode, child_facets: SerializedNode
     ) -> SerializedNode:
+        """
+        This method merges two facet objects together.
+        The child facet object will override properties of
+        the parent facet object if that property exists in both objects.
+
+        e.g. parent_facets = { facet1: { name: "test" }, facet2: { name: "best" }  }; child_facets = { facet1: { name: "rest" } }
+        """
         merged_facets: SerializedNode = child_facets
         for facet in parent_facets:
             if facet not in merged_facets:
