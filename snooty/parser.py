@@ -12,7 +12,7 @@ import re
 import subprocess
 import threading
 import urllib.parse
-from collections import defaultdict
+from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -78,7 +78,7 @@ from .diagnostics import (
 )
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
-from .n import FileId, SerializableType, TocTreeDirectiveEntry
+from .n import FileId, SerializableType, SerializedNode, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
 from .postprocess import Postprocessor, PostprocessorResult
@@ -541,7 +541,7 @@ class JSONVisitor:
                 facet_str_pairs.append(
                     (ref["options"]["name"], ref["options"]["values"])
                 )
-
+            logger.info(facet_str_pairs)
             taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
         except KeyError:
             self.diagnostics.append(
@@ -1585,6 +1585,56 @@ class _Project:
 
         del self.pages[fileid]
 
+    # def validate_facets(self, facets: SerializedNode) -> None:
+    #     for facet_name in facets:
+    #         facet_values = facets[facet_name]
+
+    #         for facet_value in facet_values:
+    #             try:
+    #                 taxonomy.TaxonomySpec.validate_key_value_pairs(
+    #                     [(facet_name, facet_value["name"])]
+    #                 )
+    #             except KeyError:
+    #                 diagnostics.append(
+    #                     MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
+    #                 )
+    #             # check other facet values that are nested
+
+    def validate_facet_file(self, facets: SerializedNode) -> None:
+        # list(dict) -> returns a list of the dict's keys
+        curr_facets = deepcopy(facets)
+        queue = deque([curr_facets])
+
+        diagnostics: List[Diagnostic] = []
+        while queue:
+            curr_facet = queue.popleft()
+
+            for facet_name in curr_facet:
+                # Grabbing the values for the current level of facets
+                logger.info(facet_name)
+                logger.info(curr_facet)
+
+                facet_values = curr_facet[facet_name]
+
+                for facet_value in facet_values:
+                    try:
+                        taxonomy.TaxonomySpec.validate_key_value_pairs(
+                            [(facet_name, facet_value["name"])]
+                        )
+                    except KeyError:
+                        diagnostics.append(
+                            MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
+                        )
+                    nested_facets = list(facet_value)
+                    # The name refers to the current facet value name, we don't need to
+                    # add this to the queue.
+                    nested_facets.remove("name")
+                    for nested in nested_facets:
+                        new_value = {}
+                        new_value[nested] = facet_value[nested]
+
+                        queue.append(new_value)
+
     def propagate_facets(self) -> None:
         root = self.config.source_path
         parent_facets = None
@@ -1593,6 +1643,9 @@ class _Project:
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facet_file(facet_path)
+
+                self.validate_facet_file(curr_facet)
+
                 if parent_facets:
                     parent_facets = self.config.merge_facets(parent_facets, curr_facet)
                 else:
@@ -1604,10 +1657,11 @@ class _Project:
                         continue
 
                     file_path = Path(os.path.join(base, file))
-
                     fileid = self.config.get_fileid(file_path)
+
                     page = self.pages._parsed[fileid][0]
                     page.facets = parent_facets
+
                     self._page_updated(page, diagnostics)
 
     def build(

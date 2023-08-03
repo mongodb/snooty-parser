@@ -1581,8 +1581,8 @@ class FacetsHandler(Handler):
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        page_facets = page.facets or {}
-        page.facets = ProjectConfig.merge_facets(page_facets, self.facets)
+        curr_facets = page.facets or {}
+        page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
                 page.ast.children.remove(facet_node)
