@@ -1585,25 +1585,11 @@ class _Project:
 
         del self.pages[fileid]
 
-    # def validate_facets(self, facets: SerializedNode) -> None:
-    #     for facet_name in facets:
-    #         facet_values = facets[facet_name]
-
-    #         for facet_value in facet_values:
-    #             try:
-    #                 taxonomy.TaxonomySpec.validate_key_value_pairs(
-    #                     [(facet_name, facet_value["name"])]
-    #                 )
-    #             except KeyError:
-    #                 diagnostics.append(
-    #                     MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
-    #                 )
-    #             # check other facet values that are nested
-
-    def validate_facet_file(self, facets: SerializedNode) -> None:
+    def validate_facet_file(self, facets: SerializedNode) -> SerializedNode:
         # list(dict) -> returns a list of the dict's keys
         curr_facets = deepcopy(facets)
         queue = deque([curr_facets])
+        logger.info(curr_facets)
 
         diagnostics: List[Diagnostic] = []
         while queue:
@@ -1611,29 +1597,42 @@ class _Project:
 
             for facet_name in curr_facet:
                 # Grabbing the values for the current level of facets
-                logger.info(facet_name)
-                logger.info(curr_facet)
-
                 facet_values = curr_facet[facet_name]
-
-                for facet_value in facet_values:
+                remove_idxs = []
+                for i in range(len(facet_values)):
+                    facet_value = facet_values[i]
                     try:
                         taxonomy.TaxonomySpec.validate_key_value_pairs(
                             [(facet_name, facet_value["name"])]
                         )
+                        # facet has been validated, add it to the validated facets
+                        nested_facets = list(facet_value)
+                        # The name refers to the current facet value name, we don't need to
+                        # add this to the queue.
+                        nested_facets.remove("name")
+                        for nested in facet_value:
+                            new_value = {}
+                            new_value[nested] = facet_value[nested]
+
+                            queue.append(new_value)
                     except KeyError:
                         diagnostics.append(
                             MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
                         )
-                    nested_facets = list(facet_value)
-                    # The name refers to the current facet value name, we don't need to
-                    # add this to the queue.
-                    nested_facets.remove("name")
-                    for nested in nested_facets:
-                        new_value = {}
-                        new_value[nested] = facet_value[nested]
+                        remove_idxs.append(i)  # will remove this from array
 
-                        queue.append(new_value)
+                for i in remove_idxs:
+                    del facet_values[i]
+
+            bad_facets = []
+            for facet_name in curr_facet:
+                if len(curr_facet[facet_name]) == 0:
+                    bad_facets.append(facet_name)
+            for bad_facet in bad_facets:
+                del curr_facet[bad_facet]
+        logger.info(curr_facets)
+
+        return curr_facets
 
     def propagate_facets(self) -> None:
         root = self.config.source_path
