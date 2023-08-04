@@ -1374,7 +1374,7 @@ class _Project:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
         self.cache_file = parse_cache.ParseCache(self.config)
-        self.cache = self.cache_file.read()
+        self.cache: Optional[parse_cache.CacheData] = None
 
         # We might have found the project in a parent directory. Use that.
         root = self.config.root
@@ -1717,13 +1717,17 @@ class _Project:
             cache_misses: List[Path] = []
 
             hits = 0
-            for path in paths:
-                try:
-                    page, diagnostics = self.cache.get(self.config, path)
-                    self._page_updated(page, diagnostics)
-                    hits += 1
-                except parse_cache.CacheMiss:
-                    cache_misses.append(path)
+
+            if self.cache is None:
+                cache_misses = list(paths)
+            else:
+                for path in paths:
+                    try:
+                        page, diagnostics = self.cache.get(self.config, path)
+                        self._page_updated(page, diagnostics)
+                        hits += 1
+                    except parse_cache.CacheMiss:
+                        cache_misses.append(path)
 
             logger.info("cache: %d hits and %d misses", hits, len(cache_misses))
 
@@ -1737,6 +1741,9 @@ class _Project:
             # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
             pool.close()
             pool.join()
+
+    def load_cache(self) -> None:
+        self.cache = self.cache_file.read()
 
     def update_cache(self, optimize: bool = False) -> None:
         cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
@@ -1870,6 +1877,10 @@ class Project:
 
     def cancel_postprocessor(self) -> None:
         self._project.cancel_postprocessor()
+
+    def load_cache(self) -> None:
+        with self._lock:
+            self._project.load_cache()
 
     def update_cache(self, optimize: bool = False) -> None:
         with self._lock:

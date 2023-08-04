@@ -258,7 +258,8 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO)
 
-    if args["--no-caching"]:
+    no_caching = args["--no-caching"]
+    if no_caching:
         HTTPCache.initialize(False)
 
     logger.info(f"Snooty {__version__} starting")
@@ -290,6 +291,9 @@ def main() -> None:
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
     project = Project(root_path, backend, _generate_build_identifiers(args))
+
+    if not no_caching:
+        project.load_cache()
 
     try:
         project.build()
