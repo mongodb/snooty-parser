@@ -12,7 +12,7 @@ import re
 import subprocess
 import threading
 import urllib.parse
-from collections import defaultdict, deque
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
@@ -78,7 +78,7 @@ from .diagnostics import (
 )
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET
-from .n import FileId, SerializableType, SerializedNode, TocTreeDirectiveEntry
+from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
 from .postprocess import Postprocessor, PostprocessorResult
