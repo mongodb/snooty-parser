@@ -1585,69 +1585,6 @@ class _Project:
 
         del self.pages[fileid]
 
-    def remove_bad_facets(self, facets: SerializedNode) -> SerializedNode:
-        # list(dict) -> returns a list of the dict's keys
-        curr_facets = deepcopy(facets)
-        queue = deque([curr_facets])
-
-        diagnostics: List[Diagnostic] = []
-        while queue:
-            curr_facet = queue.popleft()
-
-            for facet_name in curr_facet:
-                # Grabbing the values for the current level of facets
-                facet_values = curr_facet[facet_name]
-                remove_idxs = []
-                for i in range(len(facet_values)):
-                    facet_value = facet_values[i]
-                    try:
-                        taxonomy.TaxonomySpec.validate_key_value_pairs(
-                            [(facet_name, facet_value["name"])]
-                        )
-                        # facet has been validated, add it to the validated facets
-                        nested_facets = list(facet_value)
-                        # The name refers to the current facet value name, we don't need to
-                        # add this to the queue.
-                        nested_facets.remove("name")
-                        for nested in nested_facets:
-                            new_value = {}
-                            new_value[nested] = facet_value[nested]
-                            logger.info(new_value)
-                            queue.append(new_value)
-                    except KeyError:
-                        diagnostics.append(
-                            MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
-                        )
-                        remove_idxs.append(i)  # will remove this from array
-                for i in remove_idxs:
-                    del facet_values[i]
-
-            bad_facets = []
-            for facet_name in curr_facet:
-                if len(curr_facet[facet_name]) == 0:
-                    bad_facets.append(facet_name)
-            for bad_facet in bad_facets:
-                del curr_facet[bad_facet]
-
-        logger.info(curr_facets)
-
-        return curr_facets
-
-    def validate_facet_file(self, facets: SerializedNode) -> SerializedNode:
-        facets_updated = self.remove_bad_facets(facets)
-
-        queue = deque([facets_updated])
-
-        while queue:
-            curr_facet = queue.popleft()
-
-            for facet_name in curr_facet:
-                if facet_name == "name":
-                    continue
-        validated_facets = {}
-
-        return facets_updated
-
     def propagate_facets(self) -> None:
         root = self.config.source_path
         parent_facets = None
