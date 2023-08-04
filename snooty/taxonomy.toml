@@ -56,6 +56,7 @@ display_name = "BI Connector"
 
 [[target_platforms]]
 name = "com"
+display_name = "Cloud Manager"
 
 [[target_platforms]]
 name = "c2c"
@@ -88,10 +89,6 @@ name = "mongocli"
 display_name = "MongoDB CLI"
 
 [[target_platforms]]
-name = "mongocli"
-display_name = "MongoDB CLI"
-
-[[target_platforms]]
 name = "visual-studio-extension"
 display_name = "MongoDB for VS Code"
 
@@ -112,7 +109,7 @@ name = "realm"
 
   # nestled under docs-realm 
   [[target_platforms.sub_platforms]]
-  name = "fluter"
+  name = "flutter"
   display_name = "Dart Flutter SDK"
 
   [[target_platforms.sub_platforms]]
