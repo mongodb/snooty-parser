@@ -97,8 +97,11 @@ class ParseCache:
                 isinstance(x, str) for x in data.specifier
             ):
                 raise TypeError("Invalid cache format")
+        except FileNotFoundError:
+            logger.debug("Cache file not found")
+            return CacheData(self_specifier)
         except Exception as err:
-            logger.debug("Error loading cache file: %s", err)
+            logger.info("Error loading cache file: %s", err)
             return CacheData(self_specifier)
 
         if data.specifier != self_specifier:
