@@ -1586,6 +1586,11 @@ class _Project:
         del self.pages[fileid]
 
     def propagate_facets(self) -> None:
+        """Scans through each directory starting at source/ and
+        loads the facets.toml file if one exists. These values get propagated
+        to each subsequent level to add them to the page.facets property if a
+        facets.toml file does not exist in that child directory.
+        """
         root = self.config.source_path
         parent_facets = None
 
