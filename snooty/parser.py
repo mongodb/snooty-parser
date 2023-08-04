@@ -1585,11 +1585,10 @@ class _Project:
 
         del self.pages[fileid]
 
-    def validate_facet_file(self, facets: SerializedNode) -> SerializedNode:
+    def remove_bad_facets(self, facets: SerializedNode) -> SerializedNode:
         # list(dict) -> returns a list of the dict's keys
         curr_facets = deepcopy(facets)
         queue = deque([curr_facets])
-        logger.info(curr_facets)
 
         diagnostics: List[Diagnostic] = []
         while queue:
@@ -1610,17 +1609,16 @@ class _Project:
                         # The name refers to the current facet value name, we don't need to
                         # add this to the queue.
                         nested_facets.remove("name")
-                        for nested in facet_value:
+                        for nested in nested_facets:
                             new_value = {}
                             new_value[nested] = facet_value[nested]
-
+                            logger.info(new_value)
                             queue.append(new_value)
                     except KeyError:
                         diagnostics.append(
                             MissingFacet(f"{facet_name}:{facet_value['name']}", 0)
                         )
                         remove_idxs.append(i)  # will remove this from array
-
                 for i in remove_idxs:
                     del facet_values[i]
 
@@ -1630,9 +1628,25 @@ class _Project:
                     bad_facets.append(facet_name)
             for bad_facet in bad_facets:
                 del curr_facet[bad_facet]
+
         logger.info(curr_facets)
 
         return curr_facets
+
+    def validate_facet_file(self, facets: SerializedNode) -> SerializedNode:
+        facets_updated = self.remove_bad_facets(facets)
+
+        queue = deque([facets_updated])
+
+        while queue:
+            curr_facet = queue.popleft()
+
+            for facet_name in curr_facet:
+                if facet_name == "name":
+                    continue
+        validated_facets = {}
+
+        return facets_updated
 
     def propagate_facets(self) -> None:
         root = self.config.source_path
@@ -1642,8 +1656,6 @@ class _Project:
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facet_file(facet_path)
-
-                self.validate_facet_file(curr_facet)
 
                 if parent_facets:
                     parent_facets = self.config.merge_facets(parent_facets, curr_facet)

@@ -1,5 +1,5 @@
 [[target_platforms]]
-name = "drivers"
+name = "atlas"
 
 [[target_platforms.versions]]
 name = "v1.2"
