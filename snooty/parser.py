@@ -541,7 +541,7 @@ class JSONVisitor:
                 facet_str_pairs.append(
                     (ref["options"]["name"], ref["options"]["values"])
                 )
-            logger.info(facet_str_pairs)
+
             taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
         except KeyError:
             self.diagnostics.append(
