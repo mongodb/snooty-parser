@@ -75,7 +75,11 @@ def test() -> None:
 
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
-        assert list(backend.pages.keys()) == [index_id]
+        drivers_id = FileId("driver-examples/driver.rst")
+        nested_id = FileId("driver-examples/nest/nest.txt")
+        assert list(sorted(backend.pages.keys())) == list(
+            sorted([nested_id, index_id, drivers_id])
+        )
         # Confirm that no diagnostics were created
         assert backend.diagnostics[index_id] == []
         code_length = 0
@@ -93,7 +97,9 @@ def test() -> None:
         assert checksums == [
             "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"
         ]
-        assert backend.updates == [index_id]
+        assert list(sorted(backend.updates)) == list(
+            sorted([nested_id, index_id, drivers_id])
+        )
 
         # Skip the remainder of the tests on non-Darwin platforms; they fail for
         # unknown reasons.
@@ -118,7 +124,9 @@ def test() -> None:
             ) == [2]
 
         # Ensure that the page has been reparsed 2 times
-        assert backend.updates == [index_id, index_id]
+        assert sorted(backend.updates) == sorted(
+            [nested_id, drivers_id, index_id, index_id]
+        )
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads

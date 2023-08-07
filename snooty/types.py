@@ -248,8 +248,8 @@ class ProjectConfig:
         try:
             with path.open("rb") as f:
                 data = tomli.load(f)
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as err:
+            diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
             diagnostics.append(UnmarshallingError(str(err), 0))
         return data, diagnostics
