@@ -2748,6 +2748,11 @@ def test_facets() -> None:
       :name: versions
       :values: v1.2
 
+   .. facet::
+      :name: sub_platforms
+      :values: charts
+
+
 ===========================
 Facets
 ===========================
@@ -2759,7 +2764,13 @@ Facets
         assert facets is not None
         assert facets == {
             "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
+            "target_platforms": [
+                {
+                    "name": "atlas",
+                    "versions": [{"name": "v1.2"}],
+                    "sub_platforms": [{"name": "charts"}],
+                }
+            ],
         }
         check_ast_testing_string(
             page.ast,

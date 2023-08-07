@@ -4,55 +4,219 @@ name = "reference"
 [[genres]]
 name = "tutorial"
 
+# trying to map to docs "name" property 
+# for target_platforms and sub_platforms
+# as much as possible
 [[target_platforms]]
 name = "atlas"
-[[target_platforms.versions]]
-name = "v1.2"
-[[target_platforms.versions]]
-name = "master"
+
+  [[target_platforms.sub_platforms]]
+  name = "atlas-app-services"
+  display_name = "App Services"
+
+  [[target_platforms.sub_platforms]]
+  name = "charts"
+  display_name = "Charts"
+
+  [[target_platforms.sub_platforms]]
+  name = "atlas-cli"
+  display_name = "Atlas CLI"
+
+  [[target_platforms.sub_platforms]]
+  name = "data-api"
+  display_name = "Data API"
+
+  [[target_platforms.sub_platforms]]
+  name = "data-federation"
+
+  [[target_platforms.sub_platforms]]
+  name = "data-lake"
+
+  [[target_platforms.sub_platforms]]
+  name = "device-sync" #404
+
+  [[target_platforms.sub_platforms]]
+  name = "kubernetes-operator"
+
+  [[target_platforms.sub_platforms]]
+  name = "online-archive"
+
+  [[target_platforms.sub_platforms]]
+  name = "search"
+
+  [[target_platforms.sub_platforms]]
+  name = "stream-processing"
+
+  [[target_platforms.sub_platforms]]
+  name = "triggers"
 
 [[target_platforms]]
-name = "atlas-cli"
-[[target_platforms.versions]]
-name = "v1.2"
-[[target_platforms.versions]]
-name = "master"
+name = "bi-connector"
+display_name = "BI Connector"
 
 [[target_platforms]]
-name = "manual"
-[[target_platforms.versions]]
-name = "v1.0"
-[[target_platforms.versions]]
-name = "master"
+name = "com"
+display_name = "Cloud Manager"
 
 [[target_platforms]]
-name = "spark-connector"
-[[target_platforms.versions]]
-name = "v2.0"
-[[target_platforms.versions]]
-name = "v2.1"
+name = "c2c"
+display_name = "Cluster-to-Cluster Sync"
 
 [[target_platforms]]
-name = "node"
-[[target_platforms.versions]]
-name = "v4.9"
+name = "community-kubernetes-operator"  # 404
+
+[[target_platforms]]
+name = "compass"
+
+[[target_platforms]]
+name = "database-tools"
+
+[[target_platforms]]
+name = "drivers"
+
+[[target_platforms]]
+name = "enterprise-kubernetes-operator"
+
+[[target_platforms]]
+name = "kafka-connector"
+
+[[target_platforms]]
+name = "mongodb-analyzer" # 404
+display_name = "MongoDB Analyzer"
 
 [[target_platforms]]
 name = "mongocli"
-[[target_platforms.versions]]
-name = "v1.0"
+display_name = "MongoDB CLI"
 
 [[target_platforms]]
 name = "visual-studio-extension"
-[[target_platforms.versions]]
-name = "current"
+display_name = "MongoDB for VS Code"
 
 [[target_platforms]]
-name = "golang"
-[[target_platforms.versions]]
-name = "v1.7"
+name = "mongodb-shell"
+display_name = "MongoDB Shell"
 
 [[target_platforms]]
+name = "onprem" # verify
+display_name = "Ops Manager"
+
+[[target_platforms]]
+name = "realm"
+
+  [[target_platforms.sub_platforms]]
+  name = "cpp"
+  display_name = "C++ SDK"
+
+  # nestled under docs-realm 
+  [[target_platforms.sub_platforms]]
+  name = "flutter"
+  display_name = "Dart Flutter SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "java"
+  display_name = "Java SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "kotlin"
+  display_name = "Kotlin SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "dotnet"
+  display_name = ".NET SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "react-native"
+  display_name = "React Native SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "swift"
+  display_name = "Swift SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "node"
+  display_name = "Node.js SDK"
+
+  [[target_platforms.sub_platforms]]
+  name = "web"
+  display_name = "Web SDK"
+
+[[target_platforms]]
+name = "docs-relational-migrator"
+display_name = "Relational Migrator"
+
+[[target_platforms]]
+name = "docs"  # verify
+display_name = "Server"
+
+[[target_platforms]]
+name = "spark-connector"  # verify
+
+# validated against existing search documents
+[[programming_languages]]
+name = "objective-c"
+display_name = "Objective C"
+
+[[programming_languages]]
+name = "c"
+
+[[programming_languages]]
+name = "csharp"
+display_name = "C#"
+
+[[programming_languages]]
+name = "cpp"
+display_name = "C++"
+
+[[programming_languages]]
+name = "dart"
+
+[[programming_languages]]
+name = "go"
+
+[[programming_languages]]
 name = "java"
-[[target_platforms.versions]]
-name = "v4.3"
+
+[[programming_languages]]
+name = "kotlin"
+
+[[programming_languages]]
+name = "php"
+display_name = "PHP"
+
+[[programming_languages]]
+name = "python"
+
+[[programming_languages]]
+name = "ruby"
+
+[[programming_languages]]
+name = "rust"
+
+[[programming_languages]]
+name = "scala"
+
+[[programming_languages]]
+name = "swift"
+
+[[programming_languages]]
+name = "javascript/typescript"  # validate
+display_name = "JavaScript/TypeScript"
+
+[[programming_languages]]
+name = "shell"
+
+[[programming_languages]]
+name = "json"
+display_name = "JSON"
+
+[[programming_languages]]
+name = "realmql"
+display_name = "RealmQL"
+
+[[programming_languages]]
+name = "graphql"
+display_name = "GraphQL"
+
+[[programming_languages]]
+name = "mql"
+display_name = "MQL"
