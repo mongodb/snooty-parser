@@ -181,6 +181,7 @@ name = "kotlin"
 
 [[programming_languages]]
 name = "php"
+display_name = "PHP"
 
 [[programming_languages]]
 name = "python"
