@@ -47,7 +47,8 @@ class CacheData:
         """Get a specific page from the cached data with the specified blake2b hash. Raises KeyError
         if the page is not found or the checksum does not match."""
 
-        file_hash = hashlib.blake2b(path.read_bytes()).hexdigest()
+        text, _ = config.read(path)
+        file_hash = hashlib.blake2b(bytes(text, "utf-8")).hexdigest()
 
         try:
             page, diagnostics = pickle.loads(
