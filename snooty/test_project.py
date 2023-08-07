@@ -126,7 +126,7 @@ def test() -> None:
 
 def test_facet_propagation() -> None:
     backend = Backend()
-    project = Project(Path("test_data/test_project_facets"), backend, build_identifiers)
+    project = Project(Path("test_data/test_project"), backend, build_identifiers)
     project.build()
 
     index_id = FileId("index.txt")
