@@ -101,6 +101,13 @@ class ParsedBannerConfig:
     node: n.Directive
 
 
+@dataclass
+class Facet:
+    category: str
+    value: str
+    sub_facets: List["Facet"]
+
+
 @checked
 @dataclass
 class BannerConfig:
