@@ -66,7 +66,7 @@ from .flutter import check_type, checked
 from .n import FileId, SerializableType, SerializedNode
 from .page import Page
 from .target_database import TargetDatabase
-from .types import ProjectConfig
+from .types import Facet, ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
@@ -1557,23 +1557,22 @@ class FacetsHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
-        self.facets: SerializedNode = {}
-        self.target: SerializedNode = self.facets
+        self.facets: List[Facet] = []
+        self.target: List[Facet] = self.facets
+        self.parent: Optional[Facet] = None
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
+        facet_node = Facet(category=node.options["name"], value=node.options["values"])
 
-        facet_node: SerializedNode = {"name": node.options.get("values", "")}
-        if not self.target.get(node.options["name"]):
-            self.target[node.options["name"]] = []
-        target_list = self.target[node.options["name"]]
-        if isinstance(target_list, list):
-            target_list.append(facet_node)
+        if self.parent:
+            if not self.parent.sub_facets:
+                self.parent.sub_facets = []
 
-        if node.children:
-            self.target = facet_node
+            self.parent.sub_facets.append(facet_node)
+
         self.removal_nodes.append(node)
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:

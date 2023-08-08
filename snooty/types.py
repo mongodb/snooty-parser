@@ -2,10 +2,10 @@ import hashlib
 import logging
 import os.path
 import re
+import taxonomy
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
-
 import tomli
 from typing_extensions import Protocol
 
@@ -15,6 +15,7 @@ from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
+    MissingFacet,
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
@@ -105,7 +106,7 @@ class ParsedBannerConfig:
 class Facet:
     category: str
     value: str
-    sub_facets: List["Facet"]
+    sub_facets: Optional[List["Facet"]]
 
 
 @checked
@@ -247,6 +248,50 @@ class ProjectConfig:
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
+
+    @staticmethod
+    def validate_facets(
+        facets: Optional[List[Facet]],
+        category_value_pairs: Optional[List[Tuple[str, str]]],
+    ) -> Optional[List[Facet]]:
+        diagnostics: List[Diagnostic] = []
+
+        if not facets:
+            return
+
+        if not category_value_pairs:
+            category_value_pairs = []
+
+        validated_facets: List[Facet] = []
+
+        for facet in facets:
+            pair = (facet.category, facet.value)
+            category_value_pairs = [pair] + category_value_pairs
+            try:
+                taxonomy.TaxonomySpec.validate_key_value_pairs(category_value_pairs)
+
+                validated_sub_facets = self.validate_facets(
+                    facet.sub_facets, category_value_pairs
+                )
+
+                validated_facet = Facet(
+                    category=facet.category,
+                    value=facet.value,
+                    sub_facets=validated_sub_facets,
+                )
+
+                validated_facets.append(validated_facet)
+
+            except KeyError:
+                diagnostics.append(MissingFacet(f"{facet.category}:{facet.value}", 0))
+
+        # we don't want to return an empty list if
+        # there are no valid facets. This prevents us from having
+        # a sub_facets property with an empty list as a value
+        if len(validated_facets) == 0:
+            return
+
+        return validated_facets, diagnostics
 
     @staticmethod
     def load_facet_file(path: Path) -> Tuple[SerializedNode, List[Diagnostic]]:
