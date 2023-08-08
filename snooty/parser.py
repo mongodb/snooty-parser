@@ -501,7 +501,6 @@ class JSONVisitor:
             isinstance(popped, n.Directive)
             and f"{popped.domain}:{popped.name}" == ":glossary"
         ):
-
             definition_list = next(popped.get_child_of_type(n.DefinitionList), None)
 
             if definition_list is None:
@@ -1442,7 +1441,6 @@ class _Project:
         # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
         for banner in self.config.banners:
             if banner.value:
-
                 options = {"variant": banner.variant}
                 banner_node = ParsedBannerConfig(
                     banner.targets,
@@ -1587,6 +1585,38 @@ class _Project:
 
         del self.pages[fileid]
 
+    def propagate_facets(self) -> None:
+        """Scans through each directory starting at source/ and
+        loads the facets.toml file if one exists. These values get propagated
+        to each subsequent level to add them to the page.facets property if a
+        facets.toml file does not exist in that child directory.
+        """
+        root = self.config.source_path
+        parent_facets = None
+
+        for base, _, files in os.walk(root):
+            if "facets.toml" in files:
+                facet_path = Path(os.path.join(base, "facets.toml"))
+                curr_facet, diagnostics = self.config.load_facet_file(facet_path)
+
+                if parent_facets:
+                    parent_facets = self.config.merge_facets(parent_facets, curr_facet)
+                else:
+                    parent_facets = curr_facet
+            if parent_facets:
+                for file in files:
+                    ext = os.path.splitext(file)[1]
+                    if ext not in RST_EXTENSIONS:
+                        continue
+
+                    file_path = Path(os.path.join(base, file))
+                    fileid = self.config.get_fileid(file_path)
+
+                    page = self.pages._parsed[fileid][0]
+                    page.facets = parent_facets
+
+                    self._page_updated(page, diagnostics)
+
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
@@ -1597,6 +1627,7 @@ class _Project:
             )
             self.parse_rst_files(paths, max_workers)
 
+        self.propagate_facets()
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[Path]] = collections.defaultdict(list)

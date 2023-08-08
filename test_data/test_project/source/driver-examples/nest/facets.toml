@@ -1,0 +1,5 @@
+[[target_platforms]]
+name = "drivers"
+
+  [[target_platforms.sub_platforms]]
+  name = "c#_driver"

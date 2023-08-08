@@ -18,7 +18,7 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, SerializedNode
 
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -240,6 +240,36 @@ class ProjectConfig:
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
+
+    @staticmethod
+    def load_facet_file(path: Path) -> Tuple[SerializedNode, List[Diagnostic]]:
+        diagnostics: List[Diagnostic] = []
+
+        try:
+            with path.open("rb") as f:
+                data = tomli.load(f)
+        except FileNotFoundError as err:
+            diagnostics.append(CannotOpenFile(path, str(err), 0))
+        except LoadError as err:
+            diagnostics.append(UnmarshallingError(str(err), 0))
+        return data, diagnostics
+
+    @staticmethod
+    def merge_facets(
+        parent_facets: SerializedNode, child_facets: SerializedNode
+    ) -> SerializedNode:
+        """
+        This method merges two facet objects together.
+        The child facet object will override properties of
+        the parent facet object if that property exists in both objects.
+
+        e.g. parent_facets = { facet1: { name: "test" }, facet2: { name: "best" }  }; child_facets = { facet1: { name: "rest" } }
+        """
+        merged_facets: SerializedNode = child_facets
+        for facet in parent_facets:
+            if facet not in merged_facets:
+                merged_facets[facet] = parent_facets[facet]
+        return merged_facets
 
     @staticmethod
     def _substitute(
