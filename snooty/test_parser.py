@@ -3650,7 +3650,7 @@ def test_invalid_facets() -> None:
         :values: dne
 
 .. facet::
-    :name: target_platforms
+    :name: target_products
     :values: atlas, dne
 
 """,

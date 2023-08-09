@@ -2741,7 +2741,7 @@ def test_facets() -> None:
    :values: tutorial
 
 .. facet::
-   :name: target_platforms
+   :name: target_products
    :values: atlas
 
    .. facet::
@@ -2749,7 +2749,7 @@ def test_facets() -> None:
       :values: v1.2
 
    .. facet::
-      :name: sub_platforms
+      :name: sub_products
       :values: charts
 
 
@@ -2764,11 +2764,11 @@ Facets
         assert facets is not None
         assert facets == {
             "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_platforms": [
+            "target_products": [
                 {
                     "name": "atlas",
                     "versions": [{"name": "v1.2"}],
-                    "sub_platforms": [{"name": "charts"}],
+                    "sub_products": [{"name": "charts"}],
                 }
             ],
         }

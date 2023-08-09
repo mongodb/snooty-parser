@@ -5,150 +5,150 @@ name = "reference"
 name = "tutorial"
 
 # trying to map to docs "name" property 
-# for target_platforms and sub_platforms
+# for target_products and sub_products
 # as much as possible
-[[target_platforms]]
+[[target_products]]
 name = "atlas"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "atlas-app-services"
   display_name = "App Services"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "charts"
   display_name = "Charts"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "atlas-cli"
   display_name = "Atlas CLI"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "data-api"
   display_name = "Data API"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "data-federation"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "data-lake"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "device-sync" #404
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "kubernetes-operator"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "online-archive"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "search"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "stream-processing"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "triggers"
 
-[[target_platforms]]
+[[target_products]]
 name = "bi-connector"
 display_name = "BI Connector"
 
-[[target_platforms]]
+[[target_products]]
 name = "com"
 display_name = "Cloud Manager"
 
-[[target_platforms]]
+[[target_products]]
 name = "c2c"
 display_name = "Cluster-to-Cluster Sync"
 
-[[target_platforms]]
+[[target_products]]
 name = "community-kubernetes-operator"  # 404
 
-[[target_platforms]]
+[[target_products]]
 name = "compass"
 
-[[target_platforms]]
+[[target_products]]
 name = "database-tools"
 
-[[target_platforms]]
+[[target_products]]
 name = "drivers"
 
-[[target_platforms]]
+[[target_products]]
 name = "enterprise-kubernetes-operator"
 
-[[target_platforms]]
+[[target_products]]
 name = "kafka-connector"
 
-[[target_platforms]]
+[[target_products]]
 name = "mongodb-analyzer" # 404
 display_name = "MongoDB Analyzer"
 
-[[target_platforms]]
+[[target_products]]
 name = "mongocli"
 display_name = "MongoDB CLI"
 
-[[target_platforms]]
+[[target_products]]
 name = "visual-studio-extension"
 display_name = "MongoDB for VS Code"
 
-[[target_platforms]]
+[[target_products]]
 name = "mongodb-shell"
 display_name = "MongoDB Shell"
 
-[[target_platforms]]
+[[target_products]]
 name = "onprem" # verify
 display_name = "Ops Manager"
 
-[[target_platforms]]
+[[target_products]]
 name = "realm"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "cpp"
   display_name = "C++ SDK"
 
   # nestled under docs-realm 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "flutter"
   display_name = "Dart Flutter SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "java"
   display_name = "Java SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "kotlin"
   display_name = "Kotlin SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "dotnet"
   display_name = ".NET SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "react-native"
   display_name = "React Native SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "swift"
   display_name = "Swift SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "node"
   display_name = "Node.js SDK"
 
-  [[target_platforms.sub_platforms]]
+  [[target_products.sub_products]]
   name = "web"
   display_name = "Web SDK"
 
-[[target_platforms]]
+[[target_products]]
 name = "docs-relational-migrator"
 display_name = "Relational Migrator"
 
-[[target_platforms]]
+[[target_products]]
 name = "docs"  # verify
 display_name = "Server"
 
-[[target_platforms]]
+[[target_products]]
 name = "spark-connector"  # verify
 
 # validated against existing search documents
