@@ -1,14 +1,19 @@
-[[target_platforms]]
-name = "atlas"
+[[facets]]
+category="target_platforms"
+value = "atlas"
 
-[[target_platforms.versions]]
-name = "v1.2"
+  [[facets.sub_facets]]
+  category="versions"
+  value = "v1.2"
 
-[[target_platforms.sub_platforms]]
-name = "c_driver"
+  [[facets.sub_facets]]
+  category="sub_platforms"
+  value = "c_driver"
 
-[[test_facet]]
-name = "test"
+[[facets]]
+category="test_facet"
+value = "test"
 
-[[test_facet.tested_nest]]
-name = "test_nest"
+  [[facets.sub_facets]]
+  category="tested_nest"
+  name = "test_nest"

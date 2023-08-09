@@ -293,17 +293,20 @@ class ProjectConfig:
         return validated_facets, diagnostics
 
     @staticmethod
-    def load_facet_file(path: Path) -> Tuple[SerializedNode, List[Diagnostic]]:
+    def load_facets_from_file(path: Path) -> Tuple[List[Facet], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         try:
             with path.open("rb") as f:
-                data = tomli.load(f)
+                data = tomli.load(f)["facets"]
+                facets = [Facet(**facet) for facet in data]
+
+                logger.info(facets)
         except FileNotFoundError as err:
             diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
             diagnostics.append(UnmarshallingError(str(err), 0))
-        return data, diagnostics
+        return facets, diagnostics
 
     @staticmethod
     def merge_facets(
@@ -318,6 +321,7 @@ class ProjectConfig:
         """
         merged_facets: List[Facet] = child_facets
 
+        logger.info(parent_facets)
         child_categories = set([f.category for f in child_facets])
         parent_categories = set([f.category for f in parent_facets])
 

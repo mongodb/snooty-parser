@@ -1597,7 +1597,7 @@ class _Project:
         for base, _, files in os.walk(root):
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facet, diagnostics = self.config.load_facet_file(facet_path)
+                curr_facet, diagnostics = self.config.load_facets_from_file(facet_path)
 
                 if parent_facets:
                     parent_facets = self.config.merge_facets(parent_facets, curr_facet)

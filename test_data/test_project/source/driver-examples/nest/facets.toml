@@ -1,5 +1,7 @@
-[[target_platforms]]
-name = "drivers"
+[[facets]]
+category = "target_platforms"
+value = "drivers"
 
-  [[target_platforms.sub_platforms]]
-  name = "c#_driver"
+  [[facets.sub_facets]]
+  category="sub_platforms"
+  value = "c#_driver"

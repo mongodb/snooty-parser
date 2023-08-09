@@ -2820,17 +2820,21 @@ Facets
             Path(
                 "source/facets.toml"
             ): """
-[[target_platforms]]
-name = "drivers"
+[[facets]]
+category="target_platforms"
+value = "drivers"
 
-[[target_platforms.sub_platforms]]
-name = "c_driver"
+    [[facets.sub_facets]]
+    category="sub_platforms"
+    value = "c_driver"
 
-[[test_facet]]
-name = "test"
+[[facets]]
+category="test_facet"
+value = "test"
 
-[[test_facet.tested_nest]]
-name = "test_nest"
+    [[facets.sub_facets]]
+    category="tested_nest"
+    value = "test_nest"
 """,
         }
     ) as result:
@@ -2838,6 +2842,7 @@ name = "test_nest"
         facets = page.facets
 
         assert facets is not None
+        assert facets == []
         assert facets == {
             "genres": [{"name": "reference"}, {"name": "tutorial"}],
             "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
