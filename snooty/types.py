@@ -4,7 +4,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union, Any
 import tomli
 from typing_extensions import Protocol
 
@@ -105,7 +105,7 @@ class ParsedBannerConfig:
 class Facet:
     category: str
     value: str
-    sub_facets: Optional[List["Facet"]]
+    sub_facets: Optional[List["Facet"]] = None
 
 
 @checked
@@ -293,15 +293,27 @@ class ProjectConfig:
         return validated_facets, diagnostics
 
     @staticmethod
+    def parse_facet(unparsed_facet: Dict[str, Any]) -> Facet:
+        try:
+            facet = Facet(**unparsed_facet)
+
+            if facet.sub_facets:
+                facet.sub_facets = [
+                    ProjectConfig.parse_facet(f) for f in facet.sub_facets
+                ]
+        except Exception as e:
+            logger.error(e)
+        return facet
+
+    @staticmethod
     def load_facets_from_file(path: Path) -> Tuple[List[Facet], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         try:
             with path.open("rb") as f:
                 data = tomli.load(f)["facets"]
-                facets = [Facet(**facet) for facet in data]
+                facets = [ProjectConfig.parse_facet(facet) for facet in data]
 
-                logger.info(facets)
         except FileNotFoundError as err:
             diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
@@ -321,7 +333,6 @@ class ProjectConfig:
         """
         merged_facets: List[Facet] = child_facets
 
-        logger.info(parent_facets)
         child_categories = set([f.category for f in child_facets])
         parent_categories = set([f.category for f in parent_facets])
 

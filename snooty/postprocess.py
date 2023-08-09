@@ -1592,6 +1592,7 @@ class FacetsHandler(Handler):
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         curr_facets = page.facets or []
+        logger.info(self.facets)
         page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
