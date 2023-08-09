@@ -4,6 +4,8 @@
 from pathlib import Path
 from typing import Any, Dict, cast
 
+from snooty.types import Facet
+
 from . import diagnostics
 from .diagnostics import (
     ChapterAlreadyExists,
@@ -2759,16 +2761,21 @@ Facets
         page = result.pages[FileId("index.txt")]
         facets = page.facets
         assert facets is not None
-        assert facets == {
-            "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_platforms": [
-                {
-                    "name": "atlas",
-                    "versions": [{"name": "v1.2"}],
-                    "sub_platforms": [{"name": "charts"}],
-                }
-            ],
-        }
+        assert sorted(facets) == sorted(
+            [
+                Facet(category="genres", value="reference"),
+                Facet(category="genres", value="tutorial"),
+                Facet(
+                    category="target_platforms",
+                    value="atlas",
+                    sub_facets=[
+                        Facet(category="versions", value="v1.2"),
+                        Facet(category="sub_platforms", value="charts"),
+                    ],
+                ),
+            ]
+        )
+
         check_ast_testing_string(
             page.ast,
             """
@@ -2781,7 +2788,7 @@ Facets
         )
 
 
-def test_facets_with_facet_file() -> None:
+def test_toml_facets() -> None:
     with make_test(
         {
             Path(
@@ -2803,16 +2810,6 @@ def test_facets_with_facet_file() -> None:
       :name: versions
       :values: v1.2
 
-        .. facet::
-            :name: nested_two
-            :values: v1.2
-        .. facet::
-            :name: nested_two_extra
-            :values: v1.2
-.. facet::
-    :name: tersion
-    :values: v1.2
-
 ===========================
 Facets
 ===========================
@@ -2829,6 +2826,10 @@ value = "drivers"
     value = "c_driver"
 
 [[facets]]
+category = "programming_languages"  # validate
+value = "shell"
+
+[[facets]]
 category="test_facet"
 value = "test"
 
@@ -2842,12 +2843,19 @@ value = "test"
         facets = page.facets
 
         assert facets is not None
-        assert facets == []
-        assert facets == {
-            "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
-            "test_facet": [{"name": "test", "tested_nest": [{"name": "test_nest"}]}],
-        }
+        assert sorted(facets) == sorted(
+            [
+                Facet(category="genres", value="reference"),
+                Facet(category="genres", value="tutorial"),
+                Facet(
+                    category="target_platforms",
+                    value="atlas",
+                    sub_facets=[Facet(category="versions", value="v1.2")],
+                ),
+                Facet(category="programming_languages", value="shell"),
+            ]
+        )
+
         check_ast_testing_string(
             page.ast,
             """

@@ -107,6 +107,18 @@ class Facet:
     value: str
     sub_facets: Optional[List["Facet"]] = None
 
+    def __lt__(self, other: "Facet"):
+        return self.category < other.category
+
+    def __gt__(self, other: "Facet"):
+        return self.category > other.category
+
+    def __le__(self, other: "Facet"):
+        return self.category <= other.category
+
+    def __ge__(self, other: "Facet"):
+        return self.category >= other.category
+
 
 @checked
 @dataclass
@@ -251,12 +263,12 @@ class ProjectConfig:
     @staticmethod
     def validate_facets(
         facets: Optional[List[Facet]],
-        category_value_pairs: Optional[List[Tuple[str, str]]],
-    ) -> Optional[List[Facet]]:
+        category_value_pairs: Optional[List[Tuple[str, str]]] = None,
+    ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         if not facets:
-            return
+            return None, diagnostics
 
         if not category_value_pairs:
             category_value_pairs = []
@@ -266,10 +278,14 @@ class ProjectConfig:
         for facet in facets:
             pair = (facet.category, facet.value)
             category_value_pairs = [pair] + category_value_pairs
+
             try:
                 taxonomy.TaxonomySpec.validate_key_value_pairs(category_value_pairs)
 
-                validated_sub_facets = self.validate_facets(
+                (
+                    validated_sub_facets,
+                    validation_diagnostics,
+                ) = ProjectConfig.validate_facets(
                     facet.sub_facets, category_value_pairs
                 )
 
@@ -288,7 +304,10 @@ class ProjectConfig:
         # there are no valid facets. This prevents us from having
         # a sub_facets property with an empty list as a value
         if len(validated_facets) == 0:
-            return
+            return None, diagnostics
+
+        if validation_diagnostics:
+            diagnostics += validation_diagnostics
 
         return validated_facets, diagnostics
 
@@ -299,44 +318,56 @@ class ProjectConfig:
 
             if facet.sub_facets:
                 facet.sub_facets = [
-                    ProjectConfig.parse_facet(f) for f in facet.sub_facets
+                    ProjectConfig.parse_facet(f) for f in unparsed_facet["sub_facets"]
                 ]
         except Exception as e:
             logger.error(e)
         return facet
 
     @staticmethod
-    def load_facets_from_file(path: Path) -> Tuple[List[Facet], List[Diagnostic]]:
+    def load_facets_from_file(
+        path: Path,
+    ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         try:
             with path.open("rb") as f:
                 data = tomli.load(f)["facets"]
                 facets = [ProjectConfig.parse_facet(facet) for facet in data]
+                (
+                    validated_facets,
+                    validation_diagnostics,
+                ) = ProjectConfig.validate_facets(facets)
 
         except FileNotFoundError as err:
             diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
             diagnostics.append(UnmarshallingError(str(err), 0))
-        return facets, diagnostics
+        return validated_facets, diagnostics + validation_diagnostics
 
     @staticmethod
     def merge_facets(
         parent_facets: List[Facet], child_facets: List[Facet]
     ) -> List[Facet]:
         """
-        This method merges two facet objects together.
-        The child facet object will override properties of
-        the parent facet object if that property exists in both objects.
+        This method merges two facet lists together.
+        The child facet list will override categories of
+        the parent facet list if that categories exists in both lists.
+        Otherwise, if the parent facet list contains categories that do not
+        exist in the child, they will be included in the merged result
 
-        e.g. parent_facets = { facet1: { name: "test" }, facet2: { name: "best" }  }; child_facets = { facet1: { name: "rest" } }
+        e.g.
+            parent_facets = [{ category: "target_platforms", value: "drivers" }, { category: "programming_languages", value: "scala" }]
+            child_facets = [{ category: "target_platforms", value: "atlas" }]
+
+            merged_facets = [{ category: "target_platforms", value: "atlas" }, { category: "programming_languages", value: "scala" }]
         """
         merged_facets: List[Facet] = child_facets
 
         child_categories = set([f.category for f in child_facets])
         parent_categories = set([f.category for f in parent_facets])
 
-        extra_categories = child_categories - parent_categories
+        extra_categories = parent_categories - child_categories
 
         for facet in parent_facets:
             if facet.category in extra_categories:

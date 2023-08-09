@@ -1599,10 +1599,17 @@ class _Project:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facets_from_file(facet_path)
 
+                if not curr_facet:
+                    logger.warn(
+                        f"Error! facets.toml could not be loaded for {facet_path}"
+                    )
+                    continue
+
                 if parent_facets:
                     parent_facets = self.config.merge_facets(parent_facets, curr_facet)
                 else:
                     parent_facets = curr_facet
+
             if parent_facets:
                 for file in files:
                     ext = os.path.splitext(file)[1]
