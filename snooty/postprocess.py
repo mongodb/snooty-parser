@@ -1558,32 +1558,39 @@ class FacetsHandler(Handler):
         super().__init__(context)
 
         self.facets: List[Facet] = []
-        self.parent: Optional[Facet] = None
+        self.parent_stack: List[Tuple[Facet, int]] = []
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
         facet_node = Facet(category=node.options["name"], value=node.options["values"])
+        logger.info(f"ENTER_NODE: {node.options['name'], node.options['values']}")
+        logger.info(node.children)
 
-        if self.parent and isinstance(self.parent.sub_facets, list):
-            self.parent.sub_facets.append(facet_node)
+        if self.parent_stack:
+            parent, _ = self.parent_stack[-1]
+            if isinstance(parent.sub_facets, list):
+                parent.sub_facets.append(facet_node)
         else:
             self.facets.append(facet_node)
 
         if node.children:
             facet_node.sub_facets = []
-            self.parent = facet_node
-
+            num_children = len(node.children)
+            self.parent_stack.append((facet_node, num_children))
         self.removal_nodes.append(node)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if (
-            not isinstance(node, n.Directive)
-            or node.name != "facet"
-            or not node.children
-        ):
-            self.parent = None
+        if not isinstance(node, n.Directive) or node.name != "facet":
+            return
+        logger.info(f"EXIT_NODE: {node.options['name'], node.options['values']}")
+
+        if self.parent_stack:
+            parent, num_children = self.parent_stack[-1]
+
+            if len(parent.sub_facets) == num_children:
+                self.parent_stack.pop()
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.facets = []
@@ -1591,8 +1598,6 @@ class FacetsHandler(Handler):
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         curr_facets: List[Facet] = page.facets or []
-
-        logger.info(self.facets)
         page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
