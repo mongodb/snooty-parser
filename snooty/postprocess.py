@@ -1567,7 +1567,6 @@ class FacetsHandler(Handler):
         facet_node = Facet(
             category=node.options["name"], value=node.options["values"], sub_facets=None
         )
-        logger.info(f"enter_node: {node.options['name']}")
 
         if self.parent:
             self.parent.sub_facets.append(facet_node)
@@ -1583,10 +1582,8 @@ class FacetsHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        logger.info(f"exit_node: {node.options['name']}")
 
         if not node.children:
-            logger.info("No children")
             self.parent = None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -1594,10 +1591,8 @@ class FacetsHandler(Handler):
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        logger.info("exit_page")
-        logger.info(self.facets)
         curr_facets = page.facets or []
-        # page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
+        page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
                 page.ast.children.remove(facet_node)

@@ -307,8 +307,8 @@ class ProjectConfig:
 
     @staticmethod
     def merge_facets(
-        parent_facets: SerializedNode, child_facets: SerializedNode
-    ) -> SerializedNode:
+        parent_facets: List[Facet], child_facets: List[Facet]
+    ) -> List[Facet]:
         """
         This method merges two facet objects together.
         The child facet object will override properties of
@@ -316,10 +316,17 @@ class ProjectConfig:
 
         e.g. parent_facets = { facet1: { name: "test" }, facet2: { name: "best" }  }; child_facets = { facet1: { name: "rest" } }
         """
-        merged_facets: SerializedNode = child_facets
+        merged_facets: List[Facet] = child_facets
+
+        child_categories = set([f.category for f in child_facets])
+        parent_categories = set([f.category for f in parent_facets])
+
+        extra_categories = child_categories - parent_categories
+
         for facet in parent_facets:
-            if facet not in merged_facets:
-                merged_facets[facet] = parent_facets[facet]
+            if facet.category in extra_categories:
+                merged_facets.append(facet)
+
         return merged_facets
 
     @staticmethod
