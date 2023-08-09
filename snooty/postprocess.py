@@ -1589,7 +1589,7 @@ class FacetsHandler(Handler):
         if self.parent_stack:
             parent, num_children = self.parent_stack[-1]
 
-            if len(parent.sub_facets) == num_children:
+            if parent.sub_facets is not None and len(parent.sub_facets) == num_children:
                 self.parent_stack.pop()
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:

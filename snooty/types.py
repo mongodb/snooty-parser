@@ -107,16 +107,16 @@ class Facet:
     value: str
     sub_facets: Optional[List["Facet"]] = None
 
-    def __lt__(self, other: "Facet"):
+    def __lt__(self, other: "Facet") -> bool:
         return self.category < other.category
 
-    def __gt__(self, other: "Facet"):
+    def __gt__(self, other: "Facet") -> bool:
         return self.category > other.category
 
-    def __le__(self, other: "Facet"):
+    def __le__(self, other: "Facet") -> bool:
         return self.category <= other.category
 
-    def __ge__(self, other: "Facet"):
+    def __ge__(self, other: "Facet") -> bool:
         return self.category >= other.category
 
 
