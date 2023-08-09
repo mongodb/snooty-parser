@@ -2803,6 +2803,16 @@ def test_facets_with_facet_file() -> None:
       :name: versions
       :values: v1.2
 
+        .. facet::
+            :name: nested_two
+            :values: v1.2
+        .. facet::
+            :name: nested_two_extra
+            :values: v1.2
+.. facet::
+    :name: tersion
+    :values: v1.2
+
 ===========================
 Facets
 ===========================

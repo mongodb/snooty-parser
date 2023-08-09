@@ -2,14 +2,13 @@ import hashlib
 import logging
 import os.path
 import re
-import taxonomy
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
 import tomli
 from typing_extensions import Protocol
 
-from . import n, specparser
+from . import n, specparser, taxonomy
 from .diagnostics import (
     CannotOpenFile,
     ConstantNotDeclared,

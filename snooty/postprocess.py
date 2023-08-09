@@ -1558,30 +1558,46 @@ class FacetsHandler(Handler):
         super().__init__(context)
 
         self.facets: List[Facet] = []
-        self.target: List[Facet] = self.facets
         self.parent: Optional[Facet] = None
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        facet_node = Facet(category=node.options["name"], value=node.options["values"])
+        facet_node = Facet(
+            category=node.options["name"], value=node.options["values"], sub_facets=None
+        )
+        logger.info(f"enter_node: {node.options['name']}")
 
         if self.parent:
-            if not self.parent.sub_facets:
-                self.parent.sub_facets = []
-
             self.parent.sub_facets.append(facet_node)
+        else:
+            self.facets.append(facet_node)
+
+        if node.children:
+            facet_node.sub_facets = []
+            self.parent = facet_node
 
         self.removal_nodes.append(node)
 
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "facet":
+            return
+        logger.info(f"exit_node: {node.options['name']}")
+
+        if not node.children:
+            logger.info("No children")
+            self.parent = None
+
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.facets = {}
+        self.facets = []
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        curr_facets = page.facets or {}
-        page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
+        logger.info("exit_page")
+        logger.info(self.facets)
+        curr_facets = page.facets or []
+        # page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:
                 page.ast.children.remove(facet_node)
