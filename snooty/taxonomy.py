@@ -16,10 +16,10 @@ class FacetDefinition:
 
 @checked
 @dataclass
-class TargetPlatformDefinition:
+class TargetProductDefinition:
     name: str
     display_name: Optional[str]
-    sub_platforms: Optional[List[FacetDefinition]]
+    sub_products: Optional[List[FacetDefinition]]
     versions: Optional[List[FacetDefinition]]
 
 
@@ -28,7 +28,7 @@ class TargetPlatformDefinition:
 class TaxonomySpec:
 
     genres: List[FacetDefinition]
-    target_platforms: List[TargetPlatformDefinition]
+    target_products: List[TargetProductDefinition]
     programming_languages: List[FacetDefinition]
 
     TAXONOMY_SPEC: ClassVar[Optional["TaxonomySpec"]] = None
