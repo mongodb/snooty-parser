@@ -1,7 +1,7 @@
 [[facets]]
-category = "target_platforms"
+category = "target_products"
 value = "atlas"
 
   [[facets.sub_facets]]
-  category="sub_platforms"
+  category="sub_products"
   value = "atlas-cli"

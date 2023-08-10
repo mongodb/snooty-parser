@@ -357,10 +357,10 @@ class ProjectConfig:
         exist in the child, they will be included in the merged result
 
         e.g.
-            parent_facets = [{ category: "target_platforms", value: "drivers" }, { category: "programming_languages", value: "scala" }]
-            child_facets = [{ category: "target_platforms", value: "atlas" }]
+            parent_facets = [{ category: "target_products", value: "drivers" }, { category: "programming_languages", value: "scala" }]
+            child_facets = [{ category: "target_products", value: "atlas" }]
 
-            merged_facets = [{ category: "target_platforms", value: "atlas" }, { category: "programming_languages", value: "scala" }]
+            merged_facets = [{ category: "target_products", value: "atlas" }, { category: "programming_languages", value: "scala" }]
         """
         merged_facets: List[Facet] = child_facets
 

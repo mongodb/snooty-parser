@@ -2740,7 +2740,7 @@ def test_facets() -> None:
    :values: tutorial
 
 .. facet::
-   :name: target_platforms
+   :name: target_products
    :values: atlas
 
    .. facet::
@@ -2748,7 +2748,7 @@ def test_facets() -> None:
       :values: v1.2
 
    .. facet::
-      :name: sub_platforms
+      :name: sub_products
       :values: charts
 
 
@@ -2766,11 +2766,11 @@ Facets
                 Facet(category="genres", value="reference"),
                 Facet(category="genres", value="tutorial"),
                 Facet(
-                    category="target_platforms",
+                    category="target_products",
                     value="atlas",
                     sub_facets=[
                         Facet(category="versions", value="v1.2"),
-                        Facet(category="sub_platforms", value="charts"),
+                        Facet(category="sub_products", value="charts"),
                     ],
                 ),
             ]
@@ -2798,14 +2798,14 @@ def test_toml_facets() -> None:
    :name: genres
    :values: reference
 .. facet::
-   :name: target_platforms
+   :name: target_products
    :values: atlas
 
    .. facet::
       :name: versions
       :values: v1.2
    .. facet::
-      :name: sub_platforms
+      :name: sub_products
       :values: charts
 .. facet::
    :name: genres
@@ -2819,11 +2819,11 @@ Facets
                 "source/facets.toml"
             ): """
 [[facets]]
-category="target_platforms"
+category="target_products"
 value = "drivers"
 
     [[facets.sub_facets]]
-    category="sub_platforms"
+    category="sub_products"
     value = "c_driver"
 
 [[facets]]
@@ -2849,11 +2849,11 @@ value = "test"
                 Facet(category="genres", value="reference"),
                 Facet(category="genres", value="tutorial"),
                 Facet(
-                    category="target_platforms",
+                    category="target_products",
                     value="atlas",
                     sub_facets=[
                         Facet(category="versions", value="v1.2"),
-                        Facet(category="sub_platforms", value="charts"),
+                        Facet(category="sub_products", value="charts"),
                     ],
                 ),
                 Facet(category="programming_languages", value="shell"),

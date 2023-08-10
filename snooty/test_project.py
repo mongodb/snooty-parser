@@ -133,7 +133,7 @@ def test_facet_propagation() -> None:
     assert index.facets is not None
     assert index.facets[0].sub_facets is not None
 
-    assert index.facets[0].sub_facets[0].category == "sub_platforms"
+    assert index.facets[0].sub_facets[0].category == "sub_products"
     assert index.facets[0].sub_facets[0].value == "atlas-app-services"
 
     driver_id = FileId("driver-examples/driver.rst")
@@ -142,7 +142,7 @@ def test_facet_propagation() -> None:
     assert driver.facets is not None
     assert driver.facets[0].sub_facets is not None
 
-    assert driver.facets[0].sub_facets[0].category == "sub_platforms"
+    assert driver.facets[0].sub_facets[0].category == "sub_products"
     assert driver.facets[0].sub_facets[0].value == "charts"
 
     nest_id = FileId("driver-examples/nest/nest.txt")
@@ -151,7 +151,7 @@ def test_facet_propagation() -> None:
     assert nest.facets is not None
     assert nest.facets[0].sub_facets is not None
 
-    assert nest.facets[0].sub_facets[0].category == "sub_platforms"
+    assert nest.facets[0].sub_facets[0].category == "sub_products"
     assert nest.facets[0].sub_facets[0].value == "atlas-cli"
 
 
