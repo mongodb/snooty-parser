@@ -1574,13 +1574,7 @@ class FacetsHandler(Handler):
 
         if node.children:
             facet_node.sub_facets = []
-            num_children = len(
-                [
-                    child
-                    for child in node.children
-                    if isinstance(child, n.Directive) and child.name == "facet"
-                ]  # The children of a facet directive might not be a directive, nor a facet directive. Filter those out
-            )
+            num_children = len(node.children)
             self.parent_stack.append((facet_node, num_children))
         self.removal_nodes.append(node)
 
