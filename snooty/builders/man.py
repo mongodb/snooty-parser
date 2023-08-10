@@ -21,7 +21,7 @@ def troff_escape(value: str) -> str:
         ("`", r"\(ga"),
     ]
 
-    for (in_char, out_markup) in replace_pairs:
+    for in_char, out_markup in replace_pairs:
         value = value.replace(in_char, out_markup)
 
     # prevent interpretation of "." at line start

@@ -24,6 +24,11 @@ class SubstitutionTest(Parent):
     child: Child
 
 
+@dataclass
+class Empty:
+    pass
+
+
 def test_substitution() -> None:
     diagnostics: List[Diagnostic] = []
     replacements = {"verb": "test", "noun": "substitution"}
@@ -34,7 +39,7 @@ def test_substitution() -> None:
         == substituted_string
     )
 
-    obj = object()
+    obj = Empty()
     assert nodes.substitute(obj, replacements, diagnostics) is obj
 
     # Test complex substitution

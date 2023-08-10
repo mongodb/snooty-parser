@@ -37,7 +37,7 @@ TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
 #: Types of formatting to which date directives must conform.
 DateFormattingType = Enum("DateType", ("iso_8601"))
 
-_T = TypeVar("_T", bound="_Inheritable")
+_T = TypeVar("_T", "Directive", "Role", "RstObject")
 _V = TypeVar("_V")
 SPEC_VERSION = 0
 StringOrStringlist = Union[List[str], str, None]
@@ -81,10 +81,6 @@ class MissingDict(Dict[str, _V]):
 
 class MissingList(List[ArgumentType]):
     pass
-
-
-class _Inheritable(Protocol):
-    inherit: Optional[str]
 
 
 class _HasNameAndDomain(Protocol):

@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import (
+    TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     Generic,
@@ -37,7 +39,10 @@ from ..flutter import checked
 from ..page import Page
 from ..types import EmbeddedRstParser, ProjectConfig
 
-_T = TypeVar("_T", str, object)
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
+_T = TypeVar("_T", str, "DataclassInstance")
 PAT_SUBSTITUTION = re.compile(r"\{\{([\w-]+)\}\}")
 logger = logging.getLogger(__name__)
 
@@ -70,7 +75,10 @@ def substitute(
 ) -> _T:
     """Apply Giza-style replacements to a Giza node."""
     if isinstance(obj, str):
-        return substitute_text(obj, replacements, diagnostics)
+        # The new dataclass typing added to mypy is screwed up without any good workarounds
+        # from our end, so just not for this line
+        # The fun thing is we can't even cast to _T because mypy knows that it's a redundant cast C:
+        return substitute_text(obj, replacements, diagnostics)  # type: ignore
 
     if not dataclasses.is_dataclass(obj):
         return obj
@@ -87,7 +95,9 @@ def substitute(
             if new_value is not value:
                 changes[obj_field.name] = new_value
 
-    return dataclasses.replace(obj, **changes) if changes else obj
+    # The new dataclass typing added to mypy is screwed up without any good workarounds
+    # from our end, so just not for this line
+    return dataclasses.replace(obj, **changes) if changes else obj  # type: ignore
 
 
 class Node:
@@ -153,7 +163,7 @@ def inherit(
     """Implement inheritance on a pair of Giza nodes: parent's fields overwrite any
     unset fields in obj."""
     logger.debug("Inheriting %s", obj.ref)
-    changes: Dict[str, object] = {}
+    changes: Dict[str, Any] = {}
 
     # Inherit replacements
     replacement = obj.replacement.copy() if obj.replacement is not None else {}

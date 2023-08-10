@@ -26,7 +26,6 @@ class TargetProductDefinition:
 @checked
 @dataclass
 class TaxonomySpec:
-
     genres: List[FacetDefinition]
     target_products: List[TargetProductDefinition]
     programming_languages: List[FacetDefinition]

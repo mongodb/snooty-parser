@@ -969,7 +969,6 @@ class field_body(Element):
 
 
 class option(Element):
-
     child_text_separator = ""
 
 
@@ -979,7 +978,6 @@ class option_argument(TextElement):
 
 
 class option_group(Element):
-
     child_text_separator = ", "
 
 
@@ -988,7 +986,6 @@ class option_list(Element):
 
 
 class option_list_item(Element):
-
     child_text_separator = "  "
 
 
@@ -1016,7 +1013,6 @@ class line_block(General, Element):
 
 
 class line(TextElement):
-
     indent: int = 0
 
 
