@@ -63,7 +63,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType, SerializedNode
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -1565,8 +1565,6 @@ class FacetsHandler(Handler):
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
         facet_node = Facet(category=node.options["name"], value=node.options["values"])
-        logger.info(f"ENTER_NODE: {node.options['name'], node.options['values']}")
-        logger.info(node.children)
 
         if self.parent_stack:
             parent, _ = self.parent_stack[-1]
@@ -1584,7 +1582,6 @@ class FacetsHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        logger.info(f"EXIT_NODE: {node.options['name'], node.options['values']}")
 
         if self.parent_stack:
             parent, num_children = self.parent_stack[-1]

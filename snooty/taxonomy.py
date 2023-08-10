@@ -26,7 +26,6 @@ class TargetPlatformDefinition:
 @checked
 @dataclass
 class TaxonomySpec:
-
     genres: List[FacetDefinition]
     target_platforms: List[TargetPlatformDefinition]
     programming_languages: List[FacetDefinition]

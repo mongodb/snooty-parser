@@ -1,14 +1,9 @@
 [[facets]]
 category="target_platforms"
 value = "atlas"
-
-  [[facets.sub_facets]]
-  category="versions"
-  value = "v1.2"
-
   [[facets.sub_facets]]
   category="sub_platforms"
-  value = "c_driver"
+  value = "atlas-app-services"
 
 [[facets]]
 category="test_facet"
@@ -16,4 +11,4 @@ value = "test"
 
   [[facets.sub_facets]]
   category="tested_nest"
-  name = "test_nest"
+  value = "test_nest"

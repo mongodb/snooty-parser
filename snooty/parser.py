@@ -1599,7 +1599,7 @@ class _Project:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facet, diagnostics = self.config.load_facets_from_file(facet_path)
 
-                if not curr_facet:
+                if curr_facet is None:
                     logger.warn(
                         f"Error! facets.toml could not be loaded for {facet_path}"
                     )

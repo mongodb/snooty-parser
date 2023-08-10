@@ -2797,11 +2797,6 @@ def test_toml_facets() -> None:
 .. facet::
    :name: genres
    :values: reference
-
-.. facet::
-   :name: genres
-   :values: tutorial
-
 .. facet::
    :name: target_platforms
    :values: atlas
@@ -2809,6 +2804,12 @@ def test_toml_facets() -> None:
    .. facet::
       :name: versions
       :values: v1.2
+   .. facet::
+      :name: sub_platforms
+      :values: charts
+.. facet::
+   :name: genres
+   :values: tutorial
 
 ===========================
 Facets
@@ -2850,7 +2851,10 @@ value = "test"
                 Facet(
                     category="target_platforms",
                     value="atlas",
-                    sub_facets=[Facet(category="versions", value="v1.2")],
+                    sub_facets=[
+                        Facet(category="versions", value="v1.2"),
+                        Facet(category="sub_platforms", value="charts"),
+                    ],
                 ),
                 Facet(category="programming_languages", value="shell"),
             ]

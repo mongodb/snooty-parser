@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import logging
 import os.path
@@ -18,7 +19,7 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId, SerializableType, SerializedNode
+from .n import FileId, SerializableType
 
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -270,24 +271,23 @@ class ProjectConfig:
         if not facets:
             return None, diagnostics
 
-        if not category_value_pairs:
+        if category_value_pairs is None:
             category_value_pairs = []
 
         validated_facets: List[Facet] = []
 
         for facet in facets:
             pair = (facet.category, facet.value)
-            category_value_pairs = [pair] + category_value_pairs
-
+            curr_value_pairs = [pair] + category_value_pairs
             try:
-                taxonomy.TaxonomySpec.validate_key_value_pairs(category_value_pairs)
+                taxonomy.TaxonomySpec.validate_key_value_pairs(
+                    copy.deepcopy(curr_value_pairs)
+                )
 
                 (
                     validated_sub_facets,
                     validation_diagnostics,
-                ) = ProjectConfig.validate_facets(
-                    facet.sub_facets, category_value_pairs
-                )
+                ) = ProjectConfig.validate_facets(facet.sub_facets, curr_value_pairs)
 
                 validated_facet = Facet(
                     category=facet.category,
@@ -315,13 +315,13 @@ class ProjectConfig:
     def parse_facet(unparsed_facet: Dict[str, Any]) -> Facet:
         try:
             facet = Facet(**unparsed_facet)
-
             if facet.sub_facets:
                 facet.sub_facets = [
                     ProjectConfig.parse_facet(f) for f in unparsed_facet["sub_facets"]
                 ]
         except Exception as e:
             logger.error(e)
+
         return facet
 
     @staticmethod

@@ -1,0 +1,13 @@
+name = "test_data"
+title = "MongoDB title"
+canonical = "https://mongodb.com/docs/mongocli/install"
+
+[substitutions]
+guides = "MongoDB Guides"
+
+[[associated_products]]
+name = "test-name"
+versions = ["v1.0", "v1.2"]
+
+[[associated_products]]
+name = "test-name2"

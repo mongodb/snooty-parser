@@ -1,7 +1,7 @@
 [[facets]]
 category = "target_platforms"
-value = "drivers"
+value = "atlas"
 
   [[facets.sub_facets]]
   category="sub_platforms"
-  value = "c#_driver"
+  value = "atlas-cli"
