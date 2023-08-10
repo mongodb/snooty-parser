@@ -1552,8 +1552,6 @@ class RefsHandler(Handler):
 class FacetsHandler(Handler):
     """Builds page.facets depending on facets found on nodes on this page"""
 
-    # TODO: should be able to handle facet propagation from project/directory/page -> page in the future
-    # when taxonomy and function of facets (propagation) are decided
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
@@ -1564,10 +1562,11 @@ class FacetsHandler(Handler):
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
+
         facet_node = Facet(category=node.options["name"], value=node.options["values"])
 
         if self.parent_stack:
-            parent, _ = self.parent_stack[-1]
+            parent = self.parent_stack[-1][0]
             if isinstance(parent.sub_facets, list):
                 parent.sub_facets.append(facet_node)
         else:
@@ -1575,7 +1574,13 @@ class FacetsHandler(Handler):
 
         if node.children:
             facet_node.sub_facets = []
-            num_children = len(node.children)
+            num_children = len(
+                [
+                    child
+                    for child in node.children
+                    if isinstance(child, n.Directive) and child.name == "facet"
+                ]  # The children of a facet directive might not be a directive, nor a facet directive. Filter those out
+            )
             self.parent_stack.append((facet_node, num_children))
         self.removal_nodes.append(node)
 
