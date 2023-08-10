@@ -1600,7 +1600,7 @@ class _Project:
                 curr_facet, diagnostics = self.config.load_facets_from_file(facet_path)
 
                 if curr_facet is None:
-                    logger.warn(
+                    logger.warning(
                         f"Error! facets.toml could not be loaded for {facet_path}"
                     )
                     continue
