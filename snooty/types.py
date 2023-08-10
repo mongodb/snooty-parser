@@ -1,4 +1,3 @@
-import copy
 import hashlib
 import logging
 import os.path
@@ -280,9 +279,7 @@ class ProjectConfig:
             pair = (facet.category, facet.value)
             curr_value_pairs = [pair] + category_value_pairs
             try:
-                taxonomy.TaxonomySpec.validate_key_value_pairs(
-                    copy.deepcopy(curr_value_pairs)
-                )
+                taxonomy.TaxonomySpec.validate_key_value_pairs(curr_value_pairs)
 
                 (
                     validated_sub_facets,

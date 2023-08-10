@@ -1,3 +1,4 @@
+import copy
 from dataclasses import asdict, dataclass
 from typing import ClassVar, List, Optional, Tuple
 
@@ -43,9 +44,10 @@ class TaxonomySpec:
     @classmethod
     def validate_key_value_pairs(cls, facet_str_pairs: List[Tuple[str, str]]) -> None:
         taxonomy_ref = asdict(cls.get_taxonomy())
+        facet_pairs = copy.deepcopy(facet_str_pairs)
         try:
-            while len(facet_str_pairs) > 0:
-                key, value = facet_str_pairs.pop()
+            while len(facet_pairs) > 0:
+                key, value = facet_pairs.pop()
                 list_values = taxonomy_ref[key] or []
                 found_values = [
                     x for x in list_values if x == value or x["name"] == value
