@@ -63,10 +63,10 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType, SerializedNode
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
-from .types import ProjectConfig
+from .types import Facet, ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
@@ -1552,36 +1552,48 @@ class RefsHandler(Handler):
 class FacetsHandler(Handler):
     """Builds page.facets depending on facets found on nodes on this page"""
 
-    # TODO: should be able to handle facet propagation from project/directory/page -> page in the future
-    # when taxonomy and function of facets (propagation) are decided
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
-        self.facets: SerializedNode = {}
-        self.target: SerializedNode = self.facets
+        self.facets: List[Facet] = []
+        self.parent_stack: List[Tuple[Facet, int]] = []
         self.removal_nodes: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
 
-        facet_node: SerializedNode = {"name": node.options.get("values", "")}
-        if not self.target.get(node.options["name"]):
-            self.target[node.options["name"]] = []
-        target_list = self.target[node.options["name"]]
-        if isinstance(target_list, list):
-            target_list.append(facet_node)
+        facet_node = Facet(category=node.options["name"], value=node.options["values"])
+
+        if self.parent_stack:
+            parent = self.parent_stack[-1][0]
+            if parent.sub_facets is not None:
+                parent.sub_facets.append(facet_node)
+        else:
+            self.facets.append(facet_node)
 
         if node.children:
-            self.target = facet_node
+            facet_node.sub_facets = []
+            num_children = len(node.children)
+            self.parent_stack.append((facet_node, num_children))
         self.removal_nodes.append(node)
 
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "facet":
+            return
+
+        if self.parent_stack:
+            parent, num_children = self.parent_stack[-1]
+
+            if parent.sub_facets is not None and len(parent.sub_facets) == num_children:
+                self.parent_stack.pop()
+
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.facets = {}
+        self.facets = []
         self.target = self.facets
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        curr_facets = page.facets or {}
+        curr_facets: List[Facet] = page.facets or []
         page.facets = ProjectConfig.merge_facets(curr_facets, self.facets)
         for facet_node in self.removal_nodes:
             try:

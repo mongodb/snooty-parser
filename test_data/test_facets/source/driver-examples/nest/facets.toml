@@ -1,0 +1,7 @@
+[[facets]]
+category = "target_products"
+value = "atlas"
+
+  [[facets.sub_facets]]
+  category="sub_products"
+  value = "atlas-cli"

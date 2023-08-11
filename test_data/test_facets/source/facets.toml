@@ -1,0 +1,14 @@
+[[facets]]
+category="target_products"
+value = "atlas"
+  [[facets.sub_facets]]
+  category="sub_products"
+  value = "atlas-app-services"
+
+[[facets]]
+category="test_facet"
+value = "test"
+
+  [[facets.sub_facets]]
+  category="tested_nest"
+  value = "test_nest"

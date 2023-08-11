@@ -5,9 +5,9 @@ from typing import Dict, List, Optional, Set
 
 from . import n
 from .diagnostics import Diagnostic
-from .n import FileId, SerializedNode
+from .n import FileId
 from .target_database import EmptyProjectInterface, ProjectInterface
-from .types import StaticAsset
+from .types import Facet, StaticAsset
 
 
 class PendingTask:
@@ -35,7 +35,7 @@ class Page:
     dependencies: Dict[FileId, Optional[str]] = field(default_factory=dict)
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
-    facets: Optional[SerializedNode] = field(default=None)
+    facets: Optional[List[Facet]] = field(default=None)
     category: Optional[str] = field(default=None)
 
     @classmethod

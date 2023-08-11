@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass
-from typing import ClassVar, List, Optional, Tuple
+from typing import ClassVar, List, Optional, Sequence, Tuple
 
 import tomli
 
@@ -26,7 +26,6 @@ class TargetProductDefinition:
 @checked
 @dataclass
 class TaxonomySpec:
-
     genres: List[FacetDefinition]
     target_products: List[TargetProductDefinition]
     programming_languages: List[FacetDefinition]
@@ -42,11 +41,15 @@ class TaxonomySpec:
         return cls.TAXONOMY_SPEC
 
     @classmethod
-    def validate_key_value_pairs(cls, facet_str_pairs: List[Tuple[str, str]]) -> None:
+    def validate_key_value_pairs(
+        cls, facet_str_pairs: Sequence[Tuple[str, str]]
+    ) -> None:
         taxonomy_ref = asdict(cls.get_taxonomy())
+        # convert facet_str_pairs to List so we can call .pop() and copy
+        facet_pairs = list(facet_str_pairs)
         try:
-            while len(facet_str_pairs) > 0:
-                key, value = facet_str_pairs.pop()
+            while facet_pairs:
+                key, value = facet_pairs.pop()
                 list_values = taxonomy_ref[key] or []
                 found_values = [
                     x for x in list_values if x == value or x["name"] == value

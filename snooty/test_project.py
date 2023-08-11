@@ -69,23 +69,17 @@ def test() -> None:
     n_threads = len(threading.enumerate())
     with Project(Path("test_data/test_project"), backend, build_identifiers) as project:
         project.build()
-
         # Ensure that filesystem monitoring threads have been started
         assert len(threading.enumerate()) > n_threads
 
         # Ensure that the correct pages and assets exist
         index_id = FileId("index.txt")
-        drivers_id = FileId("driver-examples/driver.rst")
-        nested_id = FileId("driver-examples/nest/nest.txt")
-        assert list(sorted(backend.pages.keys())) == list(
-            sorted([nested_id, index_id, drivers_id])
-        )
+        assert list(backend.pages.keys()) == [index_id]
         # Confirm that no diagnostics were created
         assert backend.diagnostics[index_id] == []
         code_length = 0
         checksums: List[str] = []
         index = backend.pages[index_id]
-
         assert len(index.static_assets) == 1
         assert not index.pending_tasks
         for node in ast_dive(index.ast):
@@ -97,9 +91,7 @@ def test() -> None:
         assert checksums == [
             "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"
         ]
-        assert list(sorted(backend.updates)) == list(
-            sorted([nested_id, index_id, drivers_id])
-        )
+        assert backend.updates == [index_id]
 
         # Skip the remainder of the tests on non-Darwin platforms; they fail for
         # unknown reasons.
@@ -124,9 +116,7 @@ def test() -> None:
             ) == [2]
 
         # Ensure that the page has been reparsed 2 times
-        assert sorted(backend.updates) == sorted(
-            [nested_id, drivers_id, index_id, index_id]
-        )
+        assert backend.updates == [index_id, index_id]
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
@@ -134,33 +124,35 @@ def test() -> None:
 
 def test_facet_propagation() -> None:
     backend = Backend()
-    project = Project(Path("test_data/test_project"), backend, build_identifiers)
+    project = Project(Path("test_data/test_facets"), backend, build_identifiers)
     project.build()
 
     index_id = FileId("index.txt")
     index = backend.pages[index_id]
 
-    # NOTE: Temporarily ignoring the type errors as they will be addressed
-    # by changing the facets data type. This will be done in a later story
     assert index.facets is not None
-    assert "target_platforms" in index.facets
-    assert index.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c_driver"  # type: ignore
+    assert index.facets[0].sub_facets is not None
+
+    assert index.facets[0].sub_facets[0].category == "sub_products"
+    assert index.facets[0].sub_facets[0].value == "atlas-app-services"
 
     driver_id = FileId("driver-examples/driver.rst")
     driver = backend.pages[driver_id]
 
     assert driver.facets is not None
-    assert "target_platforms" in driver.facets
-    assert (
-        driver.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c++_driver"  # type: ignore
-    )
+    assert driver.facets[0].sub_facets is not None
+
+    assert driver.facets[0].sub_facets[0].category == "sub_products"
+    assert driver.facets[0].sub_facets[0].value == "charts"
 
     nest_id = FileId("driver-examples/nest/nest.txt")
     nest = backend.pages[nest_id]
 
     assert nest.facets is not None
-    assert "target_platforms" in nest.facets
-    assert nest.facets["target_platforms"][0]["sub_platforms"][0]["name"] == "c#_driver"  # type: ignore
+    assert nest.facets[0].sub_facets is not None
+
+    assert nest.facets[0].sub_facets[0].category == "sub_products"
+    assert nest.facets[0].sub_facets[0].value == "atlas-cli"
 
 
 def test_merge_conflict() -> None:
