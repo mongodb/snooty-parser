@@ -45,7 +45,8 @@ class TaxonomySpec:
         cls, facet_str_pairs: Sequence[Tuple[str, str]]
     ) -> None:
         taxonomy_ref = asdict(cls.get_taxonomy())
-        facet_pairs = list(facet_str_pairs[:])
+        # convert facet_str_pairs to List so we can call .pop() and copy
+        facet_pairs = list(facet_str_pairs)
         try:
             while facet_pairs:
                 key, value = facet_pairs.pop()
