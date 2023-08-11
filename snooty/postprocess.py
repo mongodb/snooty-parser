@@ -1567,7 +1567,7 @@ class FacetsHandler(Handler):
 
         if self.parent_stack:
             parent = self.parent_stack[-1][0]
-            if isinstance(parent.sub_facets, list):
+            if parent.sub_facets is not None:
                 parent.sub_facets.append(facet_node)
         else:
             self.facets.append(facet_node)
