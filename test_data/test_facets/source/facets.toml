@@ -1,8 +1,8 @@
 [[facets]]
-category="target_products"
+category="target_product"
 value = "atlas"
   [[facets.sub_facets]]
-  category="sub_products"
+  category="sub_product"
   value = "atlas-app-services"
 
 [[facets]]
