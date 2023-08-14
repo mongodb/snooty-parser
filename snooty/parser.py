@@ -1597,12 +1597,18 @@ class _Project:
         for base, _, files in os.walk(root):
             if "facets.toml" in files:
                 facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facet, diagnostics = self.config.load_facet_file(facet_path)
+                curr_facets, diagnostics = self.config.load_facets_from_file(facet_path)
 
-                if parent_facets:
-                    parent_facets = self.config.merge_facets(parent_facets, curr_facet)
-                else:
-                    parent_facets = curr_facet
+                if curr_facets is None:
+                    self.pages.set_orphan_diagnostics(
+                        self.config.get_fileid(facet_path), diagnostics
+                    )
+
+                if parent_facets and curr_facets:
+                    parent_facets = self.config.merge_facets(parent_facets, curr_facets)
+                elif curr_facets:
+                    parent_facets = curr_facets
+
             if parent_facets:
                 for file in files:
                     ext = os.path.splitext(file)[1]

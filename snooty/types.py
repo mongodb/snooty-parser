@@ -4,21 +4,21 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union
-
+from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union, Any
 import tomli
 from typing_extensions import Protocol
 
-from . import n, specparser
+from . import n, specparser, taxonomy
 from .diagnostics import (
     CannotOpenFile,
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
+    MissingFacet,
     UnmarshallingError,
 )
 from .flutter import LoadError, check_type, checked
-from .n import FileId, SerializableType, SerializedNode
+from .n import FileId, SerializableType
 
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
@@ -99,6 +99,25 @@ class StaticAsset:
 class ParsedBannerConfig:
     targets: List[str]
     node: n.Directive
+
+
+@dataclass
+class Facet:
+    category: str
+    value: str
+    sub_facets: Optional[List["Facet"]] = None
+
+    def __lt__(self, other: "Facet") -> bool:
+        return self.category < other.category
+
+    def __gt__(self, other: "Facet") -> bool:
+        return self.category > other.category
+
+    def __le__(self, other: "Facet") -> bool:
+        return self.category <= other.category
+
+    def __ge__(self, other: "Facet") -> bool:
+        return self.category >= other.category
 
 
 @checked
@@ -242,33 +261,115 @@ class ProjectConfig:
         return self.source_path.joinpath(fileid)
 
     @staticmethod
-    def load_facet_file(path: Path) -> Tuple[SerializedNode, List[Diagnostic]]:
+    def validate_facets(
+        facets: Optional[List[Facet]],
+        category_value_pairs: Optional[List[Tuple[str, str]]] = None,
+    ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
+        diagnostics: List[Diagnostic] = []
+
+        if not facets:
+            return None, diagnostics
+
+        if category_value_pairs is None:
+            category_value_pairs = []
+
+        validated_facets: List[Facet] = []
+
+        for facet in facets:
+            pair = (facet.category, facet.value)
+            curr_value_pairs = [pair] + category_value_pairs
+            try:
+                taxonomy.TaxonomySpec.validate_key_value_pairs(curr_value_pairs)
+
+                (
+                    validated_sub_facets,
+                    validation_diagnostics,
+                ) = ProjectConfig.validate_facets(facet.sub_facets, curr_value_pairs)
+
+                validated_facet = Facet(
+                    category=facet.category,
+                    value=facet.value,
+                    sub_facets=validated_sub_facets,
+                )
+
+                validated_facets.append(validated_facet)
+
+            except KeyError:
+                diagnostics.append(MissingFacet(f"{facet.category}:{facet.value}", 0))
+
+        # we don't want to return an empty list if
+        # there are no valid facets. This prevents us from having
+        # a sub_facets property with an empty list as a value
+        if len(validated_facets) == 0:
+            return None, diagnostics
+
+        if validation_diagnostics:
+            diagnostics += validation_diagnostics
+
+        return validated_facets, diagnostics
+
+    @staticmethod
+    def parse_facet(unparsed_facet: Dict[str, Any]) -> Facet:
+        try:
+            facet = Facet(**unparsed_facet)
+            if facet.sub_facets:
+                facet.sub_facets = [
+                    ProjectConfig.parse_facet(f) for f in unparsed_facet["sub_facets"]
+                ]
+        except Exception as e:
+            logger.error(e)
+
+        return facet
+
+    @staticmethod
+    def load_facets_from_file(
+        path: Path,
+    ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
 
         try:
             with path.open("rb") as f:
-                data = tomli.load(f)
+                data = tomli.load(f)["facets"]
+                facets = [ProjectConfig.parse_facet(facet) for facet in data]
+                (
+                    validated_facets,
+                    validation_diagnostics,
+                ) = ProjectConfig.validate_facets(facets)
+
         except FileNotFoundError as err:
             diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
             diagnostics.append(UnmarshallingError(str(err), 0))
-        return data, diagnostics
+        return validated_facets, diagnostics + validation_diagnostics
 
     @staticmethod
     def merge_facets(
-        parent_facets: SerializedNode, child_facets: SerializedNode
-    ) -> SerializedNode:
+        parent_facets: List[Facet], child_facets: List[Facet]
+    ) -> List[Facet]:
         """
-        This method merges two facet objects together.
-        The child facet object will override properties of
-        the parent facet object if that property exists in both objects.
+        This method merges two facet lists together.
+        The child facet list will override categories of
+        the parent facet list if that categories exists in both lists.
+        Otherwise, if the parent facet list contains categories that do not
+        exist in the child, they will be included in the merged result
 
-        e.g. parent_facets = { facet1: { name: "test" }, facet2: { name: "best" }  }; child_facets = { facet1: { name: "rest" } }
+        e.g.
+            parent_facets = [{ category: "target_product", value: "drivers" }, { category: "programming_language", value: "scala" }]
+            child_facets = [{ category: "target_product", value: "atlas" }]
+
+            merged_facets = [{ category: "target_product", value: "atlas" }, { category: "programming_language", value: "scala" }]
         """
-        merged_facets: SerializedNode = child_facets
+        merged_facets: List[Facet] = child_facets
+
+        child_categories = set([f.category for f in child_facets])
+        parent_categories = set([f.category for f in parent_facets])
+
+        extra_categories = parent_categories - child_categories
+
         for facet in parent_facets:
-            if facet not in merged_facets:
-                merged_facets[facet] = parent_facets[facet]
+            if facet.category in extra_categories:
+                merged_facets.append(facet)
+
         return merged_facets
 
     @staticmethod

@@ -104,7 +104,5 @@ def test_manifest() -> None:
                     "documents/index.bson",
                     "site.bson",
                     "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
-                    "documents/driver-examples/nest/nest.bson",
-                    "documents/driver-examples/driver.bson",
                 ]
             )

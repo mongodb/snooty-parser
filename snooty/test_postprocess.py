@@ -4,6 +4,8 @@
 from pathlib import Path
 from typing import Any, Dict, cast
 
+from snooty.types import Facet
+
 from . import diagnostics
 from .diagnostics import (
     ChapterAlreadyExists,
@@ -2730,23 +2732,23 @@ def test_facets() -> None:
                 "source/index.txt"
             ): """
 .. facet::
-   :name: genres
+   :name: genre
    :values: reference
 
 .. facet::
-   :name: genres
+   :name: genre
    :values: tutorial
 
 .. facet::
-   :name: target_products
+   :name: target_product
    :values: atlas
 
    .. facet::
-      :name: versions
+      :name: version
       :values: v1.2
 
    .. facet::
-      :name: sub_products
+      :name: sub_product
       :values: charts
 
 
@@ -2759,16 +2761,21 @@ Facets
         page = result.pages[FileId("index.txt")]
         facets = page.facets
         assert facets is not None
-        assert facets == {
-            "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_products": [
-                {
-                    "name": "atlas",
-                    "versions": [{"name": "v1.2"}],
-                    "sub_products": [{"name": "charts"}],
-                }
-            ],
-        }
+        assert sorted(facets) == sorted(
+            [
+                Facet(category="genre", value="reference"),
+                Facet(category="genre", value="tutorial"),
+                Facet(
+                    category="target_product",
+                    value="atlas",
+                    sub_facets=[
+                        Facet(category="version", value="v1.2"),
+                        Facet(category="sub_product", value="charts"),
+                    ],
+                ),
+            ]
+        )
+
         check_ast_testing_string(
             page.ast,
             """
@@ -2781,27 +2788,28 @@ Facets
         )
 
 
-def test_facets_with_facet_file() -> None:
+def test_toml_facets() -> None:
     with make_test(
         {
             Path(
                 "source/index.txt"
             ): """
 .. facet::
-   :name: genres
+   :name: genre
    :values: reference
-
 .. facet::
-   :name: genres
-   :values: tutorial
-
-.. facet::
-   :name: target_platforms
+   :name: target_product
    :values: atlas
 
    .. facet::
-      :name: versions
+      :name: version
       :values: v1.2
+   .. facet::
+      :name: sub_product
+      :values: charts
+.. facet::
+   :name: genre
+   :values: tutorial
 
 ===========================
 Facets
@@ -2810,17 +2818,25 @@ Facets
             Path(
                 "source/facets.toml"
             ): """
-[[target_platforms]]
-name = "drivers"
+[[facets]]
+category="target_product"
+value = "drivers"
 
-[[target_platforms.sub_platforms]]
-name = "c_driver"
+    [[facets.sub_facets]]
+    category="sub_product"
+    value = "c_driver"
 
-[[test_facet]]
-name = "test"
+[[facets]]
+category = "programming_language"  # validate
+value = "shell"
 
-[[test_facet.tested_nest]]
-name = "test_nest"
+[[facets]]
+category="test_facet"
+value = "test"
+
+    [[facets.sub_facets]]
+    category="tested_nest"
+    value = "test_nest"
 """,
         }
     ) as result:
@@ -2828,11 +2844,22 @@ name = "test_nest"
         facets = page.facets
 
         assert facets is not None
-        assert facets == {
-            "genres": [{"name": "reference"}, {"name": "tutorial"}],
-            "target_platforms": [{"name": "atlas", "versions": [{"name": "v1.2"}]}],
-            "test_facet": [{"name": "test", "tested_nest": [{"name": "test_nest"}]}],
-        }
+        assert sorted(facets) == sorted(
+            [
+                Facet(category="genre", value="reference"),
+                Facet(category="genre", value="tutorial"),
+                Facet(
+                    category="target_product",
+                    value="atlas",
+                    sub_facets=[
+                        Facet(category="version", value="v1.2"),
+                        Facet(category="sub_product", value="charts"),
+                    ],
+                ),
+                Facet(category="programming_language", value="shell"),
+            ]
+        )
+
         check_ast_testing_string(
             page.ast,
             """
