@@ -180,6 +180,9 @@ name = "java"
 name = "kotlin"
 
 [[programming_language]]
+name = "perl"
+
+[[programming_language]]
 name = "php"
 display_name = "PHP"
 
