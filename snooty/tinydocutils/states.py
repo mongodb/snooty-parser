@@ -1714,7 +1714,6 @@ class Body(RSTState):
     def option_list_item(
         self, match: Match[str]
     ) -> Tuple[nodes.option_list_item, bool]:
-
         offset = self.state_machine.abs_line_offset()
         options = self.parse_option_marker(match)
         (
@@ -1783,7 +1782,6 @@ class Body(RSTState):
         context: List[str],
         next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
-
         data = "\n".join(self.state_machine.get_text_block())
         # TODO: prepend class value ['pycon'] (Python Console)
         # parse with `directives.body.CodeBlock` (returns literal-block
@@ -1957,7 +1955,6 @@ class Body(RSTState):
     explicit = ExplicitInfo()
 
     def footnote(self, match: Match[str]) -> Tuple[Sequence[nodes.footnote], bool]:
-
         src, srcline = self.state_machine.get_source_and_line()
         (
             indented,
@@ -1993,7 +1990,6 @@ class Body(RSTState):
         return [footnote], blank_finish
 
     def citation(self, match: Match[str]) -> Tuple[List[nodes.citation], bool]:
-
         src, srcline = self.state_machine.get_source_and_line()
         (
             indented,
@@ -2429,7 +2425,6 @@ class Body(RSTState):
     def unknown_directive(
         self, type_name: str
     ) -> Tuple[List[nodes.system_message], bool]:
-
         lineno = self.state_machine.abs_line_number()
         (
             indented,
@@ -2446,7 +2441,6 @@ class Body(RSTState):
         return [error], blank_finish
 
     def comment(self, match: Match[str]) -> Tuple[List[nodes.Element], bool]:
-
         if (
             not match.string[match.end() :].strip()
             and self.state_machine.is_next_line_blank()
@@ -2561,7 +2555,6 @@ class Body(RSTState):
                 try:
                     return method(self, expmatch)
                 except MarkupError as error:
-
                     lineno = self.state_machine.abs_line_number()
                     message = " ".join(error.args)
                     errors.append(self.reporter.warning(message, line=lineno))
@@ -2602,7 +2595,6 @@ class Body(RSTState):
         return [], next_state, []
 
     def anonymous_target(self, match: Match[str]) -> Tuple[List[nodes.target], bool]:
-
         lineno = self.state_machine.abs_line_number()
         (
             block,
@@ -3013,7 +3005,6 @@ class SubstitutionDef(Body, HaveBlankFinish):
         context: List[str],
         next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
-
         if not self.state_machine.at_eof():
             self.blank_finish = self.state_machine.is_next_line_blank()
         raise EOFError
@@ -3192,7 +3183,6 @@ class Text(RSTState):
     def definition_list_item(
         self, termline: List[str]
     ) -> Tuple[nodes.definition_list_item, bool]:
-
         indented, indent, line_offset, blank_finish = self.state_machine.get_indented()
         itemnode = nodes.definition_list_item("\n".join(termline + list(indented)))
         lineno = self.state_machine.abs_line_number() - 1
@@ -3513,7 +3503,6 @@ class Line(SpecializedText):
         self.state_correction(context, lines)
 
     def state_correction(self, context: List[str], lines: int = 1) -> None:
-
         self.state_machine.previous_line(lines)
         context[:] = []
         raise statemachine.StateCorrection(Body, "text")

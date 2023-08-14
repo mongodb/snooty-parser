@@ -571,7 +571,8 @@ class BaseDocutilsDirective(tinydocutils.directives.Directive):
 
     def add_name(self, node: tinydocutils.nodes.Node) -> None:
         """Docutils by default will, if a "name" option is given to a directive,
-        change the shape of the node. We don't want that and it muddles up higher layers."""
+        change the shape of the node. We don't want that and it muddles up higher layers.
+        """
         pass
 
     @staticmethod

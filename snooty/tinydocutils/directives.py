@@ -381,7 +381,6 @@ class Directive:
 
 
 class Replace(Directive):
-
     has_content = True
 
     def run(self) -> Sequence[nodes.Node]:
@@ -414,7 +413,6 @@ class Replace(Directive):
 
 
 class Unicode(Directive):
-
     r"""
     Convert Unicode character codes (numbers) to characters.  Codes may be
     decimal numbers, hexadecimal numbers (prefixed by ``0x``, ``x``, ``\x``,

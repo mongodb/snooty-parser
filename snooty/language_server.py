@@ -219,7 +219,8 @@ class Debouncer:
 
 class DiagnosticSeverity(enum.IntEnum):
     """The Language Server Protocol's DiagnosticSeverity namespace enumeration.
-    See: https://microsoft.github.io/language-server-protocol/specification#diagnostic"""
+    See: https://microsoft.github.io/language-server-protocol/specification#diagnostic
+    """
 
     error = 1
     warning = 2
