@@ -2732,23 +2732,23 @@ def test_facets() -> None:
                 "source/index.txt"
             ): """
 .. facet::
-   :name: genres
+   :name: genre
    :values: reference
 
 .. facet::
-   :name: genres
+   :name: genre
    :values: tutorial
 
 .. facet::
-   :name: target_products
+   :name: target_product
    :values: atlas
 
    .. facet::
-      :name: versions
+      :name: version
       :values: v1.2
 
    .. facet::
-      :name: sub_products
+      :name: sub_product
       :values: charts
 
 
@@ -2763,14 +2763,14 @@ Facets
         assert facets is not None
         assert sorted(facets) == sorted(
             [
-                Facet(category="genres", value="reference"),
-                Facet(category="genres", value="tutorial"),
+                Facet(category="genre", value="reference"),
+                Facet(category="genre", value="tutorial"),
                 Facet(
-                    category="target_products",
+                    category="target_product",
                     value="atlas",
                     sub_facets=[
-                        Facet(category="versions", value="v1.2"),
-                        Facet(category="sub_products", value="charts"),
+                        Facet(category="version", value="v1.2"),
+                        Facet(category="sub_product", value="charts"),
                     ],
                 ),
             ]
@@ -2795,20 +2795,20 @@ def test_toml_facets() -> None:
                 "source/index.txt"
             ): """
 .. facet::
-   :name: genres
+   :name: genre
    :values: reference
 .. facet::
-   :name: target_products
+   :name: target_product
    :values: atlas
 
    .. facet::
-      :name: versions
+      :name: version
       :values: v1.2
    .. facet::
-      :name: sub_products
+      :name: sub_product
       :values: charts
 .. facet::
-   :name: genres
+   :name: genre
    :values: tutorial
 
 ===========================
@@ -2819,15 +2819,15 @@ Facets
                 "source/facets.toml"
             ): """
 [[facets]]
-category="target_products"
+category="target_product"
 value = "drivers"
 
     [[facets.sub_facets]]
-    category="sub_products"
+    category="sub_product"
     value = "c_driver"
 
 [[facets]]
-category = "programming_languages"  # validate
+category = "programming_language"  # validate
 value = "shell"
 
 [[facets]]
@@ -2846,17 +2846,17 @@ value = "test"
         assert facets is not None
         assert sorted(facets) == sorted(
             [
-                Facet(category="genres", value="reference"),
-                Facet(category="genres", value="tutorial"),
+                Facet(category="genre", value="reference"),
+                Facet(category="genre", value="tutorial"),
                 Facet(
-                    category="target_products",
+                    category="target_product",
                     value="atlas",
                     sub_facets=[
-                        Facet(category="versions", value="v1.2"),
-                        Facet(category="sub_products", value="charts"),
+                        Facet(category="version", value="v1.2"),
+                        Facet(category="sub_product", value="charts"),
                     ],
                 ),
-                Facet(category="programming_languages", value="shell"),
+                Facet(category="programming_language", value="shell"),
             ]
         )
 

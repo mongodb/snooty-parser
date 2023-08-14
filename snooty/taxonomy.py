@@ -19,16 +19,16 @@ class FacetDefinition:
 class TargetProductDefinition:
     name: str
     display_name: Optional[str]
-    sub_products: Optional[List[FacetDefinition]]
-    versions: Optional[List[FacetDefinition]]
+    sub_product: Optional[List[FacetDefinition]]
+    version: Optional[List[FacetDefinition]]
 
 
 @checked
 @dataclass
 class TaxonomySpec:
-    genres: List[FacetDefinition]
-    target_products: List[TargetProductDefinition]
-    programming_languages: List[FacetDefinition]
+    genre: List[FacetDefinition]
+    target_product: List[TargetProductDefinition]
+    programming_language: List[FacetDefinition]
 
     TAXONOMY_SPEC: ClassVar[Optional["TaxonomySpec"]] = None
 
