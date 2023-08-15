@@ -139,8 +139,9 @@ class Backend(ProjectBackend):
                 {"checksum": asset.get_checksum(), "key": asset.key}
                 for asset in uploadable_assets
             ],
-            "facets": page.facets,
         }
+        if page.facets:
+            document["facets"] = [facet.serialize() for facet in page.facets]
 
         self.handle_document(
             build_identifiers, page_id, fully_qualified_pageid, document
