@@ -4,7 +4,17 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union, Any
+from typing import (
+    Any,
+    Dict,
+    List,
+    Match,
+    MutableSequence,
+    Optional,
+    Tuple,
+    Union,
+)
+
 import tomli
 from typing_extensions import Protocol
 
@@ -118,6 +128,14 @@ class Facet:
 
     def __ge__(self, other: "Facet") -> bool:
         return self.category >= other.category
+
+    def serialize(self) -> n.SerializedNode:
+        result: n.SerializedNode = {"category": self.category, "sub_facets": None}
+        if self.sub_facets:
+            result["sub_facets"] = [
+                sub_facet.serialize() for sub_facet in self.sub_facets
+            ]
+        return result
 
 
 @checked
