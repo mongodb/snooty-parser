@@ -15,11 +15,12 @@ from .diagnostics import (
 )
 from .n import FileId, SerializableType
 from .page import Page
+from .parse_cache import CacheStats
 from .parser import Project, ProjectBackend
 from .target_database import TargetDatabase
 from .types import BuildIdentifierSet, ProjectConfig
 from .util import ast_dive
-from .util_test import check_ast_testing_string, make_test
+from .util_test import check_ast_testing_string, make_test, make_test_project
 
 build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "789"}
 
@@ -308,3 +309,40 @@ invalid = {foo = "bar"}
         assert [type(d) for d in result.diagnostics[FileId("snooty.toml")]] == [
             UnmarshallingError
         ]
+
+
+def test_cache() -> None:
+    with make_test_project(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_cache"
+
+[substitutions]
+foo = "bar"
+""",
+            Path(
+                "source/index.txt"
+            ): """
+.. include:: /foobar.rst
+""",
+            Path(
+                "source/foobar.rst"
+            ): """
+Testing {+foo+}
+""",
+        }
+    ) as (_project, backend):
+        with _project._get_inner() as project:
+            project.load_cache()
+            project.build(1, False)
+            assert project.cache is not None
+
+            assert project.cache.stats == CacheStats(hits=0, misses=2, errors=0)
+
+            project.update_cache()
+            project.load_cache()
+            project.build(1, False)
+
+            assert project.cache.stats == CacheStats(hits=2, misses=0, errors=0)

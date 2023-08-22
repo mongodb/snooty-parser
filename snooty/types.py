@@ -4,7 +4,8 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Dict, List, Match, MutableSequence, Optional, Tuple, Union, Any
+from typing import Any, Dict, List, Match, MutableSequence, Optional, Tuple, Union
+
 import tomli
 from typing_extensions import Protocol
 
