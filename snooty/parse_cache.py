@@ -24,10 +24,21 @@ class CacheMiss(Exception):
 
 
 @dataclass
+class CacheStats:
+    """Tracking data for cache hit rates."""
+
+    hits: int = field(default=0)
+    misses: int = field(default=0)
+    errors: int = field(default=0)
+
+
+@dataclass
 class CacheData:
     specifier: Tuple[str, ...]
     pages: Dict[Tuple[str, str], bytes] = field(default_factory=dict)
     orphan_diagnostics: Dict[str, bytes] = field(default_factory=dict)
+
+    stats: CacheStats = field(default_factory=CacheStats)
 
     def set_page(self, obj: Page, diagnostics: List[Diagnostic]) -> None:
         self.pages[(obj.ast.fileid.as_posix(), obj.blake2b)] = pickle.dumps(
@@ -55,9 +66,11 @@ class CacheData:
                 self.pages[(config.get_fileid(path).as_posix(), file_hash)]
             )
         except KeyError as err:
+            self.stats.misses += 1
             raise CacheMiss() from err
         except Exception as err:
             logger.info("Error loading page from cache: %s", err)
+            self.stats.errors += 1
             raise CacheMiss()
 
         assert isinstance(page, Page)
@@ -69,15 +82,29 @@ class CacheData:
             try:
                 actual_blake2b = hashlib.blake2b(dep_path.read_bytes()).hexdigest()
             except OSError:
+                self.stats.misses += 1
                 raise CacheMiss()
 
             if dep_blake2b != actual_blake2b:
+                self.stats.misses += 1
                 raise CacheMiss()
 
+        self.stats.hits += 1
         return page, diagnostics
 
     def __len__(self) -> int:
         return len(self.pages)
+
+    def __getstate__(self) -> Dict[str, object]:
+        # Delete the statistics field from the pickle state
+        state = self.__dict__.copy()
+        del state["stats"]
+        return state
+
+    def __setstate__(self, state: Dict[str, object]) -> None:
+        # When loading statistics from pickled data, fill in zero'd data
+        self.__dict__.update(state)
+        self.stats = CacheStats()
 
 
 class ParseCache:

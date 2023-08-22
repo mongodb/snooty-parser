@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import errno
 import getpass
 import hashlib
@@ -21,6 +22,7 @@ from typing import (
     Any,
     Dict,
     Iterable,
+    Iterator,
     List,
     MutableSequence,
     Optional,
@@ -1927,6 +1929,11 @@ class Project:
         """Stop the filesystem monitoring thread associated with this project."""
         if self.watch:
             self._filesystem_watcher.stop(join=True)
+
+    @contextlib.contextmanager
+    def _get_inner(self) -> Iterator[_Project]:
+        with self._lock:
+            yield self._project
 
     def _on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         with self._lock:

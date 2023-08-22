@@ -203,9 +203,9 @@ class BackendTestResults(ProjectBackend):
 
 
 @contextlib.contextmanager
-def make_test(
+def make_test_project(
     files: Dict[PurePath, AnyStr], name: str = ""
-) -> Iterator[BackendTestResults]:
+) -> Iterator[Tuple[Project, BackendTestResults]]:
     """Create a temporary test project with the given files."""
     need_to_make_snooty_toml = Path("snooty.toml") not in files
     if need_to_make_snooty_toml:
@@ -230,9 +230,17 @@ def make_test(
         backend = BackendTestResults()
 
         with Project(root, backend, {}, watch=False) as project:
-            project.build()
+            yield (project, backend)
 
-    yield backend
+
+@contextlib.contextmanager
+def make_test(
+    files: Dict[PurePath, AnyStr], name: str = ""
+) -> Iterator[BackendTestResults]:
+    """Create a temporary test project with the given files."""
+    with make_test_project(files, name) as (project, backend):
+        project.build()
+        yield backend
 
 
 def parse_rst(
