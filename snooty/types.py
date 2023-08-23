@@ -4,7 +4,17 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Match, MutableSequence, Optional, Tuple, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Match,
+    MutableSequence,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import tomli
 from typing_extensions import Protocol
@@ -168,7 +178,7 @@ class AssociatedProduct:
 @checked
 @dataclass
 class ProjectConfig:
-    root: Path
+    root: Path = field(metadata={"nohash": True})
     name: str
     fail_on_diagnostics: bool = field(default=False)
     default_domain: Optional[str] = field(default=None)
@@ -199,6 +209,8 @@ class ProjectConfig:
         default_factory=dict, metadata={"nohash": True}
     )
 
+    CONFIG_FILEID: ClassVar[FileId] = FileId("../snooty.toml")
+
     @property
     def source_path(self) -> Path:
         return self.root.joinpath(self.source)
@@ -208,6 +220,9 @@ class ProjectConfig:
         return self.root.joinpath("snooty.toml")
 
     def get_fileid(self, path: PurePath) -> FileId:
+        # Getting passed a FileId would always indicate a type error, but unfortunately FileId inherits from PurePath.
+        assert not isinstance(path, n.FileId)
+
         result = PurePath(os.path.relpath(path, self.source_path))
         # Ensure that we transform any Windows-style paths into a Posix-style FileId
         return FileId(*result.parts)
@@ -251,9 +266,12 @@ class ProjectConfig:
         return self, all_diagnostics
 
     def read(
-        self, path: Path, text: Optional[str] = None
+        self, path: Union[n.FileId, Path], text: Optional[str] = None
     ) -> Tuple[str, List[Diagnostic]]:
         if text is None:
+            if isinstance(path, n.FileId):
+                path = self.source_path / path
+
             try:
                 text = path.read_text(encoding="utf-8")
             except UnicodeDecodeError as err:

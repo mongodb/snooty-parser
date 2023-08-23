@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from ..diagnostics import Diagnostic
+from ..n import FileId
 from ..types import ProjectConfig
 from . import nodes
 from .release import GizaReleaseSpecificationCategory
@@ -87,8 +88,8 @@ def test_inheritance() -> None:
     )
 
     category: nodes.GizaCategory[TestNode] = nodes.GizaCategory(project_config)
-    category.add(Path("parent.yaml"), "", [parent])
-    category.add(Path("child.yaml"), "", [child])
+    category.add(FileId("parent.yaml"), "", [parent])
+    category.add(FileId("child.yaml"), "", [child])
 
     reified_diagnostics: List[Diagnostic] = []
     reified_child = category.reify(child, reified_diagnostics, set(), set())
@@ -102,21 +103,21 @@ def test_inheritance() -> None:
 
 def test_reify_all_files() -> None:
     """Test to see if repeated refs in a YAML are detected"""
-    project_config = ProjectConfig(Path("test_data"), "")
+    project_config = ProjectConfig(Path("test_data/test_gizaparser"), "")
     project_config.constants["version"] = "3.4"
 
     # Place good path and bad path here
     paths = (
-        "test_data/test_gizaparser/source/includes/release-base.yaml",
-        "test_data/test_gizaparser/source/includes/release-base-repeat.yaml",
+        "includes/release-base.yaml",
+        "includes/release-base-repeat.yaml",
     )
 
     for i, path in enumerate(paths):
-        test_path = Path(path)
+        test_path = FileId(path)
 
         # Change GizaCategory based on file type (steps, release, etc.)
         category = GizaReleaseSpecificationCategory(project_config)
-        all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+        all_diagnostics: Dict[FileId, List[Diagnostic]] = {}
 
         extracts, text, diagnostics = category.parse(test_path)
         category.add(test_path, text, extracts)

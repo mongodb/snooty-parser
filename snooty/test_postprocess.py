@@ -329,13 +329,14 @@ Guides
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
-        assert len(diagnostics) == 6
-        assert isinstance(diagnostics[0], DocUtilsParseError)
-        assert isinstance(diagnostics[1], MissingChild)
-        assert isinstance(diagnostics[2], InvalidChild)
-        assert isinstance(diagnostics[3], InvalidChapter)
-        assert isinstance(diagnostics[4], InvalidChild)
-        assert isinstance(diagnostics[5], MissingChild)
+        assert [type(x) for x in diagnostics] == [
+            DocUtilsParseError,
+            MissingChild,
+            InvalidChild,
+            InvalidChapter,
+            InvalidChild,
+            MissingChild,
+        ]
 
     # Test missing directives in "chapters" directive
     with make_test(

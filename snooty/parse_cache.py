@@ -53,7 +53,7 @@ class CacheData:
         )
 
     def get(
-        self, config: ProjectConfig, path: Path
+        self, config: ProjectConfig, path: FileId
     ) -> Tuple[Page, Sequence[diagnostics.Diagnostic]]:
         """Get a specific page from the cached data with the specified blake2b hash. Raises KeyError
         if the page is not found or the checksum does not match."""
@@ -62,9 +62,7 @@ class CacheData:
         file_hash = hashlib.blake2b(bytes(text, "utf-8")).hexdigest()
 
         try:
-            page, diagnostics = pickle.loads(
-                self.pages[(config.get_fileid(path).as_posix(), file_hash)]
-            )
+            page, diagnostics = pickle.loads(self.pages[(path.as_posix(), file_hash)])
         except KeyError as err:
             self.stats.misses += 1
             raise CacheMiss() from err

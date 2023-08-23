@@ -65,7 +65,7 @@ class FileId(PurePosixPath):
     def collapse_dots(self) -> "FileId":
         result: List[str] = []
         for part in self.parts:
-            if part == "..":
+            if part == ".." and result:
                 result.pop()
             elif part == ".":
                 continue

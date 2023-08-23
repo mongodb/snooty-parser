@@ -1,4 +1,4 @@
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ..diagnostics import Diagnostic
@@ -16,29 +16,28 @@ def test_step() -> None:
     assert project_diagnostics == []
 
     category = GizaStepsCategory(project_config)
-    path = root_path.joinpath(Path("source/includes/steps-test.yaml"))
-    child_path = root_path.joinpath(Path("source/includes/steps-test-child.yaml"))
-    grandchild_path = root_path.joinpath(
-        Path("source/includes/steps-test-grandchild.yaml")
-    )
 
-    all_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
-    for current_path in [path, child_path, grandchild_path]:
+    fileid = FileId("includes/steps-test.yaml")
+    child_fileid = FileId("includes/steps-test-child.yaml")
+    grandchild_fileid = FileId("includes/steps-test-grandchild.yaml")
+
+    all_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+    for current_path in [fileid, child_fileid, grandchild_fileid]:
         steps, text, parse_diagnostics = category.parse(current_path)
         category.add(current_path, text, steps)
         if parse_diagnostics:
-            all_diagnostics[path] = parse_diagnostics
+            all_diagnostics[fileid] = parse_diagnostics
 
     assert len(category) == 3
     file_id, giza_node = next(category.reify_all_files(all_diagnostics))
 
     def create_page(filename: Optional[str]) -> Tuple[Page, EmbeddedRstParser]:
-        page = Page.create(path, filename, "")
-        return (page, EmbeddedRstParser(project_config, page, all_diagnostics[path]))
+        page = Page.create(fileid, filename, "")
+        return (page, EmbeddedRstParser(project_config, page, all_diagnostics[fileid]))
 
-    pages = category.to_pages(path, create_page, giza_node.data)
-    assert [page.fake_full_path().as_posix() for page in pages] == [
-        "test_data/test_gizaparser/source/includes/steps/test.rst"
+    pages = category.to_pages(fileid, create_page, giza_node.data)
+    assert [page.fake_full_fileid().as_posix() for page in pages] == [
+        "includes/steps/test.rst"
     ]
     # Ensure that no diagnostics were raised
     all_diagnostics = {k: v for k, v in all_diagnostics.items() if v}
