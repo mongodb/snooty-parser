@@ -70,14 +70,22 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
             watchdog.events.EVENT_TYPE_MODIFIED,
         ):
             logging.info("Rebuilding %s", event.src_path)
-            self.project.update(Path(event.src_path))
+            self.project.update(
+                self.project.config.get_fileid(PurePath(event.src_path))
+            )
         elif event.event_type == watchdog.events.EVENT_TYPE_DELETED:
             logging.info("Deleting %s", event.src_path)
-            self.project.delete(Path(event.src_path))
+            self.project.delete(
+                self.project.config.get_fileid(PurePath(event.src_path))
+            )
         elif isinstance(event, watchdog.events.FileSystemMovedEvent):
             logging.info("Moving %s", event.src_path)
-            self.project.delete(Path(event.src_path))
-            self.project.update(Path(event.dest_path))
+            self.project.delete(
+                self.project.config.get_fileid(PurePath(event.src_path))
+            )
+            self.project.update(
+                self.project.config.get_fileid(PurePath(event.dest_path))
+            )
         else:
             assert False
 

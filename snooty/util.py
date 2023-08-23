@@ -71,6 +71,7 @@ def reroot_path(
 ) -> Tuple[n.FileId, Path]:
     """Files within a project may refer to other files. Return a canonical path
     relative to the project root."""
+
     if filename.is_absolute():
         rel_fn = n.FileId(*filename.parts[1:])
     else:

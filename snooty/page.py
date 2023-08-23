@@ -1,6 +1,5 @@
 import hashlib
 from dataclasses import dataclass, field
-from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Set
 
 from . import n
@@ -27,7 +26,7 @@ class PendingTask:
 
 @dataclass
 class Page:
-    source_path: Path
+    fileid: FileId
     output_filename: str
     source: str
     ast: n.Root
@@ -41,34 +40,34 @@ class Page:
     @classmethod
     def create(
         self,
-        source_path: Path,
+        fileid: FileId,
         output_filename: Optional[str],
         source: str,
         ast: Optional[n.Root] = None,
     ) -> "Page":
         if output_filename is None:
-            output_filename = source_path.name
+            output_filename = fileid.name
 
         if ast is None:
-            ast = n.Root((0,), [], FileId(source_path), {})
+            ast = n.Root((0,), [], fileid, {})
 
         return Page(
-            source_path,
+            fileid,
             output_filename,
             source,
             ast,
             hashlib.blake2b(bytes(source, "utf-8")).hexdigest(),
         )
 
-    def fake_full_path(self) -> PurePath:
+    def fake_full_fileid(self) -> FileId:
         """Return a fictitious path (hopefully) uniquely identifying this output artifact."""
         if self.category:
             # Giza wrote out yaml file artifacts under a directory. e.g. steps-foo.yaml becomes
             # steps/foo.rst
-            return self.source_path.parent.joinpath(
-                PurePath(self.category), self.output_filename
+            return self.fileid.parent.joinpath(
+                FileId(self.category), self.output_filename
             )
-        return self.source_path
+        return self.fileid
 
     def finish(
         self, diagnostics: List[Diagnostic], project: Optional[ProjectInterface] = None

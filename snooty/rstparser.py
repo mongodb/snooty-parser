@@ -4,7 +4,7 @@ import urllib.parse
 from collections import defaultdict
 from dataclasses import dataclass, field
 from mimetypes import guess_type
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import (
     AbstractSet,
     Any,
@@ -1233,7 +1233,7 @@ class Parser(Generic[_V]):
         self.project_config = project_config
         self.visitor_class = visitor_class
 
-    def parse(self, path: Path, text: Optional[str]) -> Tuple[_V, str]:
+    def parse(self, path: n.FileId, text: Optional[str]) -> Tuple[_V, str]:
         Registry.get(self.project_config.default_domain).activate()
 
         diagnostics: List[Diagnostic] = []
@@ -1249,6 +1249,7 @@ class Parser(Generic[_V]):
 
         parser.parse(text, document)
 
+        assert isinstance(path, n.FileId)
         visitor = self.visitor_class(self.project_config, path, document)
         visitor.add_diagnostics(diagnostics)
         document.walkabout(visitor)

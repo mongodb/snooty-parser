@@ -716,12 +716,8 @@ class BannerHandler(Handler):
         """Check if page matches target specified, but assert to ensure this does not run on includes"""
         assert fileid.suffix == ".txt"
 
-        page_path_relative_to_source = page.source_path.relative_to(
-            self.root / "source"
-        )
-
         for target in targets:
-            if page_path_relative_to_source.match(target):
+            if page.fileid.match(target):
                 return True
         return False
 
@@ -1797,7 +1793,7 @@ class Postprocessor:
         def _get_page_from_slug(current_page: Page, slug: str) -> Optional[Page]:
             relative, _ = util.reroot_path(
                 FileId(slug),
-                current_page.source_path,
+                current_page.fileid,
                 context[ProjectConfig].source_path,
             )
 

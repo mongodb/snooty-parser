@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -191,7 +191,7 @@ class GizaFile(Generic[_I]):
 
     __slots__ = ("path", "text", "data")
 
-    path: Path
+    path: n.FileId
     text: str
     data: Sequence[_I]
 
@@ -207,21 +207,21 @@ class GizaCategory(Generic[_I]):
     dg: "networkx.DiGraph[str]" = field(default_factory=networkx.DiGraph)
 
     def parse(
-        self, path: Path, text: Optional[str] = None
+        self, path: n.FileId, text: Optional[str] = None
     ) -> Tuple[Sequence[_I], str, List[Diagnostic]]:
         """Abstract method to parse Giza nodes out of YAML source text."""
         raise NotImplementedError()
 
     def to_pages(
         self,
-        source_path: Path,
+        source_path: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         data: Sequence[_I],
     ) -> List[Page]:
         """Abstract method to generate pages from a given set of Giza nodes."""
         raise NotImplementedError()
 
-    def add(self, path: Path, text: str, elements: Sequence[_I]) -> None:
+    def add(self, path: n.FileId, text: str, elements: Sequence[_I]) -> None:
         """Add a file with one or more Giza nodes."""
         file_id = path.name
         self.nodes[file_id] = GizaFile(path, text, elements)
@@ -328,7 +328,7 @@ class GizaCategory(Generic[_I]):
         return obj
 
     def reify_file_id(
-        self, file_id: str, diagnostics: Dict[PurePath, List[Diagnostic]]
+        self, file_id: str, diagnostics: Dict[n.FileId, List[Diagnostic]]
     ) -> GizaFile[_I]:
         """Resolve inheritance and substitution in a Giza source file."""
         node = self.nodes[file_id]
@@ -341,7 +341,7 @@ class GizaCategory(Generic[_I]):
         return dataclasses.replace(node, data=data)
 
     def reify_all_files(
-        self, diagnostics: Dict[PurePath, List[Diagnostic]]
+        self, diagnostics: Dict[n.FileId, List[Diagnostic]]
     ) -> Iterator[Tuple[str, GizaFile[_I]]]:
         """Resolve inheritance and substitution in all source files within this category."""
 

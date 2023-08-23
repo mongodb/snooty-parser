@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, List, MutableSequence, Optional, Sequence, Tuple, Union
 
 from .. import n
@@ -116,21 +115,20 @@ def step_to_page(page: Page, step: Step, rst_parser: EmbeddedRstParser) -> n.Dir
 
 class GizaStepsCategory(GizaCategory[Step]):
     def parse(
-        self, path: Path, text: Optional[str] = None
+        self, path: n.FileId, text: Optional[str] = None
     ) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
         return parse(Step, path, self.project_config, text)
 
     def to_pages(
         self,
-        source_path: Path,
+        source_fileid: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         steps: Sequence[Step],
     ) -> List[Page]:
-        output_filename = source_path.with_suffix(".rst").name
+        output_filename = source_fileid.with_suffix(".rst").name
         output_filename = output_filename[len("steps-") :]
         page, rst_parser = page_factory(output_filename)
         page.category = "steps"
-        source_fileid = self.project_config.get_fileid(source_path)
         steps_directive = n.Directive((0,), [], "", "procedure", [], {})
         steps_directive.children = [
             step_to_page(page, step, rst_parser) for step in steps

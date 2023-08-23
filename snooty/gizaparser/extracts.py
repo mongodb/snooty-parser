@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
 from .. import n
@@ -31,7 +30,7 @@ class Extract(Inheritable, HeadingMixin):
 
 class GizaExtractsCategory(GizaCategory[Extract]):
     def parse(
-        self, path: Path, text: Optional[str] = None
+        self, path: n.FileId, text: Optional[str] = None
     ) -> Tuple[Sequence[Extract], str, List[Diagnostic]]:
         extracts, text, diagnostics = parse(Extract, path, self.project_config, text)
 
@@ -49,12 +48,11 @@ class GizaExtractsCategory(GizaCategory[Extract]):
 
     def to_pages(
         self,
-        source_path: Path,
+        source_fileid: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         extracts: Sequence[Extract],
     ) -> List[Page]:
         pages: List[Page] = []
-        source_fileid = self.project_config.get_fileid(source_path)
 
         for extract in extracts:
             assert extract.ref is not None

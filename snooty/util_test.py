@@ -244,6 +244,6 @@ def make_test(
 
 
 def parse_rst(
-    parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
+    parser: rstparser.Parser[JSONVisitor], path: FileId, text: Optional[str] = None
 ) -> Tuple[Page, List[Diagnostic]]:
     return parse_rst_multi(parser, path, text)[0]
