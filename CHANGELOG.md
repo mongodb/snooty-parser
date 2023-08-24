@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.14.5] - 2023-08-24
-
 ### Added
 
 - Implement concrete Facet type (DOP-3921, #500, #507).
@@ -18,9 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update dependencies (#502).
-- Add perl programming language to taxonomy .
+- Add perl programming language to taxonomy.
 - Unpluralize taxonomy (#503).
-
 
 ## [v0.14.4] - 2023-08-10
 
