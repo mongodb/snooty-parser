@@ -279,14 +279,13 @@ class ProjectConfig:
         category_value_pairs: Optional[List[Tuple[str, str]]] = None,
     ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
+        validated_facets: List[Facet] = []
 
         if not facets:
             return None, diagnostics
 
         if category_value_pairs is None:
             category_value_pairs = []
-
-        validated_facets: List[Facet] = []
 
         for facet in facets:
             pair = (facet.category, facet.value)
@@ -306,12 +305,9 @@ class ProjectConfig:
                 )
 
                 validated_facets.append(validated_facet)
-
+                diagnostics += validation_diagnostics
             except KeyError:
                 diagnostics.append(MissingFacet(f"{facet.category}:{facet.value}", 0))
-
-        if validation_diagnostics:
-            diagnostics += validation_diagnostics
 
         # we don't want to return an empty list if
         # there are no valid facets. This prevents us from having
