@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Implement concrete Facet type (DOP-3921, #500, #507).
+- Support passing options like --rstspec to the create-cache command.
+- Add cache tests (DOP-3946, #508).
+
+### Changed
+
+- Update dependencies (#502).
+- Add perl programming language to taxonomy .
+- Unpluralize taxonomy (#503).
+
+
 ## [v0.14.4] - 2023-08-10
 
 ### Added
