@@ -310,14 +310,14 @@ class ProjectConfig:
             except KeyError:
                 diagnostics.append(MissingFacet(f"{facet.category}:{facet.value}", 0))
 
+        if validation_diagnostics:
+            diagnostics += validation_diagnostics
+
         # we don't want to return an empty list if
         # there are no valid facets. This prevents us from having
         # a sub_facets property with an empty list as a value
         if len(validated_facets) == 0:
             return None, diagnostics
-
-        if validation_diagnostics:
-            diagnostics += validation_diagnostics
 
         return validated_facets, diagnostics
 
