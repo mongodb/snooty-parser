@@ -337,23 +337,25 @@ class ProjectConfig:
     @staticmethod
     def load_facets_from_file(
         path: Path,
-    ) -> Tuple[Optional[List[Facet]], List[Diagnostic]]:
+    ) -> Tuple[List[Facet], List[Diagnostic]]:
         diagnostics: List[Diagnostic] = []
+        validated_facets: List[Facet] = []
 
         try:
             with path.open("rb") as f:
                 data = tomli.load(f)["facets"]
                 facets = [ProjectConfig.parse_facet(facet) for facet in data]
                 (
-                    validated_facets,
+                    validated_facets_result,
                     validation_diagnostics,
                 ) = ProjectConfig.validate_facets(facets)
-
+                validated_facets = validated_facets_result or []
+                diagnostics += validation_diagnostics
         except FileNotFoundError as err:
             diagnostics.append(CannotOpenFile(path, str(err), 0))
         except LoadError as err:
             diagnostics.append(UnmarshallingError(str(err), 0))
-        return validated_facets, diagnostics + validation_diagnostics
+        return validated_facets, diagnostics
 
     @staticmethod
     def merge_facets(

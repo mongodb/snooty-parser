@@ -1601,7 +1601,7 @@ class _Project:
                 facet_path = Path(os.path.join(base, "facets.toml"))
                 curr_facets, diagnostics = self.config.load_facets_from_file(facet_path)
 
-                if curr_facets is None:
+                if not curr_facets:
                     self.pages.set_orphan_diagnostics(
                         self.config.get_fileid(facet_path), diagnostics
                     )
