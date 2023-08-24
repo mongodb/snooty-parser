@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.5] - 2023-08-24
+
 ### Added
 
 - Implement concrete Facet type (DOP-3921, #500, #507).
