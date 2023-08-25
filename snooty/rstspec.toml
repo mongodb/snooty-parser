@@ -1444,7 +1444,10 @@ type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s"}
 type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/kotlin-extensions/%s"}
 
 [role."kotlin-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-base/%s"}
+
+[role."kotlin-sync-sdk"]
+type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-sync/%s"}
 
 [role."swift-sdk"]
 type = {link = "https://www.mongodb.com/docs/realm-sdks/swift/latest/%s"}
