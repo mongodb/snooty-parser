@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.6] - 2023-08-25
+
 ### Changed
 
 - Split out Realm Kotlin SDK role to sync and base URLs (#506)
