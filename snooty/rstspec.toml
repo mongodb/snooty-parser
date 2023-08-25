@@ -1757,8 +1757,8 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
-  {id = "shell", title = "MongoDB Shell"},
   {id = "atlas-ui", title = "MongoDB Atlas"},
+  {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
