@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Split out Realm Kotlin SDK role to sync and base URLs (#506)
+- Hotfixes to provide empty list by default for validated_facets and fix diagnostics
+
 ## [v0.14.5] - 2023-08-24
 
 ### Added
