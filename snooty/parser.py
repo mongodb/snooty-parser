@@ -79,7 +79,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
-from .icon_names import ICON_SET
+from .icon_names import ICON_SET, LG_ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
@@ -1100,7 +1100,7 @@ class JSONVisitor:
         Validate target for icon role
         Checks for included icon file in root path
         """
-        if not ICON_SET:
+        if not ICON_SET or not LG_ICON_SET:
             return
         # construct icon class name based off node
         classname_prefix = {
@@ -1112,10 +1112,12 @@ class JSONVisitor:
             "icon-mms-org": "mms-org-icon",
             "icon-charts": "charts-icon",
             "icon-fa4": "fa4",
+            "icon-lg": "lg"
         }
         icon_name = node["target"]
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
-        if target_icon_classname not in ICON_SET:
+        # check to see if it's in the new set being created
+        if target_icon_classname not in ICON_SET and target_icon_classname not in LG_ICON_SET:
             self.diagnostics.append(
                 IconMustBeDefined(target_icon_classname, node.get_line())
             )
