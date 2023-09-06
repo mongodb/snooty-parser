@@ -1585,44 +1585,6 @@ class _Project:
 
         del self.pages[fileid]
 
-    def propagate_facets(self) -> None:
-        """Scans through each directory starting at source/ and
-        loads the facets.toml file if one exists. These values get propagated
-        to each subsequent level to add them to the page.facets property if a
-        facets.toml file does not exist in that child directory.
-        """
-        root = self.config.source_path
-        parent_facets = None
-
-        for base, _, files in os.walk(root):
-            if "facets.toml" in files:
-                facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facets, diagnostics = self.config.load_facets_from_file(facet_path)
-
-                if not curr_facets:
-                    self.pages.set_orphan_diagnostics(
-                        self.config.get_fileid(facet_path), diagnostics
-                    )
-
-                if parent_facets and curr_facets:
-                    parent_facets = self.config.merge_facets(parent_facets, curr_facets)
-                elif curr_facets:
-                    parent_facets = curr_facets
-
-            if parent_facets:
-                for file in files:
-                    ext = os.path.splitext(file)[1]
-                    if ext not in RST_EXTENSIONS:
-                        continue
-
-                    file_path = Path(os.path.join(base, file))
-                    fileid = self.config.get_fileid(file_path)
-
-                    page = self.pages._parsed[fileid][0]
-                    page.facets = parent_facets
-
-                    self._page_updated(page, diagnostics)
-
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
@@ -1634,7 +1596,6 @@ class _Project:
             fileids = (self.config.get_fileid(path) for path in paths)
             self.parse_rst_files(fileids, max_workers)
 
-        self.propagate_facets()
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[FileId]] = collections.defaultdict(list)
