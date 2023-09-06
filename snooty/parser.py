@@ -1650,6 +1650,8 @@ class _Project:
         for key in all_yaml_diagnostics:
             if key not in seen_paths:
                 self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
+                with self._backend_lock:
+                    self.backend.on_diagnostics(key, diagnostics)
 
         if postprocess:
             postprocessor_result = self.postprocess()
