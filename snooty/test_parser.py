@@ -927,7 +927,7 @@ def test_codeblock() -> None:
         """
 .. code-block:: java
    :copyable: false
-   :source:
+   :source: 
 
    foo""",
     )

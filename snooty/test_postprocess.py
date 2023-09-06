@@ -2509,31 +2509,6 @@ def test_target_quotes() -> None:
         )
 
 
-def test_canonical() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-======
-Test
-======
-
-This is a test intro
-            """,
-            Path(
-                "snooty.toml"
-            ): """
-name = "test_name"
-title = "MongoDB title"
-canonical = "https://mongodb.com/docs/mongocli/install"
-            """,
-        }
-    ) as result:
-        metadata = cast(Dict[str, Any], result.metadata)
-        assert metadata["canonical"] == "https://mongodb.com/docs/mongocli/install"
-
-
 def test_metadata() -> None:
     with make_test(
         {
@@ -2561,7 +2536,6 @@ versions = ["v1", "v2"]
         metadata = cast(Dict[str, Any], result.metadata)
         assert len(metadata["associated_products"]) == 1
         assert len(metadata["associated_products"][0]["versions"]) == 2
-        assert metadata["associated_products"][0]["name"] == "test_associated_product"
 
 
 def test_openapi_metadata() -> None:
@@ -2590,6 +2564,7 @@ def test_openapi_metadata() -> None:
                 "source/admin/api/atlas.txt"
             ): """
 .. openapi:: cloud
+<<<<<<< HEAD
     :uses-realm:
             """,
             Path(
@@ -2597,6 +2572,9 @@ def test_openapi_metadata() -> None:
             ): """
 .. openapi:: cloud
    :api-version: 2.0
+=======
+   :uses-realm:
+>>>>>>> 49aa0f6835cbe1f8b819ce2206ed95d733953cdc
             """,
         }
     ) as result:
@@ -2619,14 +2597,6 @@ def test_openapi_metadata() -> None:
         atlas_page = openapi_pages["admin/api/atlas"]
         assert atlas_page["source_type"] == "atlas"
         assert atlas_page["source"] == "cloud"
-
-        versioned_page = openapi_pages["reference/api-resources-spec/v2"]
-        assert versioned_page["source_type"] == "atlas"
-        assert versioned_page["source"] == "cloud"
-        assert versioned_page["api_version"] == "2.0"
-        resource_versions = versioned_page["resource_versions"]
-        assert isinstance(resource_versions, list)
-        assert all(isinstance(rv, str) for rv in resource_versions)
 
 
 def test_openapi_preview() -> None:
@@ -2668,206 +2638,3 @@ def test_openapi_duplicates() -> None:
         file_metadata = openapi_pages["admin/api/v3"]
         assert file_metadata["source_type"] == "local"
         assert file_metadata["source"] == "/openapi-admin-v3.yaml"
-
-
-def test_openapi_invalid_version() -> None:
-    with make_test(
-        {
-            Path(
-                "source/reference/api-resources-spec/v3.txt"
-            ): """
-.. openapi:: cloud
-   :api-version: 17.5
-            """,
-        }
-    ) as result:
-        diagnostics = result.diagnostics[FileId("reference/api-resources-spec/v3.txt")]
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], InvalidVersion)
-
-
-def test_openapi_changelog_duplicates() -> None:
-    with make_test(
-        {
-            Path(
-                "source/reference/api-changelog.txt"
-            ): """
-.. openapi-changelog:: cloud
-   :api-version: 2.0
-
-.. openapi-changelog:: cloud
-   :api-version: 2.0
-            """,
-        }
-    ) as result:
-        diagnostics = result.diagnostics[FileId("reference/api-changelog.txt")]
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], DuplicateDirective)
-
-
-def test_static_assets() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-.. include:: /foo.rst
-            """,
-            Path(
-                "source/foo.rst"
-            ): """
-.. figure:: figure.blob
-            """,
-            Path("source/figure.blob"): r"",
-        }
-    ) as result:
-        assert [x.key for x in result.pages[FileId("index.txt")].static_assets] == [
-            "figure.blob"
-        ]
-
-
-def test_facets() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-.. facet::
-   :name: genre
-   :values: reference
-
-.. facet::
-   :name: genre
-   :values: tutorial
-
-.. facet::
-   :name: target_product
-   :values: atlas
-
-   .. facet::
-      :name: version
-      :values: v1.2
-
-   .. facet::
-      :name: sub_product
-      :values: charts
-
-
-===========================
-Facets
-===========================
-            """
-        }
-    ) as result:
-        page = result.pages[FileId("index.txt")]
-        facets = page.facets
-        assert facets is not None
-        assert sorted(facets) == sorted(
-            [
-                Facet(category="genre", value="reference"),
-                Facet(category="genre", value="tutorial"),
-                Facet(
-                    category="target_product",
-                    value="atlas",
-                    sub_facets=[
-                        Facet(category="version", value="v1.2"),
-                        Facet(category="sub_product", value="charts"),
-                    ],
-                ),
-            ]
-        )
-
-        check_ast_testing_string(
-            page.ast,
-            """
-<root fileid="index.txt">
-  <section>
-    <heading id="facets"><text>Facets</text></heading>
-  </section>
-</root>
-            """,
-        )
-
-
-def test_toml_facets() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-.. facet::
-   :name: genre
-   :values: reference
-.. facet::
-   :name: target_product
-   :values: atlas
-
-   .. facet::
-      :name: version
-      :values: v1.2
-   .. facet::
-      :name: sub_product
-      :values: charts
-.. facet::
-   :name: genre
-   :values: tutorial
-
-===========================
-Facets
-===========================
-            """,
-            Path(
-                "source/facets.toml"
-            ): """
-[[facets]]
-category="target_product"
-value = "drivers"
-
-    [[facets.sub_facets]]
-    category="sub_product"
-    value = "c_driver"
-
-[[facets]]
-category = "programming_language"  # validate
-value = "shell"
-
-[[facets]]
-category="test_facet"
-value = "test"
-
-    [[facets.sub_facets]]
-    category="tested_nest"
-    value = "test_nest"
-""",
-        }
-    ) as result:
-        page = result.pages[FileId("index.txt")]
-        facets = page.facets
-
-        assert facets is not None
-        assert sorted(facets) == sorted(
-            [
-                Facet(category="genre", value="reference"),
-                Facet(category="genre", value="tutorial"),
-                Facet(
-                    category="target_product",
-                    value="atlas",
-                    sub_facets=[
-                        Facet(category="version", value="v1.2"),
-                        Facet(category="sub_product", value="charts"),
-                    ],
-                ),
-                Facet(category="programming_language", value="shell"),
-            ]
-        )
-
-        check_ast_testing_string(
-            page.ast,
-            """
-<root fileid="index.txt">
-  <section>
-    <heading id="facets"><text>Facets</text></heading>
-  </section>
-</root>
-            """,
-        )

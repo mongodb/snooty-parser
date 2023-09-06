@@ -724,7 +724,7 @@ class JSONVisitor:
                     self.diagnostics.append(InvalidURL(line))
                 return doc
 
-            if api_version or uses_realm:
+            if uses_realm:
                 doc.options["source_type"] = "atlas"
                 return doc
 
@@ -745,9 +745,12 @@ class JSONVisitor:
                 )
                 return doc
 
-        elif name == "openapi-changelog":
-            # Version Changelog will be dependent on present api-version option
-            api_version = options.get("api-version", None)
+                else:
+                    with open(filepath) as f:
+                        spec = json.dumps(safe_load(f))
+                        spec_node = n.Text((line,), spec)
+                        doc.children.append(spec_node)
+                        doc.options["source_type"] = "local"
 
             if argument_text != "cloud":
                 self.diagnostics.append(

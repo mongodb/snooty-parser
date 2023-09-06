@@ -966,6 +966,62 @@ class GuidesHandler(Handler):
             self.guides[current_slug].description = node.children
 
 
+class OpenAPIHandler(Handler):
+    """Constructs metadata for OpenAPI content pages."""
+
+    @dataclass
+    class SourceData:
+        source_type: str
+        source: str
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.openapi_pages: Dict[str, OpenAPIHandler.SourceData] = {}
+
+    def get_metadata(self) -> Dict[str, SerializableType]:
+        """Returns serialized object to be used as part of the build's metadata."""
+
+        return {k: asdict(v) for k, v in self.openapi_pages.items()}
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if (
+            not isinstance(node, n.Directive)
+            or node.name != "openapi"
+            or node.options.get("preview")
+        ):
+            return
+
+        current_file = fileid_stack.current
+        current_slug = clean_slug(current_file.without_known_suffix)
+
+        if current_slug in self.openapi_pages:
+            self.context.diagnostics[current_file].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
+
+        # source_type should be assigned in the parsing layer
+        source_type = node.options.get("source_type")
+        if not source_type:
+            return
+
+        source = ""
+        argument = node.argument[0]
+        # The parser determines the source_type based on the given argument and its
+        # node structure. We echo that logic here to grab the source without needing
+        # to worry about the argument's node structure.
+        # The source_type cannot be manually set in rST as long as the option is not exposed
+        # in the rstspec.
+        if source_type == "local" or source_type == "atlas":
+            assert isinstance(argument, n.Text)
+            source = argument.get_text()
+        else:
+            assert isinstance(argument, n.Reference)
+            source = argument.refuri
+
+        self.openapi_pages[current_slug] = self.SourceData(source_type, source)
+
+
 @checked
 @dataclass
 class OpenAPIData:
@@ -1693,9 +1749,6 @@ class Postprocessor:
             ContentsHandler,
             BannerHandler,
             GuidesHandler,
-            OpenAPIHandler,
-            OpenAPIChangelogHandler,
-            FacetsHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
@@ -2129,3 +2182,133 @@ def clean_slug(slug: str) -> str:
         return root
 
     return slug
+
+
+class DevhubHandler(Handler):
+    # TODO: Identify directives that should be exposed in the rstspec.toml to avoid hardcoding
+    # These directives are represented as list nodes; they will return a list of strings
+    LIST_FIELDS = {"devhub:products", "devhub:tags", ":languages"}
+    # These directives have their content represented as children; they will return a list of nodes
+    BLOCK_FIELDS = {"devhub:meta-description"}
+    # These directives have their content represented as an argument; they will return a string
+    ARG_FIELDS = {"devhub:level", "devhub:type", ":atf-image"}
+    # These directives have their content represented as children, along with a series of options;
+    # they will return a dictionary with all options represented, and with the content represented as a list of nodes whose key is `children`.
+    OPTION_BLOCK_FIELDS = {":og", ":twitter"}
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """To be called at the start of each page: reset the query field dictionary"""
+        self.query_fields: Dict[str, Any] = {}
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        """To be called at the end of each page: append the query field dictionary to the
+        top level of the page's class instance.
+        """
+        # Save page title to query_fields, if it exists
+        slug = clean_slug(fileid_stack.current.as_posix())
+        self.query_fields["slug"] = f"/{slug}" if slug != "index" else "/"
+        title = self.context[HeadingHandler].get_title(slug)
+        if title is not None:
+            self.query_fields["title"] = [node.serialize() for node in title]
+
+        page.query_fields = self.query_fields
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        """Extract fields from a page's AST and expose them as a queryable nested document in the page document."""
+        if not isinstance(node, n.Directive):
+            return
+
+        key = f"{node.domain}:{node.name}"
+
+        if key == "devhub:author":
+            # Create a dict unifying the node's options and children
+            author_obj: Dict[str, SerializableType] = {}
+            author_obj.update(node.options)
+            author_obj["children"] = [child.serialize() for child in node.children]
+
+            self.query_fields.setdefault("author", []).append(author_obj)
+        elif key == "devhub:related":
+            # Save list of nodes (likely :doc: roles)
+            self.query_fields[node.name] = []
+            if len(node.children) > 0:
+                first_child = node.children[0]
+                assert isinstance(first_child, n.Parent)
+                for item in first_child.children:
+                    paragraph = item.children[0]
+                    self.query_fields[node.name].append(
+                        paragraph.children[0].serialize()
+                    )
+        elif key in {":pubdate", ":updated-date"}:
+            date = node.options.get("date")
+            if date:
+                self.query_fields[node.name] = date
+        elif key in self.OPTION_BLOCK_FIELDS:
+            # Create a dict unifying the node's options and children
+            node_obj: Dict[str, SerializableType] = {}
+            node_obj.update(node.options)
+            node_obj["children"] = [child.serialize() for child in node.children]
+
+            self.query_fields[node.name] = node_obj
+        elif key in self.ARG_FIELDS:
+            if len(node.argument) > 0:
+                self.query_fields[node.name] = node.argument[0].value
+        elif key in self.BLOCK_FIELDS:
+            self.query_fields[node.name] = [
+                child.serialize() for child in node.children
+            ]
+        elif key in self.LIST_FIELDS:
+            self.query_fields[node.name] = []
+            if len(node.children) > 0:
+                first_child = node.children[0]
+                assert isinstance(first_child, n.Parent)
+                list_items = first_child.children
+                assert isinstance(list_items, List)
+                for item in list_items:
+                    text_candidate = get_deepest(item)
+                    assert isinstance(text_candidate, n.Text)
+                    self.query_fields[node.name].append(text_candidate.value)
+
+
+class DevhubPostprocessor(Postprocessor):
+    """Postprocess operation to be run if a project's default_domain is equal to 'devhub'"""
+
+    PASSES: Sequence[Sequence[Type[Handler]]] = [
+        [IncludeHandler],
+        [SubstitutionHandler],
+        [
+            HeadingHandler,
+            AddTitlesToLabelTargetsHandler,
+            ProgramOptionHandler,
+            TabsSelectorHandler,
+            ContentsHandler,
+            BannerHandler,
+            GuidesHandler,
+        ],
+        [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
+        [RefsHandler, NamedReferenceHandlerPass2, DevhubHandler],
+    ]
+
+    def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
+        def clean_and_validate_page_group_slug(slug: str) -> Optional[str]:
+            """Clean a slug and validate that it is a known page. If it is not, return None."""
+            cleaned = clean_slug(slug)
+            if cleaned not in context[HeadingHandler]:
+                # XXX: Because reporting errors in config.toml properly is dodgy right now, just
+                # log to stderr.
+                logger.error(f"Cannot find slug '{cleaned}'")
+                return None
+
+            return cleaned
+
+        # Normalize all page group slugs
+        page_groups = {
+            title: [
+                slug
+                for slug in (clean_and_validate_page_group_slug(slug) for slug in slugs)
+                if slug
+            ]
+            for title, slugs in self.project_config.page_groups.items()
+        }
+
+        if page_groups:
+            metadata.update({"pageGroups": page_groups})
