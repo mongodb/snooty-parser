@@ -1112,12 +1112,15 @@ class JSONVisitor:
             "icon-mms-org": "mms-org-icon",
             "icon-charts": "charts-icon",
             "icon-fa4": "fa4",
-            "icon-lg": "lg"
+            "icon-lg": "lg",
         }
         icon_name = node["target"]
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
         # check to see if it's in the new set being created
-        if target_icon_classname not in ICON_SET and target_icon_classname not in LG_ICON_SET:
+        if (
+            target_icon_classname not in ICON_SET
+            and target_icon_classname not in LG_ICON_SET
+        ):
             self.diagnostics.append(
                 IconMustBeDefined(target_icon_classname, node.get_line())
             )
