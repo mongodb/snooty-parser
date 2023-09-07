@@ -31,10 +31,10 @@ dist/snooty/.EXISTS: pyproject.toml snooty/*.py snooty/gizaparser/*.py
 	fi; LD_LIBRARY_PATH=pyston_2.3.5/lib/ poetry run python3 -m PyInstaller -n snooty snootycli.py
 
 	rm snootycli.py
-	install -m644 snooty/config.toml snooty/rstspec.toml LICENSE* dist/snooty/
+	install -m644 snooty/config.toml snooty/rstspec.toml snooty/taxonomy.toml LICENSE* dist/snooty/
 	touch $@
 
-dist/${PACKAGE_NAME}: snooty/rstspec.toml snooty/config.toml dist/snooty/.EXISTS ## Build a binary tarball
+dist/${PACKAGE_NAME}: snooty/rstspec.toml snooty/config.toml snooty/taxonomy.toml dist/snooty/.EXISTS ## Build a binary tarball
 	# Normalize the mtime, and zip in sorted order
 	cd dist && find snooty -print | sort | zip -X ../$@ -@
 	# Ensure that the generated binary runs
