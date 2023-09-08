@@ -137,7 +137,6 @@ def test_product() -> None:
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
-
     PRODUCT_CONTENT = """
 .. landing:products::
 
