@@ -993,6 +993,10 @@ type = "explicit_title"
 help = """Show a FontAwesome 4 icon."""
 type = "explicit_title"
 
+[role.icon-lg]
+help = """Show a LeafyGreen icon."""
+type = "explicit_title"
+
 [role.rfc]
 help = """Reference an IETF RFC."""
 type = {link = "https://tools.ietf.org/html/%s"}
