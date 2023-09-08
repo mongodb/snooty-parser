@@ -584,6 +584,7 @@ options.video_url = { type = "uri", required = true }
 
 example = """.. landing:more-ways::
    :video_url: ${1: full video url}
+   
    ${2: More ways content}
  """
 
