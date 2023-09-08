@@ -139,7 +139,7 @@ def test_landing_more_ways() -> None:
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     MORE_WAYS_CONTENT = """
-.. landing:more-ways::
+.. landing:more-ways:: Connecting to a Cluster
     :video_url: https://www.youtube.com/watch?v=Wt_f3-1GxH0&ab_channel=MongoDB
 
     In this MongoDB University video, learn how to connect to a cluster 

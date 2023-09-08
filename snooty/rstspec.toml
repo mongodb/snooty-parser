@@ -582,10 +582,10 @@ argument_type = "string"
 content_type = "block"
 options.video_url = { type = "uri", required = true }
 
-example = """.. landing:more-ways::
-   :video_url: ${1: full video url}
-   
-   ${2: More ways content}
+example = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
+   :video_url: ${2: full video url}
+
+   ${3: More ways content}
  """
 
 
