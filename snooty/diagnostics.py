@@ -526,6 +526,22 @@ class InvalidIAEntry(Diagnostic):
         )
 
 
+class InvalidIALinkedData(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        msg: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"Unable to link data for IA: {msg}",
+            start,
+            end,
+        )
+
+
 class UnknownTabset(Diagnostic):
     severity = Diagnostic.Level.error
 

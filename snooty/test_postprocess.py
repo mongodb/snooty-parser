@@ -20,6 +20,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
+    InvalidIALinkedData,
     InvalidVersion,
     MissingChild,
     MissingTab,
@@ -153,6 +154,93 @@ Page One Title
 </toctree>
 """,
         )
+
+
+def test_ia_linked_data() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. ia::
+
+   .. entry:: Atlas
+      :url: https://www.mongodb.com/docs/atlas/getting-started/
+
+   .. entry:: MongoDB Database Manual
+      :url: https://www.mongodb.com/docs/manual/
+
+   .. entry:: Client Libraries
+      :id: client-libraries
+      :url: https://www.mongodb.com/docs/drivers/
+
+.. card-group::
+   :columns: 4
+   :layout: default
+   :ia-entry-id: client-libraries
+   :type: drivers
+   :style: extra-compact
+
+   .. card::
+      :headline: C
+      :url: https://www.mongodb.com/docs/drivers/c/
+
+   .. there is no headline
+   .. card::
+      :url: https://google.com/
+
+   .. card::
+      :headline: C++
+      :url: https://www.mongodb.com/docs/drivers/cxx/
+   
+   .. card::
+      :headline: No url
+
+.. card-group::
+   :columns: 4
+   :layout: default
+   :style: extra-compact
+
+   .. card::
+      :headline: Wahoo
+      :url: https://www.mongodb.com/docs/drivers/java/
+""",
+            Path(
+                "source/page1.txt"
+            ): """
+.. card-group::
+   :columns: 4
+   :layout: default
+   :ia-entry-id: not-a-valid-id
+   :type: drivers
+   :style: extra-compact
+
+   .. card::
+      :headline: C
+      :url: https://www.mongodb.com/docs/drivers/c/
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], InvalidIALinkedData)
+        assert isinstance(diagnostics[1], InvalidIALinkedData)
+
+        diagnostics = result.diagnostics[FileId("page1.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidIALinkedData)
+
+        # Ensure the one IA entry that has linked data contains said linked data.
+        metadata = cast(Dict[str, Any], result.metadata)
+        ia_tree = metadata["iatree"]
+        root_children = ia_tree["children"]
+        for entry in root_children:
+            linked_data = entry.get("linked_data")
+            if entry["title"][0]["value"] == "Client Libraries":
+                assert entry["id"] == "client-libraries"
+                assert len(linked_data) == 2
+            else:
+                assert not linked_data
 
 
 def test_guides() -> None:

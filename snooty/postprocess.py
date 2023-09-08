@@ -48,6 +48,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
+    InvalidIALinkedData,
     InvalidInclude,
     InvalidOpenApiResponse,
     InvalidTocTree,
@@ -1118,8 +1119,11 @@ class IAHandler(Handler):
         slug: Optional[str]
         project_name: Optional[str]
         primary: Optional[bool]
+        entry_id: Optional[str]
 
-        def serialize(self) -> n.SerializedNode:
+        def serialize(
+            self, entry_ids: Dict[str, List[Dict[str, str]]]
+        ) -> n.SerializedNode:
             result: n.SerializedNode = {
                 "title": [node.serialize() for node in self.title],
             }
@@ -1132,19 +1136,65 @@ class IAHandler(Handler):
                 result["url"] = self.url
             if self.primary is not None:
                 result["primary"] = self.primary
+            if self.entry_id is not None:
+                result["id"] = self.entry_id
+                if self.entry_id in entry_ids:
+                    result["linked_data"] = entry_ids[self.entry_id]
 
             return result
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
+        self.entry_ids: Dict[str, List[Dict[str, str]]] = {}
+
+    def add_linked_data(
+        self, card_group: n.Directive, entry_id: str, current_file: FileId
+    ) -> None:
+        for card in card_group.get_child_of_type(n.Directive):
+            if card.name != "card":
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(card.name, "card_group", "card", card.span[0])
+                )
+                continue
+
+            headline = card.options.get("headline", "")
+            url = card.options.get("url", "")
+            if not headline or not url:
+                self.context.diagnostics[current_file].append(
+                    InvalidIALinkedData(
+                        "Missing headline and/or url for card", card.span[0]
+                    )
+                )
+                continue
+
+            self.entry_ids[entry_id].append(
+                {
+                    "headline": headline,
+                    "url": url,
+                }
+            )
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if (
-            not isinstance(node, n.Directive)
-            or not node.name == "ia"
-            or not node.domain == ""
+        if not isinstance(node, n.Directive) or not (
+            node.name == "ia" or node.name == "card-group"
         ):
+            return
+
+        # A card-group directive can have data linked to a particular IA entry
+        # for the side nav
+        if node.name == "card-group":
+            entry_id = node.options.get("ia-entry-id", None)
+            if not entry_id:
+                return
+            elif entry_id in self.entry_ids:
+                self.add_linked_data(node, entry_id, fileid_stack.current)
+            else:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidIALinkedData(
+                        f'No IA entry with ID "{entry_id}" found', node.span[0]
+                    )
+                )
             return
 
         if self.ia:
@@ -1209,6 +1259,7 @@ class IAHandler(Handler):
                 )
                 continue
 
+            entry_id = entry.options.get("id")
             self.ia.append(
                 IAHandler.IAData(
                     title,
@@ -1216,8 +1267,12 @@ class IAHandler(Handler):
                     slug,
                     project_name,
                     bool(entry.options.get("primary", False)) if project_name else None,
+                    entry_id,
                 )
             )
+
+            if entry_id:
+                self.entry_ids[entry_id] = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.ia = []
@@ -1227,7 +1282,9 @@ class IAHandler(Handler):
             return
 
         if isinstance(page.ast, n.Root):
-            page.ast.options["ia"] = [entry.serialize() for entry in self.ia]
+            page.ast.options["ia"] = [
+                entry.serialize(self.entry_ids) for entry in self.ia
+            ]
 
 
 class SubstitutionHandler(Handler):
