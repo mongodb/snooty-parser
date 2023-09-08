@@ -576,6 +576,18 @@ content_type = "block"
 #    ${0: quoted content}
 # """
 
+#### docs-landing directives
+[directive."landing:more-ways"]
+argument_type = "string"
+content_type = "block"
+options.video_url = { type = "uri", required = true }
+
+example = """.. landing:more-ways
+   :video: ${1: full video url}
+   ${2: More ways content}
+ """
+
+
 ##### Internal "mongodb" directives
 [directive."mongodb:banner"]
 help = """A skinny admonition, meant for alerts or smaller notifications."""

@@ -132,6 +132,31 @@ def test_chapter() -> None:
     assert isinstance(diagnostics[0], CannotOpenFile)
 
 
+def test_landing_more_ways() -> None:
+    """Test landing:more-ways directive"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    MORE_WAYS_CONTENT = """
+.. landing:more-ways::
+    :video_url: https://www.youtube.com/watch?v=Wt_f3-1GxH0&ab_channel=MongoDB
+
+    In this MongoDB University video, learn how to connect to a cluster 
+    efficiently. Explore connection methods, replica sets, and sharded 
+    clusters, gaining insights into managing and optimizing cluster 
+    connections for seamless and scalable data operations.
+
+    .. cta::
+        `Continue on to MongoDB University <https://learn.mongodb.com>`__
+    """
+
+    page, diagnostics = parse_rst(parser, path, MORE_WAYS_CONTENT)
+
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0
+
+
 def test_card() -> None:
     """Test card directive"""
     path = FileId("test.rst")
