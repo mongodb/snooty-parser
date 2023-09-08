@@ -583,7 +583,7 @@ content_type = "block"
 options.video_url = { type = "uri", required = true }
 
 example = """.. landing:more-ways::
-   :video: ${1: full video url}
+   :video_url: ${1: full video url}
    ${2: More ways content}
  """
 
