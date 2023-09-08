@@ -646,11 +646,12 @@ content_type = "block"
 help = """Product in a product-list. Each product links to the specified URI, and can include content, an icon, as well as a call-to-action string"""
 options.icon = ["path", "uri"]
 options.icon-alt = "string"
-example = """.. product::
+argument_type = "string"
+example = """.. product:: ${0: string}
    ${4::icon: /path-to-icon.svg
    :icon-alt: Icon's alt text
 
-   ${0:Product content.}
+   ${1: content.}
 """
 
 [directive."landing:products"]
