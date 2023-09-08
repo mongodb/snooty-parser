@@ -669,7 +669,7 @@ example = """.. landing:client-libraries::
 
 [directive."landing:introduction"]
 content_type = "block"
-help = """Make an Introcution"""
+help = """Make an Introduction"""
 example = """.. landing:introduction::
    ${0: Introduction content}
 """
