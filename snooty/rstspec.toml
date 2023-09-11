@@ -663,9 +663,13 @@ example = """.. landing:products::
 
 [directive."landing:client-libraries"]
 content_type = "block"
-help = """Title and call-to-action for drivers card"""
-example = """.. landing:client-libraries::
-   ${0: Library content}
+help = """Title and call-to-action for card-group"""
+options.cta = "string"
+options.url = ["path", "uri"]
+argument_type = "string"
+example = """.. landing:client-libraries:: ${0: string}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
 """
 
 [directive."landing:introduction"]
