@@ -2871,3 +2871,48 @@ value = "test"
 </root>
             """,
         )
+
+
+def test_landing_introduction() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. landing:introduction:: Developer Data Platform
+
+   MongoDB offers a multi-cloud developer data platform that provides 
+   database and data services that accelerate and simplify how you 
+   build with data. Available on AWS, Google Cloud, and Microsoft Azure.
+
+   .. button:: Get Started with Atlas
+      :uri: https://www.mongodb.com/docs/atlas/getting-started/
+
+   .. image:: /images/homepage-hero.svg
+      :class: hero-img
+      :alt: Homepage illustration
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+<directive domain="landing" name="landing:introduction">
+<text>Developer Data Platform</text>
+<paragraph><text>
+MongoDB offers a multi-cloud developer data platform that provides
+database and data services that accelerate and simplify how you
+build with data. Available on AWS, Google Cloud, and Microsoft Azure.
+</text></paragraph>
+<directive domain="mongodb" name="button" uri="https://www.mongodb.com/docs/atlas/getting-started/"><text>
+Get Started with Atlas
+</text></directive>
+<directive name="image" class="hero-img" alt="Homepage illustration"><text>
+/images/homepage-hero.svg
+</text></directive>
+</directive>
+</root>
+            """,
+        )
