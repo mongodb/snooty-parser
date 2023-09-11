@@ -1158,6 +1158,8 @@ class IAHandler(Handler):
                 )
                 continue
 
+            # The following options are the most important for ensuring working
+            # links on the side nav, but we can extend this to all options if needed
             headline = card.options.get("headline", "")
             url = card.options.get("url", "")
             if not headline or not url:
@@ -1168,12 +1170,7 @@ class IAHandler(Handler):
                 )
                 continue
 
-            self.entry_ids[entry_id].append(
-                {
-                    "headline": headline,
-                    "url": url,
-                }
-            )
+            self.entry_ids[entry_id].append(card.options)
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or not (
