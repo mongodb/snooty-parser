@@ -654,6 +654,51 @@ example = """.. card-group::
    ${0: Card content}
 """
 
+[directive."landing:product"]
+content_type = "block"
+help = """Product in a product-list. Each product links to the specified URI, and can include content, an icon, as well as a call-to-action string"""
+options.icon = ["path", "uri"]
+options.icon-alt = "string"
+argument_type = "string"
+example = """.. product:: ${0: string}
+   ${4::icon: /path-to-icon.svg
+   :icon-alt: Icon's alt text
+
+   ${1: content.}
+"""
+
+[directive."landing:products"]
+content_type = "block"
+help = """Container to hold a group of products"""
+example = """.. landing:products::
+   ${0: Product content}
+"""
+
+[directive."landing:client-libraries"]
+content_type = "block"
+help = """Title and call-to-action for card-group"""
+options.cta = "string"
+options.url = ["path", "uri"]
+argument_type = "string"
+example = """.. landing:client-libraries:: ${0: string}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
+"""
+
+[directive."landing:introduction"]
+content_type = "block"
+help = """Make an Introduction"""
+example = """.. landing:introduction::
+   ${0: Introduction content}
+"""
+
+[directive."landing:explore"]
+content_type = "block"
+help = """A container to explore Atlas tools and environment"""
+example = """.. landing:explore::
+   ${0: Explore content}
+"""
+
 [directive."mongodb:chapter"]
 help = "A container for a group of MongoDB guides."
 example = """.. chapter:: ${1: string}
