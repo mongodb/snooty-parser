@@ -576,6 +576,12 @@ content_type = "block"
 #    ${0: quoted content}
 # """
 
+### docs-landing directives
+[directive.landing-explore]
+help = """ Landing page section for exploring the Document Model"""
+content_type = "block"
+argument_type = "string"
+
 ##### Internal "mongodb" directives
 [directive."mongodb:banner"]
 help = """A skinny admonition, meant for alerts or smaller notifications."""
