@@ -576,6 +576,19 @@ content_type = "block"
 #    ${0: quoted content}
 # """
 
+#### docs-landing directives
+[directive."landing:more-ways"]
+argument_type = "string"
+content_type = "block"
+options.video_url = { type = "uri", required = true }
+
+example = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
+   :video_url: ${2: full video url}
+
+   ${3: More ways content}
+ """
+
+
 ##### Internal "mongodb" directives
 [directive."mongodb:banner"]
 help = """A skinny admonition, meant for alerts or smaller notifications."""
@@ -663,9 +676,13 @@ example = """.. landing:products::
 
 [directive."landing:client-libraries"]
 content_type = "block"
-help = """Title and call-to-action for drivers card"""
-example = """.. landing:client-libraries::
-   ${0: Library content}
+help = """Title and call-to-action for card-group"""
+options.cta = "string"
+options.url = ["path", "uri"]
+argument_type = "string"
+example = """.. landing:client-libraries:: ${0: string}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
 """
 
 [directive."landing:introduction"]
@@ -680,13 +697,6 @@ example = """.. landing:introduction:: MongoDB Introduction
 content_type = "block"
 help = """A container to explore Atlas tools and environment"""
 example = """.. landing:explore::
-   ${0: Explore content}
-"""
-
-[directive."landing:more-ways"]
-content_type = "block"
-help = """A container to showcase more information"""
-example = """.. landing:more-ways::
    ${0: Explore content}
 """
 
@@ -1050,6 +1060,10 @@ type = "explicit_title"
 
 [role.icon-fa4]
 help = """Show a FontAwesome 4 icon."""
+type = "explicit_title"
+
+[role.icon-lg]
+help = """Show a LeafyGreen icon."""
 type = "explicit_title"
 
 [role.rfc]

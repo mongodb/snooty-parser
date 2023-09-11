@@ -79,7 +79,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
-from .icon_names import ICON_SET
+from .icon_names import ICON_SET, LG_ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
@@ -1098,7 +1098,7 @@ class JSONVisitor:
         Validate target for icon role
         Checks for included icon file in root path
         """
-        if not ICON_SET:
+        if not ICON_SET or not LG_ICON_SET:
             return
         # construct icon class name based off node
         classname_prefix = {
@@ -1110,10 +1110,15 @@ class JSONVisitor:
             "icon-mms-org": "mms-org-icon",
             "icon-charts": "charts-icon",
             "icon-fa4": "fa4",
+            "icon-lg": "lg",
         }
         icon_name = node["target"]
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
-        if target_icon_classname not in ICON_SET:
+        # check to see if it's in the new set being created
+        if (
+            target_icon_classname not in ICON_SET
+            and target_icon_classname not in LG_ICON_SET
+        ):
             self.diagnostics.append(
                 IconMustBeDefined(target_icon_classname, node.get_line())
             )
@@ -1585,44 +1590,6 @@ class _Project:
 
         del self.pages[fileid]
 
-    def propagate_facets(self) -> None:
-        """Scans through each directory starting at source/ and
-        loads the facets.toml file if one exists. These values get propagated
-        to each subsequent level to add them to the page.facets property if a
-        facets.toml file does not exist in that child directory.
-        """
-        root = self.config.source_path
-        parent_facets = None
-
-        for base, _, files in os.walk(root):
-            if "facets.toml" in files:
-                facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facets, diagnostics = self.config.load_facets_from_file(facet_path)
-
-                if not curr_facets:
-                    self.pages.set_orphan_diagnostics(
-                        self.config.get_fileid(facet_path), diagnostics
-                    )
-
-                if parent_facets and curr_facets:
-                    parent_facets = self.config.merge_facets(parent_facets, curr_facets)
-                elif curr_facets:
-                    parent_facets = curr_facets
-
-            if parent_facets:
-                for file in files:
-                    ext = os.path.splitext(file)[1]
-                    if ext not in RST_EXTENSIONS:
-                        continue
-
-                    file_path = Path(os.path.join(base, file))
-                    fileid = self.config.get_fileid(file_path)
-
-                    page = self.pages._parsed[fileid][0]
-                    page.facets = parent_facets
-
-                    self._page_updated(page, diagnostics)
-
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
@@ -1634,7 +1601,6 @@ class _Project:
             fileids = (self.config.get_fileid(path) for path in paths)
             self.parse_rst_files(fileids, max_workers)
 
-        self.propagate_facets()
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[FileId]] = collections.defaultdict(list)
@@ -1689,6 +1655,8 @@ class _Project:
         for key in all_yaml_diagnostics:
             if key not in seen_paths:
                 self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
+                with self._backend_lock:
+                    self.backend.on_diagnostics(key, diagnostics)
 
         if postprocess:
             postprocessor_result = self.postprocess()

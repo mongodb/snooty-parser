@@ -148,7 +148,7 @@ def test_product() -> None:
 
       .. cta::
       
-         This card was built with a relative URL.
+         This product item description was built with a icon and description.
 """
 
     page, diagnostics = parse_rst(
