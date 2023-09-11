@@ -699,13 +699,6 @@ example = """.. landing:explore::
    ${0: Explore content}
 """
 
-[directive."landing:more-ways"]
-content_type = "block"
-help = """A container to showcase more information"""
-example = """.. landing:more-ways::
-   ${0: Explore content}
-"""
-
 [directive."mongodb:chapter"]
 help = "A container for a group of MongoDB guides."
 example = """.. chapter:: ${1: string}
