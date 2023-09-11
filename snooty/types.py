@@ -7,7 +7,9 @@ from pathlib import Path, PurePath
 from typing import (
     Any,
     ClassVar,
+    Container,
     Dict,
+    Iterable,
     List,
     Match,
     MutableSequence,
@@ -19,7 +21,7 @@ from typing import (
 import tomli
 from typing_extensions import Protocol
 
-from . import n, specparser, taxonomy
+from . import n, specparser, taxonomy, util
 from .diagnostics import (
     CannotOpenFile,
     ConstantNotDeclared,
@@ -290,6 +292,12 @@ class ProjectConfig:
 
     def get_full_path(self, fileid: FileId) -> Path:
         return self.source_path.joinpath(fileid)
+
+    def get_files_by_extension(self, extensions: Container[str]) -> Iterable[FileId]:
+        yield from (
+            self.get_fileid(path)
+            for path in util.get_files(self.source_path, (".yaml",), self.root)
+        )
 
     @staticmethod
     def validate_facets(

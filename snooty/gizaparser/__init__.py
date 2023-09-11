@@ -1,3 +1,3 @@
-from . import extracts, release, steps
+from . import domain, extracts, release, steps
 
-__all__ = ["steps", "extracts", "release"]
+__all__ = ["steps", "extracts", "release", "domain"]
