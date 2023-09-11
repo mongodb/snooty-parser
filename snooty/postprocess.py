@@ -9,7 +9,7 @@ import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
@@ -154,6 +154,42 @@ class Context:
         val = self._ctx[ty]
         assert isinstance(val, ty)
         return val
+
+
+def propagate_facets(pages: Dict[FileId, Page], context: Context) -> None:
+    """Scans through each directory starting at source/ and
+    loads the facets.toml file if one exists. These values get propagated
+    to each subsequent level to add them to the page.facets property if a
+    facets.toml file does not exist in that child directory.
+    """
+    config = context[ProjectConfig]
+    root = config.source_path
+    parent_facets = None
+
+    for base, _, files in os.walk(root):
+        if "facets.toml" in files:
+            facet_path = Path(os.path.join(base, "facets.toml"))
+            curr_facets, diagnostics = config.load_facets_from_file(facet_path)
+
+            if not curr_facets:
+                context.diagnostics[config.get_fileid(facet_path)].extend(diagnostics)
+
+            if parent_facets and curr_facets:
+                parent_facets = config.merge_facets(parent_facets, curr_facets)
+            elif curr_facets:
+                parent_facets = curr_facets
+
+        if parent_facets:
+            for file in files:
+                ext = os.path.splitext(file)[1]
+                if ext not in util.RST_EXTENSIONS:
+                    continue
+
+                file_path = Path(os.path.join(base, file))
+                fileid = config.get_fileid(file_path)
+
+                page = pages[fileid]
+                page.facets = parent_facets
 
 
 class Handler:
@@ -1684,6 +1720,8 @@ class Postprocessor:
         context = Context(pages)
         context.add(self.project_config)
         context.add(self.targets)
+
+        propagate_facets(self.pages, context)
 
         for project_pass in self.PASSES:
             instances = [ty(context) for ty in project_pass]
