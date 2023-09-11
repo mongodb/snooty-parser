@@ -668,10 +668,8 @@ options.cta = "string"
 options.url = ["path", "uri"]
 argument_type = "string"
 example = """.. landing:client-libraries:: ${0: string}
-   :cta: ${2:Get started with MongoDB}
-   :url: {$3:url-should-link-to}
-
-   ${1: Library content}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
 """
 
 [directive."landing:introduction"]
