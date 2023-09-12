@@ -577,7 +577,7 @@ content_type = "block"
 # """
 
 ### docs-landing directives
-[directive.landing-explore]
+[directive."landing:explore"]
 help = """ Landing page section for exploring the Document Model"""
 content_type = "block"
 argument_type = "string"
