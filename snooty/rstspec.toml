@@ -646,6 +646,7 @@ options.columns = "nonnegative_integer"
 options.layout = "card_layout"
 options.style = "card_style"
 options.type = "card_group_type"
+options.ia-entry-id = "string"
 example = """.. card-group::
    ${1::columns: 2}
    :layout: ${3:|default,carousel| (Optional)}
@@ -970,6 +971,7 @@ argument_type = "string"
 options.url = "string"
 options.project-name = "string"
 options.primary = "flag"
+options.id = "string"
 example = """.. entry:: ${0: string}
    ${1::url: (string)
    :project-name: (string) [optional]
