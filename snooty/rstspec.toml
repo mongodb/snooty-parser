@@ -686,9 +686,10 @@ example = """.. landing:client-libraries:: ${0: string}
 """
 
 [directive."landing:introduction"]
+help = """Make an Introduction. Pass in a title string as an argument, and a content block"""
+argument_type = "string"
 content_type = "block"
-help = """Make an Introduction"""
-example = """.. landing:introduction::
+example = """.. landing:introduction:: MongoDB Introduction
    ${0: Introduction content}
 """
 
