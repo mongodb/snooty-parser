@@ -1146,7 +1146,8 @@ class IAHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
-        self.entry_ids: Dict[str, List[Dict[str, str]]] = {}
+        self.entry_ids: Dict[str, List[Dict[str, str]]] = collections.defaultdict(list)
+        self.seen_entry_ids: Set[str] = set()
 
     def add_linked_data(
         self, card_group: n.Directive, entry_id: str, current_file: FileId
@@ -1173,25 +1174,25 @@ class IAHandler(Handler):
             self.entry_ids[entry_id].append(card.options)
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or not (
-            node.name == "ia" or node.name == "card-group"
+        if (
+            not isinstance(node, n.Directive)
+            or not node.name in {"ia", "card-group"}
+            or not node.domain in {"", "mongodb"}
         ):
             return
 
         # A card-group directive can have data linked to a particular IA entry
         # for the side nav
         if node.name == "card-group":
-            entry_id = node.options.get("ia-entry-id", None)
-            if not entry_id:
-                return
-            elif entry_id in self.entry_ids:
-                self.add_linked_data(node, entry_id, fileid_stack.current)
-            else:
-                self.context.diagnostics[fileid_stack.current].append(
-                    InvalidIALinkedData(
-                        f'No IA entry with ID "{entry_id}" found', node.span[0]
+            entry_id = node.options.get("ia-entry-id")
+            if entry_id:
+                if entry_id not in self.seen_entry_ids:
+                    self.context.diagnostics[fileid_stack.current].append(
+                        InvalidIALinkedData(
+                            f'No IA entry with ID "{entry_id}" found', node.span[0]
+                        )
                     )
-                )
+                self.add_linked_data(node, entry_id, fileid_stack.current)
             return
 
         if self.ia:
@@ -1269,7 +1270,7 @@ class IAHandler(Handler):
             )
 
             if entry_id:
-                self.entry_ids[entry_id] = []
+                self.seen_entry_ids.add(entry_id)
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.ia = []
