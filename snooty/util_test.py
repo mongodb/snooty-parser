@@ -1,3 +1,4 @@
+import collections
 import contextlib
 import inspect
 import os
@@ -5,9 +6,8 @@ import sys
 import tempfile
 import textwrap
 import xml.etree.ElementTree as ET
-from collections import defaultdict
 from pathlib import Path, PurePath
-from typing import Any, AnyStr, Dict, Iterator, List, Optional, Tuple
+from typing import Any, AnyStr, Counter, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
 from . import n, rstparser
@@ -168,7 +168,8 @@ class BackendTestResults(ProjectBackend):
     """A utility class for tracking the output of a build in tests."""
 
     def __init__(self) -> None:
-        self.diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        self.diagnostics: Dict[FileId, List[Diagnostic]] = collections.defaultdict(list)
+        self.diagnostic_events: List[Tuple[FileId, List[Diagnostic]]] = []
         self.pages: Dict[FileId, Page] = {}
         self.metadata: Dict[str, SerializableType] = {}
 
@@ -177,6 +178,9 @@ class BackendTestResults(ProjectBackend):
 
     def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[path] = diagnostics
+
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.diagnostic_events.append((path, diagnostics))
 
     def on_update(
         self,
@@ -199,7 +203,25 @@ class BackendTestResults(ProjectBackend):
         pass
 
     def flush(self) -> None:
-        pass
+        # Verify that on_diagnostics and set_diagnostics are in sync
+        diagnostics_set: Dict[FileId, Counter[type]] = collections.defaultdict(
+            collections.Counter
+        )
+        diagnostics_events: Dict[FileId, Counter[type]] = collections.defaultdict(
+            collections.Counter
+        )
+
+        for fileid, diagnostics in self.diagnostics.items():
+            for diagnostic in diagnostics:
+                diagnostics_set[fileid][type(diagnostic)] += 1
+
+        for fileid, diagnostics in self.diagnostic_events:
+            for diagnostic in diagnostics:
+                diagnostics_events[fileid][type(diagnostic)] += 1
+
+        assert (
+            diagnostics_set == diagnostics_events
+        ), "on_diagnostics() and set_diagnostics() not in sync"
 
 
 @contextlib.contextmanager
@@ -244,6 +266,6 @@ def make_test(
 
 
 def parse_rst(
-    parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
+    parser: rstparser.Parser[JSONVisitor], path: FileId, text: Optional[str] = None
 ) -> Tuple[Page, List[Diagnostic]]:
     return parse_rst_multi(parser, path, text)[0]

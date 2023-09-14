@@ -2,22 +2,23 @@ from pathlib import Path
 
 from . import rstparser
 from .diagnostics import ExpectedPathArg, InvalidURL
+from .n import FileId
 from .parser import JSONVisitor
 from .types import ProjectConfig
 from .util_test import check_ast_testing_string, parse_rst
 
 ROOT_PATH = Path("test_data")
+FILEID = FileId("test.rst")
 
 
 def test_openapi_using_filepath() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Test default parse using file path
     page, diagnostics = parse_rst(
         parser,
-        path,
+        FILEID,
         """
 .. openapi:: /test_parser/openapi-admin-v3.yaml
 """,
@@ -34,14 +35,13 @@ def test_openapi_using_filepath() -> None:
 
 
 def test_openapi_using_url() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     # Successful
     page, diagnostics = parse_rst(
         parser,
-        path,
+        FILEID,
         """
 .. openapi:: https://raw.githubusercontent.com/mongodb/snooty-parser/master/test_data/test_parser/openapi-admin-v3.yaml
 """,
@@ -59,7 +59,7 @@ def test_openapi_using_url() -> None:
     # Invalid URL
     page, diagnostics = parse_rst(
         parser,
-        path,
+        FILEID,
         """
 .. openapi:: https://mongodb.com
 """,
@@ -70,13 +70,12 @@ def test_openapi_using_url() -> None:
 
 
 def test_openapi_using_realm() -> None:
-    path = ROOT_PATH.joinpath(Path("test.rst"))
     project_config = ProjectConfig(ROOT_PATH, "", default_domain="mongodb", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
     page, diagnostics = parse_rst(
         parser,
-        path,
+        FILEID,
         """
 .. openapi:: cloud
    :uses-realm:
@@ -97,7 +96,7 @@ def test_openapi_using_realm() -> None:
 
     page, diagnostics = parse_rst(
         parser,
-        path,
+        FILEID,
         """
 .. openapi:: https://mongodb.com
    :uses-realm:

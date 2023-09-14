@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Tuple
 
 from .. import n
@@ -44,7 +43,7 @@ class ReleaseSpecification(Inheritable):
 
 class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
     def parse(
-        self, path: Path, text: Optional[str] = None
+        self, path: n.FileId, text: Optional[str] = None
     ) -> Tuple[Sequence[ReleaseSpecification], str, List[Diagnostic]]:
         nodes, text, diagnostics = parse(
             ReleaseSpecification, path, self.project_config, text
@@ -62,12 +61,11 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
 
     def to_pages(
         self,
-        source_path: Path,
+        source_fileid: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
         nodes: Sequence[ReleaseSpecification],
     ) -> List[Page]:
         pages: List[Page] = []
-        source_fileid = self.project_config.get_fileid(source_path)
 
         for node in nodes:
             assert node.ref is not None

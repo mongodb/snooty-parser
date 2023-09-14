@@ -64,5 +64,5 @@ def test_static_asset() -> None:
 
 
 def test_page() -> None:
-    page = Page.create(Path("foo.rst"), None, "")
-    assert page.fake_full_path() == PurePath("foo.rst")
+    page = Page.create(FileId("foo.rst"), None, "")
+    assert page.fake_full_fileid() == PurePath("foo.rst")

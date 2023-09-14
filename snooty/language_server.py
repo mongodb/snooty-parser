@@ -280,7 +280,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         self.project: Optional[Project] = None
         self._project_lock = threading.Lock()
 
-        self.pending_updates: util.QueueDict[Path, Optional[str]] = util.QueueDict()
+        self.pending_updates: util.QueueDict[FileId, Optional[str]] = util.QueueDict()
 
         def update_thread() -> None:
             while True:
@@ -314,7 +314,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         self.backend.pending_diagnostics.clear()
 
-    def update_file(self, page_path: Path, change: Optional[str] = None) -> None:
+    def update_file(self, page_path: FileId, change: Optional[str] = None) -> None:
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
 
@@ -497,10 +497,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         item = check_type(TextDocumentItem, textDocument)
         fileid = self.uri_to_fileid(item.uri)
-        page_path = self.project.config.get_full_path(fileid)
         entry = WorkspaceEntry(fileid, item.uri, [])
         self.workspace[item.uri] = entry
-        self.update_file(page_path, item.text)
+        self.update_file(fileid, item.text)
 
     def m_text_document__did_change(
         self, textDocument: SerializableType, contentChanges: SerializableType
@@ -510,9 +509,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(VersionedTextDocumentIdentifier, textDocument)
-        page_path = self.project.config.get_full_path(
-            self.uri_to_fileid(identifier.uri)
-        )
+        fileid = self.uri_to_fileid(identifier.uri)
         assert isinstance(contentChanges, list)
         change = next(
             check_type(TextDocumentContentChangeEvent, x) for x in contentChanges
@@ -520,7 +517,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         self._debouncer.run(
             [
-                (0.1, lambda: self.update_file(page_path, change.text)),
+                (0.1, lambda: self.update_file(fileid, change.text)),
                 (0.25, self.postprocess),
             ]
         )
@@ -531,11 +528,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return
 
         identifier = check_type(TextDocumentIdentifier, textDocument)
-        page_path = self.project.config.get_full_path(
-            self.uri_to_fileid(identifier.uri)
-        )
+        fileid = self.uri_to_fileid(identifier.uri)
         del self.workspace[identifier.uri]
-        self.update_file(page_path)
+        self.update_file(fileid)
 
     def m_shutdown(self, **_kwargs: object) -> None:
         self._shutdown = True

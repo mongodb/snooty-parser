@@ -79,7 +79,7 @@ from .diagnostics import (
     UnknownTabset,
 )
 from .gizaparser.nodes import GizaCategory
-from .icon_names import ICON_SET
+from .icon_names import ICON_SET, LG_ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
@@ -167,7 +167,7 @@ class JSONVisitor:
     def __init__(
         self,
         project_config: ProjectConfig,
-        docpath: PurePath,
+        docpath: FileId,
         document: tinydocutils.nodes.document,
     ) -> None:
         self.project_config = project_config
@@ -200,9 +200,7 @@ class JSONVisitor:
             self.state.append(n.FieldList((line,), []))
             return
         elif isinstance(node, tinydocutils.nodes.document):
-            self.state.append(
-                n.Root((0,), [], self.project_config.get_fileid(self.docpath), {})
-            )
+            self.state.append(n.Root((0,), [], self.docpath, {}))
             return
         elif isinstance(node, tinydocutils.nodes.field):
             field_name = node.children[0].astext()
@@ -1004,7 +1002,7 @@ class JSONVisitor:
             else:
                 self.validate_and_add_asset(doc, image_argument, line)
 
-        elif key in {"mongodb:card"}:
+        elif key in {"mongodb:card", "landing:landing:product"}:
             image_argument = options.get("icon")
             url_argument = options.get("url")
 
@@ -1100,7 +1098,7 @@ class JSONVisitor:
         Validate target for icon role
         Checks for included icon file in root path
         """
-        if not ICON_SET:
+        if not ICON_SET or not LG_ICON_SET:
             return
         # construct icon class name based off node
         classname_prefix = {
@@ -1112,10 +1110,15 @@ class JSONVisitor:
             "icon-mms-org": "mms-org-icon",
             "icon-charts": "charts-icon",
             "icon-fa4": "fa4",
+            "icon-lg": "lg",
         }
         icon_name = node["target"]
         target_icon_classname = f"{classname_prefix[node['name']]}-{icon_name}"
-        if target_icon_classname not in ICON_SET:
+        # check to see if it's in the new set being created
+        if (
+            target_icon_classname not in ICON_SET
+            and target_icon_classname not in LG_ICON_SET
+        ):
             self.diagnostics.append(
                 IconMustBeDefined(target_icon_classname, node.get_line())
             )
@@ -1255,7 +1258,7 @@ class InlineJSONVisitor(JSONVisitor):
 
 
 def parse_rst(
-    parser: rstparser.Parser[JSONVisitor], path: Path, text: Optional[str] = None
+    parser: rstparser.Parser[JSONVisitor], path: FileId, text: Optional[str] = None
 ) -> Sequence[Tuple[Page, List[Diagnostic]]]:
     visitor, text = parser.parse(path, text)
 
@@ -1272,7 +1275,7 @@ def parse_rst(
         result.extend(
             parse_rst(
                 parser,
-                parser.project_config.source_path.joinpath(synthetic_page),
+                synthetic_page,
                 synthetic_page_text,
             )
         )
@@ -1292,7 +1295,7 @@ class EmbeddedRstParser:
         # Crudely make docutils line numbers match
         text = "\n" * lineno + rst.strip()
         parser = rstparser.Parser(self.project_config, JSONVisitor)
-        visitor, _ = parser.parse(self.page.source_path, text)
+        visitor, _ = parser.parse(self.page.fileid, text)
         top_of_state = visitor.state[-1]
         children: MutableSequence[n.Node] = top_of_state.children  # type: ignore
 
@@ -1306,7 +1309,7 @@ class EmbeddedRstParser:
         # Crudely make docutils line numbers match
         text = "\n" * lineno + rst.strip()
         parser = rstparser.Parser(self.project_config, InlineJSONVisitor)
-        visitor, _ = parser.parse(self.page.source_path, text)
+        visitor, _ = parser.parse(self.page.fileid, text)
         top_of_state = visitor.state[-1]
         children: MutableSequence[n.InlineNode] = top_of_state.children  # type: ignore
 
@@ -1424,7 +1427,9 @@ class _Project:
         substitution_nodes: Dict[str, List[n.InlineNode]] = {}
         for k, v in self.config.substitutions.items():
             # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
-            page, substitution_diagnostics = parse_rst(inline_parser, root, v)[0]
+            page, substitution_diagnostics = parse_rst(
+                inline_parser, self.config.CONFIG_FILEID, v
+            )[0]
             substitution_nodes[k] = list(
                 deepcopy(child) for child in page.ast.children  # type: ignore
             )
@@ -1450,9 +1455,9 @@ class _Project:
                 )
 
                 # XXX: Assume that a single Page is generated (e.g. there's no sharedinclude)
-                page, banner_diagnostics = parse_rst(inline_parser, root, banner.value)[
-                    0
-                ]
+                page, banner_diagnostics = parse_rst(
+                    inline_parser, self.config.CONFIG_FILEID, banner.value
+                )[0]
                 banner_node.node.children = page.ast.children
                 if banner_node.node.children:
                     self.config.banner_nodes.append(banner_node)
@@ -1503,8 +1508,8 @@ class _Project:
     def get_project_title(self) -> str:
         return self.config.title
 
-    def update(self, path: Path, optional_text: Optional[str] = None) -> None:
-        diagnostics: Dict[PurePath, List[Diagnostic]] = {path: []}
+    def update(self, path: FileId, optional_text: Optional[str] = None) -> None:
+        diagnostics: Dict[FileId, List[Diagnostic]] = {path: []}
         prefix = get_giza_category(path)
         _, ext = os.path.splitext(path)
         pages: List[Page] = []
@@ -1558,13 +1563,11 @@ class _Project:
 
         with self._backend_lock:
             for source_path, diagnostic_list in diagnostics.items():
-                self.backend.on_diagnostics(
-                    self.config.get_fileid(source_path), diagnostic_list
-                )
+                self.backend.on_diagnostics(source_path, diagnostic_list)
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
-            fileid = self.config.get_fileid(page.fake_full_path())
+            fileid = page.fake_full_fileid()
             with self._backend_lock:
                 self.backend.on_update(
                     self.prefix, self.build_identifiers, fileid, page
@@ -1572,11 +1575,11 @@ class _Project:
 
             self.backend.flush()
 
-    def delete(self, path: PurePath) -> None:
-        file_id = os.path.basename(path)
+    def delete(self, fileid: FileId) -> None:
+        path = self.config.source_path / fileid
         for giza_category in self.yaml_mapping.values():
             try:
-                del giza_category[file_id]
+                del giza_category[fileid.name]
             except KeyError:
                 pass
 
@@ -1587,76 +1590,38 @@ class _Project:
 
         del self.pages[fileid]
 
-    def propagate_facets(self) -> None:
-        """Scans through each directory starting at source/ and
-        loads the facets.toml file if one exists. These values get propagated
-        to each subsequent level to add them to the page.facets property if a
-        facets.toml file does not exist in that child directory.
-        """
-        root = self.config.source_path
-        parent_facets = None
-
-        for base, _, files in os.walk(root):
-            if "facets.toml" in files:
-                facet_path = Path(os.path.join(base, "facets.toml"))
-                curr_facets, diagnostics = self.config.load_facets_from_file(facet_path)
-
-                if not curr_facets:
-                    self.pages.set_orphan_diagnostics(
-                        self.config.get_fileid(facet_path), diagnostics
-                    )
-
-                if parent_facets and curr_facets:
-                    parent_facets = self.config.merge_facets(parent_facets, curr_facets)
-                elif curr_facets:
-                    parent_facets = curr_facets
-
-            if parent_facets:
-                for file in files:
-                    ext = os.path.splitext(file)[1]
-                    if ext not in RST_EXTENSIONS:
-                        continue
-
-                    file_path = Path(os.path.join(base, file))
-                    fileid = self.config.get_fileid(file_path)
-
-                    page = self.pages._parsed[fileid][0]
-                    page.facets = parent_facets
-
-                    self._page_updated(page, diagnostics)
-
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
-        all_yaml_diagnostics: Dict[PurePath, List[Diagnostic]] = {}
+        all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = {}
         with util.PerformanceLogger.singleton().start("parse rst"):
             paths = util.get_files(
                 self.config.source_path, RST_EXTENSIONS, self.config.root
             )
-            self.parse_rst_files(paths, max_workers)
+            fileids = (self.config.get_fileid(path) for path in paths)
+            self.parse_rst_files(fileids, max_workers)
 
-        self.propagate_facets()
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
-        categorized: Dict[str, List[Path]] = collections.defaultdict(list)
+        categorized: Dict[str, List[FileId]] = collections.defaultdict(list)
         for path in util.get_files(
             self.config.source_path, (".yaml",), self.config.root
         ):
             prefix = get_giza_category(path)
             if prefix in self.yaml_mapping:
-                categorized[prefix].append(path)
+                categorized[prefix].append(self.config.get_fileid(path))
 
         # Initialize our YAML file registry
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Parsing %s YAML", prefix)
-            for path in categorized[prefix]:
-                artifacts, text, diagnostics = giza_category.parse(path)
+            for fileid in categorized[prefix]:
+                artifacts, text, diagnostics = giza_category.parse(fileid)
                 if diagnostics:
-                    all_yaml_diagnostics[path] = diagnostics
-                giza_category.add(path, text, artifacts)
+                    all_yaml_diagnostics[fileid] = diagnostics
+                giza_category.add(fileid, text, artifacts)
 
         # Now that all of our YAML files are loaded, generate a page for each one
-        seen_paths: Set[Path] = set()
+        seen_paths: Set[FileId] = set()
         for prefix, giza_category in self.yaml_mapping.items():
             logger.debug("Processing %s YAML: %d nodes", prefix, len(giza_category))
             for file_id, giza_node in giza_category.reify_all_files(
@@ -1668,7 +1633,7 @@ class _Project:
                         giza_node.path,
                         filename,
                         giza_node.text,
-                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
+                        n.Root((-1,), [], giza_node.path, {}),
                     )
                     return (
                         page,
@@ -1682,18 +1647,16 @@ class _Project:
                 for page in giza_category.to_pages(
                     giza_node.path, create_page, giza_node.data
                 ):
-                    seen_paths.add(page.source_path)
-                    self._page_updated(
-                        page, all_yaml_diagnostics.get(page.source_path, [])
-                    )
+                    seen_paths.add(page.fileid)
+                    self._page_updated(page, all_yaml_diagnostics.get(page.fileid, []))
 
         # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
         # any page.
         for key in all_yaml_diagnostics:
             if key not in seen_paths:
-                self.pages.set_orphan_diagnostics(
-                    self.config.get_fileid(key), all_yaml_diagnostics[key]
-                )
+                self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
+                with self._backend_lock:
+                    self.backend.on_diagnostics(key, diagnostics)
 
         if postprocess:
             postprocessor_result = self.postprocess()
@@ -1748,12 +1711,12 @@ class _Project:
         return result
 
     def parse_rst_files(
-        self, paths: Iterable[Path], max_workers: Optional[int] = None
+        self, paths: Iterable[FileId], max_workers: Optional[int] = None
     ) -> None:
         pool = multiprocessing.Pool(max_workers)
         try:
             logger.debug("Processing rst files")
-            cache_misses: List[Path] = []
+            cache_misses: List[FileId] = []
 
             hits = 0
 
@@ -1798,12 +1761,11 @@ class _Project:
         # Synchronize our asset watching
         old_assets: Set[StaticAsset] = set()
         removed_assets: Set[StaticAsset] = set()
-        fileid = self.config.get_fileid(page.fake_full_path())
 
-        logger.debug("Updated: %s", fileid)
+        logger.debug("Updated: %s", page.fileid)
 
-        if fileid in self.pages:
-            old_page = self.pages._parsed[fileid][0]
+        if page.fileid in self.pages:
+            old_page = self.pages._parsed[page.fileid][0]
             old_assets = old_page.static_assets
             removed_assets = old_page.static_assets.difference(page.static_assets)
 
@@ -1821,27 +1783,25 @@ class _Project:
 
         # Update dependents
         try:
-            self.asset_dg.remove_node(self.config.get_fileid(page.source_path))
+            self.asset_dg.remove_node(page.fileid)
         except networkx.exception.NetworkXError:
             pass
         self.asset_dg.add_edges_from(
             (
-                self.config.get_fileid(page.source_path),
+                page.fileid,
                 self.config.get_fileid(asset.path),
             )
             for asset in page.static_assets
         )
 
         # Report to our backend
-        self.pages[fileid] = (
+        self.pages[page.fake_full_fileid()] = (
             page,
-            self.config.get_fileid(page.source_path),
+            page.fileid,
             diagnostics_copy,
         )
         with self._backend_lock:
-            self.backend.on_diagnostics(
-                self.config.get_fileid(page.source_path), diagnostics_copy
-            )
+            self.backend.on_diagnostics(page.fileid, diagnostics_copy)
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
@@ -1854,7 +1814,7 @@ class _Project:
 
         # Rebuild any pages depending on this asset
         for page_id in list(self.asset_dg.predecessors(asset_path)):
-            self.update(self.pages[page_id].source_path)
+            self.update(self.pages[page_id].fileid)
 
 
 class Project:
@@ -1892,12 +1852,12 @@ class Project:
     def get_project_name(self) -> str:
         return self._project.get_project_name()
 
-    def update(self, path: Path, optional_text: Optional[str] = None) -> None:
+    def update(self, path: FileId, optional_text: Optional[str] = None) -> None:
         """Re-parse a file, optionally using the provided text rather than reading the file."""
         with self._lock:
             self._project.update(path, optional_text)
 
-    def delete(self, path: PurePath) -> None:
+    def delete(self, path: FileId) -> None:
         """Mark a path as having been deleted."""
         with self._lock:
             self._project.delete(path)

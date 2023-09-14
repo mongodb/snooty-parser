@@ -9,7 +9,7 @@ import urllib.parse
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
@@ -48,6 +48,7 @@ from .diagnostics import (
     InvalidChild,
     InvalidContextError,
     InvalidIAEntry,
+    InvalidIALinkedData,
     InvalidInclude,
     InvalidOpenApiResponse,
     InvalidTocTree,
@@ -154,6 +155,42 @@ class Context:
         val = self._ctx[ty]
         assert isinstance(val, ty)
         return val
+
+
+def propagate_facets(pages: Dict[FileId, Page], context: Context) -> None:
+    """Scans through each directory starting at source/ and
+    loads the facets.toml file if one exists. These values get propagated
+    to each subsequent level to add them to the page.facets property if a
+    facets.toml file does not exist in that child directory.
+    """
+    config = context[ProjectConfig]
+    root = config.source_path
+    parent_facets = None
+
+    for base, _, files in os.walk(root):
+        if "facets.toml" in files:
+            facet_path = Path(os.path.join(base, "facets.toml"))
+            curr_facets, diagnostics = config.load_facets_from_file(facet_path)
+
+            if not curr_facets:
+                context.diagnostics[config.get_fileid(facet_path)].extend(diagnostics)
+
+            if parent_facets and curr_facets:
+                parent_facets = config.merge_facets(parent_facets, curr_facets)
+            elif curr_facets:
+                parent_facets = curr_facets
+
+        if parent_facets:
+            for file in files:
+                ext = os.path.splitext(file)[1]
+                if ext not in util.RST_EXTENSIONS:
+                    continue
+
+                file_path = Path(os.path.join(base, file))
+                fileid = config.get_fileid(file_path)
+
+                page = pages[fileid]
+                page.facets = parent_facets
 
 
 class Handler:
@@ -716,12 +753,8 @@ class BannerHandler(Handler):
         """Check if page matches target specified, but assert to ensure this does not run on includes"""
         assert fileid.suffix == ".txt"
 
-        page_path_relative_to_source = page.source_path.relative_to(
-            self.root / "source"
-        )
-
         for target in targets:
-            if page_path_relative_to_source.match(target):
+            if page.fileid.match(target):
                 return True
         return False
 
@@ -1086,8 +1119,11 @@ class IAHandler(Handler):
         slug: Optional[str]
         project_name: Optional[str]
         primary: Optional[bool]
+        entry_id: Optional[str]
 
-        def serialize(self) -> n.SerializedNode:
+        def serialize(
+            self, entry_ids: Dict[str, List[Dict[str, str]]]
+        ) -> n.SerializedNode:
             result: n.SerializedNode = {
                 "title": [node.serialize() for node in self.title],
             }
@@ -1100,19 +1136,64 @@ class IAHandler(Handler):
                 result["url"] = self.url
             if self.primary is not None:
                 result["primary"] = self.primary
+            if self.entry_id is not None:
+                result["id"] = self.entry_id
+                if self.entry_id in entry_ids:
+                    result["linked_data"] = entry_ids[self.entry_id]
 
             return result
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
+        self.entry_ids: Dict[str, List[Dict[str, str]]] = {}
+
+    def add_linked_data(
+        self, card_group: n.Directive, entry_id: str, current_file: FileId
+    ) -> None:
+        for card in card_group.get_child_of_type(n.Directive):
+            if card.name != "card":
+                self.context.diagnostics[current_file].append(
+                    InvalidChild(card.name, "card_group", "card", card.span[0])
+                )
+                continue
+
+            # The following options are the most important for ensuring working
+            # links on the side nav, but we can extend this to all options if needed
+            headline = card.options.get("headline", "")
+            url = card.options.get("url", "")
+            if not headline or not url:
+                self.context.diagnostics[current_file].append(
+                    InvalidIALinkedData(
+                        "Missing headline and/or url for card", card.span[0]
+                    )
+                )
+                continue
+
+            self.entry_ids[entry_id].append(card.options)
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if (
             not isinstance(node, n.Directive)
-            or not node.name == "ia"
-            or not node.domain == ""
+            or not node.name in {"ia", "card-group"}
+            or not node.domain in {"", "mongodb"}
         ):
+            return
+
+        # A card-group directive can have data linked to a particular IA entry
+        # for the side nav
+        if node.name == "card-group":
+            entry_id = node.options.get("ia-entry-id")
+            if not entry_id:
+                return
+            elif entry_id in self.entry_ids:
+                self.add_linked_data(node, entry_id, fileid_stack.current)
+            else:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidIALinkedData(
+                        f'No IA entry with ID "{entry_id}" found', node.span[0]
+                    )
+                )
             return
 
         if self.ia:
@@ -1177,6 +1258,7 @@ class IAHandler(Handler):
                 )
                 continue
 
+            entry_id = entry.options.get("id")
             self.ia.append(
                 IAHandler.IAData(
                     title,
@@ -1184,8 +1266,12 @@ class IAHandler(Handler):
                     slug,
                     project_name,
                     bool(entry.options.get("primary", False)) if project_name else None,
+                    entry_id,
                 )
             )
+
+            if entry_id:
+                self.entry_ids[entry_id] = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.ia = []
@@ -1195,7 +1281,9 @@ class IAHandler(Handler):
             return
 
         if isinstance(page.ast, n.Root):
-            page.ast.options["ia"] = [entry.serialize() for entry in self.ia]
+            page.ast.options["ia"] = [
+                entry.serialize(self.entry_ids) for entry in self.ia
+            ]
 
 
 class SubstitutionHandler(Handler):
@@ -1689,6 +1777,8 @@ class Postprocessor:
         context.add(self.project_config)
         context.add(self.targets)
 
+        propagate_facets(self.pages, context)
+
         for project_pass in self.PASSES:
             instances = [ty(context) for ty in project_pass]
             for instance in instances:
@@ -1797,7 +1887,7 @@ class Postprocessor:
         def _get_page_from_slug(current_page: Page, slug: str) -> Optional[Page]:
             relative, _ = util.reroot_path(
                 FileId(slug),
-                current_page.source_path,
+                current_page.fileid,
                 context[ProjectConfig].source_path,
             )
 

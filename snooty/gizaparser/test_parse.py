@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from ..n import FileId
 from ..types import ProjectConfig
 from .extracts import Extract
 from .parse import parse
@@ -9,7 +10,7 @@ def test_invalid_yaml() -> None:
     project_config = ProjectConfig(Path("test_data"), "")
     pages, text, diagnostics = parse(
         Extract,
-        Path(""),
+        FileId(""),
         project_config,
         """
 ref: troubleshooting-monitoring-agent-fails-to-collect-data

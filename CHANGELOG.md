@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.8] - 2023-09-07
+
+### Fixed
+
+- Include `taxonomy.toml` in the binary bundles.
+
+## [v0.14.7] - 2023-09-07
+
+### Changed
+
+- All internal paths are now relative to the project source tree, not absolute, allowing cache
+  files to be portable between computers and working directories (DOP-3966)
+- Facet processing shoud be more reliable with regards to caches (DOP-3878)
+
+### Fixed
+
+- Ensure that YAML parsing diagnostics are reliably raised (DOP-4008)
+
 ## [v0.14.6] - 2023-08-25
 
 ### Changed

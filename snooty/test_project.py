@@ -1,4 +1,6 @@
+import shutil
 import sys
+import tempfile
 import threading
 import time
 from collections import defaultdict
@@ -20,7 +22,12 @@ from .parser import Project, ProjectBackend
 from .target_database import TargetDatabase
 from .types import BuildIdentifierSet, ProjectConfig
 from .util import ast_dive
-from .util_test import check_ast_testing_string, make_test, make_test_project
+from .util_test import (
+    BackendTestResults,
+    check_ast_testing_string,
+    make_test,
+    make_test_project,
+)
 
 build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "789"}
 
@@ -280,7 +287,7 @@ def test_target_wipe() -> None:
             assert query_result.result[0] == "index"
 
         project.update(
-            Path("test_data/test_postprocessor/source/index.txt").resolve(),
+            FileId("index.txt"),
             ".. _gooblygooblygoo:\n",
         )
         project.postprocess()
@@ -346,3 +353,16 @@ Testing {+foo+}
             project.build(1, False)
 
             assert project.cache.stats == CacheStats(hits=2, misses=0, errors=0)
+
+            # Ensure that the cache is valid even if it's copied to a different directory
+            with tempfile.TemporaryDirectory() as tempdirname:
+                shutil.copytree(project.config.root, tempdirname, dirs_exist_ok=True)
+                backend_copy = BackendTestResults()
+                project_copy = Project(Path(tempdirname), backend_copy, {})
+                project_copy.load_cache()
+                project_copy.build()
+                with project_copy._get_inner() as _project_copy:
+                    assert _project_copy.cache is not None
+                    assert _project_copy.cache.stats == CacheStats(
+                        hits=2, misses=0, errors=0
+                    )

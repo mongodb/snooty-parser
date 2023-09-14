@@ -601,6 +601,19 @@ example = """ .. landing:explore:: Explore the Document Model
 """
 # Expects that children are in specified in the above example order and have that specific number of variants
 
+
+[directive."landing:more-ways"]
+argument_type = "string"
+content_type = "block"
+options.video_url = { type = "uri", required = true }
+
+example = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
+   :video_url: ${2: full video url}
+
+   ${3: More ways content}
+ """
+
+
 ##### Internal "mongodb" directives
 [directive."mongodb:banner"]
 help = """A skinny admonition, meant for alerts or smaller notifications."""
@@ -658,12 +671,59 @@ options.columns = "nonnegative_integer"
 options.layout = "card_layout"
 options.style = "card_style"
 options.type = "card_group_type"
+options.ia-entry-id = "string"
 example = """.. card-group::
    ${1::columns: 2}
    :layout: ${3:|default,carousel| (Optional)}
    :style: ${2:|default,compact,extra-compact| (Optional)}
 
    ${0: Card content}
+"""
+
+[directive."landing:product"]
+content_type = "block"
+help = """Product in a product-list. Each product links to the specified URI, and can include content, an icon, as well as a call-to-action string"""
+options.icon = ["path", "uri"]
+options.icon-alt = "string"
+argument_type = "string"
+example = """.. product:: ${0: string}
+   ${4::icon: /path-to-icon.svg
+   :icon-alt: Icon's alt text
+
+   ${1: content.}
+"""
+
+[directive."landing:products"]
+content_type = "block"
+help = """Container to hold a group of products"""
+example = """.. landing:products::
+   ${0: Product content}
+"""
+
+[directive."landing:client-libraries"]
+content_type = "block"
+help = """Title and call-to-action for card-group"""
+options.cta = "string"
+options.url = ["path", "uri"]
+argument_type = "string"
+example = """.. landing:client-libraries:: ${0: string}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
+"""
+
+[directive."landing:introduction"]
+help = """Make an Introduction. Pass in a title string as an argument, and a content block"""
+argument_type = "string"
+content_type = "block"
+example = """.. landing:introduction:: MongoDB Introduction
+   ${0: Introduction content}
+"""
+
+[directive."landing:explore"]
+content_type = "block"
+help = """A container to explore Atlas tools and environment"""
+example = """.. landing:explore::
+   ${0: Explore content}
 """
 
 [directive."mongodb:chapter"]
@@ -936,6 +996,7 @@ argument_type = "string"
 options.url = "string"
 options.project-name = "string"
 options.primary = "flag"
+options.id = "string"
 example = """.. entry:: ${0: string}
    ${1::url: (string)
    :project-name: (string) [optional]
@@ -1026,6 +1087,10 @@ type = "explicit_title"
 
 [role.icon-fa4]
 help = """Show a FontAwesome 4 icon."""
+type = "explicit_title"
+
+[role.icon-lg]
+help = """Show a LeafyGreen icon."""
 type = "explicit_title"
 
 [role.rfc]
