@@ -1,12 +1,19 @@
+import collections
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from ..diagnostics import Diagnostic
+from ..diagnostics import Diagnostic, DocUtilsParseError, FailedToInheritRef
 from ..n import FileId
 from ..page import Page
 from ..parser import EmbeddedRstParser
 from ..types import ProjectConfig
-from ..util_test import ast_to_testing_string, check_ast_testing_string, make_test
+from ..util_test import (
+    BackendTestResults,
+    ast_to_testing_string,
+    check_ast_testing_string,
+    make_test,
+    make_test_project,
+)
 from .steps import GizaStepsCategory
 
 
@@ -21,10 +28,10 @@ def test_step() -> None:
     child_fileid = FileId("includes/steps-test-child.yaml")
     grandchild_fileid = FileId("includes/steps-test-grandchild.yaml")
 
-    all_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+    all_diagnostics: Dict[FileId, List[Diagnostic]] = collections.defaultdict(list)
     for current_path in [fileid, child_fileid, grandchild_fileid]:
         steps, text, parse_diagnostics = category.parse(current_path)
-        category.add(current_path, text, steps)
+        category.add(current_path, text, steps, parse_diagnostics)
         if parse_diagnostics:
             all_diagnostics[fileid] = parse_diagnostics
 
@@ -35,7 +42,7 @@ def test_step() -> None:
         page = Page.create(fileid, filename, "")
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[fileid]))
 
-    pages = category.to_pages(fileid, create_page, giza_node.data)
+    pages = category.to_pages(fileid, create_page, giza_node)
     assert [page.fake_full_fileid().as_posix() for page in pages] == [
         "includes/steps/test.rst"
     ]
@@ -153,3 +160,59 @@ replacement:
 </root>
 """,
     )
+
+
+def test_yaml_diagnostics_cache() -> None:
+    """Ensure that when we load a cached build, we still get YAML diagnostics."""
+    reference_diagnostics = {
+        FileId("includes/steps-configure-mcli-cm.yaml"): [FailedToInheritRef],
+        FileId("includes/steps-configure-mcli.yaml"): [DocUtilsParseError],
+    }
+
+    with make_test_project(
+        {
+            Path(
+                "source/includes/steps-configure-mcli.yaml"
+            ): """
+title: "Create a profile."
+stepnum: 0
+level: 4
+ref: create-profile
+replacement:
+  serviceOption: ""
+content: |
+
+  foo{{serviceOption}}
+
+  .. foobarbaz::
+...
+""",
+            Path(
+                "source/includes/steps-configure-mcli-cm.yaml"
+            ): """
+stepnum: 1
+ref: create-profile-cm
+source:
+  file: steps-configure-mcli.yaml
+  ref: create-profil
+replacement:
+  serviceOption: "bar"
+...
+""",
+        }
+    ) as (_project, first_backend):
+        _project.build()
+        assert {
+            k: [type(d) for d in v] for k, v in first_backend.diagnostics.items()
+        } == reference_diagnostics
+        _project.update_cache(False)
+
+        # Rebuild with a cache, and ensure we get the same diagnostics
+        backend = BackendTestResults()
+        with _project._get_inner() as project:
+            project.backend = backend
+        _project.load_cache()
+        _project.build()
+        assert {
+            k: [type(d) for d in v] for k, v in backend.diagnostics.items()
+        } == reference_diagnostics

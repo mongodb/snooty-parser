@@ -189,11 +189,16 @@ def inherit(
 class GizaFile(Generic[_I]):
     """A GizaFile represents a single Giza YAML file."""
 
-    __slots__ = ("path", "text", "data")
-
     path: n.FileId
     text: str
     data: Sequence[_I]
+    pages: Optional[Sequence[Page]]
+    parse_diagnostics: List[Diagnostic]
+    reify_diagnostics: List[Diagnostic] = field(default_factory=list)
+
+    @property
+    def diagnostics(self) -> Sequence[Diagnostic]:
+        return self.parse_diagnostics + self.reify_diagnostics
 
 
 @dataclass
@@ -204,6 +209,7 @@ class GizaCategory(Generic[_I]):
 
     project_config: ProjectConfig
     nodes: Dict[str, GizaFile[_I]] = field(default_factory=dict)
+    reified_nodes: Optional[Dict[str, GizaFile[_I]]] = None
     dg: "networkx.DiGraph[str]" = field(default_factory=networkx.DiGraph)
 
     def parse(
@@ -212,19 +218,35 @@ class GizaCategory(Generic[_I]):
         """Abstract method to parse Giza nodes out of YAML source text."""
         raise NotImplementedError()
 
-    def to_pages(
+    def _generate_pages(
         self,
         source_path: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
-        data: Sequence[_I],
+        giza_file: GizaFile[_I],
     ) -> List[Page]:
         """Abstract method to generate pages from a given set of Giza nodes."""
         raise NotImplementedError()
 
-    def add(self, path: n.FileId, text: str, elements: Sequence[_I]) -> None:
+    def to_pages(
+        self,
+        source_path: n.FileId,
+        page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
+        giza_file: GizaFile[_I],
+    ) -> List[Page]:
+        pages = self._generate_pages(source_path, page_factory, giza_file)
+        giza_file.pages = pages
+        return pages
+
+    def add(
+        self,
+        path: n.FileId,
+        text: str,
+        elements: Sequence[_I],
+        diagnostics: Sequence[Diagnostic],
+    ) -> None:
         """Add a file with one or more Giza nodes."""
         file_id = path.name
-        self.nodes[file_id] = GizaFile(path, text, elements)
+        self.nodes[file_id] = GizaFile(path, text, elements, None, list(diagnostics))
 
         for element in elements:
             inherit = element.parent_information
@@ -327,37 +349,42 @@ class GizaCategory(Generic[_I]):
 
         return obj
 
-    def reify_file_id(
-        self, file_id: str, diagnostics: Dict[n.FileId, List[Diagnostic]]
-    ) -> GizaFile[_I]:
+    def reify_file_id(self, file_id: str) -> GizaFile[_I]:
         """Resolve inheritance and substitution in a Giza source file."""
         node = self.nodes[file_id]
         refs: Set[str] = set()
-        data = [
-            self.reify(el, diagnostics.setdefault(node.path, []), refs, set())
-            for el in node.data
-        ]
+        diagnostics: List[Diagnostic] = []
+        data = [self.reify(el, diagnostics, refs, set()) for el in node.data]
+        node.reify_diagnostics = diagnostics
 
         return dataclasses.replace(node, data=data)
 
     def reify_all_files(
-        self, diagnostics: Dict[n.FileId, List[Diagnostic]]
+        self,
+        all_diagnostics: Dict[n.FileId, List[Diagnostic]],
     ) -> Iterator[Tuple[str, GizaFile[_I]]]:
         """Resolve inheritance and substitution in all source files within this category."""
 
         refs_dict: Dict[str, Set[str]] = {}
+        reified_nodes: Dict[str, GizaFile[_I]] = {}
 
         for file_id, node in self.nodes.items():
             if file_id not in refs_dict:
                 refs_dict[file_id] = set()
 
+            diagnostics: List[Diagnostic] = []
             data = [
-                self.reify(
-                    el, diagnostics.setdefault(node.path, []), refs_dict[file_id], set()
-                )
+                self.reify(el, diagnostics, refs_dict[file_id], set())
                 for el in node.data
             ]
-            yield file_id, dataclasses.replace(node, data=data)
+            new_node = dataclasses.replace(node, data=data)
+            new_node.reify_diagnostics = diagnostics
+            all_diagnostics[node.path].extend(new_node.diagnostics)
+            reified_nodes[file_id] = new_node
+            yield file_id, new_node
+
+        # We only want to store the reified registry as a complete atomic unit
+        self.reified_nodes = reified_nodes
 
     def __len__(self) -> int:
         """Return the number of nodes in this category."""
@@ -370,6 +397,13 @@ class GizaCategory(Generic[_I]):
         except networkx.exception.NetworkXError as err:
             raise KeyError(file_id) from err
         del self.nodes[file_id]
+
+        # If we have reified a copy of this node, delete that too
+        if self.reified_nodes is not None:
+            try:
+                del self.reified_nodes[file_id]
+            except KeyError:
+                pass
 
 
 @checked

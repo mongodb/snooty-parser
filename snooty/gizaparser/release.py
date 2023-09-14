@@ -6,7 +6,7 @@ from ..diagnostics import Diagnostic, MissingRef
 from ..flutter import checked
 from ..page import Page
 from ..types import EmbeddedRstParser
-from .nodes import GizaCategory, Inheritable
+from .nodes import GizaCategory, GizaFile, Inheritable
 from .parse import parse
 
 
@@ -59,15 +59,15 @@ class GizaReleaseSpecificationCategory(GizaCategory[ReleaseSpecification]):
         ]
         return release_specifications, text, diagnostics
 
-    def to_pages(
+    def _generate_pages(
         self,
         source_fileid: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
-        nodes: Sequence[ReleaseSpecification],
+        giza_file: GizaFile[ReleaseSpecification],
     ) -> List[Page]:
         pages: List[Page] = []
 
-        for node in nodes:
+        for node in giza_file.data:
             assert node.ref is not None
             if node.ref.startswith("_"):
                 continue

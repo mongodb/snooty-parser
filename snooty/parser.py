@@ -1510,7 +1510,9 @@ class _Project:
                 pages.append(page)
                 diagnostics[path] = page_diagnostics
         elif self.yaml_domain.is_known_yaml(path):
-            pages = list(self.yaml_domain.update(path, diagnostics, optional_text))
+            for page, diag in self.yaml_domain.update(path, optional_text):
+                pages.append(page)
+                diagnostics[path] = list(diag)
         else:
             raise ValueError("Unknown file type: " + str(path))
 
@@ -1555,11 +1557,13 @@ class _Project:
             with self._backend_lock:
                 self.backend.on_diagnostics(nested_path, diagnostics)
 
-        all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = {}
-        self.yaml_domain.categorize(all_yaml_diagnostics)
-        yaml_pages = list(self.yaml_domain.generate_pages(all_yaml_diagnostics))
-        for page, page_diagnostics in yaml_pages:
-            self._page_updated(page, page_diagnostics)
+        all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        with util.PerformanceLogger.singleton().start("generate yaml"):
+            yaml_pages = list(
+                self.yaml_domain.load_and_generate(all_yaml_diagnostics, self.cache)
+            )
+            for page, page_diagnostics in yaml_pages:
+                self._page_updated(page, page_diagnostics)
 
         # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
         # any page.
@@ -1662,6 +1666,7 @@ class _Project:
     def update_cache(self, optimize: bool = True) -> None:
         cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
         self.pages.add_to_cache(cache)
+        cache.ingest_yaml(self.yaml_domain)
         self.cache_file.persist(cache, optimize=optimize)
 
     def _page_updated(self, page: Page, diagnostics: Sequence[Diagnostic]) -> None:

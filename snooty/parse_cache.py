@@ -1,3 +1,4 @@
+import collections
 import gzip
 import hashlib
 import logging
@@ -5,11 +6,11 @@ import pickle
 import pickletools
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import requests.exceptions
 
-from . import __version__, diagnostics, specparser, util
+from . import __version__, diagnostics, gizaparser, specparser, util
 from .diagnostics import Diagnostic
 from .n import FileId
 from .page import Page
@@ -41,12 +42,33 @@ class CacheData:
     pages: Dict[Tuple[str, str], bytes] = field(default_factory=dict)
     orphan_diagnostics: Dict[str, bytes] = field(default_factory=dict)
 
+    yaml_nodes: Dict[str, Dict[FileId, Tuple[str, bytes]]] = field(
+        default_factory=lambda: collections.defaultdict(dict)
+    )
+    yaml_pages: Dict[str, Sequence[Page]] = field(default_factory=dict)
+
     stats: CacheStats = field(default_factory=CacheStats)
 
     def set_page(self, obj: Page, diagnostics: List[Diagnostic]) -> None:
         self.pages[(obj.ast.fileid.as_posix(), obj.blake2b)] = pickle.dumps(
             (obj, diagnostics), protocol=PROTOCOL
         )
+
+    def ingest_yaml(self, yaml_domain: gizaparser.domain.GizaYamlDomain) -> None:
+        self.yaml_nodes.clear()
+        for category_name, category in yaml_domain.yaml_mapping.items():
+            if category.reified_nodes is None:
+                continue
+
+            for node in category.reified_nodes.values():
+                source_hash = hashlib.blake2b(bytes(node.text, "utf-8")).hexdigest()
+                self.yaml_nodes[category_name][node.path] = (
+                    source_hash,
+                    pickle.dumps(node),
+                )
+
+    def get_yaml_entries(self, category: str) -> Mapping[FileId, Tuple[str, bytes]]:
+        return self.yaml_nodes[category]
 
     def set_orphan_diagnostics(
         self, fileid: FileId, orphan_diagnostics: List[Diagnostic]
