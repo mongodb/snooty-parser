@@ -576,6 +576,44 @@ content_type = "block"
 #    ${0: quoted content}
 # """
 
+### docs-landing directives
+[directive."landing:explore"]
+help = """ Landing page section for exploring the Document Model"""
+content_type = "block"
+argument_type = "string"
+example = """ .. landing:explore:: Explore the Document Model
+
+   MongoDB is a flexible, schema-less NoSQL database. 
+   It stores data as JSON-like documents, enabling nested structures, 
+   easy scalability, and efficient querying for modern applications.
+
+   .. button:: Launch Interactive Lab
+      :uri: https://ti.instruqt.com/?track=https://play.instruqt.com/embed/mongodb/tracks/creating-deploying-and-connecting-to-an-atlas-cluster-using-the-cli?token=em_1Lo8fN3MjIbkQZxM&jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb3Vyc2VUaXRsZSI6IkF0bGFzIEp1bXBzdGFydCB1c2luZyB0aGUgQ0xJIChMYWIgT25seSkiLCJjb3Vyc2VTa3UiOiJNREJMYWJBdGxhc0p1bXBTdGFydENMSSIsImNvdXJzZUlkIjoiZDM3YWVkODctNWM3Yi00ZjAyLTliMGQtYTYzYjQ2MGRjMjMxIiwicmV0dXJuVG8iOiJodHRwczovL2xlYXJuLm1vbmdvZGIuY29tL2xlYXJuL2V4dGVybmFsQWN0aXZpdHk_and0PWV5SmhiR2NpT2lKSVV6STFOaUlzSW5SNWNDSTZJa3BYVkNKOS5leUp6ZEdGMGRYTWlPaUpqYjIxd2JHVjBaV1FpTENKeVpYUjFjbTVWY213aU9pSXZiR1ZoY200dlkyOTFjbk5sTDJGMGJHRnpMV3AxYlhCemRHRnlkQzExYzJsdVp5MTBhR1V0WTJ4cExXeGhZaTF2Ym14NUwyMWhhVzR2WVhSc1lYTXRhblZ0Y0hOMFlYSjBMWFZ6YVc1bkxYUm9aUzFqYkdrdGJHRmlMVzl1YkhrX1kyeHBaVzUwUFcxdmJtZHZaR0l0YVc1MFpYSnVZV3dpTENKaGMzTnBaMjV0Wlc1MFNXUWlPaUkwTUdZM1lXWmxOeTA0TjJKaExUUTNOamd0WVRKbE9TMWpaR1JtTnpsbE1tRTNaakVpTENKc1pXRnlibVZ5U1dRaU9pSXhOelF3TmpCak1DMHpNemd3TFRSbFpHRXRPV1V4WlMwM056TmlaVE01TXpKalkyRWlMQ0pwWVhRaU9qRTJPVEE0TlRBd09EbDkuSkpBbldzSUpOd1E4VC1UQi1mWDQyeTk1a3c3QnJqUzlZTE94bnEzTVNVdyIsImVtYWlsIjoibGl6LmhpbGxAbW9uZ29kYi5jb20iLCJleHRlcm5hbEN1c3RvbWVySWQiOiIwMHU5NjJhZzk0Y3c3YnJjcDI5NyIsImZpcnN0TmFtZSI6IkxpeiIsImxhc3ROYW1lIjoiSGlsbCIsInJvbGUiOiJzdHVkZW50IiwicmVmMSI6IjAwdThxZ2lneGZtd3JSeUlKMjk3IiwicmVmMiI6bnVsbCwicmVmMyI6bnVsbCwicmVmNCI6IjAwdTk2MmFnOTRDVzdickNQMjk3IiwicmVmNSI6bnVsbCwicmVmNiI6bnVsbCwicmVmNyI6bnVsbCwicmVmOCI6Ik1vbmdvREIiLCJyZWY5IjoiVW5pdGVkIFN0YXRlczsgVW5pdGVkIFN0YXRlcyIsInJlZjEwIjoiRW1wbG95ZWUiLCJpYXQiOjE2OTA4NTAwODl9.E5aF0L7HpVho5F3Yp3qDGbw-R_-xk99fBBq40OMSJ10
+
+   .. code-block:: python
+      :copyable: true
+      
+      import datetime
+      personDocument = {
+         "name": { "first": "Alan", "last": "Turing" },
+         "birth": datetime.datetime(1912, 6, 23),
+      }
+"""
+# Expects that children are in specified in the above example order and have that specific number of variants
+
+
+[directive."landing:more-ways"]
+argument_type = "string"
+content_type = "block"
+options.video_url = { type = "uri", required = true }
+
+example = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
+   :video_url: ${2: full video url}
+
+   ${3: More ways content}
+ """
+
+
 ##### Internal "mongodb" directives
 [directive."mongodb:banner"]
 help = """A skinny admonition, meant for alerts or smaller notifications."""
@@ -633,12 +671,52 @@ options.columns = "nonnegative_integer"
 options.layout = "card_layout"
 options.style = "card_style"
 options.type = "card_group_type"
+options.ia-entry-id = "string"
 example = """.. card-group::
    ${1::columns: 2}
    :layout: ${3:|default,carousel| (Optional)}
    :style: ${2:|default,compact,extra-compact| (Optional)}
 
    ${0: Card content}
+"""
+
+[directive."landing:product"]
+content_type = "block"
+help = """Product in a product-list. Each product links to the specified URI, and can include content, an icon, as well as a call-to-action string"""
+options.icon = ["path", "uri"]
+options.icon-alt = "string"
+argument_type = "string"
+example = """.. product:: ${0: string}
+   ${4::icon: /path-to-icon.svg
+   :icon-alt: Icon's alt text
+
+   ${1: content.}
+"""
+
+[directive."landing:products"]
+content_type = "block"
+help = """Container to hold a group of products"""
+example = """.. landing:products::
+   ${0: Product content}
+"""
+
+[directive."landing:client-libraries"]
+content_type = "block"
+help = """Title and call-to-action for card-group"""
+options.cta = "string"
+options.url = ["path", "uri"]
+argument_type = "string"
+example = """.. landing:client-libraries:: ${0: string}
+   :cta: ${1:Get started with MongoDB}
+   :url: ${2:url-should-link-to}
+"""
+
+[directive."landing:introduction"]
+help = """Make an Introduction. Pass in a title string as an argument, and a content block"""
+argument_type = "string"
+content_type = "block"
+example = """.. landing:introduction:: MongoDB Introduction
+   ${0: Introduction content}
 """
 
 [directive."mongodb:chapter"]
@@ -775,6 +853,16 @@ help = "The amount of time that it would take to go through the guide content in
 argument_type = {type = "nonnegative_integer", required = true}
 example = """.. time:: 15"""
 
+[directive."mongodb:facet"]
+help = "The name and value of search facets that apply to this page. Use nested facets to represent hierarchy"
+content_type = "block"
+options.name = {type = "string", required = true}
+options.values = {type = "string", required = true}
+example = """.. facet::
+   :type: ${1:name_of_type}
+   :values: ${2:value1, value2, value3}
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -901,6 +989,7 @@ argument_type = "string"
 options.url = "string"
 options.project-name = "string"
 options.primary = "flag"
+options.id = "string"
 example = """.. entry:: ${0: string}
    ${1::url: (string)
    :project-name: (string) [optional]
@@ -1751,8 +1840,8 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
-  {id = "shell", title = "MongoDB Shell"},
   {id = "atlas-ui", title = "MongoDB Atlas"},
+  {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
