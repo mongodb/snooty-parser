@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.9] - 2023-09-16
+
 ### Added
 
 - DOP-3991: Add landing:explore directive (#532)
