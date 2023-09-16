@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DOP-3991: Add landing:explore directive (#532)
+- DOP-3987: Add landing:introduction directive (#521)
+- DOP-3988: Add landing:products directive (#517)
+- DOP-3992: Add landing:more-ways directive (#518)
+- DOP-3855: Adding LeafyGreen icon role support (#512)
+
+### Changed
+
+- DOP-3993: Allow card group to link data for IA entry (#522)
+
 ## [v0.14.8] - 2023-09-07
 
 ### Fixed
