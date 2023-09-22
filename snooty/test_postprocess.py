@@ -2846,7 +2846,7 @@ Facets
     ) as result:
         page = result.pages[FileId("index.txt")]
         facets = page.facets
-        sortFn = (lambda facet: facet.category + facet.value)
+        sortFn = lambda facet: facet.category + facet.value
         assert facets is not None
         assert facets.sort(key=sortFn) == (
             [

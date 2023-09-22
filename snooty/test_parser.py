@@ -3686,4 +3686,7 @@ def test_invalid_facets() -> None:
     assert isinstance(diagnostics[0], MissingFacet)
     assert isinstance(diagnostics[1], MissingFacet)
     assert isinstance(diagnostics[2], MissingFacet)
-    assert any(diagnostic.message.find('target_product:dne') != -1 for diagnostic in diagnostics)
+    assert any(
+        diagnostic.message.find("target_product:dne") != -1
+        for diagnostic in diagnostics
+    )

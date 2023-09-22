@@ -1650,10 +1650,10 @@ class FacetsHandler(Handler):
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
-        
+
         facet_values = node.options["values"]
 
-        for facet_value in facet_values.split(','):
+        for facet_value in facet_values.split(","):
             facet_node = Facet(category=node.options["name"], value=facet_value.strip())
 
             if self.parent_stack:

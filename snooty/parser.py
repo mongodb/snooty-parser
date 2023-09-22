@@ -531,7 +531,7 @@ class JSONVisitor:
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         ref: Union[rstparser.directive, tinydocutils.nodes.Element] = node
-        for value in ref["options"]["values"].split(','):
+        for value in ref["options"]["values"].split(","):
             single_value = value.strip()
             try:
                 facet_str_pairs: List[tuple[str, str]] = [
@@ -549,9 +549,7 @@ class JSONVisitor:
                 taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
             except KeyError:
                 self.diagnostics.append(
-                    MissingFacet(
-                        f"{node['options']['name']}:{single_value}", line
-                    )
+                    MissingFacet(f"{node['options']['name']}:{single_value}", line)
                 )
 
     def handle_tabset(self, node: n.Directive) -> None:
