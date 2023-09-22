@@ -1650,21 +1650,24 @@ class FacetsHandler(Handler):
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
+        
+        facet_values = node.options["values"]
 
-        facet_node = Facet(category=node.options["name"], value=node.options["values"])
+        for facet_value in facet_values.split(','):
+            facet_node = Facet(category=node.options["name"], value=facet_value.strip())
 
-        if self.parent_stack:
-            parent = self.parent_stack[-1][0]
-            if parent.sub_facets is not None:
-                parent.sub_facets.append(facet_node)
-        else:
-            self.facets.append(facet_node)
+            if self.parent_stack:
+                parent = self.parent_stack[-1][0]
+                if parent.sub_facets is not None:
+                    parent.sub_facets.append(facet_node)
+            else:
+                self.facets.append(facet_node)
 
-        if node.children:
-            facet_node.sub_facets = []
-            num_children = len(node.children)
-            self.parent_stack.append((facet_node, num_children))
-        self.removal_nodes.append(node)
+            if node.children:
+                facet_node.sub_facets = []
+                num_children = len(node.children)
+                self.parent_stack.append((facet_node, num_children))
+            self.removal_nodes.append(node)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "facet":
