@@ -532,26 +532,25 @@ class JSONVisitor:
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         for value in node["options"]["values"].split(","):
             ref: Union[rstparser.directive, tinydocutils.nodes.Element] = node
-            for value in ref["options"]["values"].split(","):
-                single_value = value.strip()
-                try:
-                    facet_str_pairs: List[tuple[str, str]] = [
-                        (ref["options"]["name"], single_value)
-                    ]
+            single_value = value.strip()
+            try:
+                facet_str_pairs: List[tuple[str, str]] = [
+                    (ref["options"]["name"], single_value)
+                ]
 
-                    while ref.parent and ref.parent.get("name") == "facet":
-                        ref = ref.parent
-                        # parent facet with children can only have one value
-                        # no need to traverse in multiple directions
-                        facet_str_pairs.append(
-                            (ref["options"]["name"], ref["options"]["values"])
-                        )
-
-                    taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
-                except KeyError:
-                    self.diagnostics.append(
-                        MissingFacet(f"{node['options']['name']}:{single_value}", line)
+                while ref.parent and ref.parent.get("name") == "facet":
+                    ref = ref.parent
+                    # parent facet with children can only have one value
+                    # no need to traverse in multiple directions
+                    facet_str_pairs.append(
+                        (ref["options"]["name"], ref["options"]["values"])
                     )
+
+                taxonomy.TaxonomySpec.validate_key_value_pairs(facet_str_pairs)
+            except KeyError:
+                self.diagnostics.append(
+                    MissingFacet(f"{node['options']['name']}:{single_value}", line)
+                )
 
     def handle_tabset(self, node: n.Directive) -> None:
         tabset = node.options["tabset"]
