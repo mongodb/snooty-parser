@@ -1654,8 +1654,6 @@ class FacetsHandler(Handler):
         def get_children_total(
             child: n.Node,
         ) -> int:
-            if not isinstance(node, n.Directive) or node.name != "facet":
-                return 0
             return (
                 len(child.options["values"].split(","))
                 if hasattr(child, "options")
