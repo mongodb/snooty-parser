@@ -1088,6 +1088,7 @@ class RSTState(State):
         """
         memo = self.memo
         title_styles = memo.title_styles
+        
         mylevel = memo.section_level
         try:  # check for existing title style
             level = title_styles.index(style) + 1
@@ -1100,9 +1101,15 @@ class RSTState(State):
                 return False
         if level <= mylevel:  # sibling or supersection
             memo.section_level = level  # bubble up to parent section
+            
             if style.overline is not None:
                 memo.section_bubble_up_kludge = True
 
+            self.parent.append(self.reporter.warning(
+                "Directives cannot contain sections that are sibling to the parent directive's section",
+                line=lineno
+            ))
+            
             # back up 2 lines for underline title, 3 for overline title
             self.state_machine.previous_line(style.length() + 1)
             raise EOFError  # let parent section re-evaluate
