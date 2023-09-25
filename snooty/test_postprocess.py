@@ -2893,7 +2893,7 @@ def test_toml_facets() -> None:
       :values: v1.2
    .. facet::
       :name: sub_product
-      :values: charts
+      :values: charts,atlas-cli
 .. facet::
    :name: genre
    :values: tutorial
@@ -2941,6 +2941,7 @@ value = "test"
                     sub_facets=[
                         Facet(category="version", value="v1.2"),
                         Facet(category="sub_product", value="charts"),
+                        Facet(category="sub_product", value="atlas-cli"),
                     ],
                 ),
                 Facet(category="programming_language", value="shell"),
