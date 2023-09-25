@@ -3682,8 +3682,33 @@ def test_invalid_facets() -> None:
 """,
     )
     page.finish(diagnostics)
-    print(diagnostics)
     assert len(diagnostics) == 3
     assert isinstance(diagnostics[0], MissingFacet)
     assert isinstance(diagnostics[1], MissingFacet)
     assert isinstance(diagnostics[2], MissingFacet)
+    assert any(
+        diagnostic.message.find("target_product:dne") != -1
+        for diagnostic in diagnostics
+    )
+
+
+def test_valid_facets() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. facet::
+    :name: target_product
+    :values: atlas
+
+    .. facet::
+        :name: sub_product
+        :values: charts, atlas-cli
+    """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 0

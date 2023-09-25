@@ -1651,19 +1651,40 @@ class FacetsHandler(Handler):
         if not isinstance(node, n.Directive) or node.name != "facet":
             return
 
-        facet_node = Facet(category=node.options["name"], value=node.options["values"])
+        def get_children_total(
+            child: n.Node,
+        ) -> int:
+            return (
+                len(child.options["values"].split(","))
+                if hasattr(child, "options")
+                else 0
+            )
 
+        facet_values = node.options["values"]
+        parent = None
         if self.parent_stack:
             parent = self.parent_stack[-1][0]
-            if parent.sub_facets is not None:
-                parent.sub_facets.append(facet_node)
-        else:
-            self.facets.append(facet_node)
 
-        if node.children:
-            facet_node.sub_facets = []
-            num_children = len(node.children)
-            self.parent_stack.append((facet_node, num_children))
+        for facet_value in facet_values.split(","):
+            facet_node = Facet(category=node.options["name"], value=facet_value.strip())
+
+            if not parent:
+                self.facets.append(facet_node)
+            if parent and parent.sub_facets is not None:
+                parent.sub_facets.append(facet_node)
+
+            if node.children:
+                facet_node.sub_facets = []
+                num_children = sum(
+                    list(
+                        map(
+                            get_children_total,
+                            node.children,
+                        )
+                    )
+                )
+                self.parent_stack.append((facet_node, num_children))
+
         self.removal_nodes.append(node)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:

@@ -2820,13 +2820,10 @@ def test_facets() -> None:
             Path(
                 "source/index.txt"
             ): """
-.. facet::
-   :name: genre
-   :values: reference
 
 .. facet::
    :name: genre
-   :values: tutorial
+   :values: tutorial, reference
 
 .. facet::
    :name: target_product
@@ -2849,11 +2846,12 @@ Facets
     ) as result:
         page = result.pages[FileId("index.txt")]
         facets = page.facets
+        sortFn = lambda facet: facet.category + facet.value
         assert facets is not None
-        assert sorted(facets) == sorted(
+        assert facets.sort(key=sortFn) == (
             [
-                Facet(category="genre", value="reference"),
                 Facet(category="genre", value="tutorial"),
+                Facet(category="genre", value="reference"),
                 Facet(
                     category="target_product",
                     value="atlas",
@@ -2863,7 +2861,7 @@ Facets
                     ],
                 ),
             ]
-        )
+        ).sort(key=sortFn)
 
         check_ast_testing_string(
             page.ast,
@@ -2895,7 +2893,7 @@ def test_toml_facets() -> None:
       :values: v1.2
    .. facet::
       :name: sub_product
-      :values: charts
+      :values: charts,atlas-cli
 .. facet::
    :name: genre
    :values: tutorial
@@ -2943,6 +2941,7 @@ value = "test"
                     sub_facets=[
                         Facet(category="version", value="v1.2"),
                         Facet(category="sub_product", value="charts"),
+                        Facet(category="sub_product", value="atlas-cli"),
                     ],
                 ),
                 Facet(category="programming_language", value="shell"),
