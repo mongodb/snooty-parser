@@ -849,6 +849,7 @@ class StateMachineMemo:
         self.section_level = 0
         self.section_bubble_up_kludge = False
         self.inliner = inliner
+        self.minimum_level_stack = [0]
 
 
 class RSTStateMachine(StateMachine):
@@ -978,6 +979,7 @@ class RSTState(State):
         node: nodes.Element,
         match_titles: bool = False,
         state_config: Optional[statemachine.StateConfiguration] = None,
+        empty_memo: bool = False,
     ) -> int:
         """
         Create a new StateMachine rooted at `node` and run it over the input
@@ -998,9 +1000,13 @@ class RSTState(State):
         if not state_machine:
             assert state_config is not None
             state_machine = RSTStateMachine(state_config, debug=self.debug)
+        if empty_memo:
+            self.memo.minimum_level_stack.append(self.memo.section_level)
         state_machine.run_nested_sm(
             block, input_offset, memo=self.memo, node=node, match_titles=match_titles
         )
+        if empty_memo:
+            self.memo.minimum_level_stack.pop()
         if use_default == 1:
             self.nested_sm_cache.append(state_machine)
         else:
@@ -1102,6 +1108,14 @@ class RSTState(State):
             memo.section_level = level  # bubble up to parent section
             if style.overline is not None:
                 memo.section_bubble_up_kludge = True
+
+            if level <= self.memo.minimum_level_stack[-1]:
+                self.parent.append(
+                    self.reporter.error(
+                        "Block content cannot contain sections that are sibling to the parent element's section level",
+                        line=lineno,
+                    )
+                )
 
             # back up 2 lines for underline title, 3 for overline title
             self.state_machine.previous_line(style.length() + 1)

@@ -3730,3 +3730,133 @@ def test_duplicate_directive_option() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+
+def test_inconsistent_levels() -> None:
+    """DOP-3969"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: shell
+
+      Additional Methods
+      ------------------
+
+      Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+    print(ast_to_testing_string(page.ast))
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: shell
+
+      Additional Methods
+      ~~~~~~~~~~~~~~~~~~
+
+      Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <section>
+        <heading id="query-result-format"><text>Query Result Format</text></heading>
+        <directive name="tabs" tabset="drivers">
+            <directive name="tab" tabid="shell"><text>MongoDB Shell</text>
+                <section>
+                    <heading id="additional-methods"><text>Additional Methods</text></heading>
+                    <paragraph><text>Testing</text></paragraph>
+                </section>
+            </directive>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+* Foobar
+* Additional Methods
+  ------------------
+
+  Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Procedure
+---------
+
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Hello
+      ~~~~~
+
+      Example
+      -------
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+    # print(ast_to_testing_string(page.ast))
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Procedure
+---------
+
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Hello
+      ~~~~~
+
+      Example
+      ~~~~~~~
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
