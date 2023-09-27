@@ -849,6 +849,8 @@ class StateMachineMemo:
         self.section_level = 0
         self.section_bubble_up_kludge = False
         self.inliner = inliner
+        self.parent_level = 0 # level outside of the current directive
+        self.within_directive = False
 
 
 class RSTStateMachine(StateMachine):
@@ -1086,9 +1088,15 @@ class RSTState(State):
 
         :Exception: `EOFError` when a sibling or supersection encountered.
         """
+        # print("CHECK_SUBSECTION")
+        # print("SOURCE")
+        # print(source)
+        # print("STYLE")
+        # print(style)
         memo = self.memo
         title_styles = memo.title_styles
-
+        # print("TITLE_STYLES")
+        # print(title_styles)
         mylevel = memo.section_level
         try:  # check for existing title style
             level = title_styles.index(style) + 1
@@ -1099,22 +1107,47 @@ class RSTState(State):
             else:  # not at lowest level
                 self.parent.append(self.title_inconsistent(source, lineno))
                 return False
+        # print("LEVEL (title_styles index at style + 1)")
+        # print(level)
+        # print("MYLEVEL (stored in memo)")
+        # print(mylevel)
+        # print("END CHECK_SUBSECTION")
         if level <= mylevel:  # sibling or supersection
             memo.section_level = level  # bubble up to parent section
-
             if style.overline is not None:
                 memo.section_bubble_up_kludge = True
 
-            self.parent.append(
-                self.reporter.warning(
-                    "Directives cannot contain sections that are sibling to the parent directive's section",
-                    line=lineno,
+            if memo.within_directive and level <= memo.parent_level:
+                # if memo.warnLevel:
+                self.parent.append(
+                    self.reporter.warning(
+                        "Directives cannot contain sections that are sibling to the parent directive's section",
+                        line=lineno,
+                    )
                 )
-            )
-
+                print("Level:")
+                print(level)
+                print("Parent level")
+                print(memo.parent_level)
+                print(source)
+            # print("FROM CHECK SUBSECTION")
+            # print("Memo.level_outside")
+            # print(memo.level_outside)
+            # print("Level")
+            # print(level)
+            # print("MYLEVEL")
+            # print(mylevel)
             # back up 2 lines for underline title, 3 for overline title
             self.state_machine.previous_line(style.length() + 1)
             raise EOFError  # let parent section re-evaluate
+        # if the level we want to add is sibling/supersection of the directive's parent header:
+        # if level <= memo.level_outside:
+        #     self.parent.append(
+        #         self.reporter.warning(
+        #             "Directives cannot contain sections that are sibling to the parent directive's section",
+        #             line=lineno,
+        #         )
+        #     )
         if level == mylevel + 1:  # immediate subsection
             return True
         else:  # invalid subsection
@@ -2245,6 +2278,7 @@ class Body(RSTState):
 
         Returns a 2-tuple: list of nodes, and a "blank finish" boolean.
         """
+        # print("Starting run directive")
         assert self.state_machine.input_lines is not None
         lineno = self.state_machine.abs_line_number()
         initial_line_offset = self.state_machine.line_offset
@@ -2260,15 +2294,18 @@ class Body(RSTState):
             ]
         )
         try:
+            
             arguments, options, content, content_offset = self.parse_directive_block(
                 indented, line_offset, directive, option_presets
             )
+            
         except MarkupError as detail:
             error = self.reporter.error(
                 'Error in "%s" directive:\n%s.' % (type_name, " ".join(detail.args)),
                 nodes.literal_block(block_text, block_text),
                 line=lineno,
             )
+            
             return [error], blank_finish
         directive_instance = directive(
             type_name,
@@ -2282,11 +2319,18 @@ class Body(RSTState):
             self.state_machine,
         )
         try:
+            self.memo.within_directive = True
             result = directive_instance.run()
+            # successfully parsed directive, set current level
+            self.memo.parent_level = self.memo.section_level
+            # print("LEVEL OUTSIDE: ")
+            # print(self.memo.level_outside)
         except directives.DirectiveError as error:
             msg_node = self.reporter.make_system_message(
                 error.level, error.msg, line=lineno
             )
+            self.memo.within_directive = False
+            self.memo.parent_level = self.memo.section_level
             msg_node.append(nodes.literal_block(block_text, block_text))
             result = [msg_node]
         assert isinstance(result, list), (
@@ -2300,6 +2344,8 @@ class Body(RSTState):
                 i,
                 result[i],
             )
+        self.memo.within_directive = False # have finished processing directive
+        self.memo.parent_level = self.memo.section_level
         return (result, blank_finish or self.state_machine.is_next_line_blank())
 
     def parse_directive_block(
@@ -2623,7 +2669,6 @@ class Body(RSTState):
         next_state: Type[statemachine.State],
     ) -> statemachine.TransitionResult:
         """Section title overline or transition marker."""
-
         if self.state_machine.match_titles:
             return [match.string], Line, []
         elif match.string.strip() == "::":
@@ -3467,7 +3512,16 @@ class Line(SpecializedText):
                 messages.append(msg)
         style = StyleKind(underline[0], overline[0])
         self.eofcheck = False  # @@@ not sure this is correct
+        # if underline[0] != '=':
+        #     print("START LOGGING")
+        # print("SOURCE:\n" + source + "\nENDSOURCE")
+        #     print("STYLE")
+        #     print(style)
+        #     print("TITLE")
+        #     print(title)
         self.section(title.lstrip(), source, style, lineno + 1, messages)
+        # if underline[0] != '=':
+        #     print("END LOGGING")
         self.eofcheck = True
         return [], Body, []
 
