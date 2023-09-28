@@ -2358,7 +2358,7 @@ class Body(RSTState):
             self.memo.directive = directive_instance
             self.memo.parent_level = self.memo.section_level
             result = directive_instance.run()
-            self.memo.parent_level = self.memo.section_level
+            # self.memo.parent_level = self.memo.section_level
             
             # successfully parsed directive, set current level
             
