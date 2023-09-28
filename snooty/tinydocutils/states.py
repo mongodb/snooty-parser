@@ -851,6 +851,7 @@ class StateMachineMemo:
         self.inliner = inliner
         self.parent_level = 0 # level outside of the current directive
         self.within_directive = False
+        self.directive = None
 
 
 class RSTStateMachine(StateMachine):
@@ -1088,6 +1089,9 @@ class RSTState(State):
 
         :Exception: `EOFError` when a sibling or supersection encountered.
         """
+        s = "Configure Network Peering for an AWS-backed Cluster\n---------------------------------------------------"
+        # if source == s:
+        #     print(source)
         # print("CHECK_SUBSECTION")
         # print("SOURCE")
         # print(source)
@@ -1095,16 +1099,25 @@ class RSTState(State):
         # print(style)
         memo = self.memo
         title_styles = memo.title_styles
+        # if source == s:
+        #     print(title_styles)
+        #     print(style)
+        #     print(memo.section_level)
         # print("TITLE_STYLES")
         # print(title_styles)
         mylevel = memo.section_level
         try:  # check for existing title style
             level = title_styles.index(style) + 1
+            # if source == s:
+            #     print("level")
+            #     print(level)
         except ValueError:  # new title style
             if len(title_styles) == memo.section_level:  # new subsection
                 title_styles.append(style)
                 return True
             else:  # not at lowest level
+                if source == s:
+                    print("not at lowest level")
                 self.parent.append(self.title_inconsistent(source, lineno))
                 return False
         # print("LEVEL (title_styles index at style + 1)")
@@ -1117,19 +1130,41 @@ class RSTState(State):
             if style.overline is not None:
                 memo.section_bubble_up_kludge = True
 
-            if memo.within_directive and level <= memo.parent_level:
-                # if memo.warnLevel:
+            # if source == s:
+            #     print("Parent")
+            #     print(self.parent)
+            #     print(memo.within_directive)
+            # if parent is a directive, raise warning
+            if isinstance(self.parent, nodes.General) or (memo.within_directive and level <= memo.parent_level):
+                print(source)
+                print(level)
+                print(mylevel)
+                print(memo.parent_level)
+                print(memo.within_directive)
+                print(title_styles)
+                print(style)
                 self.parent.append(
                     self.reporter.warning(
                         "Directives cannot contain sections that are sibling to the parent directive's section",
                         line=lineno,
                     )
                 )
-                print("Level:")
-                print(level)
-                print("Parent level")
-                print(memo.parent_level)
-                print(source)
+            # if memo.within_directive and level <= memo.parent_level:
+            #     # if memo.warnLevel:
+            #     self.parent.append(
+            #         self.reporter.warning(
+            #             "Directives cannot contain sections that are sibling to the parent directive's section",
+            #             line=lineno,
+            #         )
+            #     )
+            #     print(memo.directive.name)
+            #     print(memo.directive.arguments)
+            #     print(memo.directive.content)
+            #     print("Level:")
+            #     print(level)
+            #     print("Parent level")
+            #     print(memo.parent_level)
+            #     print(source)
             # print("FROM CHECK SUBSECTION")
             # print("Memo.level_outside")
             # print(memo.level_outside)
@@ -2320,9 +2355,13 @@ class Body(RSTState):
         )
         try:
             self.memo.within_directive = True
-            result = directive_instance.run()
-            # successfully parsed directive, set current level
+            self.memo.directive = directive_instance
             self.memo.parent_level = self.memo.section_level
+            result = directive_instance.run()
+            self.memo.parent_level = self.memo.section_level
+            
+            # successfully parsed directive, set current level
+            
             # print("LEVEL OUTSIDE: ")
             # print(self.memo.level_outside)
         except directives.DirectiveError as error:
