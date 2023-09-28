@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- DOP-4043: allow specifying multiple facet values in a single facet directive option
+
 ## [v0.14.9] - 2023-09-16
 
 ### Added
