@@ -260,10 +260,17 @@ class RstObject:
 
 @checked
 @dataclass
+class BuildSettings:
+    cache_url_prefix: Optional[str] = field(default=None)
+
+
+@checked
+@dataclass
 class Spec:
     """The spec root."""
 
     meta: Meta
+    build: BuildSettings = field(default_factory=BuildSettings)
     enum: Dict[str, List[str]] = field(default_factory=dict)
     directive: Dict[str, Directive] = field(default_factory=dict)
     role: Dict[str, Role] = field(default_factory=dict)

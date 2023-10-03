@@ -3,6 +3,9 @@ data_fields = ["source_page_template", "assets"]
 [meta]
 version = 0
 
+[build]
+cache_url_prefix = "https://snooty-parse-cache.s3.us-east-2.amazonaws.com/"
+
 [enum]
 alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
@@ -583,8 +586,8 @@ content_type = "block"
 argument_type = "string"
 example = """ .. landing:explore:: Explore the Document Model
 
-   MongoDB is a flexible, schema-less NoSQL database. 
-   It stores data as JSON-like documents, enabling nested structures, 
+   MongoDB is a flexible, schema-less NoSQL database.
+   It stores data as JSON-like documents, enabling nested structures,
    easy scalability, and efficient querying for modern applications.
 
    .. button:: Launch Interactive Lab
@@ -592,7 +595,7 @@ example = """ .. landing:explore:: Explore the Document Model
 
    .. code-block:: python
       :copyable: true
-      
+
       import datetime
       personDocument = {
          "name": { "first": "Alan", "last": "Turing" },

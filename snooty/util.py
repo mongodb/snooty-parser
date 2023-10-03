@@ -645,7 +645,8 @@ def structural_hash(obj: object) -> bytes:
     are subject to change and are not stable across releases.
 
     Fields in dataclasses with metadata value of "nohash" are skipped."""
-    hasher = hashlib.blake2b()
+    # blake2b160 should be more than enough
+    hasher = hashlib.blake2b(digest_size=20)
     if isinstance(obj, (int, str, float, PurePath)):
         hasher.update(bytes("P" + str(obj), "utf-8"))
     elif dataclasses.is_dataclass(obj):
