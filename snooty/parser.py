@@ -1749,7 +1749,7 @@ class _Project:
     def load_cache(self) -> None:
         self.cache = self.cache_file.read()
 
-    def update_cache(self, optimize: bool = False) -> None:
+    def update_cache(self, optimize: bool = True) -> None:
         cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
         self.pages.add_to_cache(cache)
         self.cache_file.persist(cache, optimize=optimize)
@@ -1883,7 +1883,7 @@ class Project:
         with self._lock:
             self._project.load_cache()
 
-    def update_cache(self, optimize: bool = False) -> None:
+    def update_cache(self, optimize: bool = True) -> None:
         with self._lock:
             self._project.update_cache(optimize)
 

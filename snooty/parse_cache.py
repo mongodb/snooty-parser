@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import logging
 import pickle
@@ -5,6 +6,8 @@ import pickletools
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
+
+import requests.exceptions
 
 from . import __version__, diagnostics, specparser, util
 from .diagnostics import Diagnostic
@@ -108,53 +111,78 @@ class CacheData:
 class ParseCache:
     def __init__(self, project_config: ProjectConfig) -> None:
         self.project_config = project_config
+        self.specifier = self.generate_specifier()
 
-    def read(self, path: Optional[Path] = None) -> CacheData:
-        path = self.path if path is None else path
-
-        self_specifier = self.generate_specifier()
-
+    def read_from_bytes(self, data_bytes: bytes) -> Optional[CacheData]:
         try:
-            with path.open("rb") as f:
-                data = pickle.load(f)
-
+            data = pickle.loads(gzip.decompress(data_bytes))
             assert isinstance(data, CacheData)
             if not isinstance(data.specifier, tuple) or not all(
                 isinstance(x, str) for x in data.specifier
             ):
                 raise TypeError("Invalid cache format")
-        except FileNotFoundError:
-            logger.debug("Cache file not found")
-            return CacheData(self_specifier)
         except Exception as err:
             logger.info("Error loading cache file: %s", err)
-            return CacheData(self_specifier)
+            return None
 
-        if data.specifier != self_specifier:
+        if data.specifier != self.specifier:
             logger.info(
                 "Cache file specifier incompatible: %s != %s",
                 data.specifier,
-                self_specifier,
+                self.specifier,
             )
-            return CacheData(self_specifier)
+            return None
+
+        return data
+
+    def read(
+        self, path: Optional[Path] = None, url_prefix: Optional[str] = None
+    ) -> CacheData:
+        path = self.path if path is None else path
+        url_prefix = (
+            url_prefix if url_prefix else specparser.Spec.get().build.cache_url_prefix
+        )
+        data: Optional[CacheData] = None
+        try:
+            data = self.read_from_bytes(path.read_bytes())
+        except FileNotFoundError:
+            if url_prefix:
+                url = url_prefix + self.filename
+                try:
+                    data = self.read_from_bytes(util.HTTPCache.singleton().get(url))
+                except requests.exceptions.RequestException as err:
+                    logger.debug(err)
+
+        if not data:
+            logger.info("No cache usable")
+            data = CacheData(specifier=self.specifier)
 
         return data
 
     @property
     def path(self) -> Path:
-        return self.project_config.root / ".parsercache"
+        return self.project_config.root / self.filename
+
+    @property
+    def filename(self) -> str:
+        return f".snooty-{self.project_config.name}-{'_'.join(self.specifier)}.cache.gz"
 
     def persist(
-        self, data: CacheData, path: Optional[Path] = None, optimize: bool = False
+        self, data: CacheData, path: Optional[Path] = None, optimize: bool = True
     ) -> None:
         path = self.path if path is None else path
+
+        if optimize:
+            for key, page_data in data.pages.items():
+                data.pages[key] = pickletools.optimize(page_data)
+
         # Specify protocol 5 since it's supported by Python 3.8+, our supported
         # versions of Python.
         pickled = pickle.dumps(data, protocol=PROTOCOL)
         if optimize:
             pickled = pickletools.optimize(pickled)
 
-        util.atomic_write(path, pickled, path.parent)
+        util.atomic_write(path, gzip.compress(pickled, mtime=0), path.parent)
 
     def generate_specifier(self) -> Tuple[str, ...]:
         return (
