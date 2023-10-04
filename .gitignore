@@ -12,3 +12,4 @@ dist/
 .docs
 .vscode
 /pyston_2.3.5/
+build/
