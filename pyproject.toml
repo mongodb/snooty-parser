@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.rst"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.13" # Because of PyInstaller :(
+python = ">=3.8,<3.13" # Because of cx_freeze
 watchdog = "^1.0"
 requests = "^2.24"
 tomli = "^2.0"
@@ -16,6 +16,7 @@ python-jsonrpc-server = "^0.4.0"
 networkx = ">=2.4 <3"
 docopt = "^0.6.2"
 pymongo = "^4.3.2"
+cx-freeze = "^6.15.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
@@ -23,7 +24,6 @@ pytest-cov = "^4.0.0"
 black = "^23.7.0"
 pyflakes = "^2.4"
 mypy = "1.5"
-pyinstaller = "^5.13"
 isort = "^5.10.1"
 types-requests = "^2.26.1"
 
