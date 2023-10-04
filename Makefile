@@ -28,7 +28,7 @@ dist/snooty/.EXISTS: pyproject.toml snooty/*.py snooty/gizaparser/*.py
 
 	if [ "`uname -ms`" = "Linux x86_64" ]; then \
 		poetry env use "`tools/fetch-pyston.sh`/pyston3" && poetry install; \
-	fi; LD_LIBRARY_PATH=pyston_2.3.5/lib/ poetry run python3 -m PyInstaller -n snooty snootycli.py
+	fi; LD_LIBRARY_PATH=pyston_2.3.5/lib/ poetry run cxfreeze --target-name snooty --target-dir dist/snooty snootycli.py
 
 	rm snootycli.py
 	install -m644 snooty/config.toml snooty/rstspec.toml snooty/taxonomy.toml LICENSE* dist/snooty/
