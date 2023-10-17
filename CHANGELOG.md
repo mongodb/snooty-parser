@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.15.0] - 2023-10-17
+
 ### Added
 
 - DOP-4070: Automatically find a viable cache file from a given URL prefix
