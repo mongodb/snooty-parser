@@ -1843,6 +1843,7 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
+  {id = "atlas-cli", title = "Atlas CLI"},
   {id = "atlas-ui", title = "MongoDB Atlas"},
   {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
