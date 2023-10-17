@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DOP-4070: Automatically find a viable cache file from a given URL prefix
+
+### Changed
+
+- Use cx_freeze instead of pyinstaller to reduce flakiness of release process
+
 ## [v0.14.10] - 2023-09-28
 
 - DOP-4043: allow specifying multiple facet values in a single facet directive option

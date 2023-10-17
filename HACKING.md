@@ -151,7 +151,8 @@ To release snooty, do the following:
 
 1. Make sure you are on the `master` branch.
 
-2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date.
+2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and 
+   commit any changes you've made.
 
 3. Run `make cut-release BUMP_TO_VERSION="<new_version>"`.
 
