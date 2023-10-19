@@ -78,7 +78,7 @@ def substitute(
         # The new dataclass typing added to mypy is screwed up without any good workarounds
         # from our end, so just not for this line
         # The fun thing is we can't even cast to _T because mypy knows that it's a redundant cast C:
-        return substitute_text(obj, replacements, diagnostics)  # type: ignore
+        return substitute_text(obj, replacements, diagnostics)
 
     if not dataclasses.is_dataclass(obj):
         return obj
@@ -97,7 +97,7 @@ def substitute(
 
     # The new dataclass typing added to mypy is screwed up without any good workarounds
     # from our end, so just not for this line
-    return dataclasses.replace(obj, **changes) if changes else obj  # type: ignore
+    return dataclasses.replace(obj, **changes) if changes else obj
 
 
 class Node:
