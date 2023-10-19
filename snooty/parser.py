@@ -1565,14 +1565,14 @@ class _Project:
             for page, page_diagnostics in yaml_pages:
                 self._page_updated(page, page_diagnostics)
 
-        # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
-        # any page.
-        seen_paths = set(page[0].fileid for page in yaml_pages)
-        for key in all_yaml_diagnostics:
-            if key not in seen_paths:
-                self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
-                with self._backend_lock:
-                    self.backend.on_diagnostics(key, all_yaml_diagnostics[key])
+            # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
+            # any page.
+            seen_paths = set(page[0].fileid for page in yaml_pages)
+            for key in all_yaml_diagnostics:
+                if key not in seen_paths:
+                    self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
+                    with self._backend_lock:
+                        self.backend.on_diagnostics(key, all_yaml_diagnostics[key])
 
         if postprocess:
             postprocessor_result = self.postprocess()
@@ -1661,7 +1661,8 @@ class _Project:
             pool.join()
 
     def load_cache(self) -> None:
-        self.cache = self.cache_file.read()
+        with util.PerformanceLogger.singleton().start("loading cache"):
+            self.cache = self.cache_file.read()
 
     def update_cache(self, optimize: bool = True) -> None:
         cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
