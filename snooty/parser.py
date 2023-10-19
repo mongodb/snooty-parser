@@ -566,10 +566,11 @@ class JSONVisitor:
         old_children = node.children
         new_children: List[n.Node] = []
         for child in old_children:
-            if child.name == "tab":
-                for grandchild in child.children:
-                    if hasattr(grandchild, "name") and grandchild.name == "tabs":
-                        self.diagnostics.append(TabsShouldNotBeInATab(tabset, line))
+            if hasattr(child, "name") and child.name == "tab":
+                if hasattr(child, "children"):
+                    for grandchild in child.children:
+                        if hasattr(grandchild, "name") and grandchild.name == "tabs":
+                            self.diagnostics.append(TabsShouldNotBeInATab(tabset, line))
             if (not isinstance(child, n.Directive)) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
