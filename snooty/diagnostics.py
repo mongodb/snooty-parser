@@ -557,6 +557,23 @@ class UnknownTabset(Diagnostic):
         self.tabset = tabset
 
 
+class TabsShouldNotBeInATab(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        tabset: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Found tabs directive nested in a tab directive for the following tabset "{tabset}" """,
+            start,
+            end,
+        )
+        self.tabset = tabset
+
+
 class UnknownTabID(Diagnostic):
     severity = Diagnostic.Level.error
 

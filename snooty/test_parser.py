@@ -24,6 +24,7 @@ from .diagnostics import (
     MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
+    TabsShouldNotBeInATab,
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
@@ -384,6 +385,42 @@ def test_tabs_invalid_yaml() -> None:
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], ErrorParsingYAMLFile)
     assert diagnostics[0].start[0] == 6
+
+
+def test_nested_tabs() -> None:
+    tabs_path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. tab:: Windows
+   :tabid: windows
+
+   .. tabs::
+
+    .. tab:: MSI Installer
+            :tabid: homebrew
+""",
+    )
+    page.finish(diagnostics)
+    check_ast_testing_string(
+        page.ast,
+        r"""
+<root fileid="test.rst">
+        <directive name="tab" tabid="windows">
+            <text>Windows</text>           
+            <directive name="tabs">   
+                <directive name="tab" tabid="homebrew">
+                    <text>MSI Installer</text>
+                </directive> 
+            </directive>         
+        </directive>
+</root>
+""",
+    )
+    # assert isinstance(diagnostics[0], TabsShouldNotBeInATab)
 
 
 def test_tabs_reorder() -> None:
