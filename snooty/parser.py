@@ -73,6 +73,7 @@ from .diagnostics import (
     MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
+    TabsShouldNotBeInATab,
     TodoInfo,
     UnexpectedIndentation,
     UnknownTabID,
@@ -570,6 +571,13 @@ class JSONVisitor:
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
                 )
                 continue
+
+            if hasattr(child, "name") and child.name == "tab":
+                if hasattr(child, "children"):
+                    for grandchild in child.children:
+                        if hasattr(grandchild, "name") and grandchild.name == "tabs":
+                            self.diagnostics.append(TabsShouldNotBeInATab(tabset, line))
+                            continue
 
             tabid = child.options.get("tabid")
             if tabid is None:
