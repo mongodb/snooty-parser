@@ -571,6 +571,7 @@ class JSONVisitor:
                     for grandchild in child.children:
                         if hasattr(grandchild, "name") and grandchild.name == "tabs":
                             self.diagnostics.append(TabsShouldNotBeInATab(tabset, line))
+                            continue
             if (not isinstance(child, n.Directive)) or child.name != "tab":
                 self.diagnostics.append(
                     TabMustBeDirective(str(type(child).__class__.__name__), line)
