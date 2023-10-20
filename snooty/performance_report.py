@@ -10,12 +10,13 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main() -> None:
-    backend = BackendTestResults()
     root_path = Path(sys.argv[1])
-    project = Project(root_path, backend, {})
 
     n_runs = 3
     for i in range(n_runs):
+        backend = BackendTestResults()
+        project = Project(root_path, backend, {})
+
         print(f"run {i+1}/{n_runs}")
         project.build(1)
         with PerformanceLogger.singleton().start("serialization"):
