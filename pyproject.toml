@@ -23,7 +23,7 @@ pytest = "^7.1.1"
 pytest-cov = "^4.0.0"
 black = "^23.7.0"
 pyflakes = "^2.4"
-mypy = "1.6"
+mypy = "1.6.1"
 isort = "^5.10.1"
 types-requests = "^2.26.1"
 
