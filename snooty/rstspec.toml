@@ -1609,6 +1609,10 @@ type = {link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailin
 help = """Link to the MongoDB Analyzer documentation."""
 type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailing_slash = true}
 
+[role."mdbu-course"]
+help = """Link to a MongoDB University course."""
+type = {link = "https://learn.mongodb.com/courses%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
