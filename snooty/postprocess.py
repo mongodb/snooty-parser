@@ -535,27 +535,28 @@ class TabsSelectorHandler(Handler):
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.stack = []
         self.scanned_pattern = []
-    
+
     def scan_for_pattern(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         starting_point = 0
-        target_pattern = ['tabs', 'tabs', 'procedure']
+        target_pattern = ["tabs", "tabs", "procedure"]
         target_pattern_len = len(target_pattern)
-        if(len(self.scanned_pattern) > 0):
+        if len(self.scanned_pattern) > 0:
             reverse_list = reversed(self.scanned_pattern)
             for item in reverse_list:
-                if(item == target_pattern[starting_point]):
+                if item == target_pattern[starting_point]:
                     starting_point += 1
-                if(starting_point >= target_pattern_len):
+                if starting_point >= target_pattern_len:
                     self.context.diagnostics[fileid_stack.current].append(
-                        InvalidNestedTabStructure(' '.join(reversed(self.scanned_pattern)), node.start[0])
+                        InvalidNestedTabStructure(
+                            " ".join(reversed(self.scanned_pattern)), node.start[0]
+                        )
                     )
                     return
-               
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
-        
+
         self.scan_for_pattern(fileid_stack, node)
         self.scanned_pattern = []
         self.stack.append(node.name)
@@ -594,14 +595,12 @@ class TabsSelectorHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
-        
+
         popped_item = self.stack.pop()
         self.scanned_pattern.append(popped_item)
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
-
-
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if len(self.selectors) == 0:
@@ -609,7 +608,6 @@ class TabsSelectorHandler(Handler):
 
         self.stack = []
         self.scanned_pattern = []
-        
 
         for tabset_name, tabsets in self.selectors.items():
             if len(tabsets) == 0:

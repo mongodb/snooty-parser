@@ -284,6 +284,7 @@ class ConstantNotDeclared(Diagnostic):
 class InvalidTableStructure(Diagnostic):
     severity = Diagnostic.Level.error
 
+
 class InvalidNestedTabStructure(Diagnostic):
     severity = Diagnostic.Level.warning
 
