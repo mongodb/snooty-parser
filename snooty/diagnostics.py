@@ -284,6 +284,22 @@ class ConstantNotDeclared(Diagnostic):
 class InvalidTableStructure(Diagnostic):
     severity = Diagnostic.Level.error
 
+class InvalidNestedTabStructure(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Invalid nested tabs: "{name}" """,
+            start,
+            end,
+        )
+        self.name = name
+
 
 class MissingOption(Diagnostic):
     severity = Diagnostic.Level.error
