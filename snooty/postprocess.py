@@ -603,11 +603,12 @@ class TabsSelectorHandler(Handler):
 
 
 
-
-
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if len(self.selectors) == 0:
             return
+
+        self.stack = []
+        self.scanned_pattern = []
         
 
         for tabset_name, tabsets in self.selectors.items():
