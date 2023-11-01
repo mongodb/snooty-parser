@@ -533,8 +533,8 @@ class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
-        self.stack = []
-        self.scanned_pattern = []
+        self.stack: List[str] = []
+        self.scanned_pattern: List[str] = []
 
     def scan_for_pattern(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         starting_point = 0
