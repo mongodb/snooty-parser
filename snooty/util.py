@@ -20,6 +20,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from email.utils import formatdate
+from os.path import exists
 from pathlib import Path, PurePath, PurePosixPath
 from time import mktime
 from typing import (
@@ -121,6 +122,7 @@ def get_files(
             if is_relative_to(
                 base_resolved.joinpath(d_path).resolve(), must_be_relative_to
             )
+            and exists(d_path / "snooty.toml")
         ]
 
         seen.update(dirs_set)
