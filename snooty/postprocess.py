@@ -555,7 +555,6 @@ class TabsSelectorHandler(Handler):
         if not isinstance(node, n.Directive):
             return
 
-        self.scan_for_pattern(fileid_stack, node)
         self.scanned_pattern = []
         self.stack.append(node.name)
 
@@ -602,11 +601,11 @@ class TabsSelectorHandler(Handler):
         self.selectors = {}
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        if len(self.selectors) == 0:
-            return
-
         self.stack = []
         self.scanned_pattern = []
+
+        if len(self.selectors) == 0:
+            return
 
         for tabset_name, tabsets in self.selectors.items():
             if len(tabsets) == 0:

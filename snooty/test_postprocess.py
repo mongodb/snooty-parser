@@ -90,6 +90,30 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
 
 """,
             Path(
+                "source/page2.txt"
+            ): """
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Select the appropriate tab based on your Linux distribution and
+      desired package from the tabs below:
+
+      .. tabs::
+
+         .. tab::
+            :tabid: homebrew
+
+            .. include:: /includes/test.rst
+
+             To manually install :binary:`mongosh` using a downloaded ``.zip``
+
+            .. procedure::
+
+
+""",
+            Path(
                 "source/includes/test.rst"
             ): """
 :option:`--verbose`
@@ -101,6 +125,10 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("page1.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidNestedTabStructure)
+
+        diagnostics = result.diagnostics[FileId("page2.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], InvalidNestedTabStructure)
 
