@@ -75,6 +75,17 @@ def test_get_files() -> None:
     ]
 
 
+def test_get_files_nested() -> None:
+    expected_set = {
+        Path("test_data/nested_project/source/1.rst"),
+    }
+
+    actual_set = set(
+        util.get_files(Path("test_data/nested_project/source"), (".rst", ".txt"))
+    )
+    assert actual_set == expected_set
+
+
 def test_add_doc_target_ext() -> None:
     # Set up target filenames
     root = Path("root")
