@@ -295,7 +295,7 @@ class InvalidNestedTabStructure(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Invalid nested tabs: "{name}" """,
+            f"""Detect tabs that contain tabs that contain procedures: : "{name}" """,
             start,
             end,
         )
