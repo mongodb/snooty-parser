@@ -21,6 +21,7 @@ from .diagnostics import (
     InvalidContextError,
     InvalidIAEntry,
     InvalidIALinkedData,
+    InvalidNestedTabStructure,
     InvalidVersion,
     MissingChild,
     MissingTab,
@@ -36,6 +37,72 @@ from .util_test import (
     check_toctree_testing_string,
     make_test,
 )
+
+
+def test_tabs_contain_tabs_contain_procedures() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      .. tabs::
+
+         .. tab::
+            :tabid: homebrew
+
+            .. procedure::
+
+
+"""
+        }
+    ) as result:
+        active_file = "index.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidNestedTabStructure)
+
+    with make_test(
+        {
+            Path(
+                "source/page1.txt"
+            ): """
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      .. include:: /includes/test.rst
+
+      .. tabs::
+
+         .. tab::
+            :tabid: homebrew
+
+            .. include:: /includes/test.rst
+
+            .. procedure::
+
+
+""",
+            Path(
+                "source/includes/test.rst"
+            ): """
+:option:`--verbose`
+
+:option:`program1 --verbose`
+
+:option:`program2 --verbose`
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("page1.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidNestedTabStructure)
 
 
 def test_ia() -> None:
