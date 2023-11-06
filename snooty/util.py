@@ -122,7 +122,7 @@ def get_files(
             if is_relative_to(
                 base_resolved.joinpath(d_path).resolve(), must_be_relative_to
             )
-            and exists(d_path / "snooty.toml")
+            and not exists(d_path / "snooty.toml")
         ]
 
         seen.update(dirs_set)

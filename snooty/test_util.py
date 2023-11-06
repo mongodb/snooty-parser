@@ -78,6 +78,7 @@ def test_get_files() -> None:
 def test_get_files_nested() -> None:
     expected_set = {
         Path("test_data/nested_project/source/1.rst"),
+        Path("test_data/nested_project/source/non_project_dir/4.rst"),
     }
 
     actual_set = set(
