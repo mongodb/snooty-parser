@@ -59,7 +59,7 @@ PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
 EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
-
+SNOOTY_TOML = "snooty.toml"
 PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__
 assert PACKAGE_ROOT_STRING is not None
 PACKAGE_ROOT = Path(PACKAGE_ROOT_STRING).resolve().parent
@@ -122,7 +122,7 @@ def get_files(
             if is_relative_to(
                 base_resolved.joinpath(d_path).resolve(), must_be_relative_to
             )
-            and not exists(d_path / "snooty.toml")
+            and not exists(d_path / SNOOTY_TOML)
         ]
 
         seen.update(dirs_set)
