@@ -136,6 +136,18 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
 
                Wow
 
+         .. tab::
+            :tabid: oh yeah
+
+            .. procedure::
+
+            .. tabs::
+
+               .. tab::
+                  :tabid: homebrew
+
+                  .. procedure::
+
 
 """,
             Path(
@@ -158,8 +170,10 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
         assert isinstance(diagnostics[0], InvalidNestedTabStructure)
 
         diagnostics = result.diagnostics[FileId("page3.txt")]
-        assert len(diagnostics) == 1
+        assert len(diagnostics) == 3
         assert isinstance(diagnostics[0], InvalidNestedTabStructure)
+        assert isinstance(diagnostics[1], InvalidNestedTabStructure)
+        assert isinstance(diagnostics[2], InvalidNestedTabStructure)
 
 
 def test_ia() -> None:

@@ -549,7 +549,6 @@ class TabsSelectorHandler(Handler):
                             " ".join(self.scanned_pattern), node.start[0]
                         )
                     )
-                    self.scanned_pattern = []
                     return
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -596,8 +595,7 @@ class TabsSelectorHandler(Handler):
         if node.name == "procedure":
             self.scan_for_pattern(fileid_stack, node)
 
-        if len(self.scanned_pattern) > 0:
-            self.scanned_pattern.pop()
+        self.scanned_pattern.pop()
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
