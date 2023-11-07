@@ -545,7 +545,9 @@ class TabsSelectorHandler(Handler):
                     starting_point += 1
                 if starting_point >= target_pattern_len:
                     self.context.diagnostics[fileid_stack.current].append(
-                        InvalidNestedTabStructure(" ".join(self.scanned_pattern), node.start[0])
+                        InvalidNestedTabStructure(
+                            " ".join(self.scanned_pattern), node.start[0]
+                        )
                     )
                     self.scanned_pattern = []
                     return
@@ -590,13 +592,12 @@ class TabsSelectorHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
-        
+
         if node.name == "procedure":
             self.scan_for_pattern(fileid_stack, node)
-        
+
         if len(self.scanned_pattern) > 0:
             self.scanned_pattern.pop()
-
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
