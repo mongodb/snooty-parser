@@ -157,6 +157,10 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], InvalidNestedTabStructure)
 
+        diagnostics = result.diagnostics[FileId("page3.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], InvalidNestedTabStructure)
+
 
 def test_ia() -> None:
     with make_test(
