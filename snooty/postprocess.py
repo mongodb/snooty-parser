@@ -50,6 +50,7 @@ from .diagnostics import (
     InvalidIAEntry,
     InvalidIALinkedData,
     InvalidInclude,
+    InvalidNestedTabStructure,
     InvalidOpenApiResponse,
     InvalidTocTree,
     InvalidVersion,
@@ -532,10 +533,29 @@ class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
+        self.scanned_pattern: List[str] = []
+        self.target_pattern = ["tabs", "tabs", "procedure"]
+
+    def scan_for_pattern(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        starting_point = 0
+        target_pattern_len = len(self.target_pattern)
+        if len(self.scanned_pattern) > 0:
+            for item in self.scanned_pattern:
+                if item == self.target_pattern[starting_point]:
+                    starting_point += 1
+                if starting_point >= target_pattern_len:
+                    self.context.diagnostics[fileid_stack.current].append(
+                        InvalidNestedTabStructure(
+                            " ".join(self.scanned_pattern), node.start[0]
+                        )
+                    )
+                    return
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
+
+        self.scanned_pattern.append(node.name)
 
         if node.name == "tabs-pillstrip" or node.name == "tabs-selector":
             if len(node.argument) == 0:
@@ -568,10 +588,21 @@ class TabsSelectorHandler(Handler):
             }
             self.selectors[tabset_name].append(tabs)
 
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name == "procedure":
+            self.scan_for_pattern(fileid_stack, node)
+
+        self.scanned_pattern.pop()
+
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.scanned_pattern = []
+
         if len(self.selectors) == 0:
             return
 
