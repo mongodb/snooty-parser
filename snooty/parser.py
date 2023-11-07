@@ -1596,13 +1596,21 @@ class _Project:
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
         all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+        nested_projects_diagnostics: Dict[FileId, List[Diagnostic]] = {}
+
         with util.PerformanceLogger.singleton().start("parse rst"):
             paths = util.get_files(
-                self.config.source_path, RST_EXTENSIONS, self.config.root
+                self.config.source_path,
+                RST_EXTENSIONS,
+                self.config.root,
+                nested_projects_diagnostics,
             )
             fileids = (self.config.get_fileid(path) for path in paths)
             self.parse_rst_files(fileids, max_workers)
 
+        for path, diagnostics in nested_projects_diagnostics.items():
+            with self._backend_lock:
+                self.backend.on_diagnostics(path, diagnostics)
         # Categorize our YAML files
         logger.debug("Categorizing YAML files")
         categorized: Dict[str, List[FileId]] = collections.defaultdict(list)

@@ -48,6 +48,9 @@ import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
 
+from snooty.diagnostics import Diagnostic, NestedProject
+from snooty.n import FileId
+
 from . import n, tinydocutils
 
 logger = logging.getLogger(__name__)
@@ -92,6 +95,7 @@ def get_files(
     root: Path,
     extensions: Container[str],
     must_be_relative_to: Optional[Path] = None,
+    diagnostics: Optional[Dict[FileId, List[Diagnostic]]] = None,
 ) -> Iterator[Path]:
     """Recursively iterate over files underneath the given root, yielding
     only filenames with the given extensions. Symlinks are followed, but
@@ -115,6 +119,14 @@ def get_files(
         # Preserve both the actual resolved path and the directory name
         dirs_set = dict(((base_resolved.joinpath(d).resolve(), d) for d in dirs))
 
+        nested_set = set()
+        for d_path, d_name in dirs_set.items():
+            dir_snooty_path = d_path / SNOOTY_TOML
+            if exists(dir_snooty_path):
+                nested_set.add(dir_snooty_path)
+                if diagnostics is not None:
+                    rel_path = PurePath(os.path.relpath(dir_snooty_path, root))
+                    diagnostics[FileId(rel_path)] = [NestedProject(d_name, 0)]
         # Only recurse into directories which are within our prefix
         dirs[:] = [
             d_name
@@ -122,7 +134,7 @@ def get_files(
             if is_relative_to(
                 base_resolved.joinpath(d_path).resolve(), must_be_relative_to
             )
-            and not exists(d_path / SNOOTY_TOML)
+            and not d_path / SNOOTY_TOML in nested_set
         ]
 
         seen.update(dirs_set)
