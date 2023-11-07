@@ -114,6 +114,31 @@ def test_tabs_contain_tabs_contain_procedures() -> None:
 
 """,
             Path(
+                "source/page3.txt"
+            ): """
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      .. tabs::
+
+         .. tab::
+            :tabid: homebrew
+
+            .. procedure::
+
+               .. step::
+
+                  foo
+
+            .. note::
+
+               Wow
+
+
+""",
+            Path(
                 "source/includes/test.rst"
             ): """
 :option:`--verbose`

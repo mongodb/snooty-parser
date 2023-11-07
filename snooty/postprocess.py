@@ -555,7 +555,9 @@ class TabsSelectorHandler(Handler):
         if not isinstance(node, n.Directive):
             return
 
-        self.scanned_pattern = []
+        self.scan_for_pattern(fileid_stack, node)
+        if len(self.scanned_pattern) > 0:
+            self.scanned_pattern = []
         self.stack.append(node.name)
 
         if node.name == "tabs-pillstrip" or node.name == "tabs-selector":
