@@ -76,8 +76,8 @@ def test_get_files() -> None:
 
 
 def test_get_files_nested() -> None:
-    # The test_data/nested_project paths test ho we handle nested projects within the monorepository.
-    # A nested project is determined by checking to see if a directory contains a snooty.toml file.
+    # The test_data/nested_project path tests how we handle nested projects for the monorepository.
+    # A nested project is determined by checking to see if a subdirectory contains a snooty.toml file.
     expected_set = {
         Path("test_data/nested_project/source/1.rst"),
         Path("test_data/nested_project/source/non_project_dir/4.rst"),
