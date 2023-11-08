@@ -894,4 +894,8 @@ class NestedProject(Diagnostic):
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ):
-        super().__init__(f"""Nested project detected: {nested_project}""", start, end)
+        super().__init__(
+            f"""WARNING! Nested project detected: {nested_project}. Files from this project will not be parsed.""",
+            start,
+            end,
+        )
