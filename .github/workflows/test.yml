@@ -22,6 +22,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
+        cache: 'pip'
     - name: Setup poetry
       run: python3 -m pip install poetry
     - name: Install dependencies
