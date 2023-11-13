@@ -900,3 +900,19 @@ class MissingFacet(Diagnostic):
         super().__init__(
             f"""Facet specified is not a valid facet: {facet_name}""", start, end
         )
+
+
+class NestedProject(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        nested_project: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ):
+        super().__init__(
+            f"""WARNING! Nested project detected: {nested_project}. Files from this project will not be parsed.""",
+            start,
+            end,
+        )

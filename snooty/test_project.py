@@ -13,6 +13,7 @@ from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
+    NestedProject,
     UnmarshallingError,
 )
 from .n import FileId, SerializableType
@@ -192,6 +193,18 @@ def test_missing_deprecated_versions() -> None:
     project = Project(Path("test_data/test_project"), backend, build_identifiers)
     project.build()
     assert "deprecated_versions" not in backend.metadata
+
+
+def test_monorepo_nested() -> None:
+    backend = Backend()
+    project = Project(Path("test_data/nested_project"), backend, build_identifiers)
+    project.build()
+
+    fileid = FileId("project_b/snooty.toml")
+    diagnostics = backend.diagnostics[fileid]
+
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], NestedProject)
 
 
 def test_not_a_project() -> None:
