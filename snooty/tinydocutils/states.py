@@ -2415,8 +2415,8 @@ class Body(RSTState):
             raise MarkupError('unknown option: "%s"' % detail.args[0])
         except (ValueError, TypeError) as detail:
             raise MarkupError("invalid option value: %s" % " ".join(detail.args))
-        # except utils.ExtensionOptionError as detail:
-        #     return 0, ("invalid option data: %s" % " ".join(detail.args))
+        except utils.ExtensionOptionError as detail:
+            raise MarkupError("invalid option data: %s" % " ".join(detail.args))
         if blank_finish:
             return options
         else:
