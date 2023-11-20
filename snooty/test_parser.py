@@ -147,7 +147,7 @@ def test_product() -> None:
       Test Product Description.
 
       .. cta::
-      
+
          This product item description was built with a icon and description.
 """
 
@@ -3712,3 +3712,21 @@ def test_valid_facets() -> None:
     )
     page.finish(diagnostics)
     assert len(diagnostics) == 0
+
+
+def test_duplicate_directive_option() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. meta::
+   :keywords: multicluster
+   :keywords: multi-cluster
+    """,
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
