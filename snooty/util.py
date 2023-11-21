@@ -24,6 +24,7 @@ from os.path import exists
 from pathlib import Path, PurePath, PurePosixPath
 from time import mktime
 from typing import (
+    Any,
     Callable,
     ClassVar,
     Container,
@@ -44,6 +45,7 @@ from typing import (
 )
 
 import requests
+import tomli
 import watchdog.events
 import watchdog.observers
 import watchdog.observers.api
@@ -692,3 +694,33 @@ def structural_hash(obj: object) -> bytes:
         raise TypeError("Unhashable type", obj)
 
     return hasher.digest()
+
+
+class TOMLDecodeErrorWithSourceInfo(tomli.TOMLDecodeError):
+    def __init__(self, message: str, lineno: int) -> None:
+        super().__init__(message)
+        self.lineno = lineno
+
+
+def parse_toml_and_add_line_info(text: str) -> Dict[str, Any]:
+    """The normal toml parsing libraries in Python do not report line number in any
+    structured way upon TOMLDecodeError.
+
+    Wrap tomli.loads() and parse out source information from any raised
+    TOMLDecodeError so that line numbers can be accessed via the exception's
+    lineno attribute."""
+    try:
+        return tomli.loads(text)
+    except tomli.TOMLDecodeError as err:
+        message = str(err)
+        match = re.search(r"\(at line ([0-9]+), column ([0-9]+)\)", message)
+        if match is not None:
+            raise TOMLDecodeErrorWithSourceInfo(
+                message, int(match.groups()[0])
+            ) from err
+
+        if message.endswith("at end of document)"):
+            # Report the line number of the final line in the file, 1-indexed
+            raise TOMLDecodeErrorWithSourceInfo(message, text.count("\n") + 1) from err
+
+        raise err

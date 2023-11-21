@@ -39,7 +39,7 @@ from . import __version__, language_server, specparser
 from .diagnostics import Diagnostic, MakeCorrectionMixin
 from .n import FileId, SerializableType
 from .page import Page
-from .parser import Project, ProjectBackend
+from .parser import Project, ProjectBackend, ProjectLoadError
 from .types import BuildIdentifierSet, ProjectConfig
 from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
@@ -299,7 +299,13 @@ def main() -> None:
 
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
-    project = Project(root_path, backend, _generate_build_identifiers(args))
+
+    try:
+        project = Project(root_path, backend, _generate_build_identifiers(args))
+    except ProjectLoadError:
+        # Close out the backend so that load diagnostics get reported
+        backend.close()
+        sys.exit(1)
 
     if not no_caching:
         project.load_cache()

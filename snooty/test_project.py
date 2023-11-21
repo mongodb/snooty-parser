@@ -8,18 +8,19 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import DefaultDict, Dict, List
 
+import pytest
+
 from . import n
 from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
     NestedProject,
-    UnmarshallingError,
 )
 from .n import FileId, SerializableType
 from .page import Page
 from .parse_cache import CacheStats
-from .parser import Project, ProjectBackend
+from .parser import Project, ProjectBackend, ProjectLoadError
 from .target_database import TargetDatabase
 from .types import BuildIdentifierSet, ProjectConfig
 from .util import ast_dive
@@ -312,23 +313,43 @@ def test_target_wipe() -> None:
 
 
 def test_invalid_data() -> None:
-    with make_test(
-        {
-            Path(
-                "snooty.toml"
-            ): r"""
-name = "invalid_data"
+    with pytest.raises(ProjectLoadError):
+        with make_test(
+            {
+                Path(
+                    "snooty.toml"
+                ): r"""
+    name = "invalid_data"
 
-[data]
-source_page_template = "https://github.com/mongodb/docs/blob/master/source/%s.txt"
-invalid = {foo = "bar"}
-""",
-            Path("source/index.txt"): r"",
-        }
-    ) as result:
-        assert [type(d) for d in result.diagnostics[FileId("snooty.toml")]] == [
-            UnmarshallingError
-        ]
+    [data]
+    source_page_template = "https://github.com/mongodb/docs/blob/master/source/%s.txt"
+    invalid = {foo = "bar"}
+    """,
+                Path("source/index.txt"): r"",
+            }
+        ) as _:
+            pass
+
+
+def test_duplicate_constant() -> None:
+    """Ensure that invalid TOML in snooty.toml results in a nice fatal diagnostic rather
+    than a backtrace."""
+    with pytest.raises(ProjectLoadError):
+        with make_test(
+            {
+                Path(
+                    "snooty.toml"
+                ): r"""
+    name = "duplicate_data"
+
+    [constants]
+    invalid = "foobar"
+    invalid = "foobaz"
+    """,
+                Path("source/index.txt"): r"",
+            }
+        ) as _:
+            pass
 
 
 def test_cache() -> None:

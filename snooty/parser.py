@@ -77,6 +77,7 @@ from .diagnostics import (
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
+    UnmarshallingError,
 )
 from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET, LG_ICON_SET
@@ -100,6 +101,10 @@ NO_AMBIGUOUS_LITERAL_DIAGNOSTICS = (
     os.environ.get("SNOOTY_NO_AMBIGUOUS_LITERAL_DIAGNOSTICS", "0") == "1"
 )
 logger = logging.getLogger(__name__)
+
+
+class ProjectLoadError(Exception):
+    pass
 
 
 def eligible_for_paragraph_to_block_substitution(node: tinydocutils.nodes.Node) -> bool:
@@ -1379,18 +1384,23 @@ class _Project:
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
-        self.cache_file = parse_cache.ParseCache(self.config)
-        self.cache: Optional[parse_cache.CacheData] = None
 
         # We might have found the project in a parent directory. Use that.
         root = self.config.root
+
+        snooty_config_fileid = FileId(self.config.config_path.relative_to(root))
+
+        if any(isinstance(d, UnmarshallingError) for d in config_diagnostics):
+            backend.on_diagnostics(snooty_config_fileid, config_diagnostics)
+            raise ProjectLoadError()
+
+        self.cache_file = parse_cache.ParseCache(self.config)
+        self.cache: Optional[parse_cache.CacheData] = None
 
         self.targets, failed_requests = TargetDatabase.load(self.config)
         self.initialization_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(
             list
         )
-
-        snooty_config_fileid = FileId(self.config.config_path.relative_to(root))
 
         if failed_requests:
             fetch_diagnostics: List[Diagnostic] = [

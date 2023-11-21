@@ -248,3 +248,13 @@ def test_structural_hash() -> None:
             set(),
         )
     )
+
+
+def test_toml_exception_to_source_info() -> None:
+    with pytest.raises(util.TOMLDecodeErrorWithSourceInfo) as exception:
+        util.parse_toml_and_add_line_info("\n\x00")
+    assert exception.value.lineno == 2
+
+    with pytest.raises(util.TOMLDecodeErrorWithSourceInfo) as exception:
+        util.parse_toml_and_add_line_info("[constants]\n\nfoo=5\nfoo=10")
+    assert exception.value.lineno == 4
