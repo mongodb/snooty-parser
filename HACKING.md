@@ -149,7 +149,7 @@ If you have not generated a key before, follow the instructions from [GitHub Doc
 
 To release snooty, do the following:
 
-1. Make sure you are on the `master` branch.
+1. Make sure you are on the `main` branch.
 
 2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and 
    commit any changes you've made.
