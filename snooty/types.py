@@ -19,7 +19,7 @@ from typing import (
 import tomli
 from typing_extensions import Protocol
 
-from . import n, specparser, taxonomy
+from . import n, specparser, taxonomy, util
 from .diagnostics import (
     CannotOpenFile,
     ConstantNotDeclared,
@@ -233,18 +233,20 @@ class ProjectConfig:
         diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
-                with path.joinpath("snooty.toml").open("rb") as f:
-                    data = tomli.load(f)
-                    data["root"] = path
-                    result, parsed_diagnostics = check_type(
-                        ProjectConfig, data
-                    ).render_constants()
+                toml_text = path.joinpath("snooty.toml").read_text()
+                data = util.parse_toml_and_add_line_info(toml_text)
+                data["root"] = path
+                result, parsed_diagnostics = check_type(
+                    ProjectConfig, data
+                ).render_constants()
 
-                    parsed_diagnostics.extend(cls.validate_data(result.data))
+                parsed_diagnostics.extend(cls.validate_data(result.data))
 
-                    return result, parsed_diagnostics
+                return result, parsed_diagnostics
             except FileNotFoundError:
                 pass
+            except util.TOMLDecodeErrorWithSourceInfo as err:
+                diagnostics.append(UnmarshallingError(str(err), err.lineno))
             except LoadError as err:
                 diagnostics.append(UnmarshallingError(str(err), 0))
 
