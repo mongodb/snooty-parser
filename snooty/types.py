@@ -247,7 +247,7 @@ class ProjectConfig:
                 pass
             except util.TOMLDecodeErrorWithSourceInfo as err:
                 diagnostics.append(UnmarshallingError(str(err), err.lineno))
-            except (LoadError, tomli.TOMLDecodeError) as err:
+            except LoadError as err:
                 diagnostics.append(UnmarshallingError(str(err), 0))
 
             path = path.parent
