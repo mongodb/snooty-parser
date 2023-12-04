@@ -1463,7 +1463,7 @@ type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 type = {link = "https://www.mongodb.com/docs/realm-sdks/js/latest/%s"}
 
 [role."realm-react-sdk"]
-type = {link = "https://www.mongodb.com/docs/realm-sdks/js/realm-react/latest/%s"}
+type = {link = "https://www.mongodb.com/docs/realm-sdks/react/latest/%s"}
 
 [role."js-web-sdk"]
 type = {link = "https://www.mongodb.com/docs/realm-sdks/js/realm-web/latest/%s"}
