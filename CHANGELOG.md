@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The parser will now exit more quickly upon completion.
+- Warn on invalid tab nesting (DOP-3898).
+- Throw warning and ignore nested projects on detection within parser (DOP-3866, #540)
+- Catch TOML parsing errors in snooty.toml (DOP-4141, #542)
+
+### Fixed
+
+- Fix regression causing an exception to not be handled when directive options are duplicated. (DOP-4140)
+
 ## [v0.15.0] - 2023-10-17
 
 ### Added
