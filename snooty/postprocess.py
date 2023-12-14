@@ -126,10 +126,9 @@ def extract_inline(
     if (
         len(nodes) == 1
         and isinstance(node, n.Paragraph)
-        and len(node.children) == 1
-        and isinstance(node.children[0], n.InlineNode)
+        and all(isinstance(child, n.InlineNode) for child in node.children)
     ):
-        return [node.children[0]]
+        return cast(MutableSequence[n.InlineNode], util.fast_deep_copy(node.children))
 
     return None
 
@@ -1455,7 +1454,7 @@ class SubstitutionHandler(Handler):
         # Ensure that we're only attempting to insert a single inline element. Otherwise,
         # it's not clear what the writer would want.
         substitution = extract_inline(result)
-        if not substitution or len(substitution) != len(result):
+        if not substitution:
             self.context.diagnostics[fileid_stack.current].append(
                 InvalidContextError(
                     node.name,
