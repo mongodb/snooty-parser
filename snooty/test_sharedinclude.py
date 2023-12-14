@@ -136,3 +136,39 @@ name = "test"
         } == {
             FileId("index.txt"): [ConfigurationProblem],
         }
+
+
+def test_injecting_paragraph_of_inline_content() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. sharedinclude:: dbx/issues-and-help.rst
+
+   .. replacement:: test-guideline-target
+
+      *Foobar* instructions in the GitHub repository.""",
+            Path(
+                "source/dbx/issues-and-help.rst"
+            ): """
+Foo |test-guideline-target| baz.
+""",
+        }
+    ) as result:
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <directive name="sharedinclude"><text>dbx/issues-and-help.rst</text>
+        <directive name="replacement"><text>test-guideline-target</text><paragraph><emphasis><text>Foobar</text></emphasis><text> instructions in the GitHub repository.</text></paragraph>
+        </directive>
+
+        <root fileid="dbx/issues-and-help.rst">
+            <paragraph>
+                <text>Foo </text>
+                <substitution_reference name="test-guideline-target"><emphasis><text>Foobar</text></emphasis><text> instructions in the GitHub repository.</text></substitution_reference>
+                <text> baz.</text>
+            </paragraph></root></directive></root>
+        """,
+        )
