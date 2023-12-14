@@ -1,9 +1,9 @@
 """Snooty.
 
 Usage:
-  snooty build [--no-caching] <source-path> [--output=<path>] [options]
-  snooty watch [--no-caching] <source-path> [options]
-  snooty create-cache         <source-path> [options]
+  snooty build [--no-caching]               <source-path> [--output=<path>] [options]
+  snooty watch [--no-caching]               <source-path> [options]
+  snooty create-cache [--no-caching]        <source-path> [options]
   snooty [--no-caching] language-server
 
 Options:
