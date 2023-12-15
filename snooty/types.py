@@ -233,7 +233,7 @@ class ProjectConfig:
         diagnostics: List[Diagnostic] = []
         while path.parent != path:
             try:
-                toml_text = path.joinpath("snooty.toml").read_text()
+                toml_text = path.joinpath("snooty.toml").read_text(encoding="utf-8")
                 data = util.parse_toml_and_add_line_info(toml_text)
                 data["root"] = path
                 result, parsed_diagnostics = check_type(

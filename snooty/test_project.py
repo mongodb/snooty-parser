@@ -331,6 +331,20 @@ def test_invalid_data() -> None:
             pass
 
 
+def test_invalid_char() -> None:
+    with make_test_project(
+        {
+            Path(
+                "snooty.toml"
+            ): r"""
+name = "invalid–hyphen"
+""",
+            Path("source/index.txt"): r"",
+        }
+    ) as (_project, backend):
+        assert _project.config.name == "invalid–hyphen"
+
+
 def test_duplicate_constant() -> None:
     """Ensure that invalid TOML in snooty.toml results in a nice fatal diagnostic rather
     than a backtrace."""
