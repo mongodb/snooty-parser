@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.15.2] - 2024-01-01
+## [v0.15.2] - 2024-01-02
 
 ### Changed
 
@@ -183,10 +183,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.13.13] - 2022-11-16
 
-* Update GitHub actions by @i80and in https://github.com/mongodb/snooty-parser/pull/424
-* DOP-3159: README overhaul by @seungpark in https://github.com/mongodb/snooty-parser/pull/425
-* DOP-3307: Generate metadata for OpenAPI content pages by @rayangler in https://github.com/mongodb/snooty-parser/pull/426
-* DOP-3353: Change OpenAPI metadata source to be spec string by @rayangler in https://github.com/mongodb/snooty-parser/pull/428
+- Update GitHub actions by @i80and in https://github.com/mongodb/snooty-parser/pull/424
+- DOP-3159: README overhaul by @seungpark in https://github.com/mongodb/snooty-parser/pull/425
+- DOP-3307: Generate metadata for OpenAPI content pages by @rayangler in https://github.com/mongodb/snooty-parser/pull/426
+- DOP-3353: Change OpenAPI metadata source to be spec string by @rayangler in https://github.com/mongodb/snooty-parser/pull/428
 
 ## [v0.13.12] - 2022-10-19
 
@@ -241,15 +241,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--  Added new link roles and mongosyncstate rstobject (#401, #402, #403, #404)
--  Rename "Realm" to "App Services" in tabsets (#405)
--  Validate relative URLs in card directives (DOP-3064, #408)
+- Added new link roles and mongosyncstate rstobject (#401, #402, #403, #404)
+- Rename "Realm" to "App Services" in tabsets (#405)
+- Validate relative URLs in card directives (DOP-3064, #408)
 
 ### Fixed
 
--  Fix upsert logic and added manifest testing (#400).
--  Expand tildes in paths input on the command line (DOP-3078, #409)
--  Properly handle rst source files with invalid UTF-8 (DOP-3068, #410)
+- Fix upsert logic and added manifest testing (#400).
+- Expand tildes in paths input on the command line (DOP-3078, #409)
+- Properly handle rst source files with invalid UTF-8 (DOP-3068, #410)
 
 ## [v0.13.5] - 2022-05-19
 
@@ -690,7 +690,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Extlinks should use the target name for label if no label set, *not* the raw uri (DOP-1581).
+- Extlinks should use the target name for label if no label set, _not_ the raw uri (DOP-1581).
 - RFC link labels now match legacy (DOP-1581).
 - Render role content when target is not found (DOP-1601).
 - Bump `node` extlink version (DOCSP-12335).
@@ -1290,6 +1290,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Only match PAT_EXPLICIT_TILE if needed by role.
 
   Roles are now categorized in one of three ways:
+
   - `text` roles only provide a label field in the AST.
   - `explicit_title` roles provide a target field in the AST, as well as
     optionally a label field.
