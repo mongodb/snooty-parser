@@ -51,6 +51,7 @@ def test_static_asset() -> None:
         asset.get_checksum()
         == "e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c"
     )
+    assert asset._ratio == 752 / 758
     asset2 = StaticAsset.load("foo", FileId("foo"), path)
     asset3 = StaticAsset.load("bar", FileId("bar"), path)
 

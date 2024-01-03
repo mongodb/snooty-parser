@@ -16,6 +16,7 @@ from typing import (
     Union,
 )
 
+import imagesize  # type: ignore
 import tomli
 from typing_extensions import Protocol
 
@@ -66,6 +67,7 @@ class StaticAsset:
     upload: bool
     _checksum: Optional[str]
     _data: Optional[bytes]
+    _ratio: Optional[float]
 
     def __hash__(self) -> int:
         return hash(self.fileid)
@@ -98,11 +100,13 @@ class StaticAsset:
     def load(
         cls, key: str, fileid: FileId, path: Path, upload: bool = False
     ) -> "StaticAsset":
-        return cls(key, fileid, path, upload, None, None)
+        return cls(key, fileid, path, upload, None, None, None)
 
     def __load(self) -> None:
         if self._data is None:
             self._data = self.path.read_bytes()
+            width, height = imagesize.get("bad-path")
+            self._ratio = width / height
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
 
 

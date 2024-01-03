@@ -60,6 +60,7 @@ from .diagnostics import (
     ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
+    ImageSizeUndetermined,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,
@@ -159,6 +160,9 @@ class PendingFigure(PendingTask):
         try:
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
+            ratio = self.asset._ratio
+            if ratio:
+                options["ratio"] = float(ratio)
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
@@ -1027,7 +1031,7 @@ class JSONVisitor:
         self, doc: n.Directive, image_argument: str, line: int
     ) -> None:
         try:
-            static_asset = self.add_static_asset(image_argument, upload=True)
+            static_asset = self.add_static_asset(image_argument, doc, upload=True)
             self.pending.append(PendingFigure(doc, static_asset))
         except OSError as err:
             self.diagnostics.append(
@@ -1131,11 +1135,17 @@ class JSONVisitor:
             )
         return
 
-    def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
+    def add_static_asset(
+        self, raw_path: str, node: n.Directive, upload: bool
+    ) -> StaticAsset:
         fileid, path = util.reroot_path(
             FileId(raw_path), self.docpath, self.project_config.source_path
         )
-        static_asset = StaticAsset.load(raw_path, fileid, path, upload)
+        try:
+            static_asset = StaticAsset.load(raw_path, fileid, path, upload)
+        except ValueError:
+            self.diagnostics.append(ImageSizeUndetermined(raw_path, node.start[0]))
+
         self.static_assets.add(static_asset)
         return static_asset
 
