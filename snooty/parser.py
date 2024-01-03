@@ -1733,7 +1733,8 @@ class _Project:
     def parse_rst_files(
         self, paths: Iterable[FileId], max_workers: Optional[int] = None
     ) -> None:
-        pool = multiprocessing.Pool(max_workers)
+        pool = multiprocessing.Pool(1)
+        logger.info("Processes: " + str(pool._processes))
         try:
             logger.debug("Processing rst files")
             cache_misses: List[FileId] = []

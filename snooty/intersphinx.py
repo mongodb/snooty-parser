@@ -149,6 +149,6 @@ def fetch_inventory(
     base_url = url.rsplit("/", 1)[0]
     base_url.rstrip("/")
     base_url += "/"
-
+    logger.info("Fetch inventory")
     data = HTTPCache(cache_dir).get(url, cache_interval)
     return Inventory.parse(base_url, data)
