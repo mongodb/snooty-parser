@@ -272,6 +272,8 @@ def main() -> None:
         HTTPCache.initialize(False)
 
     logger.info(f"Snooty {__version__} starting")
+    logger.info(str(args))
+    logger.info(str(args["--no-caching"]))
 
     if args["--rstspec"]:
         rstspec_path = args["--rstspec"]
@@ -312,8 +314,6 @@ def main() -> None:
 
     try:
         project.build()
-        logger.info(str(args))
-        logger.info(str(args["--no-caching"]))
 
         if args["create-cache"]:
             with PerformanceLogger.singleton().start("persist cache"):
