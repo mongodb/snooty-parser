@@ -160,9 +160,9 @@ class PendingFigure(PendingTask):
         try:
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
-            ratio = self.asset._ratio
-            if ratio:
-                options["ratio"] = float(ratio)
+            aspect_ratio = self.asset._aspect_ratio
+            if aspect_ratio:
+                options["aspect-ratio"] = float(aspect_ratio)
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(

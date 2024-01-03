@@ -67,7 +67,7 @@ class StaticAsset:
     upload: bool
     _checksum: Optional[str]
     _data: Optional[bytes]
-    _ratio: Optional[float]
+    _aspect_ratio: Optional[float]
 
     def __hash__(self) -> int:
         return hash(self.fileid)
@@ -105,8 +105,8 @@ class StaticAsset:
     def __load(self) -> None:
         if self._data is None:
             self._data = self.path.read_bytes()
-            width, height = imagesize.get("bad-path")
-            self._ratio = width / height
+            width, height = imagesize.get(self.path)
+            self._aspect_ratio = width / height
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
 
 

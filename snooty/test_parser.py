@@ -1941,10 +1941,10 @@ def test_figure() -> None:
         page.ast,
         """
 <root fileid="test.rst">
-    <directive name="figure" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665">
+    <directive name="figure" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665" aspect-ratio="1.0">
         <text>/test_parser/sample.png</text>
     </directive>
-    <directive name="figure" alt="sample jpeg" checksum="423345d0e4268d547aeaef46b74479f5df6e949d2b3288de1507f1f3082805ae">
+    <directive name="figure" alt="sample jpeg" checksum="423345d0e4268d547aeaef46b74479f5df6e949d2b3288de1507f1f3082805ae" aspect-ratio="1.0">
         <text>/test_parser/sample.jpg</text>
     </directive>
 </root>""",
@@ -1974,7 +1974,7 @@ def test_figure() -> None:
         """
 <root fileid="test.rst">
     <directive name="figure" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665"
-        align="left" border="True" class="class" figwidth="100" lightbox="True" scale="1" width="100">
+        align="left" border="True" class="class" figwidth="100" lightbox="True" scale="1" width="100" aspect-ratio="1.0">
         <text>/test_parser/sample.png</text>
     </directive>
 </root>""",
@@ -2035,7 +2035,7 @@ def test_atf_image() -> None:
         page.ast,
         """
 <root fileid="test.rst">
-    <directive name="atf-image" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665">
+    <directive name="atf-image" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665" aspect-ratio="1.0">
         <text>/test_parser/sample.png</text>
     </directive>
 </root>""",
