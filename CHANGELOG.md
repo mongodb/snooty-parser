@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.15.2] - 2024-01-02
+
+### Changed
+
+- The parser will now accept the `--no-caching` flag when creating a cache (#544).
+- Use UTF-8 encoding when reading TOML text (#545).
+
 ## [v0.15.1] - 2023-12-13
 
 ### Changed
