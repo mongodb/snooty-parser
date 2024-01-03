@@ -418,6 +418,7 @@ class HTTPCache:
 
         # Make our user's cache directory if it doesn't exist
         filename = urllib.parse.quote(url, safe="")
+        logger.info("Making directory")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         inventory_path = self.cache_dir.joinpath(filename)
 

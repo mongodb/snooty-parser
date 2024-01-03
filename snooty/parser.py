@@ -1739,6 +1739,7 @@ class _Project:
             cache_misses: List[FileId] = []
 
             hits = 0
+            logger.info(self.cache)
 
             if self.cache is None:
                 cache_misses = list(paths)
