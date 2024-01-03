@@ -312,6 +312,8 @@ def main() -> None:
 
     try:
         project.build()
+        logger.info(str(args))
+        logger.info(str(args["--no-caching"]))
 
         if args["create-cache"]:
             with PerformanceLogger.singleton().start("persist cache"):
