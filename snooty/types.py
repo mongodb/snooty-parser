@@ -16,7 +16,7 @@ from typing import (
     Union,
 )
 
-import imagesize  # type: ignore
+import imagesize
 import tomli
 from typing_extensions import Protocol
 
