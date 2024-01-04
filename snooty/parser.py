@@ -60,7 +60,6 @@ from .diagnostics import (
     ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
-    ImageSizeUndetermined,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,
@@ -132,7 +131,7 @@ class _DefinitionListTerm(n.InlineParent):
 
 
 class PendingFigure(PendingTask):
-    """Add an image's checksum."""
+    """Add an image's checksum and intrinsic dimensions"""
 
     def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
         super().__init__(node)
@@ -160,9 +159,10 @@ class PendingFigure(PendingTask):
         try:
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
-            aspect_ratio = self.asset._aspect_ratio
-            if aspect_ratio:
-                options["aspect-ratio"] = float(aspect_ratio)
+            if self.asset._width:
+                options["width"] = float(self.asset._width)
+            if self.asset._height:
+                options["height"] = float(self.asset._height)
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
@@ -1031,7 +1031,7 @@ class JSONVisitor:
         self, doc: n.Directive, image_argument: str, line: int
     ) -> None:
         try:
-            static_asset = self.add_static_asset(image_argument, doc, upload=True)
+            static_asset = self.add_static_asset(image_argument, upload=True)
             self.pending.append(PendingFigure(doc, static_asset))
         except OSError as err:
             self.diagnostics.append(
@@ -1135,17 +1135,11 @@ class JSONVisitor:
             )
         return
 
-    def add_static_asset(
-        self, raw_path: str, node: n.Directive, upload: bool
-    ) -> StaticAsset:
+    def add_static_asset(self, raw_path: str, upload: bool) -> StaticAsset:
         fileid, path = util.reroot_path(
             FileId(raw_path), self.docpath, self.project_config.source_path
         )
-        try:
-            static_asset = StaticAsset.load(raw_path, fileid, path, upload)
-        except ValueError:
-            self.diagnostics.append(ImageSizeUndetermined(raw_path, node.start[0]))
-
+        static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
         return static_asset
 

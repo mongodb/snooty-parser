@@ -26,6 +26,7 @@ from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
+    ImageSizeUndetermined,
     MissingFacet,
     UnmarshallingError,
 )
@@ -65,9 +66,11 @@ class StaticAsset:
     fileid: FileId
     path: Path
     upload: bool
+    diagnostics: List[Diagnostic]
     _checksum: Optional[str]
     _data: Optional[bytes]
-    _aspect_ratio: Optional[float]
+    _width: Optional[float]
+    _height: Optional[float]
 
     def __hash__(self) -> int:
         return hash(self.fileid)
@@ -100,14 +103,16 @@ class StaticAsset:
     def load(
         cls, key: str, fileid: FileId, path: Path, upload: bool = False
     ) -> "StaticAsset":
-        return cls(key, fileid, path, upload, None, None, None)
+        return cls(key, fileid, path, upload, [], None, None, None, None)
 
     def __load(self) -> None:
         if self._data is None:
             self._data = self.path.read_bytes()
-            width, height = imagesize.get(self.path)
-            self._aspect_ratio = width / height
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
+            try:
+                self._width, self._height = imagesize.get(self.path)
+            except ValueError:
+                self.diagnostics.append(ImageSizeUndetermined(str(self.path), 0))
 
 
 @dataclass
