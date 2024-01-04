@@ -1141,6 +1141,8 @@ class JSONVisitor:
         )
         static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
+        if static_asset.diagnostics:
+            self.diagnostics.extend(static_asset.diagnostics)
         return static_asset
 
     def add_diagnostics(self, diagnostics: Iterable[Diagnostic]) -> None:
