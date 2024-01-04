@@ -1,4 +1,5 @@
 from pathlib import Path, PurePath
+from typing import cast, Tuple
 
 from .n import FileId
 from .page import Page
@@ -51,8 +52,8 @@ def test_static_asset() -> None:
         asset.get_checksum()
         == "e8d907020488a0b0ba070ae3eeb86aae2713a61cc5bb28346c023cb505cced3c"
     )
-    assert asset._width == 752
-    assert asset._height == 758
+    assert cast(Tuple[float, float], asset.dimensions)[0] == 752
+    assert cast(Tuple[float, float], asset.dimensions)[1] == 758
     asset2 = StaticAsset.load("foo", FileId("foo"), path)
     asset3 = StaticAsset.load("bar", FileId("bar"), path)
 

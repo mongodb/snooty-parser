@@ -159,10 +159,10 @@ class PendingFigure(PendingTask):
         try:
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
-            if self.asset._width:
-                options["width"] = float(self.asset._width)
-            if self.asset._height:
-                options["height"] = float(self.asset._height)
+            dimensions = self.asset.dimensions
+            if dimensions is not None:
+                options["width"] = str(dimensions[0])
+                options["height"] = str(dimensions[1])
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(

@@ -356,7 +356,7 @@ class Directive(Parent[Node]):
     domain: str
     name: str
     argument: MutableSequence["Text"]
-    options: Dict[str, Any]
+    options: Dict[str, str]
 
     def verify(self) -> None:
         super().verify()

@@ -928,7 +928,7 @@ class ImageSizeUndetermined(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
-            f"""WARNING! Intrinsic size for image not calculated at path {raw_path}. Image may not be lazy loaded.""",
+            f"""Intrinsic size for image not calculated at path {raw_path}. Image may not be lazy loaded.""",
             start,
             end,
         )
