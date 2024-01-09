@@ -916,3 +916,19 @@ class NestedProject(Diagnostic):
             start,
             end,
         )
+
+
+class ImageSizeUndetermined(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        raw_path: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ):
+        super().__init__(
+            f"""Intrinsic size for image not calculated at path {raw_path}. Image may not be lazy loaded.""",
+            start,
+            end,
+        )

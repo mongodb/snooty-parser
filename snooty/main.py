@@ -157,6 +157,8 @@ class Backend(ProjectBackend):
 
         for static_asset in uploadable_assets:
             checksum = static_asset.get_checksum()
+            if static_asset.diagnostics:
+                self.on_diagnostics(page_id, static_asset.diagnostics)
             if checksum in self.assets_written:
                 continue
 

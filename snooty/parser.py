@@ -131,7 +131,7 @@ class _DefinitionListTerm(n.InlineParent):
 
 
 class PendingFigure(PendingTask):
-    """Add an image's checksum."""
+    """Add an image's checksum and intrinsic dimensions"""
 
     def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
         super().__init__(node)
@@ -159,6 +159,10 @@ class PendingFigure(PendingTask):
         try:
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
+            dimensions = self.asset.dimensions
+            if dimensions is not None:
+                options["width"] = str(dimensions[0])
+                options["height"] = str(dimensions[1])
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
@@ -1137,6 +1141,8 @@ class JSONVisitor:
         )
         static_asset = StaticAsset.load(raw_path, fileid, path, upload)
         self.static_assets.add(static_asset)
+        if static_asset.diagnostics:
+            self.diagnostics.extend(static_asset.diagnostics)
         return static_asset
 
     def add_diagnostics(self, diagnostics: Iterable[Diagnostic]) -> None:

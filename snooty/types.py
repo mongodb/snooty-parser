@@ -16,6 +16,7 @@ from typing import (
     Union,
 )
 
+import imagesize
 import tomli
 from typing_extensions import Protocol
 
@@ -25,6 +26,7 @@ from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
     GitMergeConflictArtifactFound,
+    ImageSizeUndetermined,
     MissingFacet,
     UnmarshallingError,
 )
@@ -64,6 +66,8 @@ class StaticAsset:
     fileid: FileId
     path: Path
     upload: bool
+    diagnostics: List[Diagnostic]
+    dimensions: Optional[Tuple[float, float]]
     _checksum: Optional[str]
     _data: Optional[bytes]
 
@@ -98,12 +102,20 @@ class StaticAsset:
     def load(
         cls, key: str, fileid: FileId, path: Path, upload: bool = False
     ) -> "StaticAsset":
-        return cls(key, fileid, path, upload, None, None)
+        return cls(key, fileid, path, upload, [], None, None, None)
 
     def __load(self) -> None:
         if self._data is None:
             self._data = self.path.read_bytes()
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
+            try:
+                width, height = imagesize.get(self.path)
+                if width <= 0 or height <= 0:
+                    self.diagnostics.append(ImageSizeUndetermined(str(self.path), 0))
+                else:
+                    self.dimensions = (float(width), float(height))
+            except ValueError:
+                self.diagnostics.append(ImageSizeUndetermined(str(self.path), 0))
 
 
 @dataclass
