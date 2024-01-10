@@ -166,9 +166,8 @@ class PendingFigure(PendingTask):
                     options["width"] = str(dimensions[0])
                     options["height"] = str(dimensions[1])
                 else:
-                    options["height"] = str(
-                        dimensions[1] * float(user_width) / dimensions[0]
-                    )
+                    width_num = float(re.sub(r"\D+", "", user_width))
+                    options["height"] = str(dimensions[1] * width_num / dimensions[0])
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
