@@ -1958,7 +1958,7 @@ def test_figure() -> None:
 .. figure:: /test_parser/sample.png
    :alt: sample png
    :figwidth: 100
-   :width: 100
+   :width: 90
    :scale: 1
    :align: left
    :lightbox:
@@ -1974,7 +1974,7 @@ def test_figure() -> None:
         """
 <root fileid="test.rst">
     <directive name="figure" alt="sample png" checksum="af4fbbc65c96b5c8f6f299769e2783b4ab7393f047debc00ffae772b9c5a7665"
-        align="left" border="True" class="class" figwidth="100" lightbox="True" scale="1" width="100.0" height="100.0">
+        align="left" border="True" class="class" figwidth="100" lightbox="True" scale="1" width="90" height="90.0">
         <text>/test_parser/sample.png</text>
     </directive>
 </root>""",
