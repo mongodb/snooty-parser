@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- DOP-4207: pre determine image dimensions in parser (#547)
+
 ## [v0.15.2] - 2024-01-02
 
 ### Changed
