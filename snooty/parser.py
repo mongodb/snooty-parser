@@ -97,6 +97,7 @@ from .util import RST_EXTENSIONS
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
+NON_DIGITS = re.compile(r"\D+")
 NO_AMBIGUOUS_LITERAL_DIAGNOSTICS = (
     os.environ.get("SNOOTY_NO_AMBIGUOUS_LITERAL_DIAGNOSTICS", "0") == "1"
 )
@@ -166,7 +167,7 @@ class PendingFigure(PendingTask):
                     options["width"] = str(dimensions[0])
                     options["height"] = str(dimensions[1])
                 else:
-                    width_num = float(re.sub(r"\D+", "", user_width))
+                    width_num = float(NON_DIGITS.sub("", user_width))
                     options["height"] = str(dimensions[1] * width_num / dimensions[0])
             cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
