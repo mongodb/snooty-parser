@@ -1,5 +1,5 @@
 from pathlib import Path, PurePath
-from typing import cast, Tuple
+from typing import Tuple, cast
 
 from .n import FileId
 from .page import Page
