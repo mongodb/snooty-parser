@@ -36,6 +36,7 @@ from .n import FileId, SerializableType
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
+IMAGE_SIZING_EXT = {".png", ".avif", ".jpg", ".jpeg", ".webp"}
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,8 @@ class StaticAsset:
         if self._data is None:
             self._data = self.path.read_bytes()
             self._checksum = hashlib.blake2b(self._data, digest_size=32).hexdigest()
+            if self.path.suffix not in IMAGE_SIZING_EXT:
+                return
             try:
                 width, height = imagesize.get(self.path)
                 if width <= 0 or height <= 0:
