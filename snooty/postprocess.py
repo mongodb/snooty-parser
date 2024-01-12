@@ -1743,7 +1743,7 @@ class FacetsHandler(Handler):
 
 
 class ImageHandler(Handler):
-    """Inspects the images on the page and appends a lazy loading option if the image is found below the fold.
+    """Inspects the images on the page and appends a lazy loading option if the image is considered to be below the fold.
 
     An image is considered below the fold if section index > 1 or index of image on page > 2
     """
