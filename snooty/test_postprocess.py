@@ -3,7 +3,6 @@
 
 from pathlib import Path
 from typing import Any, Dict, cast
-import pprint
 
 from snooty.types import Facet
 
@@ -30,7 +29,6 @@ from .diagnostics import (
     SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
-    ImageSizeUndetermined,
 )
 from .n import FileId
 from .util_test import (

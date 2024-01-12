@@ -1767,7 +1767,10 @@ class ImageHandler(Handler):
         if isinstance(node, n.Directive) and (
             node.name == "image" or node.name == "figure"
         ):
-            if self.current_section > self.min_section_depth or self.current_img_index > self.min_img_index:
+            if (
+                self.current_section > self.min_section_depth
+                or self.current_img_index > self.min_img_index
+            ):
                 node.options["loading"] = "lazy"
             self.current_img_index += 1
 
@@ -1834,7 +1837,7 @@ class Postprocessor:
             OpenAPIHandler,
             OpenAPIChangelogHandler,
             FacetsHandler,
-            ImageHandler
+            ImageHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
