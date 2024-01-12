@@ -1742,6 +1742,38 @@ class FacetsHandler(Handler):
                 pass
 
 
+class ImageHandler(Handler):
+    """Inspects the images on the page and appends a lazy loading option if the image is found below the fold.
+
+    An image is considered below the fold if section index > 1 or index of image on page > 2
+    """
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.contents_depth = sys.maxsize
+        self.current_section = 0
+        self.current_img_index = 0
+        self.max_section_depth = 1
+        self.max_img_depth = 2
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.contents_depth = sys.maxsize
+        self.current_section = 0
+        self.current_img_index = 0
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Section):
+            self.current_section += 1
+            return
+
+        if isinstance(node, n.Directive) and (
+            node.name == "image" or node.name == "figure"
+        ):
+            if self.current_section > self.max_section_depth or self.current_img_index > self.max_img_depth:
+                node.options["loading"] = "lazy"
+            self.current_img_index += 1
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -1804,6 +1836,7 @@ class Postprocessor:
             OpenAPIHandler,
             OpenAPIChangelogHandler,
             FacetsHandler,
+            ImageHandler
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
