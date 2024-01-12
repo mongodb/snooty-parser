@@ -25,7 +25,7 @@ def test_extract() -> None:
 
     def add_main_file() -> List[Diagnostic]:
         extracts, text, parse_diagnostics = category.parse(fileid)
-        category.add(fileid, text, extracts)
+        category.add(fileid, text, extracts, [])
         assert len(parse_diagnostics) == 1
         assert parse_diagnostics[0].severity == Diagnostic.Level.error
         assert parse_diagnostics[0].start == (21, 0)
@@ -34,7 +34,7 @@ def test_extract() -> None:
 
     def add_parent_file() -> List[Diagnostic]:
         extracts, text, parse_diagnostics = category.parse(parent_fileid)
-        category.add(parent_fileid, text, extracts)
+        category.add(parent_fileid, text, extracts, [])
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 1
         return parse_diagnostics
@@ -50,7 +50,7 @@ def test_extract() -> None:
         page = Page.create(fileid, filename, "")
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[fileid]))
 
-    pages = category.to_pages(fileid, create_page, giza_node.data)
+    pages = category.to_pages(fileid, create_page, giza_node)
     assert [page.fake_full_fileid().as_posix() for page in pages] == [
         "includes/extracts/installation-directory-rhel.rst",
         "includes/extracts/broken-inherit.rst",

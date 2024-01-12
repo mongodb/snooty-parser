@@ -88,8 +88,8 @@ def test_inheritance() -> None:
     )
 
     category: nodes.GizaCategory[TestNode] = nodes.GizaCategory(project_config)
-    category.add(FileId("parent.yaml"), "", [parent])
-    category.add(FileId("child.yaml"), "", [child])
+    category.add(FileId("parent.yaml"), "", [parent], [])
+    category.add(FileId("child.yaml"), "", [child], [])
 
     reified_diagnostics: List[Diagnostic] = []
     reified_child = category.reify(child, reified_diagnostics, set(), set())
@@ -120,10 +120,10 @@ def test_reify_all_files() -> None:
         all_diagnostics: Dict[FileId, List[Diagnostic]] = {}
 
         extracts, text, diagnostics = category.parse(test_path)
-        category.add(test_path, text, extracts)
+        category.add(test_path, text, extracts, diagnostics)
         all_diagnostics[test_path] = diagnostics
 
-        file_id, giza_node = next(category.reify_all_files(all_diagnostics))
+        _ = next(category.reify_all_files(all_diagnostics))
 
         if i % 2:
             assert len(all_diagnostics[test_path]) > 0

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import collections
 import contextlib
 import errno
 import getpass
@@ -17,7 +16,7 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path, PurePath, PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import (
     Any,
     Dict,
@@ -79,7 +78,6 @@ from .diagnostics import (
     UnknownTabset,
     UnmarshallingError,
 )
-from .gizaparser.nodes import GizaCategory
 from .icon_names import ICON_SET, LG_ICON_SET
 from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
@@ -1339,11 +1337,6 @@ class EmbeddedRstParser:
         return children
 
 
-def get_giza_category(path: PurePath) -> str:
-    """Infer the Giza category of a YAML file."""
-    return path.name.split("-", 1)[0]
-
-
 class ProjectBackend:
     def on_config(self, config: ProjectConfig, branch: str) -> None:
         pass
@@ -1440,11 +1433,9 @@ class _Project:
         self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
 
-        self.yaml_mapping: Dict[str, GizaCategory[Any]] = {
-            "steps": gizaparser.steps.GizaStepsCategory(self.config),
-            "extracts": gizaparser.extracts.GizaExtractsCategory(self.config),
-            "release": gizaparser.release.GizaReleaseSpecificationCategory(self.config),
-        }
+        self.yaml_domain = gizaparser.domain.GizaYamlDomain(
+            self.config, EmbeddedRstParser
+        )
 
         # For each repo-wide substitution, parse the string and save to our project config
         inline_parser = rstparser.Parser(self.config, InlineJSONVisitor)
@@ -1534,54 +1525,16 @@ class _Project:
 
     def update(self, path: FileId, optional_text: Optional[str] = None) -> None:
         diagnostics: Dict[FileId, List[Diagnostic]] = {path: []}
-        prefix = get_giza_category(path)
         _, ext = os.path.splitext(path)
         pages: List[Page] = []
         if ext in RST_EXTENSIONS:
             for page, page_diagnostics in parse_rst(self.parser, path, optional_text):
                 pages.append(page)
                 diagnostics[path] = page_diagnostics
-        elif ext == ".yaml" and prefix in self.yaml_mapping:
-            file_id = os.path.basename(path)
-            giza_category = self.yaml_mapping[prefix]
-            needs_rebuild = set((file_id,)).union(
-                *(
-                    category.dg.predecessors(file_id)
-                    for category in self.yaml_mapping.values()
-                )
-            )
-            logger.debug("needs_rebuild: %s", ",".join(needs_rebuild))
-            for file_id in needs_rebuild:
-                file_diagnostics: List[Diagnostic] = []
-                try:
-                    giza_node = giza_category.reify_file_id(file_id, diagnostics)
-                except KeyError:
-                    logging.warn("No file found in registry: %s", file_id)
-                    continue
-
-                steps, text, parse_diagnostics = giza_category.parse(
-                    path, optional_text
-                )
-                file_diagnostics.extend(parse_diagnostics)
-
-                def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page.create(
-                        giza_node.path,
-                        filename,
-                        text,
-                        n.Root((-1,), [], self.config.get_fileid(FileId(filename)), {}),
-                    )
-                    return (
-                        page,
-                        EmbeddedRstParser(self.config, page, file_diagnostics),
-                    )
-
-                giza_category.add(path, text, steps)
-                pages = giza_category.to_pages(
-                    giza_node.path, create_page, giza_node.data
-                )
-                path = giza_node.path
-                diagnostics.setdefault(path, []).extend(file_diagnostics)
+        elif self.yaml_domain.is_known_yaml(path):
+            for page, diag in self.yaml_domain.update(path, optional_text):
+                pages.append(page)
+                diagnostics[path] = list(diag)
         else:
             raise ValueError("Unknown file type: " + str(path))
 
@@ -1600,14 +1553,7 @@ class _Project:
             self.backend.flush()
 
     def delete(self, fileid: FileId) -> None:
-        path = self.config.source_path / fileid
-        for giza_category in self.yaml_mapping.values():
-            try:
-                del giza_category[fileid.name]
-            except KeyError:
-                pass
-
-        fileid = self.config.get_fileid(path)
+        self.yaml_domain.delete(fileid.name)
 
         with self._backend_lock:
             self.backend.on_delete(fileid, self.build_identifiers)
@@ -1617,7 +1563,6 @@ class _Project:
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
     ) -> None:
-        all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = {}
         nested_projects_diagnostics: Dict[FileId, List[Diagnostic]] = {}
 
         with util.PerformanceLogger.singleton().start("parse rst"):
@@ -1633,62 +1578,23 @@ class _Project:
         for nested_path, diagnostics in nested_projects_diagnostics.items():
             with self._backend_lock:
                 self.backend.on_diagnostics(nested_path, diagnostics)
-        # Categorize our YAML files
-        logger.debug("Categorizing YAML files")
-        categorized: Dict[str, List[FileId]] = collections.defaultdict(list)
-        for path in util.get_files(
-            self.config.source_path, (".yaml",), self.config.root
-        ):
-            prefix = get_giza_category(path)
-            if prefix in self.yaml_mapping:
-                categorized[prefix].append(self.config.get_fileid(path))
 
-        # Initialize our YAML file registry
-        for prefix, giza_category in self.yaml_mapping.items():
-            logger.debug("Parsing %s YAML", prefix)
-            for fileid in categorized[prefix]:
-                artifacts, text, diagnostics = giza_category.parse(fileid)
-                if diagnostics:
-                    all_yaml_diagnostics[fileid] = diagnostics
-                giza_category.add(fileid, text, artifacts)
+        all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
+        with util.PerformanceLogger.singleton().start("generate yaml"):
+            yaml_pages = list(
+                self.yaml_domain.load_and_generate(all_yaml_diagnostics, self.cache)
+            )
+            for page, page_diagnostics in yaml_pages:
+                self._page_updated(page, page_diagnostics)
 
-        # Now that all of our YAML files are loaded, generate a page for each one
-        seen_paths: Set[FileId] = set()
-        for prefix, giza_category in self.yaml_mapping.items():
-            logger.debug("Processing %s YAML: %d nodes", prefix, len(giza_category))
-            for file_id, giza_node in giza_category.reify_all_files(
-                all_yaml_diagnostics
-            ):
-
-                def create_page(filename: str) -> Tuple[Page, EmbeddedRstParser]:
-                    page = Page.create(
-                        giza_node.path,
-                        filename,
-                        giza_node.text,
-                        n.Root((-1,), [], giza_node.path, {}),
-                    )
-                    return (
-                        page,
-                        EmbeddedRstParser(
-                            self.config,
-                            page,
-                            all_yaml_diagnostics.setdefault(giza_node.path, []),
-                        ),
-                    )
-
-                for page in giza_category.to_pages(
-                    giza_node.path, create_page, giza_node.data
-                ):
-                    seen_paths.add(page.fileid)
-                    self._page_updated(page, all_yaml_diagnostics.get(page.fileid, []))
-
-        # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
-        # any page.
-        for key in all_yaml_diagnostics:
-            if key not in seen_paths:
-                self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
-                with self._backend_lock:
-                    self.backend.on_diagnostics(key, diagnostics)
+            # Handle parsing and unmarshaling errors that lead to diagnostics not associated with
+            # any page.
+            seen_paths = set(page[0].fileid for page in yaml_pages)
+            for key in all_yaml_diagnostics:
+                if key not in seen_paths:
+                    self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
+                    with self._backend_lock:
+                        self.backend.on_diagnostics(key, all_yaml_diagnostics[key])
 
         if postprocess:
             postprocessor_result = self.postprocess()
@@ -1777,11 +1683,13 @@ class _Project:
             pool.join()
 
     def load_cache(self) -> None:
-        self.cache = self.cache_file.read()
+        with util.PerformanceLogger.singleton().start("loading cache"):
+            self.cache = self.cache_file.read()
 
     def update_cache(self, optimize: bool = True) -> None:
         cache = parse_cache.CacheData(self.cache_file.generate_specifier(), {})
         self.pages.add_to_cache(cache)
+        cache.ingest_yaml(self.yaml_domain)
         self.cache_file.persist(cache, optimize=optimize)
 
     def _page_updated(self, page: Page, diagnostics: Sequence[Diagnostic]) -> None:

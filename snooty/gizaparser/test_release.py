@@ -21,14 +21,14 @@ def test_release_specification() -> None:
 
     def add_main_file() -> List[Diagnostic]:
         extracts, text, parse_diagnostics = category.parse(fileid)
-        category.add(fileid, text, extracts)
+        category.add(fileid, text, extracts, [])
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 2
         return parse_diagnostics
 
     def add_parent_file() -> List[Diagnostic]:
         extracts, text, parse_diagnostics = category.parse(parent_fileid)
-        category.add(parent_fileid, text, extracts)
+        category.add(parent_fileid, text, extracts, [])
         assert len(parse_diagnostics) == 0
         assert len(extracts) == 2
         return parse_diagnostics
@@ -44,7 +44,7 @@ def test_release_specification() -> None:
         page = Page.create(fileid, filename, "")
         return (page, EmbeddedRstParser(project_config, page, all_diagnostics[fileid]))
 
-    pages = category.to_pages(fileid, create_page, giza_node.data)
+    pages = category.to_pages(fileid, create_page, giza_node)
     assert [page.fake_full_fileid().as_posix() for page in pages] == [
         "includes/release/untar-release-osx-x86_64.rst",
         "includes/release/install-ent-windows-default.rst",

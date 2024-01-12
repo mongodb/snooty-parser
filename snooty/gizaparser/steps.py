@@ -6,7 +6,7 @@ from ..diagnostics import Diagnostic
 from ..flutter import checked
 from ..page import Page
 from ..types import EmbeddedRstParser
-from .nodes import GizaCategory, HeadingMixin, Inheritable
+from .nodes import GizaCategory, GizaFile, HeadingMixin, Inheritable
 from .parse import parse
 
 
@@ -119,11 +119,11 @@ class GizaStepsCategory(GizaCategory[Step]):
     ) -> Tuple[Sequence[Step], str, List[Diagnostic]]:
         return parse(Step, path, self.project_config, text)
 
-    def to_pages(
+    def _generate_pages(
         self,
         source_fileid: n.FileId,
         page_factory: Callable[[str], Tuple[Page, EmbeddedRstParser]],
-        steps: Sequence[Step],
+        giza_file: GizaFile[Step],
     ) -> List[Page]:
         output_filename = source_fileid.with_suffix(".rst").name
         output_filename = output_filename[len("steps-") :]
@@ -131,7 +131,7 @@ class GizaStepsCategory(GizaCategory[Step]):
         page.category = "steps"
         steps_directive = n.Directive((0,), [], "", "procedure", [], {})
         steps_directive.children = [
-            step_to_page(page, step, rst_parser) for step in steps
+            step_to_page(page, step, rst_parser) for step in giza_file.data
         ]
         steps_directive.options["style"] = "normal"
         page.ast = n.Root((0,), [], source_fileid, {})
