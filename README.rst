@@ -1,6 +1,9 @@
 The Snooty Parser
 =================
 
+
+### Requirements and Installation
+
 Make sure to have the following installed
 - [poetry](https://python-poetry.org/docs/)
 
