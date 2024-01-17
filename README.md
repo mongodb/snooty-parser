@@ -13,3 +13,8 @@ dependencies.
 ```
 poetry install
 ```
+
+
+
+For more context on the Parser, refer to the following wiki (from Oct 6, 2020)
+[Andrew Explains the Parser](https://wiki.corp.mongodb.com/display/DE/Ep+1%3A+Wherein+Andrew+Explains+the+Parser)
