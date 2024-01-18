@@ -1614,7 +1614,7 @@ type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailin
 
 [role."mdbu-course"]
 help = """Link to a MongoDB University course."""
-type = {link = "https://learn.mongodb.com/%s"}
+type = {link = "https://learn.mongodb.com%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
