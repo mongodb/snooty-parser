@@ -3096,3 +3096,117 @@ value = "test"
 </root>
             """,
         )
+
+
+def test_images() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+
+======
+Images
+======
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+  <section>
+    <heading id="images"><text>Images</text></heading>
+    <directive name="image" alt="img"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+  </section>
+</root>
+""",
+        )
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+
+======
+Images
+======
+
+Image test
+
+======
+Images
+======
+
+Image test
+
+======
+Images
+======
+
+Image test
+
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+
+.. image:: /path/to/image.png
+   :alt: img
+            """
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+  <section>
+    <heading id="images"><text>Images</text></heading>
+    <paragraph><text>Image test</text></paragraph>
+  </section>
+  <section>
+    <heading id="images-1"><text>Images</text></heading>
+    <paragraph><text>Image test</text></paragraph>
+  </section>
+  <section>
+    <heading id="images-2"><text>Images</text></heading>
+    <paragraph><text>Image test</text></paragraph>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+    <directive name="image" alt="img" loading="lazy"><text>/path/to/image.png</text></directive>
+  </section>
+</root>
+        """,
+        )
