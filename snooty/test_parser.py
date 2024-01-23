@@ -3691,6 +3691,20 @@ def test_invalid_facets() -> None:
         for diagnostic in diagnostics
     )
 
+    # Regression test from DOP-4253
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. facet::
+
+   :name: genre
+   :values: tutorial
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 3
+
 
 def test_valid_facets() -> None:
     path = FileId("test.rst")
