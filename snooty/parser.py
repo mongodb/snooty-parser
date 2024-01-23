@@ -543,6 +543,9 @@ class JSONVisitor:
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
+        if "values" not in node["options"] or "name" not in node["options"]:
+            return
+
         for value in node["options"]["values"].split(","):
             ref: Union[rstparser.directive, tinydocutils.nodes.Element] = node
             single_value = value.strip()
