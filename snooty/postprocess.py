@@ -1157,7 +1157,7 @@ class InstruqtHandler(Handler):
         if not self.has_instruqt_directive:
             return
 
-        elif isinstance(page.ast, n.Root):
+        else:
             page.ast.options["title"] = [self.instruqt_title]
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -1168,7 +1168,7 @@ class InstruqtHandler(Handler):
             self.has_instruqt_directive = True
             title = node.options.get("title", "")
 
-            if len(title) != 0:
+            if not title:
                 self.instruqt_title = title
                 #  self.context.diagnostics[fileid_stack.current].append(
                 #     MissingOption() )
