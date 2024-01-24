@@ -2194,7 +2194,7 @@ Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt">
+<root fileid="page.txt" instruqt_title="TestLab">
 <section> 
 <heading id="title">
 <text> Title

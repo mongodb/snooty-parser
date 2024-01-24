@@ -1158,7 +1158,7 @@ class InstruqtHandler(Handler):
             return
 
         else:
-            page.ast.options["title"] = [self.instruqt_title]
+            page.ast.options["instruqt_title"] = self.instruqt_title
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "instruqt":
@@ -1168,10 +1168,9 @@ class InstruqtHandler(Handler):
             self.has_instruqt_directive = True
             title = node.options.get("title", "")
 
-            if not title:
+            if title:
                 self.instruqt_title = title
-                #  self.context.diagnostics[fileid_stack.current].append(
-                #     MissingOption() )
+
 
 
 class IAHandler(Handler):
@@ -1865,6 +1864,7 @@ class Postprocessor:
             ProgramOptionHandler,
             TabsSelectorHandler,
             ContentsHandler,
+            InstruqtHandler,
             BannerHandler,
             GuidesHandler,
             OpenAPIHandler,

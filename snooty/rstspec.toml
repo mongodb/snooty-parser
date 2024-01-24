@@ -770,7 +770,7 @@ content_type = "block"
 [directive."mongodb:instruqt"]
 content_type = "block"
 argument_type = "string"
-options.title = "string"
+options.title = {type = "string", required = true}
 
 [directive."mongodb:introduction"]
 content_type = "block"
