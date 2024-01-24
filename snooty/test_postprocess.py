@@ -2191,7 +2191,6 @@ Title
         diagnostics = result.diagnostics[FileId(active_file)]
         assert len(diagnostics) == 0
         page = result.pages[FileId(active_file)]
-        print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
@@ -2231,7 +2230,6 @@ Title
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], DuplicateDirective)
         page = result.pages[FileId(active_file)]
-        print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
@@ -2244,6 +2242,42 @@ Title
 <directive domain="mongodb" name= "instruqt" title="TestLab">
 </directive>
 <directive domain="mongodb" name= "instruqt" title="Test Another Lab">
+</directive>
+</section>
+</root>
+""",
+        )
+    with make_test(
+        {
+            Path(
+                "source/page2.txt"
+            ): """
+
+=====
+Title
+=====
+
+.. instruqt::
+
+""",
+        }
+    ) as result:
+        active_file = "page2.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DocUtilsParseError)
+        page = result.pages[FileId(active_file)]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="page2.txt" instruqt_title="">
+<section> 
+<heading id="title">
+<text> Title
+</text>
+</heading>
+<directive domain="mongodb" name="instruqt">
 </directive>
 </section>
 </root>
