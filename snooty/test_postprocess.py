@@ -2194,7 +2194,7 @@ Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt" instruqt_title="TestLab">
+<root fileid="page.txt" instruqt="True">
 <section> 
 <heading id="title">
 <text> Title
@@ -2233,7 +2233,7 @@ Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page1.txt" instruqt_title="TestLab">
+<root fileid="page1.txt" instruqt="True">
 <section> 
 <heading id="title">
 <text> Title
@@ -2271,7 +2271,7 @@ Title
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page2.txt" instruqt_title="">
+<root fileid="page2.txt" instruqt="True">
 <section> 
 <heading id="title">
 <text> Title

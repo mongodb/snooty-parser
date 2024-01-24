@@ -1147,18 +1147,16 @@ class InstruqtHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.has_instruqt_directive = False
-        self.instruqt_title = ""
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.has_instruqt_directive = False
-        self.instruqt_title = ""
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if not self.has_instruqt_directive:
             return
 
         else:
-            page.ast.options["instruqt_title"] = self.instruqt_title
+            page.ast.options["instruqt"] = self.has_instruqt_directive
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "instruqt":
@@ -1170,12 +1168,8 @@ class InstruqtHandler(Handler):
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
-
-            self.has_instruqt_directive = True
-            title = node.options.get("title", "")
-
-            if title:
-                self.instruqt_title = title
+            else:
+                self.has_instruqt_directive = True
 
 
 class IAHandler(Handler):
