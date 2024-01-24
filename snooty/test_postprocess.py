@@ -2167,6 +2167,7 @@ Reference `GitHub`_
         diagnostics = result.diagnostics[FileId(active_file)]
         assert len(diagnostics) == 1
 
+
 def test_instruqt_directive() -> None:
     with make_test(
         {
@@ -2206,8 +2207,49 @@ Title
 </root>
 """,
         )
+    with make_test(
+        {
+            Path(
+                "source/page1.txt"
+            ): """
 
-        
+=====
+Title
+=====
+
+.. instruqt::
+    :title: TestLab
+
+.. instruqt::
+    :title: Test Another Lab
+
+""",
+        }
+    ) as result:
+        active_file = "page1.txt"
+        diagnostics = result.diagnostics[FileId(active_file)]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        page = result.pages[FileId(active_file)]
+        print(ast_to_testing_string(page.ast))
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="page1.txt" instruqt_title="TestLab">
+<section> 
+<heading id="title">
+<text> Title
+</text>
+</heading>
+<directive domain="mongodb" name= "instruqt" title="TestLab">
+</directive>
+<directive domain="mongodb" name= "instruqt" title="Test Another Lab">
+</directive>
+</section>
+</root>
+""",
+        )
+
 
 def test_contents_directive() -> None:
     with make_test(

@@ -1165,12 +1165,17 @@ class InstruqtHandler(Handler):
             return
 
         if isinstance(node, n.Directive) and node.name == "instruqt":
+            if self.has_instruqt_directive:
+                self.context.diagnostics[fileid_stack.current].append(
+                    DuplicateDirective(node.name, node.start[0])
+                )
+                return
+
             self.has_instruqt_directive = True
             title = node.options.get("title", "")
 
             if title:
                 self.instruqt_title = title
-
 
 
 class IAHandler(Handler):
