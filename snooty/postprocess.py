@@ -1141,6 +1141,39 @@ class OpenAPIChangelogHandler(Handler):
             return
 
 
+class InstruqtHandler(Handler):
+    """Identify if Instruqt directive is present on a page and add title as a page-level option if so"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.has_instruqt_directive = False
+        self.instruqt_title = ""
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.has_instruqt_directive = False
+        self.instruqt_title = ""
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.has_instruqt_directive:
+            return
+
+        elif isinstance(page.ast, n.Root):
+            page.ast.options["title"] = [self.instruqt_title]
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "instruqt":
+            return
+
+        if isinstance(node, n.Directive) and node.name == "instruqt":
+            self.has_instruqt_directive = True
+            title = node.options.get("title", "")
+
+            if len(title) != 0:
+                self.instruqt_title = title
+                #  self.context.diagnostics[fileid_stack.current].append(
+                #     MissingOption() )
+
+
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
