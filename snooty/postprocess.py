@@ -1155,21 +1155,18 @@ class InstruqtHandler(Handler):
         if not self.has_instruqt_directive:
             return
 
-        else:
-            page.ast.options["instruqt"] = self.has_instruqt_directive
+        page.ast.options["instruqt"] = self.has_instruqt_directive
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "instruqt":
             return
 
-        if isinstance(node, n.Directive) and node.name == "instruqt":
-            if self.has_instruqt_directive:
-                self.context.diagnostics[fileid_stack.current].append(
-                    DuplicateDirective(node.name, node.start[0])
-                )
-                return
-            else:
-                self.has_instruqt_directive = True
+        elif self.has_instruqt_directive:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
+        self.has_instruqt_directive = True
 
 
 class IAHandler(Handler):
