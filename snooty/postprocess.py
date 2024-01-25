@@ -974,6 +974,34 @@ class OpenAPIHandler(Handler):
         self.openapi_pages[current_slug] = self.SourceData(source_type, source)
 
 
+class InstruqtHandler(Handler):
+    """Identify if Instruqt directive is present on a page and add title as a page-level option if so"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.has_instruqt_directive = False
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.has_instruqt_directive = False
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.has_instruqt_directive:
+            return
+
+        page.ast.options["instruqt"] = self.has_instruqt_directive
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "instruqt":
+            return
+
+        elif self.has_instruqt_directive:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.start[0])
+            )
+            return
+        self.has_instruqt_directive = True
+
+
 class IAHandler(Handler):
     """Identify IA directive on a page and save a list of its entries as a page-level option."""
 
@@ -1493,6 +1521,7 @@ class Postprocessor:
             ProgramOptionHandler,
             TabsSelectorHandler,
             ContentsHandler,
+            InstruqtHandler,
             BannerHandler,
             GuidesHandler,
             OpenAPIHandler,
