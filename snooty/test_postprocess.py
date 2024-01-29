@@ -2181,6 +2181,7 @@ Title
 
 .. instruqt::
     :title: TestLab
+    :drawer: True
 
 
 
@@ -2200,7 +2201,7 @@ Title
 <text> Title
 </text>
 </heading>
-<directive domain="mongodb" name= "instruqt" title="TestLab">
+<directive domain="mongodb" name= "instruqt" title="TestLab" drawer="True">
 </directive>
 </section>
 </root>
@@ -2218,9 +2219,11 @@ Title
 
 .. instruqt::
     :title: TestLab
+    :drawer: True
 
 .. instruqt::
     :title: Test Another Lab
+    :drawer: True
 
 """,
         }
@@ -2239,9 +2242,9 @@ Title
 <text> Title
 </text>
 </heading>
-<directive domain="mongodb" name= "instruqt" title="TestLab">
+<directive domain="mongodb" name= "instruqt" title="TestLab" drawer="True">
 </directive>
-<directive domain="mongodb" name= "instruqt" title="Test Another Lab">
+<directive domain="mongodb" name= "instruqt" title="Test Another Lab" drawer="True">
 </directive>
 </section>
 </root>
@@ -2258,26 +2261,26 @@ Title
 =====
 
 .. instruqt::
+    :Title: Test Lab
 
 """,
         }
     ) as result:
         active_file = "page2.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
-        assert len(diagnostics) == 1
-        assert isinstance(diagnostics[0], DocUtilsParseError)
+        assert len(diagnostics) == 0
         page = result.pages[FileId(active_file)]
         print(ast_to_testing_string(page.ast))
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page2.txt" instruqt="True">
+<root fileid="page2.txt" >
 <section> 
 <heading id="title">
 <text> Title
 </text>
 </heading>
-<directive domain="mongodb" name="instruqt">
+<directive domain="mongodb" name="instruqt" title= "Test Lab">
 </directive>
 </section>
 </root>
