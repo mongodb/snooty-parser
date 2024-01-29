@@ -1159,6 +1159,9 @@ class IAHandler(Handler):
                 "title": [node.serialize() for node in self.title],
             }
 
+            print("SERIALIZE")
+            print(self)
+
             if self.project_name:
                 result["project_name"] = self.project_name
             if self.slug:
@@ -1178,6 +1181,7 @@ class IAHandler(Handler):
         super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
         self.entry_ids: Dict[str, List[Dict[str, str]]] = {}
+        print("IA Handler being initiated")
 
     def add_linked_data(
         self, card_group: n.Directive, entry_id: str, current_file: FileId
@@ -1211,6 +1215,8 @@ class IAHandler(Handler):
         ):
             return
 
+        print("NODE")
+        print(node)
         # A card-group directive can have data linked to a particular IA entry
         # for the side nav
         if node.name == "card-group":
@@ -1234,6 +1240,8 @@ class IAHandler(Handler):
             return
 
         for entry in node.get_child_of_type(n.Directive):
+            print("ENTRY FROM HANDLER")
+            print(entry)
             if entry.name != "entry":
                 line = node.span[0]
                 self.context.diagnostics[fileid_stack.current].append(
@@ -1251,6 +1259,8 @@ class IAHandler(Handler):
                 continue
 
             parsed = urllib.parse.urlparse(entry.options.get("url"))
+            print("PARSED")
+            print(parsed)
             if parsed.scheme:
                 url = entry.options.get("url")
                 slug = None
@@ -1290,6 +1300,8 @@ class IAHandler(Handler):
                 continue
 
             entry_id = entry.options.get("id")
+            print("ENTRY ID")
+            print(entry_id)
             self.ia.append(
                 IAHandler.IAData(
                     title,
@@ -1300,14 +1312,17 @@ class IAHandler(Handler):
                     entry_id,
                 )
             )
+            print("APPENDED")
 
             if entry_id:
                 self.entry_ids[entry_id] = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.ia = []
+        print("pager entered")
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        print("exiting page")
         if not self.ia:
             return
 
@@ -1857,6 +1872,7 @@ class Postprocessor:
         if not pages:
             return PostprocessorResult({}, {}, {}, self.targets)
 
+        print("RUN RUN RUN")
         self.pages = pages
         self.cancellation_token = cancellation_token
         context = Context(pages)
@@ -1866,10 +1882,14 @@ class Postprocessor:
         propagate_facets(self.pages, context)
 
         for project_pass in self.PASSES:
-            instances = [ty(context) for ty in project_pass]
+            print("PROJECT PASS")
+            print(project_pass)
+            instances = [ty(context) for ty in project_pass] 
+            print("INSTANCES")
+            print(instances)
             for instance in instances:
                 context.add(instance)
-
+            print("CONTEXT ADDED")
             self.run_event_parser(
                 [
                     (EventParser.OBJECT_START_EVENT, instance.enter_node)
@@ -1904,6 +1924,7 @@ class Postprocessor:
 
     @classmethod
     def generate_metadata(cls, context: Context) -> n.SerializedNode:
+        print("GENERATE METADATA")
         project_config = context[ProjectConfig]
         document: Dict[str, SerializableType] = {}
         document["title"] = project_config.title
@@ -1957,16 +1978,36 @@ class Postprocessor:
         node_listeners: Iterable[Tuple[str, Callable[[FileIdStack, n.Node], None]]],
         page_listeners: Iterable[Tuple[str, Callable[[FileIdStack, Page], None]]] = (),
     ) -> None:
+        print("RUN EVENT PARSER")
         event_parser = EventParser(self.cancellation_token)
         for event, node_listener in node_listeners:
+            print("ADDING EVENT LISTENER TO event")
+            print(event)
+            print(node_listener)
             event_parser.add_event_listener(event, node_listener)
 
+        print("ADDING PAGE LISTENERS")
         for event, page_listener in page_listeners:
+            print("ADDING PAGE LISTENER TO event")
+            print(event)
+            print(page_listener)
             event_parser.add_event_listener(event, page_listener)
 
+        print("FINISHED ADDING PAGE LISTNERES")
+
+        print("STARTING CONSUMPTION")
+        print("THE CONSUMED ITEMS:")
+        # for k, v in self.pages.items():
+        #     if k.suffix == ".txt":
+        #         print("K:")
+        #         print(k)
+        #         print("V:")
+        #         print(v)
         event_parser.consume(
             (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
         )
+        print("ENDING CONSUMPTION")
+        print("END RUN EVENT PARSER")
 
     @staticmethod
     def build_iatree(context: Context) -> Dict[str, SerializableType]:
@@ -1994,7 +2035,13 @@ class Postprocessor:
             if not isinstance(ia, List):
                 return
             for entry in ia:
+                print("MAYA ENTRY")
+                print(entry)
                 curr: Dict[str, SerializableType] = {**entry, "children": []}
+                print(curr)
+                
+                # print("RESULT CHILDREN")
+                # print(result["children"])
                 if isinstance(result["children"], List):
                     result["children"].append(curr)
 
@@ -2016,6 +2063,9 @@ class Postprocessor:
         title: Sequence[n.InlineNode] = context[HeadingHandler].get_title("index") or [
             n.Text((0,), context[ProjectConfig].title)
         ]
+
+        print("TITLE")
+        print(title)
         root: Dict[str, SerializableType] = {
             "title": [node.serialize() for node in title],
             "slug": "/",
