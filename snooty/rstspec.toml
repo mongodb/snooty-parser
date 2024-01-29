@@ -770,6 +770,7 @@ content_type = "block"
 content_type = "block"
 argument_type = "string"
 options.title = {type = "string", required = true}
+options.drawer = "boolean"
 
 [directive."mongodb:introduction"]
 content_type = "block"
