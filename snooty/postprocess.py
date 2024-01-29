@@ -1162,7 +1162,6 @@ class InstruqtHandler(Handler):
             return
 
         elif self.has_instruqt_drawer:
-            print("DUPE")
             self.context.diagnostics[fileid_stack.current].append(
                 DuplicateDirective(node.name, node.start[0])
             )
@@ -1170,6 +1169,9 @@ class InstruqtHandler(Handler):
 
         elif node.options.get("drawer"):
             self.has_instruqt_drawer = True
+            return
+
+        self.has_instruqt_drawer = False
 
 
 class IAHandler(Handler):
