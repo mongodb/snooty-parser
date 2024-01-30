@@ -1290,7 +1290,6 @@ class IAHandler(Handler):
                 continue
 
             entry_id = entry.options.get("id")
-
             self.ia.append(
                 IAHandler.IAData(
                     title,
@@ -1867,9 +1866,10 @@ class Postprocessor:
         propagate_facets(self.pages, context)
 
         for project_pass in self.PASSES:
-            instances = [ty(context) for ty in project_pass] 
+            instances = [ty(context) for ty in project_pass]
             for instance in instances:
                 context.add(instance)
+
             self.run_event_parser(
                 [
                     (EventParser.OBJECT_START_EVENT, instance.enter_node)
@@ -1995,7 +1995,6 @@ class Postprocessor:
                 return
             for entry in ia:
                 curr: Dict[str, SerializableType] = {**entry, "children": []}
-                
                 if isinstance(result["children"], List):
                     result["children"].append(curr)
 
@@ -2017,7 +2016,6 @@ class Postprocessor:
         title: Sequence[n.InlineNode] = context[HeadingHandler].get_title("index") or [
             n.Text((0,), context[ProjectConfig].title)
         ]
-
         root: Dict[str, SerializableType] = {
             "title": [node.serialize() for node in title],
             "slug": "/",
