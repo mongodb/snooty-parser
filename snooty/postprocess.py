@@ -2021,6 +2021,7 @@ class Postprocessor:
             "slug": "/",
             "children": [],
         }
+        
         iterate_ia(starting_page, root)
         return root
 
