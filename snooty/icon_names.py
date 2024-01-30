@@ -2074,7 +2074,7 @@ ICON_SET = {
     "mms-icon-ellipsis",
     "mms-icon-dragleft",
     "mms-icon-list-skinny",
-    "mms-icon-modify:",
+    "mms-icon-modify",
     "mms-icon-wrench",
     "mms-icon-grid",
     "mms-icon-ssl",
