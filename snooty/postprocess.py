@@ -1159,9 +1159,6 @@ class IAHandler(Handler):
                 "title": [node.serialize() for node in self.title],
             }
 
-            print("SERIALIZE")
-            print(self)
-
             if self.project_name:
                 result["project_name"] = self.project_name
             if self.slug:
@@ -1181,7 +1178,6 @@ class IAHandler(Handler):
         super().__init__(context)
         self.ia: List[IAHandler.IAData] = []
         self.entry_ids: Dict[str, List[Dict[str, str]]] = {}
-        print("IA Handler being initiated")
 
     def add_linked_data(
         self, card_group: n.Directive, entry_id: str, current_file: FileId
@@ -1302,6 +1298,17 @@ class IAHandler(Handler):
             entry_id = entry.options.get("id")
             print("ENTRY ID")
             print(entry_id)
+
+            # card_directives = list(entry.get_child_of_type(n.Directive))
+            # card_children = []
+            # for card in card_directives:
+            #     c = {}
+            #     c["headline"] = card.options.get("headline")
+            #     c["url"] = card.options.get("url")
+            #     c["icon"] = card.options.get("icon")
+            #     c["icon-alt"] = card.options.get("icon-alt")
+            #     card_children.append(c)
+
             self.ia.append(
                 IAHandler.IAData(
                     title,
@@ -1310,6 +1317,7 @@ class IAHandler(Handler):
                     project_name,
                     bool(entry.options.get("primary", False)) if project_name else None,
                     entry_id,
+                    # card_children
                 )
             )
             print("APPENDED")
@@ -2072,6 +2080,8 @@ class Postprocessor:
             "children": [],
         }
         iterate_ia(starting_page, root)
+        print("ROOT")
+        print(root)
         return root
 
     @classmethod
