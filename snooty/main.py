@@ -93,6 +93,8 @@ class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
 class Backend(ProjectBackend):
     def __init__(self) -> None:
         self.total_errors = 0
+        self.total_diagnostics = 0
+        self.total_pages = 0
         self.assets_written: Set[str] = set()
 
     def on_progress(self, progress: int, total: int, message: str) -> None:
@@ -100,6 +102,7 @@ class Backend(ProjectBackend):
 
     def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
         output = os.environ.get("DIAGNOSTICS_FORMAT", "text")
+        self.total_diagnostics += len(diagnostics)
 
         for diagnostic in diagnostics:
             did_you_mean: List[str] = []
@@ -184,7 +187,7 @@ class Backend(ProjectBackend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
-        pass
+        self.total_pages += 1
 
     def handle_asset(self, checksum: str, asset: Union[str, bytes]) -> None:
         pass
@@ -216,6 +219,9 @@ class ZipBackend(Backend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
+        super().handle_document(
+            build_identifiers, page_id, fully_qualified_pageid, document
+        )
         self.zip.writestr(
             f"documents/{page_id.without_known_suffix}.bson", bson.encode(document)
         )
@@ -335,6 +341,9 @@ def main() -> None:
         raise
     finally:
         backend.close()
+        print(
+            f"{backend.total_diagnostics} diagnostics; {backend.total_pages} pages; {len(backend.assets_written)} assets"
+        )
 
     if args["build"] and backend.total_errors > 0:
         sys.exit(
