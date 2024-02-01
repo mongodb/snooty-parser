@@ -7,7 +7,7 @@ from typing import Match
 
 CHANGELOG_PATH = Path("CHANGELOG.md")
 INCOMING_VERISON_PAT = re.compile(r"\d+\.\d+\.\d+")
-PAT = re.compile(r'"(\d+\.\d+\.\S+)"')
+PAT = re.compile(r'"(\d+(\.\d+)+\.\S+)"')
 PYPROJECT_VERSION_PAT = re.compile(
     r"(?<=^version = )\"(\d+\.\d+\.\S+)\"$", re.MULTILINE
 )

@@ -53,10 +53,6 @@ clean: ## Remove all build artifacts
 package: dist/${PACKAGE_NAME}
 
 cut-release: ## Release a new version of snooty. Must provide BUMP_TO_VERSION
-	@if [ $$(echo "${BUMP_TO_VERSION}" | grep -cE '^[0-9]+\.[0-9]+\.[0-9]+(-[[:alnum:]_-]+)?$$') -ne 1 ]; then \
-		echo "Must specify a valid BUMP_TO_VERSION (e.g. 'make cut-release BUMP_TO_VERSION=0.1.15')"; \
-		exit 1; \
-	fi
 	@git diff-index --quiet HEAD -- || { echo "Uncommitted changes found"; exit 1; }
 	$(MAKE) clean
 	tools/bump_version.py "${BUMP_TO_VERSION}"
