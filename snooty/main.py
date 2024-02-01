@@ -336,10 +336,7 @@ def main() -> None:
     finally:
         backend.close()
 
-    exit_code = 0
     if args["build"] and backend.total_errors > 0:
-        exit_code = (
+        sys.exit(
             1 if project.config.fail_on_diagnostics else EXIT_STATUS_ERROR_DIAGNOSTICS
         )
-
-    os._exit(exit_code)
