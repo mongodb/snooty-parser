@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.15.2] - 2024-01-03
+### Fixed
+
+- Revert fast parser exiting.
 
 ## [v0.15.2] - 2024-01-02
 
