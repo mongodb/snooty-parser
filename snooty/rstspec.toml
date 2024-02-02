@@ -1616,6 +1616,10 @@ type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailin
 help = """Link to a MongoDB University course."""
 type = {link = "https://learn.mongodb.com/courses%s"}
 
+[role."ak8so"]
+help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
+type = {link = "https://www.mongodb.com/docs/atlas/atlas-operator%s", ensure_trailing_slash = true}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
