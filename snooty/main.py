@@ -354,4 +354,4 @@ def main() -> None:
             1 if project.config.fail_on_diagnostics else EXIT_STATUS_ERROR_DIAGNOSTICS
         )
 
-    os._exit(exit_code)
+    sys.exit(exit_code)
