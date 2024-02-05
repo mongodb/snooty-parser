@@ -991,6 +991,7 @@ content_type = "block"
 [directive.entry]
 help = """Specifies a Snooty project, internal page, or external url that represents a child of this page."""
 argument_type = "string"
+content_type = "block"
 options.url = "string"
 options.project-name = "string"
 options.primary = "flag"
