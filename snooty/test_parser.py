@@ -3738,6 +3738,7 @@ def test_inconsistent_levels() -> None:
     project_config = ProjectConfig(ROOT_PATH, "")
     parser = rstparser.Parser(project_config, JSONVisitor)
 
+    # Re-opening a section level is not permitted
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -3760,6 +3761,7 @@ Query Result Format
     assert [type(d) for d in diagnostics] == [DocUtilsParseError]
     print(ast_to_testing_string(page.ast))
 
+    # Opening a new child level is fine
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -3799,6 +3801,8 @@ Query Result Format
 """,
     )
 
+    # Ensuring for my own satisfaction that a diagnostic is raised if we try shenanigans in non-directive
+    # block contexts.
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -3816,6 +3820,8 @@ Query Result Format
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [DocUtilsParseError]
 
+    # A less trivial error case where a child section is opened, but then subsequently
+    # the parent section is added to.
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -3837,8 +3843,8 @@ Procedure
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [DocUtilsParseError]
-    # print(ast_to_testing_string(page.ast))
 
+    # Multiple sub-sections is fine
     page, diagnostics = parse_rst(
         parser,
         path,
