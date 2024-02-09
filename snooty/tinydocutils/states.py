@@ -1112,7 +1112,7 @@ class RSTState(State):
             if level <= self.memo.minimum_level_stack[-1]:
                 self.parent.append(
                     self.reporter.error(
-                        "Block content cannot contain sections that are sibling to the parent element's section level",
+                        "Directives cannot contain sections that are sibling or parent to the parent element's section level (https://github.com/mongodb/snooty-parser/wiki/Section-Hierarchy-Must-Be-Linear)",
                         line=lineno,
                     )
                 )
