@@ -3744,3 +3744,139 @@ def test_duplicate_directive_option() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+
+def test_inconsistent_levels() -> None:
+    """DOP-3969"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Re-opening a section level is not permitted
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: shell
+
+      Additional Methods
+      ------------------
+
+      Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+    print(ast_to_testing_string(page.ast))
+
+    # Opening a new child level is fine
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: shell
+
+      Additional Methods
+      ~~~~~~~~~~~~~~~~~~
+
+      Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == []
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <section>
+        <heading id="query-result-format"><text>Query Result Format</text></heading>
+        <directive name="tabs" tabset="drivers">
+            <directive name="tab" tabid="shell"><text>MongoDB Shell</text>
+                <section>
+                    <heading id="additional-methods"><text>Additional Methods</text></heading>
+                    <paragraph><text>Testing</text></paragraph>
+                </section>
+            </directive>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    # Ensuring for my own satisfaction that a diagnostic is raised if we try shenanigans in non-directive
+    # block contexts.
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Query Result Format
+-------------------
+
+* Foobar
+* Additional Methods
+  ------------------
+
+  Testing
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+    # A less trivial error case where a child section is opened, but then subsequently
+    # the parent section is added to.
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Procedure
+---------
+
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Hello
+      ~~~~~
+
+      Example
+      -------
+""",
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [DocUtilsParseError]
+
+    # Multiple sub-sections is fine
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+Procedure
+---------
+
+.. tabs-platforms::
+
+   .. tab::
+      :tabid: windows
+
+      Hello
+      ~~~~~
+
+      Example
+      ~~~~~~~
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics

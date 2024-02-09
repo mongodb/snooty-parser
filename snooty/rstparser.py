@@ -531,7 +531,7 @@ class BaseDocutilsDirective(tinydocutils.directives.Directive):
 
         # Parse the content
         self.state.nested_parse(
-            self.content, self.content_offset, node, match_titles=True
+            self.content, self.content_offset, node, match_titles=True, empty_memo=True
         )
 
         return [node]
