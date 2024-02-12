@@ -24,13 +24,11 @@ test: lint ## Run unit tests
 dist/snooty/.EXISTS: pyproject.toml snooty/*.py snooty/gizaparser/*.py
 	-rm -rf snooty.dist dist
 	mkdir dist
-	echo 'from snooty import main; main.main()' > snootycli.py
 
 	if [ "`uname -ms`" = "Linux x86_64" ]; then \
 		poetry env use "`tools/fetch-pyston.sh`/pyston3" && poetry install; \
-	fi; LD_LIBRARY_PATH=pyston_2.3.5/lib/ poetry run cxfreeze --target-name snooty --target-dir dist/snooty snootycli.py
+	fi; poetry run python3 tools/run_pyinstaller.py
 
-	rm snootycli.py
 	install -m644 snooty/config.toml snooty/rstspec.toml snooty/taxonomy.toml LICENSE* dist/snooty/
 	touch $@
 
@@ -45,7 +43,7 @@ dist/${PACKAGE_NAME}.asc: dist/snooty-${VERSION}-${PLATFORM}.zip ## Build and si
 	gpg --armor --detach-sig $^
 
 clean: ## Remove all build artifacts
-	-rm -r snooty.tar.zip* snootycli.py
+	-rm -r snooty.tar.zip*
 	-rm -rf dist
 	-rm -rf .docs
 	-rm -r pyston_2.3.5
