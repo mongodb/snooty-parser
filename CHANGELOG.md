@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.0] - 2024-02-14
+
 ### Added
 
 - Enabling IA directives to support nested content for homepage redesign purposes (DOP-4300)
