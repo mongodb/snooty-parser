@@ -6,7 +6,7 @@ from typing import List, NoReturn, Optional, Tuple
 
 FILENAME = sys.argv[1]
 VERSION_PAT = re.compile(
-    r"^## \[(?P<version>v\d+\.\d+\.\d+)\] - (?P<date>\d+\-\d+\-\d+)$"
+    r"^## \[(?P<version>v\d+\.\d+(\.\d+)+)\] - (?P<date>\d+\-\d+\-\d+)$"
 )
 HEADING_PATTERN = re.compile(r"\n\n?#+[^\n]+\n\n?")
 H3_SECTIONS = ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security")

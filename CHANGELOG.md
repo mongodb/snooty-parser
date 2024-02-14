@@ -7,11 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.15.13] - 2024-01-11
+### Added
+
+- Enabling IA directives to support nested content for homepage redesign purposes (DOP-4300)
+- Log a final parse summary message (DOP-4336)
+- Parser identifies if an Instruqt lab is on the page (DOP-4279, DOP-4319, #558)
+- YAML caching support for faster builds (DOP-3742).
+- pre-determine image dimensions in parser (DOP-4207, #547, #548)
 
 ### Changed
 
-- DOP-4207: pre determine image dimensions in parser (#547)
+- Flag images for lazy loading depending (DOP-4225, #550)
+- Support multiple inline elements in a shared include substitution (DOP-4181)
+- Don't parse email literals (DOP-3285)
+
+### Fixed
+
+- Crash on malformed facets (DOP-4253)
+- Typo in the `mms-icon-modify` icon definition (DOP-4212)
+- Raise a diagnostic for section structures that cannot fit into a tree rather
+  than silently dropping the content (DOP-3969)
+
+## [v0.15.2.1] - 2024-02-01
+
+### Fixed
+
+- Revert fast parser exiting.
 
 ## [v0.15.2] - 2024-01-02
 
