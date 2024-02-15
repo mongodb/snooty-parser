@@ -7,5 +7,5 @@ DOP-NNNN
 
 ### README updates
 
-- [ ] This PR introduces changes that should be reflected in the README/HACKING.md, and I have made those updates.
-- [ ] This PR does not introduce changes that should be reflected in the README/HACKING.md
+- - [ ] This PR introduces changes that should be reflected in the README/HACKING.md, and I have made those updates.
+- - [ ] This PR does not introduce changes that should be reflected in the README/HACKING.md
