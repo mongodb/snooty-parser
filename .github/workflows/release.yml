@@ -12,10 +12,10 @@ jobs:
         platform: [ubuntu-20.04, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         architecture: 'x64'
@@ -29,7 +29,7 @@ jobs:
       id: build_package
       run: make package
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: packages
         path: dist/${{ steps.build_package.outputs.package_filename }}
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: packages
       - name: Get environment
@@ -58,4 +58,3 @@ jobs:
           artifactContentType: "application/zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
-          prerelease: true
