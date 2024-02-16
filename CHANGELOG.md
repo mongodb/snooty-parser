@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The macOS builds should now function (DOP-4374).
+
 ## [v0.16.0] - 2024-02-14
 
 ### Added
