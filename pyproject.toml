@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.rst"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.13" # Because of cx_freeze
+python = ">=3.8,<3.13" # Because of PyInstaller
 watchdog = "^1.0"
 requests = "^2.24"
 tomli = "^2.0"
