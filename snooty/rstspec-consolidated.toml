@@ -806,13 +806,6 @@ help = "Make a kicker (a subheader that is placed on top of the main header)."
 example = """.. kicker:: ${1: string}"""
 argument_type = "string"
 
-[directive."mongodb:mongo-web-shell"]
-help = """An instance of the web version of a Mongo shell"""
-options.version = "mws_version"
-example = """.. mongo-web-shell::
-   ${1::version: (string)}
-"""
-
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
 argument_type = ["path", "string", "uri"]
