@@ -16,7 +16,6 @@ card_type = ["small", "large"]
 card_group_type = ["default", "drivers"]
 charts_theme = ["light", "dark"]
 guide_categories = ["Getting Started"]
-mws_version = ["3.4", "3.6", "4.0", "4.2", "4.4", "5.0", "latest"]
 procedure_styles = ["normal", "connected"]
 user_level = ["beginner", "intermediate", "advanced"]
 changelog_versions = ["2.0"]
@@ -780,13 +779,6 @@ content_type = "block"
 help = "Make a kicker (a subheader that is placed on top of the main header)."
 example = """.. kicker:: ${1: string}"""
 argument_type = "string"
-
-[directive."mongodb:mongo-web-shell"]
-help = """An instance of the web version of a Mongo shell"""
-options.version = "mws_version"
-example = """.. mongo-web-shell::
-   ${1::version: (string)}
-"""
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
