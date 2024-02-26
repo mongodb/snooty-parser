@@ -1870,6 +1870,16 @@ drivers = [
   {id = "scala", title = "Scala"},
   {id = "swift-async", title = "Swift (Async)"},
   {id = "swift-sync", title = "Swift (Sync)"},
+  {id = "cpp", title = "C++ SDK"},
+  {id = "flutter", title = "Flutter SDK"},
+  {id = "android", title = "Java SDK"},
+  {id = "kotlin", title = "Kotlin SDK"},
+  {id = "dotnet", title = ".NET SDK"},
+  {id = "node", title = "Node.js SDK"},
+  {id = "react-native", title = "React Native SDK"},
+  {id = "ios", title = "Swift SDK"},
+  {id = "web", title = "Web SDK"},
+
 ]
 auth = [
   {id = "uidpwd", title = "Username and Password"},
