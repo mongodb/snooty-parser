@@ -1933,6 +1933,9 @@ def test_figure() -> None:
 
 .. figure:: /test_parser/sample.jpg
    :alt: sample jpeg
+
+.. figure:: /test_project/source/general-features-tools.svg
+   :alt: sample svg
 """,
     )
     page.finish(diagnostics)
@@ -1946,6 +1949,9 @@ def test_figure() -> None:
     </directive>
     <directive name="figure" alt="sample jpeg" checksum="423345d0e4268d547aeaef46b74479f5df6e949d2b3288de1507f1f3082805ae" width="100.0" height="100.0">
         <text>/test_parser/sample.jpg</text>
+    </directive>
+    <directive name="figure" alt="sample svg" checksum="d769706e8087b6f08954b7f66d0cb167bc73f669c3d4b2ebb4af4de27e51c54f" width="56.0" height="56.0">
+        <text>/test_project/source/general-features-tools.svg</text>
     </directive>
 </root>""",
     )

@@ -38,7 +38,7 @@ from .n import FileId, SerializableType
 FileSource = Union[Path, str]
 PAT_VARIABLE = re.compile(r"{\+([\w-]+)\+}")
 PAT_GIT_MARKER = re.compile(r"^<<<<<<< .*?^=======\n.*?^>>>>>>>", re.M | re.S)
-IMAGE_SIZING_EXT = {".png", ".avif", ".jpg", ".jpeg", ".webp"}
+IMAGE_SIZING_EXT = {".png", ".avif", ".jpg", ".jpeg", ".webp", ".svg"}
 BuildIdentifierSet = Dict[str, Optional[str]]
 logger = logging.getLogger(__name__)
 
