@@ -1796,6 +1796,7 @@ drivers = [
   {id = "csharp", title = "C#"},
   {id = "dart", title = "Dart"},
   {id = "go", title = "Go"},
+  {id = "java", title = "Java"},
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
   {id = "javascript", title = "Javascript"},
@@ -1813,6 +1814,7 @@ drivers = [
   {id = "rust-async", title = "Rust (Async)"},
   {id = "rust-sync", title = "Rust (Sync)"},
   {id = "scala", title = "Scala"},
+  {id = "swift", title = "Swift"},
   {id = "swift-async", title = "Swift (Async)"},
   {id = "swift-sync", title = "Swift (Sync)"},
   {id = "typescript", title = "Typescript"}
