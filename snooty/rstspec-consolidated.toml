@@ -1774,7 +1774,7 @@ drivers = [
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
   {id = "javascript", title = "Javascript"},
-  {id = "kotlin", title = "Kotlin SDK"},
+  {id = "kotlin", title = "Kotlin (Java SDK)"},
   {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
   {id = "kotlin-sync", title = "Kotlin (Sync)"},
   {id = "motor", title = "Motor"},
