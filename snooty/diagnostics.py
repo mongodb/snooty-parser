@@ -286,7 +286,7 @@ class InvalidTableStructure(Diagnostic):
 
 
 class InvalidNestedTabStructure(Diagnostic):
-    severity = Diagnostic.Level.warning
+    severity = Diagnostic.Level.info
 
     def __init__(
         self,
