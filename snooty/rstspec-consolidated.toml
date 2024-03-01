@@ -1762,16 +1762,25 @@ platforms = [
   {id = "linux", title = "Linux"},
 ]
 drivers = [
+  {id = "atlas-cli", title = "Atlas CLI"},
+  {id = "atlas-ui", title = "MongoDB Atlas"},
   {id = "shell", title = "MongoDB Shell"},
   {id = "compass", title = "Compass"},
   {id = "c", title = "C"},
   {id = "cpp", title = "C++11"},
   {id = "csharp", title = "C#"},
+  {id = "dart", title = "Dart"},
   {id = "go", title = "Go"},
+  {id = "java", title = "Java"},
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
+  {id = "javascript", title = "Javascript"},
+  {id = "kotlin", title = "Kotlin (Java SDK)"},
+  {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
+  {id = "kotlin-sync", title = "Kotlin (Sync)"},
   {id = "motor", title = "Motor"},
   {id = "nodejs", title = "Node.js"},
+  {id = "objectivec", title = "Objective-C"},
   {id = "perl", title = "Perl"},
   {id = "php", title = "PHP"},
   {id = "python", title = "Python"},
@@ -1780,8 +1789,10 @@ drivers = [
   {id = "rust-async", title = "Rust (Async)"},
   {id = "rust-sync", title = "Rust (Sync)"},
   {id = "scala", title = "Scala"},
+  {id = "swift", title = "Swift"},
   {id = "swift-async", title = "Swift (Async)"},
   {id = "swift-sync", title = "Swift (Sync)"},
+  {id = "typescript", title = "Typescript"}
 ]
 auth = [
   {id = "uidpwd", title = "Username and Password"},
