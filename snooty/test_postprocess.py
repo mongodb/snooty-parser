@@ -26,6 +26,7 @@ from .diagnostics import (
     MissingChild,
     MissingTab,
     MissingTocTreeEntry,
+    OrphanedPage,
     SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
@@ -250,10 +251,12 @@ Page One Title
 
         active_file = "page1.txt"
         diagnostics = result.diagnostics[FileId(active_file)]
-        assert len(diagnostics) == 3
-        assert isinstance(diagnostics[0], InvalidIAEntry)
-        assert isinstance(diagnostics[1], MissingTocTreeEntry)
-        assert isinstance(diagnostics[2], InvalidIAEntry)
+        assert {type(d) for d in diagnostics} == {
+            InvalidIAEntry,
+            MissingTocTreeEntry,
+            InvalidIAEntry,
+            OrphanedPage,
+        }
         page = result.pages[FileId(active_file)]
         check_ast_testing_string(
             page.ast,
@@ -330,7 +333,7 @@ def test_ia_linked_data() -> None:
    .. card::
       :headline: C++
       :url: https://www.mongodb.com/docs/drivers/cxx/
-   
+
    .. card::
       :headline: No url
 
@@ -346,6 +349,8 @@ def test_ia_linked_data() -> None:
             Path(
                 "source/page1.txt"
             ): """
+:orphan:
+
 .. card-group::
    :columns: 4
    :layout: default
@@ -489,6 +494,8 @@ Guides
             Path(
                 "source/path/to/guide1.txt"
             ): """
+:orphan:
+
 =======
 Guide 1
 =======
@@ -1497,6 +1504,8 @@ Program 1
             Path(
                 "source/links.txt"
             ): """
+:orphan:
+
 * :option:`realmcli export --verbose`
 * :option:`realmcli export just-silly-now --verbose`
 * :option:`realmcli import --verbose`
@@ -1510,7 +1519,7 @@ Program 1
         check_ast_testing_string(
             result.pages[FileId("links.txt")].ast,
             """
-<root fileid="links.txt">
+<root fileid="links.txt" orphan="">
 <list enumtype="unordered">
     <listItem>
         <paragraph>
@@ -2196,7 +2205,7 @@ Title
             page.ast,
             """
 <root fileid="page.txt" instruqt="True">
-<section> 
+<section>
 <heading id="title">
 <text> Title
 </text>
@@ -2237,7 +2246,7 @@ Title
             page.ast,
             """
 <root fileid="page1.txt" instruqt="True">
-<section> 
+<section>
 <heading id="title">
 <text> Title
 </text>
@@ -2275,7 +2284,7 @@ Title
             page.ast,
             """
 <root fileid="page2.txt" >
-<section> 
+<section>
 <heading id="title">
 <text> Title
 </text>
@@ -3330,3 +3339,47 @@ Image test
 </root>
         """,
         )
+
+
+def test_orphan_diagnostic() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+==========
+Index Page
+==========
+
+.. toctree::
+
+   /not-an-orphan
+            """,
+            Path(
+                "source/orphan.txt"
+            ): """
+=========
+An Orphan
+=========
+            """,
+            Path(
+                "source/marked-orphan.txt"
+            ): """
+:orphan:
+
+===============
+A Marked Orphan
+===============
+            """,
+            Path(
+                "source/not-an-orphan.txt"
+            ): """
+=============
+Not An Orphan
+=============
+            """,
+        }
+    ) as result:
+        assert {
+            k: [type(d) for d in v] for k, v in result.diagnostics.items() if v
+        } == {FileId("orphan.txt"): [OrphanedPage]}

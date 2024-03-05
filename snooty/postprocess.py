@@ -58,6 +58,7 @@ from .diagnostics import (
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
+    OrphanedPage,
     SubstitutionRefError,
     TargetNotFound,
     UnnamedPage,
@@ -2086,6 +2087,7 @@ class Postprocessor:
             [project.name for project in context[ProjectConfig].associated_products]
         )
         ref_project_set: Set[Tuple[Optional[str], Optional[str]]] = set()
+        visited_fileids: Set[FileId] = {starting_fileid}
         cls.find_toctree_nodes(
             context,
             starting_fileid,
@@ -2094,8 +2096,17 @@ class Postprocessor:
             toc_landing_pages,
             associated_project_names,
             ref_project_set,
-            {starting_fileid},
+            visited_fileids,
         )
+
+        # Locate orphaned files
+        for fileid in context.pages:
+            if fileid.suffix != ".txt":
+                continue
+
+            if fileid not in visited_fileids:
+                if "orphan" not in context.pages[fileid].ast.options:
+                    context.diagnostics[fileid].append(OrphanedPage())
 
         return root
 
@@ -2109,7 +2120,7 @@ class Postprocessor:
         toc_landing_pages: List[str],
         associated_project_names: Set[str],
         external_nodes: Set[Tuple[Optional[str], Optional[str]]],
-        visited_file_ids: Set[FileId] = set(),
+        visited_file_ids: Set[FileId],
     ) -> None:
         """Iterate over AST to find toctree directives and construct their nodes for the unified toctree"""
 
@@ -2205,6 +2216,7 @@ class Postprocessor:
 
                     # Don't recurse on the index page
                     if slug_fileid not in visited_file_ids:
+                        visited_file_ids.add(slug_fileid)
                         new_ast = context.pages[slug_fileid].ast
                         cls.find_toctree_nodes(
                             context,
@@ -2214,7 +2226,7 @@ class Postprocessor:
                             toc_landing_pages,
                             associated_project_names,
                             external_nodes,
-                            visited_file_ids.union({slug_fileid}),
+                            visited_file_ids,
                         )
 
                 if toctree_node:
