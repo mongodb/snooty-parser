@@ -116,6 +116,18 @@ def eligible_for_paragraph_to_block_substitution(node: tinydocutils.nodes.Node) 
     )
 
 
+def filter_diagnostics(
+    config: ProjectConfig, diagnostics: List[Diagnostic]
+) -> List[Diagnostic]:
+    """Return only diagnostics which are not listed as being muted in the project configuration."""
+    if not config.silence_diagnostics:
+        return diagnostics
+
+    return [
+        d for d in diagnostics if not d.__class__.__name__ in config.silence_diagnostics
+    ]
+
+
 @dataclass
 class _DefinitionListTerm(n.InlineParent):
     """A vate node used for internal book-keeping that should not be exported to the AST."""
@@ -1543,7 +1555,7 @@ class _Project:
 
         with self._backend_lock:
             for source_path, diagnostic_list in diagnostics.items():
-                self.backend.on_diagnostics(source_path, diagnostic_list)
+                self.on_diagnostics(source_path, diagnostic_list)
 
         for page in pages:
             self._page_updated(page, diagnostic_list)
@@ -1580,7 +1592,7 @@ class _Project:
 
         for nested_path, diagnostics in nested_projects_diagnostics.items():
             with self._backend_lock:
-                self.backend.on_diagnostics(nested_path, diagnostics)
+                self.on_diagnostics(nested_path, diagnostics)
 
         all_yaml_diagnostics: Dict[FileId, List[Diagnostic]] = defaultdict(list)
         with util.PerformanceLogger.singleton().start("generate yaml"):
@@ -1597,7 +1609,7 @@ class _Project:
                 if key not in seen_paths:
                     self.pages.set_orphan_diagnostics(key, all_yaml_diagnostics[key])
                     with self._backend_lock:
-                        self.backend.on_diagnostics(key, all_yaml_diagnostics[key])
+                        self.on_diagnostics(key, all_yaml_diagnostics[key])
 
         if postprocess:
             postprocessor_result = self.postprocess()
@@ -1644,10 +1656,10 @@ class _Project:
         logger.debug("flush_and_wait() finished")
         with self._backend_lock:
             for fileid, diagnostics in result.diagnostics.items():
-                self.backend.on_diagnostics(fileid, diagnostics)
+                self.on_diagnostics(fileid, diagnostics)
 
             for fileid, diagnostics in merged_diagnostics.items():
-                self.backend.set_diagnostics(fileid, diagnostics)
+                self.set_diagnostics(fileid, diagnostics)
 
         return result
 
@@ -1694,6 +1706,12 @@ class _Project:
         self.pages.add_to_cache(cache)
         cache.ingest_yaml(self.yaml_domain)
         self.cache_file.persist(cache, optimize=optimize)
+
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.backend.set_diagnostics(path, filter_diagnostics(self.config, diagnostics))
+
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
+        self.backend.on_diagnostics(path, filter_diagnostics(self.config, diagnostics))
 
     def _page_updated(self, page: Page, diagnostics: Sequence[Diagnostic]) -> None:
         """Update any state associated with a parsed page."""
@@ -1744,7 +1762,7 @@ class _Project:
             diagnostics_copy,
         )
         with self._backend_lock:
-            self.backend.on_diagnostics(page.fileid, diagnostics_copy)
+            self.on_diagnostics(page.fileid, diagnostics_copy)
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
