@@ -14,6 +14,7 @@ from . import n
 from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
+    DocUtilsParseError,
     GitMergeConflictArtifactFound,
     NestedProject,
 )
@@ -414,3 +415,22 @@ Testing {+foo+}
                     assert _project_copy.cache.stats == CacheStats(
                         hits=2, misses=0, errors=0
                     )
+
+
+def test_silencing_diagnostics() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): r"""
+name = "test_silencing_diagnostics"
+silence_diagnostics = ["OrphanedPage"]
+""",
+            Path("source/index.txt"): "====\nfoobarbaz\n====",
+            Path("source/orphan.txt"): r"",
+        }
+    ) as backend:
+        assert {k: [type(d) for d in v] for k, v in backend.diagnostics.items()} == {
+            FileId("index.txt"): [DocUtilsParseError],
+            FileId("orphan.txt"): [],
+        }

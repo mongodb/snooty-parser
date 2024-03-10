@@ -14,6 +14,7 @@ from typing import (
     Match,
     MutableSequence,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -197,6 +198,7 @@ class AssociatedProduct:
 class ProjectConfig:
     root: Path = field(metadata={"nohash": True})
     name: str
+    silence_diagnostics: Set[str] = field(default_factory=set)
     fail_on_diagnostics: bool = field(default=False)
     default_domain: Optional[str] = field(default=None)
     title: str = field(default="untitled")
