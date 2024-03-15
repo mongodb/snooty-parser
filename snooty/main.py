@@ -20,6 +20,7 @@ Environment variables:
   SNOOTY_PERF_SUMMARY       0, 1 where 0 is default
 
 """
+
 import json
 import logging
 import multiprocessing
@@ -48,6 +49,7 @@ PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
+EXT_FOR_PAGE = ".txt"
 
 
 class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
@@ -189,6 +191,8 @@ class Backend(ProjectBackend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
+        if page_id.suffix != EXT_FOR_PAGE:
+            return
         self.total_pages += 1
 
     def handle_asset(self, checksum: str, asset: Union[str, bytes]) -> None:
@@ -221,6 +225,8 @@ class ZipBackend(Backend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
+        if page_id.suffix != EXT_FOR_PAGE:
+            return
         super().handle_document(
             build_identifiers, page_id, fully_qualified_pageid, document
         )
