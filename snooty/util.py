@@ -63,6 +63,7 @@ PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
+EXT_FOR_PAGE = ".txt"
 EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
 SNOOTY_TOML = "snooty.toml"
 PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__

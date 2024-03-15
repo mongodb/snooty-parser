@@ -70,7 +70,7 @@ from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
-from .util import SOURCE_FILE_EXTENSIONS, bundle
+from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -782,7 +782,7 @@ class BannerHandler(Handler):
         self, targets: List[str], page: Page, fileid: FileId
     ) -> bool:
         """Check if page matches target specified, but assert to ensure this does not run on includes"""
-        assert fileid.suffix == ".txt"
+        assert fileid.suffix == EXT_FOR_PAGE
 
         for target in targets:
             if page.fileid.match(target):
@@ -1999,7 +1999,7 @@ class Postprocessor:
             event_parser.add_event_listener(event, page_listener)
 
         event_parser.consume(
-            (k, v) for k, v in self.pages.items() if k.suffix == ".txt"
+            (k, v) for k, v in self.pages.items() if k.suffix == EXT_FOR_PAGE
         )
 
     @staticmethod
@@ -2101,7 +2101,7 @@ class Postprocessor:
 
         # Locate orphaned files
         for fileid in context.pages:
-            if fileid.suffix != ".txt":
+            if fileid.suffix != EXT_FOR_PAGE:
                 continue
 
             if fileid not in visited_fileids:

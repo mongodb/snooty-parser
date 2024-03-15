@@ -42,14 +42,13 @@ from .n import FileId, SerializableType
 from .page import Page
 from .parser import Project, ProjectBackend, ProjectLoadError
 from .types import BuildIdentifierSet, ProjectConfig
-from .util import SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
+from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, HTTPCache, PerformanceLogger
 
 PARANOID_MODE = os.environ.get("SNOOTY_PARANOID", "0") == "1"
 PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
-EXT_FOR_PAGE = ".txt"
 
 
 class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
