@@ -80,6 +80,17 @@ def test_backend() -> None:
         },
     ]
 
+    # test skipping non .txt files
+    backend = main.Backend()
+    backend.handle_document(
+        {}, FileId("foo/bar.txt"), "foo/bar.txt", {"page_id": "bar.txt"}
+    )
+    assert backend.total_pages == 1
+    backend.handle_document(
+        {}, FileId("foo/bar.rst"), "foo/bar.rst", {"page_id": "bar.rst"}
+    )
+    assert backend.total_pages == 1
+
 
 def test_parser_failure() -> None:
     return_code = subprocess.call(
