@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.2] - 2024-03-21
+
 ### Added
 
 - A diagnostic for orphaned pages that do not exist within the project toctree (DOP-4404)
