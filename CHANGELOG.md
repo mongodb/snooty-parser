@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A diagnostic for orphaned pages that do not exist within the project toctree (DOP-4404)
+
+### Changed
+
+- SVGs now have an explicit height/width set if possible (#569)
+- Invalid nested tabs are now presented as an INFO level diagnostic (DOP-4320)
+- Non-pages (i.e. pages that do not end with `.txt`) are no longer included in the output bundle (DOP-4447, #574)
+
+### Removed
+
+- The `mongo-web-shell` directive (DOP-4368-A, #566)
+
 ## [v0.16.1] - 2024-02-16
 
 ### Fixed
