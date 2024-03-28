@@ -15,15 +15,27 @@ from .parse import parse
 class Extract(Inheritable, HeadingMixin):
     content: Optional[str]
     only: Optional[str]
+    pre: Optional[str]
+    post: Optional[str]
 
     def render(self, page: Page, rst_parser: EmbeddedRstParser) -> List[n.Node]:
         if self.only is not None:
             raise NotImplementedError('extracts: "only" not implemented')
 
         children: List[n.Node] = []
+
+        if self.pre:
+            result = rst_parser.parse_block(self.pre, self.line)
+            children.extend(result)
+
         children.extend(self.render_heading(rst_parser))
+
         if self.content:
             children.extend(rst_parser.parse_block(self.content, self.line))
+
+        if self.post:
+            result = rst_parser.parse_block(self.post, self.line)
+            children.extend(result)
 
         return children
 

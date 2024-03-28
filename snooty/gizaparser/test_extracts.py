@@ -28,7 +28,7 @@ def test_extract() -> None:
         category.add(fileid, text, extracts, [])
         assert len(parse_diagnostics) == 1
         assert parse_diagnostics[0].severity == Diagnostic.Level.error
-        assert parse_diagnostics[0].start == (21, 0)
+        assert parse_diagnostics[0].start == (25, 0)
         assert len(extracts) == 5
         return parse_diagnostics
 
@@ -62,12 +62,14 @@ def test_extract() -> None:
         pages[0].ast,
         """<root fileid="includes/extracts-test.yaml">
     <directive name="extract">
+        <paragraph><text>a pre note</text></paragraph>
         <paragraph>
             <text>By default, MongoDB stores its data files in</text>
             <literal><text>/var/lib/mongo</text></literal>
             <text> and its\nlog files in </text>
             <literal><text>/var/log/mongodb</text></literal><text>.</text>
         </paragraph>
+        <paragraph><text>a post note</text></paragraph>
     </directive>
 </root>""",
     )
@@ -83,7 +85,7 @@ def test_extract() -> None:
 
     # XXX: We need to track source file information for each property.
     # Line number 1 here should correspond to parent_path, not path.
-    assert set(d.start[0] for d in all_diagnostics[fileid]) == set((21, 13, 1))
+    assert set(d.start[0] for d in all_diagnostics[fileid]) == set((25, 17, 1))
 
 
 def test_inheritance() -> None:
@@ -162,7 +164,7 @@ inherit:
 replacement:
   role: ":method:`db.collection.aggregate()`"
   interface: "method"
-post: |
+invalid: |
   Document validation only occurs if you are using the
   :pipeline:`$out` operator in your aggregation operation.
 ---
@@ -193,7 +195,7 @@ inherit:
 replacement:
   role: ":method:`db.collection.aggregate()`"
   interface: "method"
-post: |
+invalid: |
   Document validation only occurs if you are using the
   :pipeline:`$out` operator in your aggregation operation.
 ...
