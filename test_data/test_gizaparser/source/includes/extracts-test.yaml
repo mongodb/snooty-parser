@@ -2,6 +2,10 @@ ref: _base
 content: |
   By default, MongoDB stores its data files in {{mongodDatadir}} and its
   log files in ``/var/log/mongodb``.
+pre: |
+  a pre note
+post: |
+  a post note
 ---
 ref: installation-directory-rhel
 inherit:
