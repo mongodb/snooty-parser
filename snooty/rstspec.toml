@@ -1104,6 +1104,10 @@ type = "explicit_title"
 help = """Link to the api.mongodb.com API index."""
 type = {link = "https://api.mongodb.com/%s"}
 
+[role.asp]
+help = """Link to the Atlas Search Playground."""
+type = {link = "https://search-playground.mongodb.com/snapshots%s"}
+
 [role.aws]
 help = """Link to the Amazon AWS documentation."""
 type = {link = "http://docs.aws.amazon.com%s"}
