@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `extracts` giza compatibility layer now supports the `pre` and `post` keys (DOP-4495).
+
 ## [v0.16.3] - 2024-03-21
 
 ### Added
