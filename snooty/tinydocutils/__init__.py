@@ -76,7 +76,6 @@ from . import nodes, parsers, statemachine, states
 
 
 class Parser(parsers.Parser):
-
     """The reStructuredText parser."""
 
     def __init__(self, inliner: Optional[states.Inliner] = None) -> None:

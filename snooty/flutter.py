@@ -25,8 +25,7 @@ class HasAnnotations(Protocol):
 
 
 class Constructable(Protocol):
-    def __init__(self, **kwargs: object) -> None:
-        ...
+    def __init__(self, **kwargs: object) -> None: ...
 
 
 _A = TypeVar("_A", bound=HasAnnotations)
@@ -80,12 +79,14 @@ class _TypeThunk:
             # in the lambda is a ~~hack~~ to avoid messing up the variable binding.
             fields: Dict[str, _Field] = {
                 field.name: _Field(
-                    field.default_factory
-                    if field.default_factory is not MISSING
-                    else (
-                        (make_factory(field.default))
-                        if field.default is not MISSING
-                        else None
+                    (
+                        field.default_factory
+                        if field.default_factory is not MISSING
+                        else (
+                            (make_factory(field.default))
+                            if field.default is not MISSING
+                            else None
+                        )
                     ),
                     hints[field.name],
                 )

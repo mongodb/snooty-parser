@@ -166,7 +166,6 @@ class MarkupMismatch(Exception):
 
 
 class Inliner:
-
     """
     Parse inline markup; call the `parse()` method.
     """
@@ -826,7 +825,6 @@ class StateMachineMemo:
 
 
 class RSTStateMachine(StateMachine):
-
     """
     reStructuredText's master StateMachine.
 
@@ -893,7 +891,6 @@ class RSTStateMachine(StateMachine):
 
 
 class RSTState(State):
-
     """
     reStructuredText State superclass.
 
@@ -1023,9 +1020,9 @@ class RSTState(State):
         if blank_finish_state is None:
             blank_finish_state = initial_state
 
-        state_machine.get_blank_finish_state(
-            blank_finish_state
-        ).blank_finish = blank_finish
+        state_machine.get_blank_finish_state(blank_finish_state).blank_finish = (
+            blank_finish
+        )
         for key, value in extra_settings.items():
             setattr(state_machine.states[initial_state], key, value)
         state_machine.run_nested_sm(
@@ -1240,7 +1237,6 @@ def _lowerroman_to_int(s: str) -> int:
 
 
 class Body(RSTState):
-
     """
     Generic classifier of the first line of a block.
     """
@@ -2636,7 +2632,6 @@ class Body(RSTState):
 
 
 class SpecializedBody(Body):
-
     """
     Superclass for second and subsequent compound element members.  Compound
     elements are lists and list-like constructs.
@@ -2768,7 +2763,6 @@ class SpecializedBody(Body):
 
 
 class BulletList(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent bullet_list list_items."""
 
     def bullet(
@@ -2788,7 +2782,6 @@ class BulletList(SpecializedBody, HaveBlankFinish):
 
 
 class DefinitionList(SpecializedBody):
-
     """Second and subsequent definition_list_items."""
 
     def text(
@@ -2802,7 +2795,6 @@ class DefinitionList(SpecializedBody):
 
 
 class EnumeratedList(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent enumerated_list list_items."""
 
     def enumerator(
@@ -2839,7 +2831,6 @@ class EnumeratedList(SpecializedBody, HaveBlankFinish):
 
 
 class FieldList(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent field_list fields."""
 
     def field_marker(
@@ -2856,7 +2847,6 @@ class FieldList(SpecializedBody, HaveBlankFinish):
 
 
 class OptionList(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent option_list option_list_items."""
 
     def option_marker(
@@ -2876,7 +2866,6 @@ class OptionList(SpecializedBody, HaveBlankFinish):
 
 
 class ExtensionOptions(FieldList):
-
     """
     Parse field_list fields for extension options.
 
@@ -2898,7 +2887,6 @@ class ExtensionOptions(FieldList):
 
 
 class LineBlock(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent lines of a line_block."""
 
     def line_block(
@@ -2920,7 +2908,6 @@ class LineBlock(SpecializedBody, HaveBlankFinish):
 
 
 class Explicit(SpecializedBody, HaveBlankFinish):
-
     """Second and subsequent explicit markup construct."""
 
     def explicit_markup(
@@ -2949,7 +2936,6 @@ class Explicit(SpecializedBody, HaveBlankFinish):
 
 
 class SubstitutionDef(Body, HaveBlankFinish):
-
     """
     Parser for the contents of a substitution_definition element.
     """
@@ -2998,7 +2984,6 @@ class SubstitutionDef(Body, HaveBlankFinish):
 
 
 class Text(RSTState):
-
     """
     Classifier of second line of a text block.
 
@@ -3226,7 +3211,6 @@ class Text(RSTState):
 
 
 class SpecializedText(Text):
-
     """
     Superclass for second and subsequent lines of Text-variants.
 
@@ -3291,7 +3275,6 @@ class SpecializedText(Text):
 
 
 class Definition(SpecializedText, HaveBlankFinish):
-
     """Second line of potential definition_list_item."""
 
     def __init__(self, state_machine: StateMachine, debug: bool = False) -> None:
@@ -3323,7 +3306,6 @@ class Definition(SpecializedText, HaveBlankFinish):
 
 
 class Line(SpecializedText):
-
     """
     Second line of over- & underlined section title or transition marker.
     """

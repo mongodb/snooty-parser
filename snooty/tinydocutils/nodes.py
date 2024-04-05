@@ -49,7 +49,6 @@ from . import frontend
 
 
 class Node:
-
     """Abstract base class of nodes in a document tree."""
 
     parent: "Optional[Element]" = None
@@ -215,7 +214,6 @@ def unescape(text: str, restore_backslashes: bool = False) -> str:
 
 
 class Text(Node):
-
     """
     Instances are terminal nodes (leaves) containing text only; no child
     nodes or attributes.  Initialize by passing a string to the constructor.
@@ -253,7 +251,6 @@ class Text(Node):
 
 
 class Element(Node):
-
     """
     `Element` is the superclass to all specific elements.
 
@@ -530,7 +527,6 @@ ConcreteNode = Union[Text, Element]
 
 
 class TextElement(Element):
-
     """
     An element which directly contains text.
 
@@ -562,7 +558,6 @@ class TextElement(Element):
 
 
 class FixedTextElement(TextElement):
-
     """An element which directly contains preformatted text."""
 
     def __init__(
@@ -615,7 +610,6 @@ class Inline:
 
 
 class document(Root, Structural, Element):
-
     """
     The document root element.
 
@@ -1073,7 +1067,6 @@ class entry(Element):
 
 
 class system_message(PreBibliographic, Element):
-
     """
     System message element.
 
@@ -1143,7 +1136,6 @@ class substitution_reference(Inline, TextElement):
 
 
 class NodeVisitor(Protocol):
-
     """
     "Visitor" pattern [GoF95]_ abstract superclass implementation for
     document tree traversals.
@@ -1171,15 +1163,12 @@ class NodeVisitor(Protocol):
        1995.
     """
 
-    def dispatch_visit(self, node: Node) -> None:
-        ...
+    def dispatch_visit(self, node: Node) -> None: ...
 
-    def dispatch_departure(self, node: Node) -> None:
-        ...
+    def dispatch_departure(self, node: Node) -> None: ...
 
 
 class TreePruningException(Exception):
-
     """
     Base class for `NodeVisitor`-related tree pruning exceptions.
 
@@ -1192,7 +1181,6 @@ class TreePruningException(Exception):
 
 
 class SkipChildren(TreePruningException):
-
     """
     Do not visit any children of the current node.  The current node's
     siblings and ``depart_...`` method are not affected.
@@ -1202,7 +1190,6 @@ class SkipChildren(TreePruningException):
 
 
 class SkipSiblings(TreePruningException):
-
     """
     Do not visit any more siblings (to the right) of the current node.  The
     current node's children and its ``depart_...`` method are not affected.
@@ -1212,7 +1199,6 @@ class SkipSiblings(TreePruningException):
 
 
 class SkipNode(TreePruningException):
-
     """
     Do not visit the current node's children, and do not call the current
     node's ``depart_...`` method.
@@ -1222,7 +1208,6 @@ class SkipNode(TreePruningException):
 
 
 class SkipDeparture(TreePruningException):
-
     """
     Do not call the current node's ``depart_...`` method.  The current node's
     children and siblings are not affected.
@@ -1232,7 +1217,6 @@ class SkipDeparture(TreePruningException):
 
 
 class StopTraversal(TreePruningException):
-
     """
     Stop the traversal alltogether.  The current node's ``depart_...`` method
     is not affected.  The parent nodes ``depart_...`` methods are also called
@@ -1388,7 +1372,6 @@ class ErrorOutput:
 
 
 class Reporter:
-
     """
     Info/warning/error reporter and ``system_message`` element generator.
 
