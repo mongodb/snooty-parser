@@ -29,9 +29,9 @@ jobs:
       id: build_package
       run: make package
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: package-${{ matrix.platform }}
         path: dist/${{ steps.build_package.outputs.package_filename }}
 
   release:
@@ -40,9 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: packages
+          path: packages
+          pattern: package-*
+          merge-multiple: true
       - name: Get environment
         id: environment
         run: |
@@ -50,7 +52,7 @@ jobs:
           echo "tag_name=$(echo ${{ github.ref }} | cut -d / -f 3)" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
-        uses: ncipollo/release-action@4874428bc07f8473128b16dfb628a0bcfb6ca10d
+        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
         with:
           tag: ${{ steps.environment.outputs.tag_name }}
           name: "Release: [${{ steps.environment.outputs.tag_name }}] - ${{ steps.environment.outputs.date }}"
