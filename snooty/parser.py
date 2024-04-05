@@ -1356,14 +1356,11 @@ class ProjectBackend:
     def on_config(self, config: ProjectConfig, branch: str) -> None:
         pass
 
-    def on_progress(self, progress: int, total: int, message: str) -> None:
-        ...
+    def on_progress(self, progress: int, total: int, message: str) -> None: ...
 
-    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        ...
+    def on_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None: ...
 
-    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None:
-        ...
+    def set_diagnostics(self, path: FileId, diagnostics: List[Diagnostic]) -> None: ...
 
     def on_update(
         self,
@@ -1371,22 +1368,20 @@ class ProjectBackend:
         build_identifiers: BuildIdentifierSet,
         page_id: FileId,
         page: Page,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def on_update_metadata(
         self,
         prefix: List[str],
         build_identifiers: BuildIdentifierSet,
         field: Dict[str, SerializableType],
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def on_delete(self, page_id: FileId, build_identifiers: BuildIdentifierSet) -> None:
-        ...
+    def on_delete(
+        self, page_id: FileId, build_identifiers: BuildIdentifierSet
+    ) -> None: ...
 
-    def flush(self) -> None:
-        ...
+    def flush(self) -> None: ...
 
     def close(self) -> None:
         pass

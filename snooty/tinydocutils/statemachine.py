@@ -140,7 +140,6 @@ class StateConfiguration(NamedTuple):
 
 
 class StringList:
-
     """
     List with extended functionality: slices of StringList objects are child
     lists, linked to their parents. Changes made to a child list also affect
@@ -199,12 +198,10 @@ class StringList:
     # just works.
 
     @overload
-    def __getitem__(self, i: int) -> str:
-        ...
+    def __getitem__(self, i: int) -> str: ...
 
     @overload
-    def __getitem__(self, i: slice) -> "StringList":
-        ...
+    def __getitem__(self, i: slice) -> "StringList": ...
 
     def __getitem__(self, i: Union[int, slice]) -> Union[str, "StringList"]:
         if isinstance(i, slice):
@@ -529,7 +526,6 @@ class StringList:
 
 
 class StateMachine:
-
     """
     A finite state machine for text filters using regular expressions.
 
@@ -1039,7 +1035,6 @@ class StateMachine:
 
 
 class State:
-
     """
     State superclass. Contains a list of transitions, and transition methods.
 
@@ -1185,7 +1180,6 @@ class UnexpectedIndentationError(StateMachineError):
 
 
 class TransitionCorrection(Exception):
-
     """
     Raise from within a transition method to switch to another transition.
 
@@ -1197,7 +1191,6 @@ class TransitionCorrection(Exception):
 
 
 class StateCorrection(Exception):
-
     """
     Raise from within a transition method to switch to another state.
 

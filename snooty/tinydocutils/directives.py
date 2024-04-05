@@ -185,7 +185,6 @@ def format_values(values: Sequence[str]) -> str:
 
 
 class DirectiveError(Exception):
-
     """
     Store a message and a system message level.
 
@@ -203,7 +202,6 @@ class DirectiveError(Exception):
 
 
 class Directive:
-
     """
     Base class for reStructuredText directives.
 

@@ -290,9 +290,11 @@ class SnootyToTroffTree:
                 ManNode.ElementType.LIST,
                 self.children(node.children),
                 {
-                    "type": "unordered"
-                    if node.enumtype == n.ListEnumType.unordered
-                    else "ordered"
+                    "type": (
+                        "unordered"
+                        if node.enumtype == n.ListEnumType.unordered
+                        else "ordered"
+                    )
                 },
             )
         ]

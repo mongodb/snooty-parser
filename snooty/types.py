@@ -45,11 +45,9 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddedRstParser(Protocol):
-    def parse_block(self, text: str, lineno: int) -> MutableSequence[n.Node]:
-        ...
+    def parse_block(self, text: str, lineno: int) -> MutableSequence[n.Node]: ...
 
-    def parse_inline(self, text: str, lineno: int) -> MutableSequence[n.InlineNode]:
-        ...
+    def parse_inline(self, text: str, lineno: int) -> MutableSequence[n.InlineNode]: ...
 
 
 def normalize_target(target: str) -> str:

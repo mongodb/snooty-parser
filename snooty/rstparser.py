@@ -973,17 +973,13 @@ class Visitor(Protocol):
         project_config: ProjectConfig,
         docpath: PurePath,
         document: tinydocutils.nodes.document,
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
-        ...
+    def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None: ...
 
-    def dispatch_departure(self, node: tinydocutils.nodes.Node) -> None:
-        ...
+    def dispatch_departure(self, node: tinydocutils.nodes.Node) -> None: ...
 
-    def add_diagnostics(self, diagnostics: Iterable[Diagnostic]) -> None:
-        ...
+    def add_diagnostics(self, diagnostics: Iterable[Diagnostic]) -> None: ...
 
 
 _V = TypeVar("_V", bound=Visitor, covariant=True)
@@ -1210,9 +1206,11 @@ def register_spec_with_docutils(
                 role_spec.type.domain or domain,
                 role_spec.type.name,
                 role_spec.type.tag,
-                role_spec.rstobject.type
-                if role_spec.rstobject
-                else specparser.TargetType.plain,
+                (
+                    role_spec.rstobject.type
+                    if role_spec.rstobject
+                    else specparser.TargetType.plain
+                ),
                 role_spec.type.format,
             )
         elif role_spec.type == specparser.PrimitiveRoleType.explicit_title:

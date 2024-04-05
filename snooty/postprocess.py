@@ -2134,9 +2134,11 @@ class Postprocessor:
                 toctree_node: Dict[str, object] = {}
                 if entry.ref_project:
                     toctree_node = {
-                        "title": [n.Text((0,), entry.title).serialize()]
-                        if entry.title
-                        else None,
+                        "title": (
+                            [n.Text((0,), entry.title).serialize()]
+                            if entry.title
+                            else None
+                        ),
                         "options": {"project": entry.ref_project},
                         "children": [],
                         "slug": entry.ref_project,
@@ -2149,9 +2151,11 @@ class Postprocessor:
                     external_nodes.add(ref_project_pair)
                 if entry.url:
                     toctree_node = {
-                        "title": [n.Text((0,), entry.title).serialize()]
-                        if entry.title
-                        else None,
+                        "title": (
+                            [n.Text((0,), entry.title).serialize()]
+                            if entry.title
+                            else None
+                        ),
                         "url": entry.url,
                         "children": [],
                     }
