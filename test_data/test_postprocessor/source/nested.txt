@@ -1,4 +1,0 @@
-.. |sun| replace:: sun
-.. |weather| replace:: |sun|
-
-|weather| = sun

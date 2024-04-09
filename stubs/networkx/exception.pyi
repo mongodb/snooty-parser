@@ -1,6 +1,0 @@
-class NetworkXException(Exception):
-    ...
-
-
-class NetworkXError(NetworkXException):
-    ...

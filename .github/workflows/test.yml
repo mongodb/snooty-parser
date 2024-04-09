@@ -3,59 +3,27 @@ name: CI
 on:
   push:
     branches:
-    - master
-    - 'v[0-9]*'
-    tags:
-    - 'v[0-9]*'
+    - latest
   pull_request:
+    branches:
+      - latest
 
 jobs:
   test:
     strategy:
       matrix:
-        platform: [ubuntu-20.04, macos-latest]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
-        python-version: '3.8'
+        python-version: '3.12'
         architecture: 'x64'
-    - name: Run tests
-      run: make test
-      env:
-        FLIT_ROOT_INSTALL: "1"
-    - name: Build package
-      id: build_package
-      run: make package
-    - name: Upload package
-      uses: actions/upload-artifact@v1
-      with:
-        name: packages
-        path: dist/${{ steps.build_package.outputs.package_filename }}
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download
-        uses: actions/download-artifact@v1
-        with:
-          name: packages
-      - name: Get environment
-        id: environment
-        run: |
-          echo "::set-output name=date::$(date +%Y-%m-%d)"
-          echo "::set-output name=tag_name::$(echo ${{ github.ref }} | cut -d / -f 3)"
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@4874428bc07f8473128b16dfb628a0bcfb6ca10d
-        with:
-          tag: ${{ steps.environment.outputs.tag_name }}
-          name: "Release: [${{ steps.environment.outputs.tag_name }}] - ${{ steps.environment.outputs.date }}"
-          artifacts: "packages/*.zip"
-          artifactContentType: "application/zip"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: true
-          prerelease: true
+    - name: Fetch parser
+      run: |
+        mkdir -p downloaded_parser
+        curl -L "$(python3 ./tools/get_latest_parser_url.py)" -o downloaded_parser/snooty.zip
+        cd downloaded_parser && unzip snooty.zip
+    - name: Test parser
+      run: mkdir empty && ./downloaded_parser/snooty/snooty build --rstspec=snooty/rstspec.toml empty/

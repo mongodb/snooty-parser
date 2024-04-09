@@ -1,3 +1,0 @@
-.. note:: What's new in |service|
-
-   Describe what's new.

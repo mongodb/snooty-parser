@@ -1,7 +1,0 @@
-name = "test_data"
-
-[constants]
-version = 3.4
-package-name-org = "mongodb-org"
-pgp-version = "{+version+}"
-atlas = "MongoDB Atlas"
