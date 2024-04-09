@@ -1,9 +1,0 @@
-.. |included-sub| replace:: ack
-
-Using an |included-sub|
-
-.. include:: /includes/substitution.rst
-
-Using an |included-sub| changes the subtituted value.
-
-.. |use-in-include| replace:: Yes

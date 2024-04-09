@@ -1,5 +1,0 @@
-name = "test_data"
-title = "MongoDB title"
-
-[substitutions]
-guides = "MongoDB Guides"
