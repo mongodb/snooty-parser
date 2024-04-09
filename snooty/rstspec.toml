@@ -1120,6 +1120,14 @@ type = {link = "https://cloud.google.com%s"}
 help = "Link to the Microsoft Azure documentation"
 type = {link = "https://docs.microsoft.com/en-us/azure%s"}
 
+[role.ftsuservoice]
+help = """Link to the Atlas Search Feedback Engine."""
+type = {link = "https://feedback.mongodb.com/forums/924868-atlas-search%s"}
+
+[role.avsuservoice]
+help = """Link to the Atlas Vector Search Feedback Engine."""
+type = {link = "https://feedback.mongodb.com/forums/957605-vector-search%s"}
+
 [role.gettingstarted]
 help = """Link to the MongoDB Getting Started guide."""
 type = {link = "https://docs.mongodb.org/getting-started%s", ensure_trailing_slash = true}
