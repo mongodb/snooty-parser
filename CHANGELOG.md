@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add links to user voide pages (DOCSP-37734)
+- Update github action dependencies (DOP-4479)
+- Update black formatter
+
 ## [v0.16.4] - 2024-04-03
 
 ### Added
