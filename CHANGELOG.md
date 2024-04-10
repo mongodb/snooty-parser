@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.5] - 2024-04-10
+
 ### Added
 
 - Add links to user voide pages (DOCSP-37734)
