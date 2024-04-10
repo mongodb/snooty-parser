@@ -139,12 +139,6 @@ To run all linting, use `make lint`. To format source code, use `make format`.
 
 ## Release Process
 
-### Prerequisites
-
-Ensure that you have gnupg configured, along with a key generated. On macOS, you should install `gnupg` and `pinentry-mac` from Homebrew. This is required to [sign a git tag with your username](https://git-scm.com/docs/git-tag#Documentation/git-tag.txt--s).
-
-If you have not generated a key before, follow the instructions from [GitHub Docs on Generating a new GPG key](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-gpg-key).
-
 ### Releasing
 
 To release snooty, do the following:
@@ -160,7 +154,9 @@ To release snooty, do the following:
    `MAJOR.MINOR.PATCH`. For example, `make cut-release BUMP_TO_VERSION=0.1.2`.
    Refer to `snooty/__init__.py` for the current version number.
 
-   This will create a new tag named `v<new_version>` and push it to your origin,
+   This will create commit(s) that update the version across changelogs and project config files [example](https://github.com/mongodb/snooty-parser/commit/7a7137d18dc691ea946d09b5f4659869dbfc70f9)
+
+   This will also create a new tag named `v<new_version>` and push it to your origin,
    causing Github Actions to trigger the release process. After several minutes
    (you can monitor its progress at <https://github.com/mongodb/snooty-parser/actions>),
    a new release should be created with binaries for supported platforms.
