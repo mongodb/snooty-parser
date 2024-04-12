@@ -1034,8 +1034,12 @@ type = "text"
 help = """Used to specify a label or button in a GUI."""
 type = "text"
 
-[role.abbr]
+[role."abbr"]
 help = """Abbreviation with hover text."""
+type = "text"
+
+[role.community-pill-link]
+help = """Link to a community-built driver or library and include a pill badge"""
 type = "text"
 
 [role.file]
@@ -1626,10 +1630,6 @@ type = {link = "https://learn.mongodb.com%s"}
 [role."ak8so"]
 help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/atlas-operator%s", ensure_trailing_slash = true}
-
-["role.community-pill-link"]
-help = """Link to a community-built driver or library and include a pill badge"""
-type = {link = "%s"}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
