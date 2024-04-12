@@ -1627,6 +1627,10 @@ type = {link = "https://learn.mongodb.com%s"}
 help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/atlas-operator%s", ensure_trailing_slash = true}
 
+["role.community-pill-link"]
+help = """Link to a community-built driver or library and include a pill badge"""
+type = {link = "%s"}
+
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
 
