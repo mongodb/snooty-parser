@@ -1034,7 +1034,7 @@ type = "text"
 help = """Used to specify a label or button in a GUI."""
 type = "text"
 
-[role."abbr"]
+[role.abbr]
 help = """Abbreviation with hover text."""
 type = "text"
 
