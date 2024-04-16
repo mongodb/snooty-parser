@@ -1038,6 +1038,10 @@ type = "text"
 help = """Abbreviation with hover text."""
 type = "text"
 
+[role.community-pill-link]
+help = """Link to a community-built driver or library and include a pill badge"""
+type = "text"
+
 [role.file]
 help = """Show a file path."""
 type = "text"
