@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.6] - 2024-04-17
+
 ### Added
 
 - Add link type for community-built badges (DOP-4511)
