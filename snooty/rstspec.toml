@@ -11,7 +11,7 @@ alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
 banner_variant = ["info", "warning", "danger"]
 card_layout = ["default", "carousel"]
-card_style = ["default", "compact", "extra-compact"]
+card_style = ["default", "compact", "extra-compact", "center-content", "large-icon"]
 card_type = ["small", "large"]
 card_group_type = ["default", "drivers"]
 charts_theme = ["light", "dark"]
@@ -1036,6 +1036,10 @@ type = "text"
 
 [role.abbr]
 help = """Abbreviation with hover text."""
+type = "text"
+
+[role.community-pill-link]
+help = """Link to a community-built driver or library and include a pill badge"""
 type = "text"
 
 [role.file]
