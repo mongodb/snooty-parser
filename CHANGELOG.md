@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add link type for community-built badges (DOP-4511)
+- Add new styles to generalize card content for programming language landing pages (DOP-4543)
+
 ## [v0.16.5] - 2024-04-10
 
 ### Added
