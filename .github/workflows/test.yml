@@ -13,6 +13,10 @@ jobs:
       matrix:
         platform: [ubuntu-20.04, macos-latest]
         python-version: ['3.8', '3.11']
+        # Python 3.8 is only used for Pyston on Linux x86_64
+        exclude:
+          - platform: macos-latest
+            python-version: '3.8'
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v4
