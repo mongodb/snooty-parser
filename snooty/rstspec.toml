@@ -994,6 +994,14 @@ example = """.. entry:: ${0: string}
    :primary: (optional)}
 """
 
+[directive.community-driver]
+help = """Specify a community-built driver or library and include a pill badge"""
+argument_type = "string"
+options.url = "string"
+example = """.. community-driver:: ${0: driver (string)}
+   :url: ${1: https://example.com}
+"""
+
 ###### Roles
 [role.kbd]
 help = """Mark a sequence of keystrokes."""
@@ -1036,10 +1044,6 @@ type = "text"
 
 [role.abbr]
 help = """Abbreviation with hover text."""
-type = "text"
-
-[role.community-pill-link]
-help = """Link to a community-built driver or library and include a pill badge"""
 type = "text"
 
 [role.file]
