@@ -734,6 +734,60 @@ class HeadingHandler(Handler):
             )
 
 
+class TocTitleHandler(Handler):
+    """Construct a slug-title mapping of all pages in property, and rewrite
+    heading IDs so as to be unique."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.heading_counter: typing.Counter[str] = collections.Counter()
+        self.targets = context[TargetDatabase]
+        self.slug_title_mapping: Dict[str, str] = {}
+
+    def get_title(self, slug: str) -> Optional[str]:
+        return self.slug_title_mapping.get(slug)
+
+    def __contains__(self, slug: str) -> bool:
+        return slug in self.slug_title_mapping
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.TocTreeDirective):
+            return
+        
+        # print('is toctree')
+
+        # if not isinstance(node, n.TocTreeDirectiveEntry):
+        #     return
+
+        # print('in enter node toctitle')
+        # slug = fileid_stack.root.without_known_suffix
+
+        for entry in node.entries:
+
+
+            slug = entry.slug
+
+            # Save the first heading we encounter to the slug title mapping
+            if slug and slug not in self.slug_title_mapping:
+                # self.targets.define_local_target(
+                #     "std",
+                #     "doc",
+                #     (slug,),
+                #     fileid_stack.root,
+                #     node.children,
+                #     util.make_html5_id(node.id),
+                # )
+                self.slug_title_mapping[slug] = entry.title
+                # self.targets.define_local_target(
+                #     "std",
+                #     "doc",
+                #     (fileid_stack.root.without_known_suffix,),
+                #     fileid_stack.root,
+                #     node.children,
+                #     util.make_html5_id(node.id),
+                # )
+
+
 class BannerHandler(Handler):
     """Traverse a series of pages matching specified targets in Snooty.toml
     and append Banner directive nodes"""
@@ -1861,6 +1915,7 @@ class Postprocessor:
         [SubstitutionHandler],
         [
             HeadingHandler,
+            TocTitleHandler,
             AddTitlesToLabelTargetsHandler,
             ProgramOptionHandler,
             TabsSelectorHandler,
@@ -1956,6 +2011,11 @@ class Postprocessor:
             k: [node.serialize() for node in v]
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
+        document["slugToTocTitle"] = {
+            k: v
+            for k, v in context[TocTitleHandler].slug_title_mapping.items()
+        }
+        # document["slugToTocTitle"] = context[TocTitleHandler].slug_title_mapping
         # Run postprocessing operations related to toctree and append to metadata document.
         # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
         iatree = cls.build_iatree(context)
