@@ -744,9 +744,6 @@ class TocTitleHandler(Handler):
     def get_title(self, slug: str) -> Optional[str]:
         return self.slug_title_mapping.get(slug)
 
-    def __contains__(self, slug: str) -> bool:
-        return slug in self.slug_title_mapping
-
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.TocTreeDirective):
             return
@@ -1983,7 +1980,7 @@ class Postprocessor:
         }
         document["slugToBreadcrumbLabel"] = {
             k: (
-                context[TocTitleHandler].slug_title_mapping[f"/{k}"]
+                context[TocTitleHandler].get_title(f"/{k}")
                 if f"/{k}" in context[TocTitleHandler].slug_title_mapping
                 else v[0].get_text()
             )
