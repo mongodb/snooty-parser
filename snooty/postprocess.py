@@ -754,7 +754,7 @@ class TocTitleHandler(Handler):
         for entry in node.entries:
             slug = entry.slug
             # Save the first heading we encounter to the slug title mapping
-            if slug and slug not in self.slug_title_mapping:
+            if slug and entry.title and slug not in self.slug_title_mapping:
                 self.slug_title_mapping[slug] = entry.title
 
 
@@ -1982,7 +1982,11 @@ class Postprocessor:
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
         document["slugToBreadcrumbLabel"] = {
-            k: (context[TocTitleHandler].slug_title_mapping[f"/{k}"] if f"/{k}" in context[TocTitleHandler].slug_title_mapping else v[0].get_text())
+            k: (
+                context[TocTitleHandler].slug_title_mapping[f"/{k}"]
+                if f"/{k}" in context[TocTitleHandler].slug_title_mapping
+                else v[0].get_text()
+            )
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
         # Run postprocessing operations related to toctree and append to metadata document.
