@@ -734,6 +734,27 @@ class HeadingHandler(Handler):
             )
 
 
+class TocTitleHandler(Handler):
+    """Construct a slug - toctree label mapping of all pages in property"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.slug_title_mapping: Dict[str, str] = {}
+
+    def get_title(self, slug: str) -> Optional[str]:
+        return self.slug_title_mapping.get(slug)
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.TocTreeDirective):
+            return
+
+        for entry in node.entries:
+            slug = entry.slug
+            # Save the first heading we encounter to the slug title mapping
+            if slug and entry.title and slug not in self.slug_title_mapping:
+                self.slug_title_mapping[slug] = entry.title
+
+
 class BannerHandler(Handler):
     """Traverse a series of pages matching specified targets in Snooty.toml
     and append Banner directive nodes"""
@@ -1861,6 +1882,7 @@ class Postprocessor:
         [SubstitutionHandler],
         [
             HeadingHandler,
+            TocTitleHandler,
             AddTitlesToLabelTargetsHandler,
             ProgramOptionHandler,
             TabsSelectorHandler,
@@ -1954,6 +1976,14 @@ class Postprocessor:
         # Update metadata document with key-value pairs defined in event parser
         document["slugToTitle"] = {
             k: [node.serialize() for node in v]
+            for k, v in context[HeadingHandler].slug_title_mapping.items()
+        }
+        document["slugToBreadcrumbLabel"] = {
+            k: (
+                context[TocTitleHandler].get_title(f"/{k}")
+                if f"/{k}" in context[TocTitleHandler].slug_title_mapping
+                else v[0].get_text()
+            )
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
         # Run postprocessing operations related to toctree and append to metadata document.
