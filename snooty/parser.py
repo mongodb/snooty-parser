@@ -715,8 +715,13 @@ class JSONVisitor:
                 expected_num_columns = len(widths)
             bullet_list = node.children[0]
             if "header-rows" in options:
-                if options['header-rows'] >= len(bullet_list.children):
-                    self.diagnostics.append(InvalidTableStructure("List-table cannot have only header rows", node.get_line() + len(node.children) - 1))
+                if options["header-rows"] >= len(bullet_list.children):
+                    self.diagnostics.append(
+                        InvalidTableStructure(
+                            "List-table cannot have only header rows",
+                            node.get_line() + len(node.children) - 1,
+                        )
+                    )
                     raise tinydocutils.nodes.SkipNode()
             for list_item in bullet_list.children:
                 if expected_num_columns == 0 and list_item.children:
