@@ -2631,6 +2631,10 @@ def test_list_table() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [InvalidTableStructure]
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst"></root>""",
+    )
 
 
 def test_footnote() -> None:
