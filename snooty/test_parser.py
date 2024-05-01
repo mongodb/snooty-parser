@@ -2616,6 +2616,26 @@ def test_list_table() -> None:
     print(ast_to_testing_string(page.ast))
     assert [type(x) for x in diagnostics] == [InvalidTableStructure]
 
+    # Only header rows
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. list-table::
+    :header-rows: 1
+
+    * - This is part of an invalid row and table
+      - This is also part of an invalid row and table
+      - This is the final part of the invalid row and table
+    """,
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [InvalidTableStructure]
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst"></root>""",
+    )
+
 
 def test_footnote() -> None:
     path = FileId("test.rst")
