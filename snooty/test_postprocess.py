@@ -3436,9 +3436,7 @@ Alrighty
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 0
 
-        # Ensure the one IA entry that has linked data contains said linked data.
-        metadata = cast(Dict[str, Any], result.metadata)
-        slug_to_breadcrumb_label_entry = metadata["slugToBreadcrumbLabel"]
+        slug_to_breadcrumb_label_entry = result.metadata["slugToBreadcrumbLabel"]
         assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
