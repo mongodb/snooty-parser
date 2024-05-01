@@ -3436,7 +3436,9 @@ Alrighty
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 0
 
-        slug_to_breadcrumb_label_entry = result.metadata["slugToBreadcrumbLabel"]
+        slug_to_breadcrumb_label_entry = cast(
+            Dict[str, str], result.metadata["slugToBreadcrumbLabel"]
+        )
         assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
