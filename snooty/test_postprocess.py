@@ -3383,3 +3383,62 @@ Not An Orphan
         assert {
             k: [type(d) for d in v] for k, v in result.diagnostics.items() if v
         } == {FileId("orphan.txt"): [OrphanedPage]}
+
+
+def test_slug_to_breadcrumb_labels() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+==========
+Index Page
+==========
+
+.. toctree::
+   :titlesonly:
+
+   Look at This </page1>
+   Well, You Learned It </page2>
+""",
+            Path(
+                "source/page1.txt"
+            ): """
+==============
+Page One Title
+==============
+
+This is a cool first page.
+
+.. toctree::
+   </ref/page3>
+""",
+            Path(
+                "source/page2.txt"
+            ): """
+==============
+Page Two Title
+==============
+
+I think we did a great job teaching them.
+""",
+            Path(
+                "source/ref/page3.txt"
+            ): """
+================
+Page Three Title
+================
+
+Alrighty
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 0
+
+        # Ensure the one IA entry that has linked data contains said linked data.
+        metadata = cast(Dict[str, Any], result.metadata)
+        slug_to_breadcrumb_label_entry = metadata["slugToBreadcrumbLabel"]
+        assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
+        assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
+        assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
