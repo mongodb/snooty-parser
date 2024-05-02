@@ -1,8 +1,6 @@
 import shutil
-import sys
 import tempfile
 import threading
-import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
@@ -16,6 +14,7 @@ from .diagnostics import (
     Diagnostic,
     DocUtilsParseError,
     GitMergeConflictArtifactFound,
+    ImageSizeUndetermined,
     NestedProject,
 )
 from .n import FileId, SerializableType
@@ -103,31 +102,6 @@ def test() -> None:
             "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"
         ]
         assert backend.updates == [index_id]
-
-        # Skip the remainder of the tests on non-Darwin platforms; they fail for
-        # unknown reasons.
-        if sys.platform != "darwin":
-            return
-
-        figure_id = FileId("images/compass-create-database.png")
-        with project._lock:
-            assert list(
-                project._project.expensive_operation_cache.get_versions(figure_id)
-            ) == [1]
-        with project.config.source_path.joinpath(figure_id).open(mode="r+b") as f:
-            text = f.read()
-            f.seek(0)
-            f.truncate(0)
-            f.write(text)
-            f.flush()
-        time.sleep(0.1)
-        with project._lock:
-            assert list(
-                project._project.expensive_operation_cache.get_versions(figure_id)
-            ) == [2]
-
-        # Ensure that the page has been reparsed 2 times
-        assert backend.updates == [index_id, index_id]
 
     # Ensure that any filesystem monitoring threads have been shut down
     assert len(threading.enumerate()) == n_threads
@@ -415,6 +389,65 @@ Testing {+foo+}
                     assert _project_copy.cache.stats == CacheStats(
                         hits=2, misses=0, errors=0
                     )
+
+
+def test_image_invalidation() -> None:
+    """In DOP-4491 we learned that the parser was not properly invalidating page parses when an
+    image resource is changed. Ensure that changing a referenced image results in re-reading
+    the image."""
+    with make_test_project(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_image_invalidation"
+""",
+            Path(
+                "source/index.txt"
+            ): """
+.. figure:: /images/foo.svg
+   :alt: A figure
+""",
+            Path("source/images/foo.svg"): "foo",
+        }
+    ) as (_project, backend):
+        with _project._get_inner() as project:
+            project.load_cache()
+            project.build(1, False)
+            assert project.cache is not None
+            assert project.cache.stats == CacheStats(hits=0, misses=1, errors=0)
+
+            page, fileid, diagnostics = project.pages._parsed[FileId("index.txt")]
+            assert not diagnostics
+            assert [
+                [type(d) for d in asset.diagnostics] for asset in page.static_assets
+            ] == [[ImageSizeUndetermined]]
+            assert [asset._data for asset in page.static_assets] == [
+                bytes("foo", "utf-8")
+            ]
+            original_checksums = [asset._checksum for asset in page.static_assets]
+
+            # Create and use a cache based on this initial state
+            project.update_cache()
+            project.load_cache()
+
+            # Now change the image on disk and rebuild
+            svg_text_2 = """<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg width="1160" height="1320"</svg>"""
+            (_project.config.source_path / "images/foo.svg").write_text(svg_text_2)
+            project.build(1, False)
+
+            # And ensure that the parser state is now correct
+            page, fileid, diagnostics = project.pages._parsed[FileId("index.txt")]
+            assert not diagnostics
+            assert [
+                [type(d) for d in asset.diagnostics] for asset in page.static_assets
+            ] == [[]]
+            assert [asset._data for asset in page.static_assets] == [
+                bytes(svg_text_2, "utf-8")
+            ]
+            assert [
+                asset._checksum for asset in page.static_assets
+            ] != original_checksums
 
 
 def test_silencing_diagnostics() -> None:
