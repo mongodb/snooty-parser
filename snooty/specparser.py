@@ -19,7 +19,6 @@ from typing import (
     Set,
     TypeVar,
     Union,
-    cast,
 )
 
 import tomli
@@ -334,8 +333,6 @@ class Spec:
                     else:
                         return result
 
-                # Assertion to quiet mypy's failing type flow analysis
-                assert isinstance(option_spec, list)
                 options = ", ".join(str(x) for x in option_spec)
                 raise ValueError(f"Expected one of {options}; got {argument}")
 
@@ -344,7 +341,7 @@ class Spec:
             return VALIDATORS[option_spec]
         elif isinstance(option_spec, str) and option_spec in self.enum:
             return lambda argument: tinydocutils.directives.choice(
-                argument, self.enum[cast(str, option_spec)]
+                argument, self.enum[option_spec]
             )
 
         raise ValueError(f'Unknown directive argument type "{option_spec}"')

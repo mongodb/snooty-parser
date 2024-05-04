@@ -1,12 +1,13 @@
 import hashlib
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
 from . import n
 from .diagnostics import Diagnostic
 from .n import FileId
 from .target_database import EmptyProjectInterface, ProjectInterface
 from .types import Facet, StaticAsset
+from .util import FileCacheMapping
 
 
 class PendingTask:
@@ -31,7 +32,7 @@ class Page:
     source: str
     ast: n.Root
     blake2b: str
-    dependencies: Dict[FileId, Optional[str]] = field(default_factory=dict)
+    dependencies: FileCacheMapping = field(default_factory=FileCacheMapping)
     static_assets: Set[StaticAsset] = field(default_factory=set)
     pending_tasks: List[PendingTask] = field(default_factory=list)
     facets: Optional[List[Facet]] = field(default=None)
