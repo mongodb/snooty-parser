@@ -100,17 +100,17 @@ class CacheData:
         assert all(isinstance(x, Diagnostic) for x in diagnostics)
 
         # Check page dependencies
-        for dep_fileid, dep_blake2b in page.dependencies.items():
-            dep_path = config.get_full_path(dep_fileid)
-            try:
-                actual_blake2b = hashlib.blake2b(dep_path.read_bytes()).hexdigest()
-            except OSError:
+        try:
+            if not page.dependencies.check_cache(
+                lambda fileid: hashlib.blake2b(
+                    config.get_full_path(fileid).read_bytes()
+                ).hexdigest()
+            ):
                 self.stats.misses += 1
                 raise CacheMiss()
-
-            if dep_blake2b != actual_blake2b:
-                self.stats.misses += 1
-                raise CacheMiss()
+        except OSError:
+            self.stats.misses += 1
+            raise CacheMiss()
 
         self.stats.hits += 1
         return page, diagnostics

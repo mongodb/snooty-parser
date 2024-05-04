@@ -147,7 +147,7 @@ class PendingFigure(PendingTask):
         self,
         node: n.Directive,
         asset: StaticAsset,
-        dependencies: Dict[FileId, Optional[str]],
+        dependencies: util.FileCacheMapping,
     ) -> None:
         super().__init__(node)
         self.node: n.Directive = node
@@ -201,7 +201,7 @@ class JSONVisitor:
         self.document = document
         self.state: List[n.Node] = []
         self.diagnostics: List[Diagnostic] = []
-        self.dependencies: Dict[FileId, Optional[str]] = {}
+        self.dependencies: util.FileCacheMapping = util.FileCacheMapping()
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
 
@@ -755,6 +755,7 @@ class JSONVisitor:
                     spec_node = n.Text((line,), spec)
                     doc.children.append(spec_node)
                     doc.options["source_type"] = "url"
+                    self.dependencies.mark_uncacheable()
                     return doc
                 except:
                     pass
@@ -768,16 +769,19 @@ class JSONVisitor:
                 doc.options["source_type"] = "atlas"
                 return doc
 
-            _openapi_fileid, filepath = util.reroot_path(
+            openapi_fileid, filepath = util.reroot_path(
                 FileId(argument_text), self.docpath, self.project_config.source_path
             )
 
             try:
-                with open(filepath) as f:
-                    spec = json.dumps(safe_load(f))
-                    spec_node = n.Text((line,), spec)
-                    doc.children.append(spec_node)
-                    doc.options["source_type"] = "local"
+                spec_bytes = filepath.read_bytes()
+                self.dependencies[openapi_fileid] = hashlib.blake2b(
+                    spec_bytes
+                ).hexdigest()
+                spec = json.dumps(safe_load(spec_bytes))
+                spec_node = n.Text((line,), spec)
+                doc.children.append(spec_node)
+                doc.options["source_type"] = "local"
 
             except OSError as err:
                 self.diagnostics.append(
@@ -975,10 +979,6 @@ class JSONVisitor:
             if argument_text is None:
                 self.diagnostics.append(ExpectedPathArg(name, node.get_line()))
                 return doc
-
-            fileid, path = util.reroot_path(
-                FileId(argument_text), self.docpath, self.project_config.source_path
-            )
 
         elif name == "sharedinclude":
             if argument_text is None:

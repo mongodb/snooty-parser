@@ -450,6 +450,71 @@ name = "test_image_invalidation"
             ] != original_checksums
 
 
+def test_openapi_invalidation() -> None:
+    """In DOP-4506 we learned that the parser was not properly invalidating local OpenAPI YAML data.
+    Ensure that changing a local OpenAPI YAML file results in an invalidated cache."""
+    with make_test_project(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test_openapi_invalidation"
+""",
+            Path(
+                "source/index.txt"
+            ): """
+.. openapi:: openapi.yaml
+""",
+            Path(
+                "source/openapi.yaml"
+            ): """
+openapi: 3.1.0
+info:
+  version: v1
+  title: MongoDB Atlas Data API
+  """,
+        }
+    ) as (_project, backend):
+        with _project._get_inner() as project:
+            project.load_cache()
+            project.build(1, False)
+            assert project.cache is not None
+            assert project.cache.stats == CacheStats(hits=0, misses=1, errors=0)
+
+            page, fileid, diagnostics = project.pages._parsed[FileId("index.txt")]
+            assert not diagnostics
+
+            # Create and use a cache based on this initial state
+            project.update_cache()
+            project.load_cache()
+
+            # Now change the image on disk and rebuild
+            openapi_text_updated = """
+openapi: 3.1.0
+info:
+  version: v1
+  title: MongoDB Atlas Data API 2.0"""
+            (_project.config.source_path / "openapi.yaml").write_text(
+                openapi_text_updated
+            )
+            project.build(1, False)
+
+            # And ensure that the parser state is now correct
+            page, fileid, diagnostics = project.pages._parsed[FileId("index.txt")]
+            assert not diagnostics
+            check_ast_testing_string(
+                page.ast,
+                """
+<root fileid="index.txt">
+    <directive domain="mongodb" name="openapi" source_type="local">
+        <text>openapi.yaml</text>
+        <text>{"openapi": "3.1.0", "info": {"version": "v1", "title": "MongoDB Atlas Data API 2.0"}}</text>
+    </directive>
+</root>
+""",
+            )
+
+
 def test_silencing_diagnostics() -> None:
     with make_test(
         {

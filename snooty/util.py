@@ -73,6 +73,33 @@ if PACKAGE_ROOT.is_file():
     PACKAGE_ROOT = PACKAGE_ROOT.parent
 
 
+@dataclass
+class FileCacheMapping:
+    dependencies: Optional[Dict[FileId, Optional[str]]] = dataclasses.field(
+        default_factory=dict
+    )
+
+    def __setitem__(self, key: FileId, value: Optional[str]) -> None:
+        if self.dependencies is not None:
+            self.dependencies[key] = value
+
+    def check_cache(self, handler: Callable[[FileId], str]) -> bool:
+        """Check each element of this dependency list against a handler method's expectations."""
+        if self.dependencies is not None:
+            for fileid, file_hash in self.dependencies.items():
+                if handler(fileid) != file_hash:
+                    return False
+
+            return True
+
+        return False
+
+    def mark_uncacheable(self) -> None:
+        """This file's contents depend on a remote asset that cannot be easily assessed, and
+        might as well be re-parsed."""
+        self.dependencies = None
+
+
 def reroot_path(
     filename: PurePosixPath, docpath: PurePath, project_root: Path
 ) -> Tuple[n.FileId, Path]:

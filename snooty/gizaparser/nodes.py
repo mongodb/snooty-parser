@@ -97,7 +97,7 @@ def substitute(
 
     # The new dataclass typing added to mypy is screwed up without any good workarounds
     # from our end, so just not for this line
-    return dataclasses.replace(obj, **changes) if changes else obj  # type: ignore
+    return dataclasses.replace(obj, **changes) if changes else obj
 
 
 class Node:
