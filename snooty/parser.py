@@ -159,17 +159,19 @@ class PendingFigure(PendingTask):
     ) -> None:
         """Compute this figure's checksum and store it in our node."""
 
-        # Use the cached checksum if possible. Note that this does not currently
-        # update the underlying asset: if the asset is used by the current backend,
-        # the image will still have to be read.
         if self.node.options is None:
             self.node.options = {}
         options = self.node.options
 
         try:
+            # Compute hash
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
+
+            # Register our hash with the current file's external dependency list
             self.dependencies[self.asset.fileid] = checksum
+
+            # Attach image dimensions to the node
             dimensions = self.asset.dimensions
             if dimensions is not None:
                 user_width = options.get("width")
