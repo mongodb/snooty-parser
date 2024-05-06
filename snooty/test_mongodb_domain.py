@@ -58,10 +58,10 @@ def test_mongodb_directives(backend: Backend) -> None:
             <directive domain="mongodb" name="card" headline="Run a self-managed database" cta="Get started with MongoDB" url="http://mongodb.com" icon="/images/pink.png" icon-alt="Alt text" tag="server" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b" width="360.0" height="360.0">
                 <paragraph><text>Download and install the MongoDB database on your own\ninfrastructure.</text></paragraph>
             </directive>
-            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" width="360.0" height="360.0" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
-            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
+            <directive domain="mongodb" name="card" cta="Call to action" url="https://www.url.com" icon="/images/pink.png" width="360.0" height="360.0" icon-alt="Alt text" checksum="71bf03ab0c5b8d46f0c03b77db6bd18a77d984d216c62c3519dfb45c162cd86b">
                 <paragraph><text>Paragraph.</text></paragraph>
             </directive>
         </directive>""",

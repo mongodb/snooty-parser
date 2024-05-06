@@ -47,7 +47,6 @@ from . import (
     tinydocutils,
     util,
 )
-from .cache import Cache
 from .diagnostics import (
     AmbiguousLiteralInclude,
     CannotOpenFile,
@@ -144,32 +143,35 @@ class _DefinitionListTerm(n.InlineParent):
 class PendingFigure(PendingTask):
     """Add an image's checksum and intrinsic dimensions"""
 
-    def __init__(self, node: n.Directive, asset: StaticAsset) -> None:
+    def __init__(
+        self,
+        node: n.Directive,
+        asset: StaticAsset,
+        dependencies: Dict[FileId, Optional[str]],
+    ) -> None:
         super().__init__(node)
         self.node: n.Directive = node
         self.asset = asset
+        self.dependencies = dependencies
 
     def __call__(
         self, diagnostics: List[Diagnostic], project: ProjectInterface
     ) -> None:
         """Compute this figure's checksum and store it in our node."""
-        cache = project.expensive_operation_cache
 
-        # Use the cached checksum if possible. Note that this does not currently
-        # update the underlying asset: if the asset is used by the current backend,
-        # the image will still have to be read.
         if self.node.options is None:
             self.node.options = {}
         options = self.node.options
-        entry = cache[(self.asset.fileid, 0)]
-        if entry is not None:
-            assert isinstance(entry, str)
-            options["checksum"] = entry
-            return
 
         try:
+            # Compute hash
             checksum = self.asset.get_checksum()
             options["checksum"] = checksum
+
+            # Register our hash with the current file's external dependency list
+            self.dependencies[self.asset.fileid] = checksum
+
+            # Attach image dimensions to the node
             dimensions = self.asset.dimensions
             if dimensions is not None:
                 user_width = options.get("width")
@@ -179,7 +181,6 @@ class PendingFigure(PendingTask):
                 else:
                     width_num = float(NON_DIGITS.sub("", user_width))
                     options["height"] = str(dimensions[1] * width_num / dimensions[0])
-            cache[(self.asset.fileid, 0)] = checksum
         except OSError as err:
             diagnostics.append(
                 CannotOpenFile(self.asset.path, err.strerror, self.node.start[0])
@@ -1060,7 +1061,7 @@ class JSONVisitor:
     ) -> None:
         try:
             static_asset = self.add_static_asset(image_argument, upload=True)
-            self.pending.append(PendingFigure(doc, static_asset))
+            self.pending.append(PendingFigure(doc, static_asset, self.dependencies))
         except OSError as err:
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
@@ -1524,7 +1525,6 @@ class _Project:
         )
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
-        self.expensive_operation_cache: Cache[FileId] = Cache()
         self.backend.on_config(self.config, branch)
 
     def get_page_ast(self, path: Path) -> n.Node:
@@ -1770,12 +1770,6 @@ class _Project:
 
     def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
         asset_path = self.config.get_fileid(Path(ev.src_path))
-
-        # Revoke any caching that might have been performed on this file
-        try:
-            del self.expensive_operation_cache[asset_path]
-        except KeyError:
-            pass
 
         # Rebuild any pages depending on this asset
         for page_id in list(self.asset_dg.predecessors(asset_path)):
