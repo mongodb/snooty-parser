@@ -430,9 +430,9 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             return str(resolved_target_path)
         elif resolveType == "directive":
             filePath = str(self.project.config.source_path) + fileName
-            uwu = self.project.fileid_to_source_path(Path(filePath))
-            finalFile = self.project.config.source_path / uwu
-            return str(finalFile)
+            fileId = self.project.get_fileid(Path(filePath))
+            finalFileId = self.project.config.source_path / fileId
+            return str(finalFileId)
 
         else:
             logger.error("resolveType is not supported")

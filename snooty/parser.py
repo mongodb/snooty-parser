@@ -1814,12 +1814,9 @@ class Project:
         with self._lock:
             return self._project.get_page_ast(path)
 
-    def fileid_to_source_path(self, path: Path) -> n.Node:
-        # could use config to get file with extension?
-        uwu = self.get_page_ast(path)
-        return uwu.fileid
-        #print(uwu)
-        #return str(uwu.fileid)
+    def get_fileid(self, path: Path) -> FileId:
+        ast = self.get_page_ast(path)
+        return ast.fileid
 
     def get_project_name(self) -> str:
         return self._project.get_project_name()
