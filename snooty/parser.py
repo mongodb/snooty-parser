@@ -1527,7 +1527,7 @@ class _Project:
         self.expensive_operation_cache: Cache[FileId] = Cache()
         self.backend.on_config(self.config, branch)
 
-    def get_page_ast(self, path: Path) -> n.Node:
+    def get_page_ast(self, path: Path) -> n.Root:
         """Update page file (.txt) with current text and return fully populated page AST"""
         # Get incomplete AST of page
         fileid = self.config.get_fileid(path)
@@ -1809,14 +1809,14 @@ class Project:
     def config(self) -> ProjectConfig:
         return self._project.config
 
-    def get_page_ast(self, path: Path) -> n.Node:
+    def get_page_ast(self, path: Path) -> n.Root:
         """Return complete AST of page with updated text"""
         with self._lock:
             return self._project.get_page_ast(path)
 
     def get_fileid(self, path: Path) -> FileId:
-        ast = self.get_page_ast(path)
-        return ast.fileid
+        page_ast = self.get_page_ast(path)
+        return page_ast.fileid
 
     def get_project_name(self) -> str:
         return self._project.get_project_name()
