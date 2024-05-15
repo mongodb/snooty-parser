@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Warn if a table contains only a header row (DOP-4430).
+- Parse breadcrumb toc titles (DOP-4592).
+
+### Fixed
+
+- Images and OpenAPI YAML files now correctly invalidate cached parses (DOP-4491, DOP-4506, #590)
+
 ## [v0.16.6] - 2024-04-17
 
 ### Added
