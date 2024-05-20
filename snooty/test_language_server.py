@@ -133,7 +133,7 @@ def test_text_doc_resolve() -> None:
 
         # Test YAML to RST converstion
         test_file = "/includes/steps/migrate-compose-pr.rst"
-        
+
         resolve_path = Path(
             server.m_text_document__resolve(test_file, docpath_str, resolve_type)
         )
@@ -274,6 +274,7 @@ def test_text_doc_get_page_fileid() -> None:
         assert (
             server.m_text_document__get_page_fileid(test_file_path) == expected_fileid
         )
+
 
 def test_reporting_config_error() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:

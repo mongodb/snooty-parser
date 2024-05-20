@@ -436,7 +436,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             stripped_file_name = fileName[1:]
             if fileName.endswith("rst"):
                 file_path = self.project.config.source_path / stripped_file_name
-                file_id = self.project.get_fileid(file_path)
+                file_id = self.project.get_fileid_from_ast(file_path)
                 real_file_path = self.project.config.source_path / file_id
                 return str(real_file_path)
             else:

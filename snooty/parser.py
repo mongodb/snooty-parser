@@ -1814,7 +1814,7 @@ class Project:
         with self._lock:
             return self._project.get_page_ast(path)
 
-    def get_fileid(self, path: Path) -> FileId:
+    def get_fileid_from_ast(self, path: Path) -> FileId:
         page_ast = self.get_page_ast(path)
         return page_ast.fileid
 
