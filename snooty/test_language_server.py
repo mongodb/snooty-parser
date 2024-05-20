@@ -111,7 +111,9 @@ def test_text_doc_resolve() -> None:
     """Tests to see if m_text_document__resolve() returns the proper path combined with
     appropriate extension"""
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
-        server.m_initialize(None, CWD_URL + "/test_data/test_project")
+        server.m_initialize(
+            None, CWD_URL + "/test_data/test_project_embedding_includes"
+        )
 
         assert server.project is not None
 
@@ -127,6 +129,16 @@ def test_text_doc_resolve() -> None:
         )
         expected_path = source_path.joinpath(test_file[1:])
 
+        assert resolve_path == expected_path
+
+        # Test YAML to RST converstion
+        test_file = "/includes/steps/migrate-compose-pr.rst"
+        
+        resolve_path = Path(
+            server.m_text_document__resolve(test_file, docpath_str, resolve_type)
+        )
+
+        expected_path = source_path.joinpath("includes/steps-migrate-compose-pr.yaml")
         assert resolve_path == expected_path
 
         # Resolve arguments for testing doc role target file
@@ -262,7 +274,6 @@ def test_text_doc_get_page_fileid() -> None:
         assert (
             server.m_text_document__get_page_fileid(test_file_path) == expected_fileid
         )
-
 
 def test_reporting_config_error() -> None:
     with language_server.LanguageServer(sys.stdin.buffer, sys.stdout.buffer) as server:
