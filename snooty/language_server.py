@@ -431,14 +431,16 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         elif resolveType == "directive":
             """If the filename has a .rst extension, it might be converted from
             a YAML file. We want to get its original file path in that case."""
-            if ".rst" in fileName:
-                filePath = str(self.project.config.source_path) + fileName
-                fileId = self.project.get_fileid(Path(filePath))
-                finalFileId = self.project.config.source_path / fileId
-                return str(finalFileId)
-            else:
-                return str(self.project.config.source_path) + fileName
 
+            # Strip the first slash from fileName so the / operator doesn't mess up :|
+            stripped_file_name = fileName[1:]
+            if fileName.endswith("rst"):
+                file_path = self.project.config.source_path / stripped_file_name
+                file_id = self.project.get_fileid(file_path)
+                real_file_path = self.project.config.source_path / file_id
+                return str(real_file_path)
+            else:
+                return str(self.project.config.source_path / stripped_file_name)
         else:
             logger.error("resolveType is not supported")
             return fileName
