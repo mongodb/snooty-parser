@@ -433,7 +433,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             a YAML file. We want to get its original file path in that case."""
 
             # Strip the first slash from fileName so the / operator doesn't mess up :|
-            stripped_file_name = fileName[1:]
+            stripped_file_name = fileName.lstrip("/")
             if fileName.endswith("rst"):
                 file_path = self.project.config.source_path / stripped_file_name
                 file_id = self.project.get_fileid_from_ast(file_path)
