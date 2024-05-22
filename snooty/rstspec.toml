@@ -43,7 +43,7 @@ options.widths = "string"
 options.class = "string"
 options.header-rows = "nonnegative_integer"
 options.stub-columns = "nonnegative_integer"
-example = """.. list-table::
+snippet = """.. list-table::
    :header-rows: ${1:1 (Optional)}
    :stub-columns: ${2:1 (Optional)}
    :widths: ${3:10 10 20 (Optional)}
@@ -59,6 +59,40 @@ ${4:   :align:
      -
 
 """
+example = """.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * - Field
+     - Type
+     - Description
+     - Required?
+
+   * - ``type``
+     - string 
+     - Type of count of the documents in the result set. Value can be 
+       one of the following:
+
+       - ``lowerBound`` - for a lower bound count of the number of 
+         documents that match the query. You can set the ``threshold`` 
+         for the lower bound number.
+       - ``total`` - for an exact count of the number of documents that 
+         match the query. If the result set is large, |fts| might take 
+         longer than for ``lowerBound`` to return the count.
+
+       If omitted, defaults to ``lowerBound``.
+
+     - no
+
+   * - ``threshold``
+     - int 
+     - Number of documents to include in the exact count if ``type`` is 
+       ``lowerBound``. If omitted, defaults to ``1000``, which 
+       indicates that any number up to ``1000`` is an exact count and 
+       any number above ``1000`` is a rough count of the number of 
+       documents in the result.
+     - no
+"""
 
 # Intended for use on the ecosystem landing page only
 [directive."mongodb:drivers-index-tiles"]
@@ -66,59 +100,59 @@ deprecated = true
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
+example = """.. deprecated-version-selector::"""
 
 [directive.admonition]
 content_type = "block"
 argument_type = "string"
 options.class = "string"
 deprecated = true
-example = """.. admonition:: ${1:Title}
+snippet = """.. admonition:: ${1:Title}
 
    ${2:Admonition content}
 """
 
 [directive.note]
 inherit = "admonition"
-example = """.. note:: ${1:Title}
+snippet = """.. note:: ${1:Title}
 
    ${2:Note block content}
+"""
+example = """.. note:: This is a title
+
+   And here are the words that live within.
 """
 
 [directive.warning]
 inherit = "admonition"
-example = """.. warning:: ${1:Title}
+snippet = """.. warning:: ${1:Title}
 
    ${2:Warning block content}
 """
+example = """.. warning:: This is a title
 
+   And here are the words that live within.
+"""
 [directive.important]
 inherit = "admonition"
-example = """.. important:: ${1:Title}
+snippet = """.. important:: ${1:Title}
 
    ${2:Important block content}
 """
+example = """.. important:: This is a title
 
-[directive.danger]
-inherit = "admonition"
-deprecated = true
-example = """.. danger::
-
-   ${1:Danger block content}
-"""
-
-[directive.caution]
-inherit = "admonition"
-deprecated = true
-example = """.. caution:: ${1:Title}
-
-   ${2:Caution block content}
+   And here are the words that live within.
 """
 
 [directive.tip]
 inherit = "admonition"
-example = """.. tip:: ${1:Title}
+snippet = """.. tip:: ${1:Title}
 
    ${2:Tip content}
+"""
+example = """.. tip:: This is a title
+
+   And here are the words that live within.
 """
 
 [directive._baseversiondirective]
@@ -127,41 +161,59 @@ content_type = "block"
 
 [directive.versionchanged]
 inherit = "_baseversiondirective"
-example = """.. versionchanged:: ${1:v1.0}
+snippet = """.. versionchanged:: ${1:v1.0}
    ${2:Describe what changed in that version. Description is optional.}
+"""
+example = """.. versionchanged:: v7.0
+   Things that changed in that version
 """
 
 [directive.versionadded]
 inherit = "_baseversiondirective"
-example = """.. versionadded:: ${1:v1.0}
+snippet = """.. versionadded:: ${1:v1.0}
    ${2:Describe what was added in that version. Description is optional.}
 """
+example = """.. versionadded:: v7.0
+   Things added in that version
+"""
+
 [directive.deprecated]
 argument_type = {type = "string", required = false}
 content_type = "block"
-example = """.. deprecated:: ${1:v1.0 (Optional)}
+snippet = """.. deprecated:: ${1:v1.0 (Optional)}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
+"""
+example = """.. deprecated:: v7.0
+   Explanation to inform the reader what should be used instead. 
 """
 
 [directive.see]
 inherit = "admonition"
-example = """.. see:: ${1:Title}
+snippet = """.. see:: ${1:Title}
 
    ${2:String}
+"""
+example = """.. see:: This is a title
+
+   And here are the words that live within.
 """
 
 [directive.seealso]
 inherit = "admonition"
-example = """.. seealso:: ${1:Title}
+snippet = """.. seealso:: ${1:Title}
 
    ${2:String}
+"""
+example = """.. seealso:: This is a title
+
+   And here are the words that live within.
 """
 
 [directive.todo]
 help = """Describes a task to be completed by a writer in the future."""
 argument_type = "string"
 content_type = "string"
-example = """.. todo::"""
+snippet = """.. todo::"""
 
 [directive.contents]
 argument_type = "string"
@@ -169,11 +221,24 @@ options.local = "flag"
 options.backlinks = "backlinks"
 options.depth = "nonnegative_integer"
 options.class = "string"
-example = """.. contents:: ${1:string}
+snippet = """.. contents:: ${1:string}
    ${2::local: (Optional)}
    :backlinks: ${3|entry,top,none|}
    :depth: ${4:1 (Optional)}
    :class: ${5:Fancy (Optional)}
+"""
+example = """.. contents:: On This Page (local, backlinks: entry, depth: 2)
+   :local:
+   :backlinks: entry
+   :depth: 2
+
+.. contents::  On This Page (backlinks: top, depth: 1)
+   :backlinks: top
+   :depth: 1
+
+.. contents:: On This Page (backlinks: none, depth: 1)
+   :backlinks: none
+   :depth: 1
 """
 
 [directive.include]
@@ -182,7 +247,7 @@ argument_type = ["path", "uri"]
 content_type = "string"
 options.start-after = "string"
 options.end-before = "string"
-example = """.. include:: ${1:/includes/file.rst}
+snippet = """.. include:: ${1:/includes/file.rst}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
 """
@@ -190,7 +255,7 @@ example = """.. include:: ${1:/includes/file.rst}
 [directive.sharedinclude]
 argument_type = "string"
 content_type = "string"
-example = """.. sharedinclude:: ${1:/test/sample-item.rst}
+snippet = """.. sharedinclude:: ${1:/test/sample-item.rst}
 """
 
 [directive.literalinclude]
@@ -205,7 +270,7 @@ options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
 options.lineno-start = "nonnegative_integer"
-example = """..literalinclude:: ${1:/path/to/file.js}
+snippet = """..literalinclude:: ${1:/path/to/file.js}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
    :language: ${4:language for syntax highlighting}
@@ -220,7 +285,7 @@ example = """..literalinclude:: ${1:/path/to/file.js}
 help = """Specify replacements for variables in a shared content item."""
 argument_type = "str"
 content_type = "block"
-example = """.. replacement:: ${1:variable name}
+snippet = """.. replacement:: ${1:variable name}
 
    ${2:Content with which to replace variable}
 """
@@ -229,7 +294,7 @@ example = """.. replacement:: ${1:variable name}
 help = """Include an image file."""
 argument_type = ["path", "uri"]
 content_type = "block"
-example = """.. figure:: ${1:/path or uri.png}
+snippet = """.. figure:: ${1:/path or uri.png}
    :alt: ${2:Alt text for the image}
    ${3::figwidth:
    :width:
@@ -253,7 +318,7 @@ options.border = "flag"
 
 [directive.image]
 inherit = "figure"
-example = """.. image:: ${1:/path or uri.png}
+snippet = """.. image:: ${1:/path or uri.png}
    :alt: ${2: Alt text for the image}
    #{3::figwidth:
    :width:
@@ -269,24 +334,32 @@ example = """.. image:: ${1:/path or uri.png}
 [directive.example]
 help = """A section providing an example related to the surrounding text."""
 inherit = "admonition"
-example = """.. example::
+snippet = """.. example::
 
    ${0:Example}
+"""
+example = """.. example:: This is a title
+
+   And here are the words that live within.
 """
 
 [directive.optional]
 help = """A section of optional information or steps."""
 content_type = "block"
-example = """.. optional::
+snippet = """.. optional::
 
    ${0:Optional content}
+"""
+example = """.. optional:: This content is optional
+
+   Optional words.
 """
 
 [directive.cond]
 help = """Only parse a chunk of content if the condition in the argument is true."""
 argument_type = "string"
 content_type = "block"
-example = """.. cond:: ${1: string}
+snippet = """.. cond:: ${1: string}
 
    ${0:Content block}
 """
@@ -310,7 +383,7 @@ help = """A nested document providing related or reference material."""
 argument_type = "string"
 options.subtitle = "string"
 content_type = "block"
-example = """.. sidebar:: ${1:string}
+snippet = """.. sidebar:: ${1:string}
    :subtitle: ${2:string}
 
    ${3:Content block}
@@ -319,7 +392,7 @@ example = """.. sidebar:: ${1:string}
 [directive.toctree]
 help = """List pages to treat as children of this page."""
 content_type = "block"
-example = """.. toctree::
+snippet = """.. toctree::
    :maxdepth: ${1:int}
    ${2::titlesonly:}
    ${3::hidden:}
@@ -357,7 +430,7 @@ content_type = "block"
 argument_type = "string"
 options.hidden = "boolean"
 options.tabset = "string"
-example = """.. tabs:: ${1: string}
+snippet = """.. tabs:: ${1: string}
    :hidden: ${2|true,false|}
    :tabset: ${3:string}
 
@@ -407,7 +480,7 @@ inherit = "tabs"
 argument_type = "string"
 content_type = "block"
 options.tabid = {type = "string", required = true}
-example = """.. tab:: ${1:Tab Title}
+snippet = """.. tab:: ${1:Tab Title}
    :tabid: ${2:id of the tab}
 
    ${0: Tab content.}
@@ -423,17 +496,31 @@ content_type = "block"
 [directive.glossary]
 content_type = "block"
 options.sorted = "flag"
-example = """.. glossary::
+snippet = """.. glossary::
 
    ${1:Term}
       ${0:Term's definition}
 """
+example = """.. glossary::
+
+   Foo
+      Definition of foo. With a `link <https://www.example.com/>`_!
+   
+   Bar
+      Definition of bar.
+
+"""
 
 [directive.rubric]
 argument_type = "string"
-example = """.. rubric:: ${1:Paragraph heading that is not used to create a TOC node}
+snippet = """.. rubric:: ${1:Paragraph heading that is not used to create a TOC node}
 
    $0
+"""
+example = """.. rubric:: Heading that isn't going to show up in the contents
+
+   Words to go under the heading.
+
 """
 
 [directive.code-block]
@@ -446,7 +533,7 @@ options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
 options.source = "uri"
-example = """.. code-block:: ${1:language}
+snippet = """.. code-block:: ${1:language}
    ${2::copyable: (bool)
    :caption: (string)
    :emphasize-lines: (string)
@@ -455,21 +542,50 @@ example = """.. code-block:: ${1:language}
    :source: ${1: URL to source code}}
 
    ${0:code content}
+"""
+example = """.. code-block:: javascript
+   :linenos:
+   :source: https://github.com/mongodb/docs-node/blob/master/source/code-snippets/usage-examples/count.js
+   :emphasize-lines: 17 23
+   :caption: count.js
+   :copyable: true
+
+   // Count documents in a collection
+
+   import { MongoClient } from "mongodb";
+
+   // Replace the uri string with your MongoDB deployment's connection string
+   const uri = "<connection string uri>";
+
+   const client = new MongoClient(uri);
+
+   async function run() {
+   try {
+      const database = client.db("sample_mflix");
+      const movies = database.collection("movies");
+
+      /* Print the estimate of the number of documents in the
+      "movies" collection */
+      const estimate = await movies.estimatedDocumentCount();
+      console.log(`Estimated number of documents in the movies collection: ${estimate}`);
+
+      /* Print the number of documents in the "movies" collection that
+      match the specified query */
+      const query = { countries: "Canada" };
+      const countCanada = await movies.countDocuments(query);
+      console.log(`Number of movies from Canada: ${countCanada}`);
+   } finally {
+      // Close the connection after the operations complete
+      await client.close();
+   }
+   }
+   // Run the program and print any thrown exceptions
+   run().catch(console.dir);
 """
 
 [directive.code]
 help = """A block of code to show the user."""
 inherit = "code-block"
-example = """.. code:: ${1:language}
-   ${2::copyable: (bool)
-   :caption: (string)
-   :emphasize-lines: (string)
-   :class: (string)
-   :linenos: (flag)
-   :source: ${1: URL to source code}}
-
-   ${0:code content}
-"""
 
 [directive.io-code-block]
 help = """A block of code and its corresponding output to show the user."""
@@ -479,7 +595,7 @@ options.caption = "string"
 options.copyable = "boolean"
 options.class = "string"
 options.source = "uri"
-example = """.. io-code-block::
+snippet = """.. io-code-block::
    ${2::copyable: (bool)
    :caption: (string)
    :class: (string)
@@ -496,6 +612,20 @@ example = """.. io-code-block::
       :linenos: (flag)
       :visible: (bool)
 """
+example = """.. io-code-block::
+   :copyable: true
+
+   .. input::
+      :language: js
+
+      await coll.findOne({ title: 'Hamlet' });
+
+   .. output::
+      :language: js
+      :visible: false
+
+      { title: 'Hamlet', type: 'movie', ... }
+"""
 
 [directive.input]
 help = """The code content."""
@@ -508,7 +638,7 @@ options.dedent = ["nonnegative_integer", "flag"]
 options.lineno-start = "nonnegative_integer"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
-example = """.. input:: ${0:code input or </path/to/file>}
+snippet = """.. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
       :start-after: ${2:text to start after (Optional}}
       :end-before: ${3:text to end before (Optional}}
@@ -530,7 +660,7 @@ options.lineno-start = "nonnegative_integer"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
 options.visible = "boolean"
-example = """.. output:: ${0:code output or </path/to/file>}
+snippet = """.. output:: ${0:code output or </path/to/file>}
       :language: ${1:language}
       :start-after: ${2:text to start after (Optional}}
       :end-before: ${3:text to end before (Optional}}
@@ -547,7 +677,7 @@ help = """Add the given CSS class name to generated HTML of the contained (if co
 argument_type = "string"
 content_type = "block"
 deprecated = true
-example = """.. cssclass:: ${1:class name}
+snippet = """.. cssclass:: ${1:class name}
 
    ${0:Optional content to which class will apply. If no content given, class applies to following page element.}
 """
@@ -557,7 +687,7 @@ deprecated = true
 
 [directive.languages]
 help = """A list of languages that this guide supports."""
-# example = """.. languages::
+# snippet = """.. languages::
 
 #    * ${0:shell
 #    * compass
@@ -574,7 +704,7 @@ options.columns = "nonnegative_integer"
 [directive.blockquote]
 help = """A block of content which is quoted from another source."""
 content_type = "block"
-# example = """.. blockquote::
+# snippet = """.. blockquote::
 #    ${0: quoted content}
 # """
 
@@ -583,7 +713,7 @@ content_type = "block"
 help = """ Landing page section for exploring the Document Model"""
 content_type = "block"
 argument_type = "string"
-example = """ .. landing:explore:: Explore the Document Model
+snippet = """ .. landing:explore:: Explore the Document Model
 
    MongoDB is a flexible, schema-less NoSQL database.
    It stores data as JSON-like documents, enabling nested structures,
@@ -609,7 +739,7 @@ argument_type = "string"
 content_type = "block"
 options.video_url = { type = "uri", required = true }
 
-example = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
+snippet = """.. landing:more-ways:: ${1: the value of the H3 that should be rendered by the front-end}
    :video_url: ${2: full video url}
 
    ${3: More ways content}
@@ -621,33 +751,52 @@ example = """.. landing:more-ways:: ${1: the value of the H3 that should be rend
 help = """A skinny admonition, meant for alerts or smaller notifications."""
 content_type = "block"
 options.variant = "banner_variant"
-example = """.. banner::
+snippet = """.. banner::
    :variant: ${1: warning (Optional)}
 
    ${2:banner content}
+"""
+example = """.. banner::
+   :variant: warning
+
+   Warning variant -- you have been warned.
+
+.. banner::
+
+   Default variant -- you have been defaulted.
 """
 
 [directive."mongodb:cta-banner"]
 content_type = "block"
 options.url = { type = "uri", required = true }
 options.icon = "string"
-example = """.. cta-banner::
+snippet = """.. cta-banner::
    :url: https://university.mongodb.com/
    :icon: ${1:Leafygreen icon}
 
    ${2:Banner Text content}
 """
+example = """.. cta-banner::
+   :url: https://learn.mongodb.com/
+   :icon: Sparkle
+
+   Words for the banner.
+"""
 
 [directive."mongodb:button"]
 help = "Make a button."
-example = """.. button:: ${1: string}
-:uri: ${2:/path or url}"""
 argument_type = "string"
 content_type = "block"
 options.uri = { type = ["path", "uri"], required = true }
+snippet = """.. button:: ${1: string}
+   :uri: ${2:/path or url}
+"""
+example = """.. button:: Label
+   :uri: https://www.example.com/
+"""
 
 [directive."mongodb:card"]
-example = """.. card::
+snippet = """.. card::
    :headline: ${1:Run a self-managed database (Optional)}
    :cta: ${2:Get started with MongoDB}
    :url: {$3:url-card-should-link-to}
@@ -674,12 +823,270 @@ options.layout = "card_layout"
 options.style = "card_style"
 options.type = "card_group_type"
 options.ia-entry-id = "string"
-example = """.. card-group::
-   ${1::columns: 2}
+snippet = """.. card-group::
+   :columns: ${1: 2}
    :layout: ${3:|default,carousel| (Optional)}
    :style: ${2:|default,compact,extra-compact| (Optional)}
 
    ${0: Card content}
+"""
+# :style: compact --> cards on bottom of landign page(s)
+# :style: extra-compact --> Realm only ish? Example: https://www.mongodb.com/docs/atlas/device-sdks/sdk/swift/#get-started-with-the-swift-sdk
+# :style: default // not used
+# :style: center-content --> new language landign pages, libraries and extensions https://www.mongodb.com/docs/languages/csharp/#libraries-and-extensions
+# :style: large-icon --> new language pages, more ways to learn https://www.mongodb.com/docs/languages/csharp/#more-ways-to-learn
+
+# :layout: carousel --> used **only** on docs-ecosystem landing featured community-supported libraries
+
+
+example = """``:style: compact``
+~~~~~~~~~~~~~~~~~~~
+
+.. card-group::
+   :columns: 3
+   :style: compact
+
+   .. card::
+      :cta: Read Atlas docs
+      :url: https://www.mongodb.com/docs/atlas/getting-started/
+      :icon: /images/icons/atlas.svg
+      :icon-alt: MongoDB Atlas icon
+
+      Use Compass to connect to your Atlas cluster
+
+   .. card::
+      :cta: Learn MongoDB Basics
+      :url: https://university.mongodb.com/courses/M001/about
+      :icon: /images/icons/university.svg
+      :icon-alt: MongoDB University icon
+
+      Learn MongoDB Basics with MongoDB University
+
+   .. card::
+      :cta: Read Server docs
+      :url: https://www.mongodb.com/docs/manual/tutorial/getting-started/
+      :icon: /images/icons/server.svg
+      :icon-alt: MongoDB Server icon
+
+``:style: extra-compact``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. card-group::
+   :columns: 3
+   :style: extra-compact
+
+   .. card::
+      :headline: Quick Start
+      :cta: See Code Examples
+      :url: https://www.mongodb.com/docs/realm/sdk/swift/quick-start/
+      :icon: /images/icons/branding_2022/Technical_ATLAS_Functions3x.png
+      :icon-alt: Functions Icon
+
+      Minimal-explanation code examples of how to work with the Swift SDK. 
+      Write to the device database, and sync with other devices.
+
+   .. card::
+      :headline: Working Example App
+      :cta: Explore an Example App
+      :url: https://www.mongodb.com/docs/atlas/app-services/template-apps/
+      :icon: /images/icons/branding_2022/Technical_REALM_Mobile3x.png
+      :icon-alt: Realm Mobile Icon
+
+      Learn from example by dissecting a working SwiftUI client app that
+      uses the Swift SDK.
+
+   .. card::
+      :headline: Guided Tutorial
+      :cta: Follow the Tutorial
+      :url: https://mongodb.com/docs/atlas/app-services/tutorial/swiftui/
+      :icon: /images/icons/branding_2022/General_CONTENT_Tutorial3x.png
+      :icon-alt: Tutorial Icon
+
+      Follow a guided tutorial to learn how to adapt the example app to
+      create your own working app.
+
+
+``:style: center-content``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. card-group::
+   :columns: 2
+   :style: center-content
+
+   .. card::
+      :headline: .NET Analyzer 
+      :url: https://www.mongodb.com/docs/mongodb-analyzer/current/
+      :icon: /images/icons/microsoft-net.svg
+      :icon-alt: Entity Framework and .NET icon
+
+   .. card::
+      :headline: OData Support
+      :url: https://www.nuget.org/packages/MongoDB.AspNetCore.OData/
+      :icon: /images/icons/odata-logo-96.png
+      :icon-alt: OData icon
+
+``:style: large-icon``
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. card-group::
+   :columns: 3
+   :style: large-icon
+
+   .. card::
+      :headline: View C# developer resources
+      :url: https://www.mongodb.com/developer/languages/csharp/
+      :icon: /images/technical-mdb-devhub.svg
+      :icon-alt: DevHub icon
+
+      C# Resources  →
+
+   .. card::
+      :headline: Learn about C# and MongoDB
+      :url: https://learn.mongodb.com/learning-paths/using-mongodb-with-c-sharp
+      :icon: /images/icons/university.svg
+      :icon-alt: Learn icon
+
+      C# Developer Path →
+  
+   .. card::
+      :headline: Join forums and discussions
+      :url: https://www.mongodb.com/community/
+      :icon: /images/general-content-community.svg
+      :icon-alt: Community icon
+
+      MongoDB Community →
+
+``:type: drivers``
+~~~~~~~~~~~~~~~~~~
+
+(This could also be achieved using `:style: center-content`.
+`Code reference <https://github.com/mongodb/snooty/blob/main/src/components/Card/CardGroup.js#L100>`__.)
+
+.. card-group::
+   :columns: 3
+   :layout: default
+   :type: drivers
+
+   .. card::
+      :headline: C
+      :url: https://www.mongodb.com/docs/languages/c/c-driver/current/
+      :icon: /icons/c.svg
+      :icon-alt: C Driver icon
+
+   .. card::
+      :headline: C++
+      :url: https://www.mongodb.com/docs/languages/cpp/drivers/current/
+      :icon: /icons/c++.svg
+      :icon-alt: C plus plus Driver icon
+
+   .. card::
+      :headline: C#
+      :url: /csharp-drivers/ 
+      :icon: /icons/csharp.svg
+      :icon-alt: C sharp Driver icon
+
+   .. card::
+      :headline: Go
+      :url: https://www.mongodb.com/docs/drivers/go/current/
+      :icon: /icons/go.svg
+      :icon-alt: Go Driver icon
+
+   .. card::
+      :headline: Java
+      :url: /java-drivers/
+      :icon: /icons/java.svg
+      :icon-alt: Java Driver icon
+   
+   .. card::
+      :headline: Kotlin
+      :url: /kotlin-drivers/
+      :icon: /icons/kotlin.svg
+      :icon-alt: Kotlin Driver icon
+   
+   .. card::
+      :headline: Node.js
+      :url: https://www.mongodb.com/docs/drivers/node/current/
+      :icon: /icons/node.svg
+      :icon-alt: Node Driver icon
+
+   .. card::
+      :headline: PHP
+      :url: /php-drivers/
+      :icon: /icons/php.svg
+      :icon-alt: PHP Driver icon
+
+   .. card::
+      :headline: Python
+      :url: /python-drivers/
+      :icon: /icons/python.svg
+      :icon-alt: Python Driver icon
+   
+   .. card::
+      :headline: Ruby
+      :url: /ruby-drivers/
+      :icon: /icons/ruby.svg
+      :icon-alt: Ruby Driver icon
+
+   .. card::
+      :headline: Rust
+      :url: https://www.mongodb.com/docs/drivers/rust/current/
+      :icon: /icons/rust.svg
+      :icon-alt: Rust Driver icon
+
+   .. card::
+      :headline: Scala
+      :url: https://www.mongodb.com/docs/languages/scala/scala-driver/current/
+      :icon: /icons/scala.svg
+      :icon-alt: Scala Driver icon
+
+   .. card::
+      :headline: Swift
+      :url: /swift/
+      :icon: /icons/swift.svg
+      :icon-alt: Swift Driver icon
+
+   .. card::
+      :headline: TypeScript
+      :url: /typescript/
+      :icon: /icons/ts.svg
+      :icon-alt: TypeScript Driver icon
+
+``:layout: carousel``
+~~~~~~~~~~~~~~~~~~~~~
+
+This layout is currently used **only** on the landing page of docs-ecosystem.
+Perhaps we can discontinue support?
+
+.. card-group::
+   :columns: 3
+   :layout: carousel
+   :type: drivers
+
+   .. card::
+      :cta: Elixir
+      :url: https://github.com/zookzook/elixir-mongodb-driver
+      :icon: /icons/elixir.svg
+      :icon-alt: Elixir icon
+
+   .. card::
+      :cta: Mongoose
+      :url: https://mongoosejs.com/docs/index.html
+      :icon: /icons/mongoose.svg
+      :icon-alt: Mongoose icon
+   
+   .. card::
+      :cta: Prisma
+      :url: https://www.prisma.io/docs/guides/database/mongodb
+      :icon: /icons/prisma.svg
+      :icon-alt: Prisma icon
+
+   .. card::
+      :cta: R
+      :url: https://cran.r-project.org/web/packages/mongolite/
+      :icon: /icons/r.svg
+      :icon-alt: R icon
+
+
 """
 
 [directive."landing:product"]
@@ -688,7 +1095,7 @@ help = """Product in a product-list. Each product links to the specified URI, an
 options.icon = ["path", "uri"]
 options.icon-alt = "string"
 argument_type = "string"
-example = """.. product:: ${0: string}
+snippet = """.. product:: ${0: string}
    ${4::icon: /path-to-icon.svg
    :icon-alt: Icon's alt text
 
@@ -698,7 +1105,7 @@ example = """.. product:: ${0: string}
 [directive."landing:products"]
 content_type = "block"
 help = """Container to hold a group of products"""
-example = """.. landing:products::
+snippet = """.. landing:products::
    ${0: Product content}
 """
 
@@ -708,7 +1115,7 @@ help = """Title and call-to-action for card-group"""
 options.cta = "string"
 options.url = ["path", "uri"]
 argument_type = "string"
-example = """.. landing:client-libraries:: ${0: string}
+snippet = """.. landing:client-libraries:: ${0: string}
    :cta: ${1:Get started with MongoDB}
    :url: ${2:url-should-link-to}
 """
@@ -717,13 +1124,13 @@ example = """.. landing:client-libraries:: ${0: string}
 help = """Make an Introduction. Pass in a title string as an argument, and a content block"""
 argument_type = "string"
 content_type = "block"
-example = """.. landing:introduction:: MongoDB Introduction
+snippet = """.. landing:introduction:: MongoDB Introduction
    ${0: Introduction content}
 """
 
 [directive."mongodb:chapter"]
 help = "A container for a group of MongoDB guides."
-example = """.. chapter:: ${1: string}
+snippet = """.. chapter:: ${1: string}
    :description: ${2: string}
    :image: ${3: /path/to/image.png - the chapter card will use this}
    :icon: ${4: /path/to/icon.png - the guides cards related to the chapter will use this}
@@ -738,7 +1145,7 @@ options.icon = ["path", "uri"]
 
 [directive."mongodb:chapters"]
 help = "A container for a group of chapter directives."
-example = """.. chapters::
+snippet = """.. chapters::
 
    ${0: chapters content}
 """
@@ -746,7 +1153,7 @@ content_type = "block"
 
 [directive."mongodb:cta"]
 help = "Call to action directing users to a new part of the site"
-example = """..cta::
+snippet = """..cta::
 
    ${0::manual:`Read the Introduction to MongoDB </introduction>`}
 """
@@ -754,13 +1161,13 @@ content_type = "block"
 
 [directive."mongodb:guide"]
 help = "Denotes a guide page."
-example = """.. guide:: ${0: /path/to/guide.txt}"""
+snippet = """.. guide:: ${0: /path/to/guide.txt}"""
 argument_type = ["path", "uri"]
 content_type = "string"
 
 [directive."mongodb:guide-next"]
 help = "A section that directs users to what they should do next after reading a guide"
-example = """.. guide-next:: ${0: string}
+snippet = """.. guide-next:: ${0: string}
    ${1: content}
 """
 argument_type = "string"
@@ -777,8 +1184,13 @@ content_type = "block"
 
 [directive."mongodb:kicker"]
 help = "Make a kicker (a subheader that is placed on top of the main header)."
-example = """.. kicker:: ${1: string}"""
+snippet = """.. kicker:: ${1: string}"""
 argument_type = "string"
+example = """.. kicker:: Related Products & Resources
+
+Get Hands-On Experience With |fts|
+----------------------------------
+"""
 
 [directive."mongodb:openapi"]
 help = """Include a reStructuredText file's contents."""
@@ -797,32 +1209,112 @@ content_type = "block"
 options.hash = "string"
 options.method = "string"
 options.path = "string"
+deprecated = true
 
 [directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
-example = """.. procedure::
+snippet = """.. procedure::
    :style: ${0: string}
 
 ${1: Steps content}"""
 content_type = "block"
 options.style = "procedure_styles"
+example = """``:style: normal``
+~~~~~~~~~~~~~~~~~~
+
+.. procedure::
+   :style: normal
+
+   .. step:: The alert condition is met.
+   
+      - For informational alerts like the 
+        :alert:`User joined the organization` alert, |service| sends 
+        notifications as soon as the condition is met. These alerts 
+        don't appear in the {+atlas-ui+}. The informational alerts 
+        workflow ends here.
+
+      - Otherwise, |service| retrieves metrics at regular intervals 
+        based on granularity. When the retrieved metrics indicate that 
+        an alert condition is met, |service| tracks the alert condition 
+        until it ends, or until it remains past the amount of time 
+        specified in the :guilabel:`send if condition lasts at least` 
+        field.
+
+        .. note::
+
+           If the alert condition ends between sampling periods, 
+           |service| doesn't track the alert condition or send any 
+           notifications.
+
+   .. step:: The alert condition remains past the amount of time specified in the :guilabel:`send if condition lasts at least` field.
+      
+      |service| sends notifications. The alerts appear on the 
+      :guilabel:`All Alerts` tab (organization alerts) or the 
+      :guilabel:`Open Alerts` tab (project alerts).
+
+``:style: connected``
+~~~~~~~~~~~~~~~~~~~~~
+
+.. procedure::
+   :style: connected
+
+   .. step:: The alert condition is met.
+   
+      - For informational alerts like the 
+        :alert:`User joined the organization` alert, |service| sends 
+        notifications as soon as the condition is met. These alerts 
+        don't appear in the {+atlas-ui+}. The informational alerts 
+        workflow ends here.
+
+      - Otherwise, |service| retrieves metrics at regular intervals 
+        based on granularity. When the retrieved metrics indicate that 
+        an alert condition is met, |service| tracks the alert condition 
+        until it ends, or until it remains past the amount of time 
+        specified in the :guilabel:`send if condition lasts at least` 
+        field.
+
+        .. note::
+
+           If the alert condition ends between sampling periods, 
+           |service| doesn't track the alert condition or send any 
+           notifications.
+
+   .. step:: The alert condition remains past the amount of time specified in the :guilabel:`send if condition lasts at least` field.
+      
+      |service| sends notifications. The alerts appear on the 
+      :guilabel:`All Alerts` tab (organization alerts) or the 
+      :guilabel:`Open Alerts` tab (project alerts).
+
+"""
 
 [directive."mongodb:quiz"]
 content_type = "block"
 help = "Embed a quiz with a question argument, using the quizchoice directive to construct answer options."
-example = """.. quiz::
+argument_type = "string"
+options.quiz-id = {type = "string", required = true}
+options.quiz-date = "string"
+snippet = """.. quiz::
   :quiz-id: ${1:string}
   :quiz-date: ${2:string}
 
    ${3:string}"""
-argument_type = "string"
-options.quiz-id = {type = "string", required = true}
-options.quiz-date = "string"
+example = """.. quiz::
+   :quiz-id: docreference
+   :quiz-date: 2024-05-22
+
+   .. quizchoice:: Choice 1 which is right.
+      :is-true:
+   
+   .. quizchoice:: Choice 2 which is wrong.
+
+      It's wrong because it's wrong.
+
+"""
 
 [directive."mongodb:quizchoice"]
 content_type = "block"
 help = "A possible quiz answer and an explanation to be displayed after submission"
-example = """ .. quizchoice:: ${1:string}
+snippet = """ .. quizchoice:: ${1:string}
    :is-true:
 
    ${3:string}"""
@@ -832,7 +1324,7 @@ options.is-true = "flag"
 [directive."mongodb:short-description"]
 help = "A description or preview of what the content will be about."
 content_type = "block"
-example = """.. short-description::
+snippet = """.. short-description::
    ${0: content}
 """
 
@@ -840,7 +1332,7 @@ example = """.. short-description::
 help = "Make a single, numbered step."
 argument_type = {type = "string", required = false}
 content_type = "block"
-example = """.. step:: ${0: Step's headline string (Optional)}
+snippet = """.. step:: ${0: Step's headline string (Optional)}
 
    ${1: Step content}
 """
@@ -848,14 +1340,14 @@ example = """.. step:: ${0: Step's headline string (Optional)}
 [directive."mongodb:time"]
 help = "The amount of time that it would take to go through the guide content in minutes."
 argument_type = {type = "nonnegative_integer", required = true}
-example = """.. time:: 15"""
+snippet = """.. time:: 15"""
 
 [directive."mongodb:facet"]
 help = "The name and value of search facets that apply to this page. Use nested facets to represent hierarchy"
 content_type = "block"
 options.name = {type = "string", required = true}
 options.values = {type = "string", required = true}
-example = """.. facet::
+snippet = """.. facet::
    :type: ${1:name_of_type}
    :values: ${2:value1, value2, value3}
 """
@@ -864,21 +1356,21 @@ example = """.. facet::
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
 argument_type = ["path", "uri"]
-example = """.. atf-image:: ${0:/path-or-url-to-image.png}"""
+snippet = """.. atf-image:: ${0:/path-or-url-to-image.png}"""
 
 [directive.pubdate]
 help = "Date the article was published. Format: YYYY-MM-DD"
 argument_type = "iso_8601"
-example = """.. pubdate:: ${0:YYYY-MM-DD}"""
+snippet = """.. pubdate:: ${0:YYYY-MM-DD}"""
 
 [directive.updated-date]
 help = "Date the post was most recently updated. Format: YYYY-MM-DD"
 argument_type = "iso_8601"
-example = """.. updated-date:: ${0:YYYY-MM-DD}"""
+snippet = """.. updated-date:: ${0:YYYY-MM-DD}"""
 
 [directive.twitter]
 help = """Provide the metadata required to automatically generate a card when posting the link to twitter."""
-example = """.. twitter::
+snippet = """.. twitter::
    :site: ${1:Corporate twitter @username to which the card should be attributed}
    :creator: ${2:Human twitter @username of the person who wrote the article}
    :title: ${3:Concise title of the article. Truncated to one line on web and two on mobile.}
@@ -917,13 +1409,13 @@ options.type = "string"
 [directive.video]
 help = "Embed a video in your article"
 argument_type = "uri"
-example = """.. video:: ${1: full video url}"""
+snippet = """.. video:: ${1: full video url}"""
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
 argument_type = "string"
 content_type = "block"
-example = """.. youtube:: ${0:H3P0lW94L2Q}
+snippet = """.. youtube:: ${0:H3P0lW94L2Q}
 """
 
 [directive.twitch]
@@ -956,7 +1448,7 @@ options.keywords = "string"
 options.description = "string"
 options.robots = "string"
 options.canonical = "uri"
-example = """.. meta::
+snippet = """.. meta::
    :keywords: ${1:string}
    :description: ${2:string}
    :robots: ${3:string}
@@ -968,7 +1460,7 @@ help = """A block with a self-contained chunk of information."""
 argument_type = "string"
 content_type = "block"
 deprecated = true
-example = """.. topic:: ${1:Title of block}
+snippet = """.. topic:: ${1:Title of block}
 
    ${0:Content}
 """
@@ -988,7 +1480,7 @@ options.url = "string"
 options.project-name = "string"
 options.primary = "flag"
 options.id = "string"
-example = """.. entry:: ${0: string}
+snippet = """.. entry:: ${0: string}
    ${1::url: (string)
    :project-name: (string) [optional]
    :primary: (optional)}
@@ -998,8 +1490,11 @@ example = """.. entry:: ${0: string}
 help = """Specify a community-built driver or library and include a pill badge"""
 argument_type = "string"
 options.url = "string"
-example = """.. community-driver:: ${0: driver (string)}
+snippet = """.. community-driver:: ${0: driver (string)}
    :url: ${1: https://example.com}
+"""
+example = """.. community-driver:: Fortran
+   :url: https://example.com
 """
 
 ###### Roles
@@ -1189,7 +1684,7 @@ inherit = "ref"
 
 [role."mongodb:card-ref"]
 help = """Create a reference, embedded within cards, with additional styling, that links to a named target."""
-example = """:card-ref:`Android <android-intro>`"""
+snippet = """:card-ref:`Android <android-intro>`"""
 inherit = "ref"
 
 [role."mongodb:required"]
