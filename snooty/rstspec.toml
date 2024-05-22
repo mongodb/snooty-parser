@@ -1181,7 +1181,7 @@ argument_type = "string"
 example = """.. kicker:: Related Products & Resources
 
 Get Hands-On Experience With fts
---------------------------------
+
 """
 
 [directive."mongodb:openapi"]
@@ -1382,7 +1382,7 @@ options.image-alt = {type = "string", required = true}
 
 [directive.og]
 help="""Provide the metadata required to automatically generate a card when posting to OG social-using sites, such as Facebook."""
-example= """.. og::
+snippet= """.. og::
    :url: ${1:Canonical URL of the page without any session variables, params, etc.}
    :type: ${2:article}
    :title: ${3:Title of article without any branding}
@@ -1417,7 +1417,7 @@ content_type = "block"
 
 [directive.charts]
 help = """Embed a chart from MongoDB Charts in your article."""
-example= """.. charts::
+snippet= """.. charts::
    :url: ${1:https://charts.mongodb.com/charts-coronavirus-lwlvn (url of your charts dashboard)}
    :id: ${2:6f921f0c-a1ee-4106-839c-412fad3c64e7 (id of the chart)}
    :autorefresh: ${3:3600 (time in seconds to refresh. default is no refresh)}
@@ -1425,6 +1425,10 @@ example= """.. charts::
    :width: ${5:760 (width of embedded frame)}
    :height: ${6:570 (height of embedded frame)}
    :align: ${7:right (left, right, or center)}
+"""
+example = """.. charts::
+   :url: https://charts.mongodb.com/charts-coronavirus-lwlvn
+   :id: 6f921f0c-a1ee-4106-839c-412fad3c64e7
 """
 options.url = "uri"
 options.id = "string"

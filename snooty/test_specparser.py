@@ -41,6 +41,7 @@ def test_load() -> None:
     assert spec.directive["child"] == specparser.Directive(
         inherit="_parent",
         example=None,
+        snippet=None,
         help=None,
         content_type="block",
         argument_type="user_level",

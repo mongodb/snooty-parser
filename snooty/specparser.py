@@ -159,6 +159,7 @@ class Directive:
     inherit: Optional[str]
     help: Optional[str]
     example: Optional[str]
+    snippet: Optional[str]
     content_type: Optional[StringOrStringlist]
     argument_type: Union[DirectiveOption, ArgumentType]
     required_context: Optional[str]
@@ -193,6 +194,7 @@ class Role:
     inherit: Optional[str]
     help: Optional[str]
     example: Optional[str]
+    snippet: Optional[str]
     type: Optional[RoleType]
     domain: Optional[str]
     deprecated: bool = field(default=False)
@@ -233,6 +235,7 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
+            snippet=None,
             content_type="block",
             argument_type=DirectiveOption(type="string", required=True),
             required_context=None,
@@ -249,6 +252,7 @@ class RstObject:
             inherit=None,
             help=self.help,
             example=None,
+            snippet=None,
             type=RefRoleType(self.domain, self.name, self.prefix, format=self.format),
             domain=self.domain,
             deprecated=self.deprecated,
