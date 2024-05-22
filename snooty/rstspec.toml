@@ -77,7 +77,7 @@ example = """.. list-table::
          documents that match the query. You can set the ``threshold`` 
          for the lower bound number.
        - ``total`` - for an exact count of the number of documents that 
-         match the query. If the result set is large, |fts| might take 
+         match the query. If the result set is large, fts might take 
          longer than for ``lowerBound`` to return the count.
 
        If omitted, defaults to ``lowerBound``.
@@ -100,7 +100,7 @@ deprecated = true
 
 # Intended for use on the docs.mongodb.com/legacy landing site only
 [directive."mongodb:deprecated-version-selector"]
-example = """.. deprecated-version-selector::"""
+snippet = """.. deprecated-version-selector::"""
 
 [directive.admonition]
 content_type = "block"
@@ -227,18 +227,10 @@ snippet = """.. contents:: ${1:string}
    :depth: ${4:1 (Optional)}
    :class: ${5:Fancy (Optional)}
 """
-example = """.. contents:: On This Page (local, backlinks: entry, depth: 2)
+example = """.. contents:: On This Page (local, depth: 2)
    :local:
-   :backlinks: entry
    :depth: 2
 
-.. contents::  On This Page (backlinks: top, depth: 1)
-   :backlinks: top
-   :depth: 1
-
-.. contents:: On This Page (backlinks: none, depth: 1)
-   :backlinks: none
-   :depth: 1
 """
 
 [directive.include]
@@ -519,7 +511,7 @@ snippet = """.. rubric:: ${1:Paragraph heading that is not used to create a TOC 
 """
 example = """.. rubric:: Heading that isn't going to show up in the contents
 
-   Words to go under the heading.
+Words to go under the heading, but not in the rubric content.
 
 """
 
@@ -546,7 +538,7 @@ snippet = """.. code-block:: ${1:language}
 example = """.. code-block:: javascript
    :linenos:
    :source: https://github.com/mongodb/docs-node/blob/master/source/code-snippets/usage-examples/count.js
-   :emphasize-lines: 17 23
+   :emphasize-lines: 17, 23
    :caption: count.js
    :copyable: true
 
@@ -959,7 +951,7 @@ example = """``:style: compact``
 ``:type: drivers``
 ~~~~~~~~~~~~~~~~~~
 
-(This could also be achieved using `:style: center-content`.
+(This could also be achieved using ``:style: center-content``.
 `Code reference <https://github.com/mongodb/snooty/blob/main/src/components/Card/CardGroup.js#L100>`__.)
 
 .. card-group::
@@ -1188,8 +1180,8 @@ snippet = """.. kicker:: ${1: string}"""
 argument_type = "string"
 example = """.. kicker:: Related Products & Resources
 
-Get Hands-On Experience With |fts|
-----------------------------------
+Get Hands-On Experience With fts
+--------------------------------
 """
 
 [directive."mongodb:openapi"]
