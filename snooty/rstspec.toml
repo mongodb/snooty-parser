@@ -57,9 +57,38 @@ ${4:   :align:
    * -
      -
      -
-
 """
-example = """.. list-table::
+example = """Header Row
+~~~~~~~~~~
+
+.. list-table::
+   :header-rows: 1
+
+   * - A
+     - B
+     - C
+     - D
+     - E   
+   * - Cupcake ipsum dolor sit amet caramels liquorice. Cake fruitcake   
+       brownie bear claw cookie shortbread candy canes. Cupcake 
+       marshmallow brownie bear claw halvah.
+     - Cupcake ipsum dolor sit amet caramels liquorice. Cake fruitcake   
+       brownie bear claw cookie shortbread candy canes. Cupcake 
+       marshmallow brownie bear claw halvah.
+     - Cupcake ipsum dolor sit amet caramels liquorice. Cake fruitcake   
+       brownie bear claw cookie shortbread candy canes. Cupcake 
+       marshmallow brownie bear claw halvah.
+     - Cupcake ipsum dolor sit amet caramels liquorice. Cake fruitcake   
+       brownie bear claw cookie shortbread candy canes. Cupcake 
+       marshmallow brownie bear claw halvah.
+     - Cupcake ipsum dolor sit amet caramels liquorice. Cake fruitcake   
+       brownie bear claw cookie shortbread candy canes. Cupcake 
+       marshmallow brownie bear claw halvah.
+
+Header Row + Stub Column
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
    :header-rows: 1
    :stub-columns: 1
 
@@ -871,7 +900,7 @@ example = """``:style: compact``
       :headline: Quick Start
       :cta: See Code Examples
       :url: https://www.mongodb.com/docs/realm/sdk/swift/quick-start/
-      :icon: /images/icons/branding_2022/Technical_ATLAS_Functions3x.png
+      :icon: /icons/Technical_ATLAS_Functions3x.png
       :icon-alt: Functions Icon
 
       Minimal-explanation code examples of how to work with the Swift SDK. 
@@ -881,7 +910,7 @@ example = """``:style: compact``
       :headline: Working Example App
       :cta: Explore an Example App
       :url: https://www.mongodb.com/docs/atlas/app-services/template-apps/
-      :icon: /images/icons/branding_2022/Technical_REALM_Mobile3x.png
+      :icon: /icons/Technical_REALM_Mobile3x.png
       :icon-alt: Realm Mobile Icon
 
       Learn from example by dissecting a working SwiftUI client app that
@@ -891,7 +920,7 @@ example = """``:style: compact``
       :headline: Guided Tutorial
       :cta: Follow the Tutorial
       :url: https://mongodb.com/docs/atlas/app-services/tutorial/swiftui/
-      :icon: /images/icons/branding_2022/General_CONTENT_Tutorial3x.png
+      :icon: /icons/General_CONTENT_Tutorial3x.png
       :icon-alt: Tutorial Icon
 
       Follow a guided tutorial to learn how to adapt the example app to
@@ -908,13 +937,13 @@ example = """``:style: compact``
    .. card::
       :headline: .NET Analyzer 
       :url: https://www.mongodb.com/docs/mongodb-analyzer/current/
-      :icon: /images/icons/microsoft-net.svg
+      :icon: /icons/microsoft-net.svg
       :icon-alt: Entity Framework and .NET icon
 
    .. card::
       :headline: OData Support
       :url: https://www.nuget.org/packages/MongoDB.AspNetCore.OData/
-      :icon: /images/icons/odata-logo-96.png
+      :icon: /icons/odata-logo-96.png
       :icon-alt: OData icon
 
 ``:style: large-icon``
@@ -927,7 +956,7 @@ example = """``:style: compact``
    .. card::
       :headline: View C# developer resources
       :url: https://www.mongodb.com/developer/languages/csharp/
-      :icon: /images/technical-mdb-devhub.svg
+      :icon: /icons/technical-mdb-devhub.svg
       :icon-alt: DevHub icon
 
       C# Resources  →
@@ -935,7 +964,7 @@ example = """``:style: compact``
    .. card::
       :headline: Learn about C# and MongoDB
       :url: https://learn.mongodb.com/learning-paths/using-mongodb-with-c-sharp
-      :icon: /images/icons/university.svg
+      :icon: /icons/university.svg
       :icon-alt: Learn icon
 
       C# Developer Path →
@@ -943,7 +972,7 @@ example = """``:style: compact``
    .. card::
       :headline: Join forums and discussions
       :url: https://www.mongodb.com/community/
-      :icon: /images/general-content-community.svg
+      :icon: /icons/general-content-community.svg
       :icon-alt: Community icon
 
       MongoDB Community →
