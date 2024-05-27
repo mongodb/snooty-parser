@@ -38,6 +38,7 @@ from .diagnostics import (
     ChapterAlreadyExists,
     ChildlessRef,
     Diagnostic,
+    DiagnosticNestedTabStructure,
     DuplicatedExternalToc,
     DuplicateDirective,
     ExpectedPathArg,
@@ -534,7 +535,7 @@ class TabsSelectorHandler(Handler):
         super().__init__(context)
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.scanned_pattern: List[str] = []
-        self.target_pattern = ["tabs", "tabs", "procedure"]
+        self.target_pattern = ["tabs", "tabs"]
 
     def scan_for_pattern(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         starting_point = 0
@@ -545,7 +546,7 @@ class TabsSelectorHandler(Handler):
                     starting_point += 1
                 if starting_point >= target_pattern_len:
                     self.context.diagnostics[fileid_stack.current].append(
-                        InvalidNestedTabStructure(
+                        DiagnosticNestedTabStructure(
                             " ".join(self.scanned_pattern), node.start[0]
                         )
                     )
@@ -592,7 +593,7 @@ class TabsSelectorHandler(Handler):
         if not isinstance(node, n.Directive):
             return
 
-        if node.name == "procedure":
+        if node.name == "tabs":
             self.scan_for_pattern(fileid_stack, node)
 
         self.scanned_pattern.pop()

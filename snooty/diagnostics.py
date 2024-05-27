@@ -301,6 +301,21 @@ class InvalidNestedTabStructure(Diagnostic):
         )
         self.name = name
 
+class DiagnosticNestedTabStructure(Diagnostic):
+    severity = Diagnostic.Level.info
+
+    def __init__(
+        self,
+        name: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
+        super().__init__(
+            f"""Detect tab(s) that contain tab(s): :"{name}" """,
+            start,
+            end,
+        )
+        self.name = name
 
 class MissingOption(Diagnostic):
     severity = Diagnostic.Level.error
