@@ -1,6 +1,6 @@
 import threading
 from collections import defaultdict
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from . import n
 from .n import FileId
@@ -17,6 +17,12 @@ class FileIdStack:
 
     def __init__(self, initial_stack: Optional[List[FileId]] = None) -> None:
         self._stack: List[FileId] = initial_stack if initial_stack is not None else []
+
+    def __iter__(self) -> Iterator[FileId]:
+        return iter(self._stack)
+
+    def __len__(self) -> int:
+        return len(self._stack)
 
     def pop(self) -> None:
         self._stack.pop()
