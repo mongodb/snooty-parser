@@ -117,33 +117,6 @@ class LegacyTabsDefinition(nodes.Node):
     hidden: Optional[bool]
     tabs: List[LegacyTabDefinition]
 
-
-@checked
-@dataclass
-class CardDefinition(nodes.Node):
-    """Represents a Card within a CardGroup.
-
-    Attributes:
-        id          Unique identifier for the card, to be used as an anchor tag
-        headline    Card title heading
-        image       Path to an image used as the body of the card
-        link        URL to be linked to by the card
-    """
-
-    id: str
-    headline: str
-    image: str
-    link: str
-
-
-@checked
-@dataclass
-class CardGroupDefinition(nodes.Node):
-    """A list of cards as specified in CardDefinition"""
-
-    cards: List[CardDefinition]
-
-
 class directive_argument(tinydocutils.nodes.General, tinydocutils.nodes.TextElement):
     pass
 
@@ -610,61 +583,6 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
 
     return lines
 
-
-class BaseCardGroupDirective(BaseDocutilsDirective):
-    def run(self) -> List[tinydocutils.nodes.Node]:
-        parsed, diagnostic = load_yaml(None, "\n".join(self.content))
-        if diagnostic is not None:
-            diagnostic.start = (diagnostic.start[0] + self.lineno, diagnostic.start[1])
-            return [snooty_diagnostic(diagnostic)]
-
-        try:
-            loaded = check_type(CardGroupDefinition, parsed[0])
-        except LoadError as err:
-            line = self.lineno + getattr(err.bad_data, "_start_line", 0) + 1
-            error_node = self.state.document.reporter.error(str(err), line=line)
-            return [error_node]
-        except IndexError:
-            loaded = CardGroupDefinition([])
-
-        node = directive("", "card-group")
-        node.document = self.state.document
-        source, node.line = self.state_machine.get_source_and_line(self.lineno)
-        node.source = source
-        self.add_name(node)
-
-        options: Dict[str, object] = {}
-        node["options"] = options
-        # Default to card type "small" if type is not specified
-        options["type"] = self.options.get("type", "small")
-
-        assert source is not None
-
-        for child in loaded.cards:
-            node.append(self.make_card_node(source, child))
-
-        return [node]
-
-    def make_card_node(self, source: str, child: CardDefinition) -> directive:
-        """Synthesize a new-style tab node out of a legacy (YAML) tab definition."""
-        line = self.lineno + child.line
-
-        # Give the node a unique name, as "card" is used by landing page cards in docs-tutorials.
-        node = directive("", "cardgroup-card")
-        node.document = self.state.document
-        node.source = source
-        node.line = line
-
-        options: Dict[str, object] = {}
-        node["options"] = options
-        options["cardid"] = child.id
-        options["headline"] = child.headline
-        options["image"] = child.image
-        options["link"] = child.link
-
-        return node
-
-
 class BaseTabsDirective(BaseDocutilsDirective):
     def run(self) -> List[tinydocutils.nodes.Node]:
         # Support the old-style tabset definition where the tabset is embedded in the
@@ -1084,7 +1002,6 @@ SPECIAL_DIRECTIVE_HANDLERS: Dict[str, Type[tinydocutils.directives.Directive]] =
     "versionadded": BaseVersionDirective,
     "versionchanged": BaseVersionDirective,
     "deprecated": DeprecatedVersionDirective,
-    "card-group": BaseCardGroupDirective,
     "toctree": BaseTocTreeDirective,
 }
 
