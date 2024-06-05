@@ -1072,7 +1072,6 @@ class JSONVisitor:
             static_asset = self.add_static_asset(image_argument, upload=True)
             self.pending.append(PendingFigure(doc, static_asset, self.dependencies))
         except OSError as err:
-            # if it has a slash is a path - 
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
             )
