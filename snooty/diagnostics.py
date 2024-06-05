@@ -850,20 +850,22 @@ class IconMustBeDefined(Diagnostic):
             end,
         )
 
+
 class CardIconString(Diagnostic):
     severity = Diagnostic.Level.warning
 
     def __init__(
-        self, 
+        self,
         image_argument: str,
         start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None
+        end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
             f"""Card icons are migrating to strings instead of path names. If {image_argument} can be a string, use that instead.""",
-            start, 
+            start,
             end,
         )
+
 
 class InvalidOpenApiResponse(Diagnostic):
     severity = Diagnostic.Level.error

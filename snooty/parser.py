@@ -50,6 +50,7 @@ from . import (
 from .diagnostics import (
     AmbiguousLiteralInclude,
     CannotOpenFile,
+    CardIconString,
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
@@ -58,7 +59,6 @@ from .diagnostics import (
     ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
-    CardIconString,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,

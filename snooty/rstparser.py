@@ -117,6 +117,7 @@ class LegacyTabsDefinition(nodes.Node):
     hidden: Optional[bool]
     tabs: List[LegacyTabDefinition]
 
+
 class directive_argument(tinydocutils.nodes.General, tinydocutils.nodes.TextElement):
     pass
 
@@ -582,6 +583,7 @@ def prepare_viewlist(text: str, ignore: int = 1) -> List[str]:
         lines.append("")
 
     return lines
+
 
 class BaseTabsDirective(BaseDocutilsDirective):
     def run(self) -> List[tinydocutils.nodes.Node]:
