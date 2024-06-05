@@ -58,6 +58,7 @@ from .diagnostics import (
     ExpectedStringArg,
     FetchError,
     IconMustBeDefined,
+    CardIconString,
     ImageSuggested,
     InvalidDirectiveStructure,
     InvalidField,
@@ -1046,8 +1047,16 @@ class JSONVisitor:
             image_argument = options.get("icon")
             url_argument = options.get("url")
 
-            if image_argument:
+            # if the image is a path, we need a dark mode version as well
+            if image_argument and "/" in image_argument:
+                self.diagnostics.append(CardIconString(image_argument, line))
                 self.validate_and_add_asset(doc, image_argument, line)
+                dark_mode_image_argument = options.get("icon-dark")
+                if dark_mode_image_argument:
+                    self.validate_and_add_asset(doc, dark_mode_image_argument, line)
+                else:
+                    self.diagnostics.append(ExpectedOption(name, "icon-dark", line))
+
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
 
@@ -1063,6 +1072,7 @@ class JSONVisitor:
             static_asset = self.add_static_asset(image_argument, upload=True)
             self.pending.append(PendingFigure(doc, static_asset, self.dependencies))
         except OSError as err:
+            # if it has a slash is a path - 
             self.diagnostics.append(
                 CannotOpenFile(Path(image_argument), err.strerror, line)
             )
