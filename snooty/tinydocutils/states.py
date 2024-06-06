@@ -1020,9 +1020,9 @@ class RSTState(State):
         if blank_finish_state is None:
             blank_finish_state = initial_state
 
-        state_machine.get_blank_finish_state(blank_finish_state).blank_finish = (
-            blank_finish
-        )
+        state_machine.get_blank_finish_state(
+            blank_finish_state
+        ).blank_finish = blank_finish
         for key, value in extra_settings.items():
             setattr(state_machine.states[initial_state], key, value)
         state_machine.run_nested_sm(

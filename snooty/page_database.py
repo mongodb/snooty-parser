@@ -62,9 +62,9 @@ class PageDatabase:
 
             return result
 
-        self.worker: util.WorkerLauncher[Postprocessor, PostprocessorResult] = (
-            util.WorkerLauncher("postprocessor", start)
-        )
+        self.worker: util.WorkerLauncher[
+            Postprocessor, PostprocessorResult
+        ] = util.WorkerLauncher("postprocessor", start)
 
     def set_orphan_diagnostics(self, key: FileId, value: List[Diagnostic]) -> None:
         """Some diagnostics can't be associated with a parsed Page because of underlying
