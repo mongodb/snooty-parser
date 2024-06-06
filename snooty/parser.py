@@ -1047,18 +1047,22 @@ class JSONVisitor:
             image_argument = options.get("icon")
             url_argument = options.get("url")
 
-            # if the image is a path, we need a dark mode version as well
-            if image_argument and "/" in image_argument:
-                self.diagnostics.append(CardIconString(image_argument, line))
-                self.validate_and_add_asset(doc, image_argument, line)
-                dark_mode_image_argument = options.get("icon-dark")
-                if dark_mode_image_argument:
-                    self.validate_and_add_asset(doc, dark_mode_image_argument, line)
-                else:
-                    self.diagnostics.append(ExpectedOption(name, "icon-dark", line))
-
             if url_argument and not url_argument.startswith("http"):
                 self.validate_relative_url(url_argument, line)
+
+            # for cards - if the image is a path, we need a dark mode version as well
+            if key == "mongodb:card":
+                if image_argument and "/" in image_argument:
+                    self.diagnostics.append(CardIconString(image_argument, line))
+                    self.validate_and_add_asset(doc, image_argument, line)
+                    dark_mode_image_argument = options.get("icon-dark")
+                    if dark_mode_image_argument:
+                        self.validate_and_add_asset(doc, dark_mode_image_argument, line)
+                    else:
+                        self.diagnostics.append(ExpectedOption(name, "icon-dark", line))
+            else:
+                if image_argument:
+                    self.validate_and_add_asset(doc, image_argument, line)
 
         elif name == "facet":
             self.handle_facet(node, line)
