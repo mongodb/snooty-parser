@@ -521,9 +521,9 @@ class WorkerLauncher(Generic[_T, _R]):
         """Cancel any current thread of execution; block until it is cancelled; and re-launch the worker."""
         self.cancel()
 
-        result_queue: queue.Queue[
-            Tuple[Optional[_R], Optional[Exception]]
-        ] = queue.Queue(1)
+        result_queue: queue.Queue[Tuple[Optional[_R], Optional[Exception]]] = (
+            queue.Queue(1)
+        )
 
         def inner() -> None:
             try:

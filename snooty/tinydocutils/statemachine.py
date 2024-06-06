@@ -198,12 +198,10 @@ class StringList:
     # just works.
 
     @overload
-    def __getitem__(self, i: int) -> str:
-        ...
+    def __getitem__(self, i: int) -> str: ...
 
     @overload
-    def __getitem__(self, i: slice) -> "StringList":
-        ...
+    def __getitem__(self, i: slice) -> "StringList": ...
 
     def __getitem__(self, i: Union[int, slice]) -> Union[str, "StringList"]:
         if isinstance(i, slice):

@@ -1163,11 +1163,9 @@ class NodeVisitor(Protocol):
        1995.
     """
 
-    def dispatch_visit(self, node: Node) -> None:
-        ...
+    def dispatch_visit(self, node: Node) -> None: ...
 
-    def dispatch_departure(self, node: Node) -> None:
-        ...
+    def dispatch_departure(self, node: Node) -> None: ...
 
 
 class TreePruningException(Exception):

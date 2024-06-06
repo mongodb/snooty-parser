@@ -14,13 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Kotlin and Cpp-sdk drivers keys (DOP-4608).
 - Support for clickInclude function in the VSCode extension (DOP-4441).
 
-### Fixed
-
-- Alphabetized Realm languages (#593).
-
 ### Changed
 
 - Update dependencies.
+
+### Fixed
+
+- Alphabetized Realm languages (#593).
 
 ## [v0.16.7] - 2024-05-15
 

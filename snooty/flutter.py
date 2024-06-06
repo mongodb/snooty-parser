@@ -25,8 +25,7 @@ class HasAnnotations(Protocol):
 
 
 class Constructable(Protocol):
-    def __init__(self, **kwargs: object) -> None:
-        ...
+    def __init__(self, **kwargs: object) -> None: ...
 
 
 _A = TypeVar("_A", bound=HasAnnotations)
