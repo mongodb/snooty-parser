@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.8] - 2024-06-06
+
 ### Added
 
 - Added Kotlin and Cpp-sdk drivers keys (DOP-4608).
