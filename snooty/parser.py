@@ -50,7 +50,6 @@ from . import (
 from .diagnostics import (
     AmbiguousLiteralInclude,
     CannotOpenFile,
-    CardIconString,
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
@@ -1053,7 +1052,6 @@ class JSONVisitor:
             # for cards - if the image is a path, we need a dark mode version as well
             if key == "mongodb:card":
                 if image_argument and "/" in image_argument:
-                    self.diagnostics.append(CardIconString(image_argument, line))
                     self.validate_and_add_asset(doc, image_argument, line)
                     dark_mode_image_argument = options.get("icon-dark")
                     if dark_mode_image_argument:
