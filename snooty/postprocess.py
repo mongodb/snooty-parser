@@ -44,6 +44,7 @@ from .diagnostics import (
     ExpectedTabs,
     FetchError,
     GuideAlreadyHasChapter,
+    IncludeLoop,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
@@ -364,6 +365,13 @@ class IncludeHandler(Handler):
                         )
                     )
                 return
+
+        # Check for duplicate inclusions in this root page context.
+        if collections.Counter(fileid_stack).most_common(1)[0][1] > 1:
+            self.context.diagnostics[fileid_stack.current].append(
+                IncludeLoop(list(fileid_stack), node.span[0])
+            )
+            return
 
         include_page = self.pages.get(include_fileid)
         assert include_page is not None
