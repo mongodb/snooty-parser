@@ -1057,7 +1057,7 @@ class JSONVisitor:
                     if dark_mode_image_argument:
                         self.validate_and_add_asset(doc, dark_mode_image_argument, line)
             elif image_argument:
-                    self.validate_and_add_asset(doc, image_argument, line)
+                self.validate_and_add_asset(doc, image_argument, line)
 
         elif name == "facet":
             self.handle_facet(node, line)
