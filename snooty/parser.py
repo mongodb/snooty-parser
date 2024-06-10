@@ -1056,8 +1056,6 @@ class JSONVisitor:
                     dark_mode_image_argument = options.get("icon-dark")
                     if dark_mode_image_argument:
                         self.validate_and_add_asset(doc, dark_mode_image_argument, line)
-                    else:
-                        self.diagnostics.append(ExpectedOption(name, "icon-dark", line))
             else:
                 if image_argument:
                     self.validate_and_add_asset(doc, image_argument, line)
