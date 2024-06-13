@@ -662,7 +662,8 @@ content_type = "block"
 options.headline = "string"
 options.cta = "string"
 options.url = "uri"
-options.icon = ["path", "uri"]
+options.icon = ["path", "uri", "string"]
+options.icon-dark = ["path", "uri"]
 options.icon-alt = "string"
 options.tag = "string"
 
