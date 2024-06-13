@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Detect include loops (DOP-4723).
+- Cards component + card icon as string (DOP-4623).
+
 ## [v0.16.8] - 2024-06-06
 
 ### Added
