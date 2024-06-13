@@ -306,15 +306,17 @@ class DiagnosticNestedTabStructure(Diagnostic):
 
     def __init__(
         self,
+        flavor: str,
         name: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
         super().__init__(
-            f"""Detect tab(s) that contain tab(s): :"{name}" """,
+            f"""Detect {flavor} nesting: "{name}" """,
             start,
             end,
         )
+        self.flavor = flavor
         self.name = name
 
 class MissingOption(Diagnostic):

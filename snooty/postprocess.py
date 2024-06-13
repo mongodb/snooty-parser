@@ -535,18 +535,20 @@ class TabsSelectorHandler(Handler):
         super().__init__(context)
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.scanned_pattern: List[str] = []
-        self.target_pattern = ["tabs", "tabs"]
 
-    def scan_for_pattern(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def scan_for_pattern(self, target_pattern: List[str], fileid_stack: FileIdStack, node: n.Node) -> None:
         starting_point = 0
-        target_pattern_len = len(self.target_pattern)
+        target_pattern_len = len(target_pattern)
         if len(self.scanned_pattern) > 0:
             for item in self.scanned_pattern:
-                if item == self.target_pattern[starting_point]:
+                # Rename all admonitions to 'admonition' for easier pattern matching
+                if item in ["important", "note", "warning", "example", "see", "seealso", "caution"]:
+                    item = "admonition"
+                if item == target_pattern[starting_point]:
                     starting_point += 1
                 if starting_point >= target_pattern_len:
                     self.context.diagnostics[fileid_stack.current].append(
-                        DiagnosticNestedTabStructure(
+                        DiagnosticNestedTabStructure(" ".join(target_pattern),
                             " ".join(self.scanned_pattern), node.start[0]
                         )
                     )
@@ -592,9 +594,13 @@ class TabsSelectorHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
+        
+        patterns = [["tabs", "tabs"], ["list-table", "list-table"],  
+                    ["list-table", "admonition"], ["admonition", "admonition"],
+                    ["tabs", "tabs", "procedure"], ["procedure", "step", "procedure"]]
 
-        if node.name == "tabs":
-            self.scan_for_pattern(fileid_stack, node)
+        for pattern in patterns:
+            self.scan_for_pattern(pattern, fileid_stack, node)
 
         self.scanned_pattern.pop()
 
