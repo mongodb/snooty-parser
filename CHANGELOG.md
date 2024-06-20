@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update urllib3 to v2.2.2.
+
 ## [v0.16.9] - 2024-06-13
 
 ### Added
