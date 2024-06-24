@@ -964,16 +964,6 @@ example = """.. meta::
    :canonical: ${4: full url, not relative}
 """
 
-[directive.topic]
-help = """A block with a self-contained chunk of information."""
-argument_type = "string"
-content_type = "block"
-deprecated = true
-example = """.. topic:: ${1:Title of block}
-
-   ${0:Content}
-"""
-
 [directive.search-results]
 help = """Shows search results from browser query params (no arguments)."""
 
