@@ -11,13 +11,7 @@ alignment = ["left", "center", "right"]
 backlinks = ["entry", "top", "none"]
 banner_variant = ["info", "warning", "danger"]
 card_layout = ["default", "carousel"]
-card_style = [
-   "default",
-   "compact",
-   "extra-compact",
-   "center-content",
-   "large-icon",
-]
+card_style = ["default", "compact", "extra-compact", "center-content", "large-icon"]
 card_type = ["small", "large"]
 card_group_type = ["default", "drivers"]
 charts_theme = ["light", "dark"]
@@ -128,7 +122,7 @@ example = """.. tip:: ${1:Title}
 """
 
 [directive._baseversiondirective]
-argument_type = { type = "string", required = true }
+argument_type = {type = "string", required = true}
 content_type = "block"
 
 [directive.versionchanged]
@@ -143,7 +137,7 @@ example = """.. versionadded:: ${1:v1.0}
    ${2:Describe what was added in that version. Description is optional.}
 """
 [directive.deprecated]
-argument_type = { type = "string", required = false }
+argument_type = {type = "string", required = false}
 content_type = "block"
 example = """.. deprecated:: ${1:v1.0 (Optional)}
    ${2:Explanation to inform the reader what should be used instead. Explanation is optional.}
@@ -247,7 +241,7 @@ example = """.. figure:: ${1:/path or uri.png}
 
    ${0: Optional caption for the figure.}
 """
-options.alt = { type = "string", required = true }
+options.alt = {type = "string", required = true}
 options.figwidth = "length"
 options.scale = "string"
 options.width = "length"
@@ -412,7 +406,7 @@ inherit = "tabs"
 [directive.tab]
 argument_type = "string"
 content_type = "block"
-options.tabid = { type = "string", required = true }
+options.tabid = {type = "string", required = true}
 example = """.. tab:: ${1:Tab Title}
    :tabid: ${2:id of the tab}
 
@@ -739,7 +733,7 @@ example = """.. chapter:: ${1: string}
 """
 argument_type = "string"
 content_type = "block"
-options.description = { type = "string", required = true }
+options.description = {type = "string", required = true}
 options.image = ["path", "uri"]
 options.icon = ["path", "uri"]
 
@@ -776,7 +770,7 @@ content_type = "block"
 [directive."mongodb:instruqt"]
 content_type = "block"
 argument_type = "string"
-options.title = { type = "string", required = true }
+options.title = {type = "string", required = true}
 options.drawer = "boolean"
 
 [directive."mongodb:introduction"]
@@ -823,7 +817,7 @@ example = """.. quiz::
 
    ${3:string}"""
 argument_type = "string"
-options.quiz-id = { type = "string", required = true }
+options.quiz-id = {type = "string", required = true}
 options.quiz-date = "string"
 
 [directive."mongodb:quizchoice"]
@@ -845,7 +839,7 @@ example = """.. short-description::
 
 [directive."mongodb:step"]
 help = "Make a single, numbered step."
-argument_type = { type = "string", required = false }
+argument_type = {type = "string", required = false}
 content_type = "block"
 example = """.. step:: ${0: Step's headline string (Optional)}
 
@@ -854,14 +848,14 @@ example = """.. step:: ${0: Step's headline string (Optional)}
 
 [directive."mongodb:time"]
 help = "The amount of time that it would take to go through the guide content in minutes."
-argument_type = { type = "nonnegative_integer", required = true }
+argument_type = {type = "nonnegative_integer", required = true}
 example = """.. time:: 15"""
 
 [directive."mongodb:facet"]
 help = "The name and value of search facets that apply to this page. Use nested facets to represent hierarchy"
 content_type = "block"
-options.name = { type = "string", required = true }
-options.values = { type = "string", required = true }
+options.name = {type = "string", required = true}
+options.values = {type = "string", required = true}
 example = """.. facet::
    :type: ${1:name_of_type}
    :values: ${2:value1, value2, value3}
@@ -898,14 +892,14 @@ example = """.. twitter::
 """
 content_type = "block"
 options.site = "string"
-options.creator = { type = "string", required = true }
-options.title = { type = "string", required = true }
-options.image = { type = ["path", "uri"], required = true }
-options.image-alt = { type = "string", required = true }
+options.creator = {type = "string", required = true}
+options.title = {type = "string", required = true}
+options.image = {type = ["path", "uri"], required = true}
+options.image-alt = {type = "string", required = true}
 
 [directive.og]
-help = """Provide the metadata required to automatically generate a card when posting to OG social-using sites, such as Facebook."""
-example = """.. og::
+help="""Provide the metadata required to automatically generate a card when posting to OG social-using sites, such as Facebook."""
+example= """.. og::
    :url: ${1:Canonical URL of the page without any session variables, params, etc.}
    :type: ${2:article}
    :title: ${3:Title of article without any branding}
@@ -917,8 +911,8 @@ example = """.. og::
 """
 content_type = "block"
 options.url = "string"
-options.title = { required = true, type = "string" }
-options.image = { required = true, type = ["path", "uri"] }
+options.title = {required = true, type = "string"}
+options.image = {required = true, type = ["path", "uri"]}
 options.type = "string"
 
 [directive.video]
@@ -940,7 +934,7 @@ content_type = "block"
 
 [directive.charts]
 help = """Embed a chart from MongoDB Charts in your article."""
-example = """.. charts::
+example= """.. charts::
    :url: ${1:https://charts.mongodb.com/charts-coronavirus-lwlvn (url of your charts dashboard)}
    :id: ${2:6f921f0c-a1ee-4106-839c-412fad3c64e7 (id of the chart)}
    :autorefresh: ${3:3600 (time in seconds to refresh. default is no refresh)}
@@ -1091,11 +1085,11 @@ type = "explicit_title"
 
 [role.rfc]
 help = """Reference an IETF RFC."""
-type = { link = "https://tools.ietf.org/html/%s" }
+type = {link = "https://tools.ietf.org/html/%s"}
 
 [role.wikipedia]
 help = """Reference a Wikipedia page."""
-type = { link = "https://en.wikipedia.org/wiki/%s" }
+type = {link = "https://en.wikipedia.org/wiki/%s"}
 
 [role.hardlink]
 help = """Link to a URL in the current project."""
@@ -1107,35 +1101,35 @@ type = "explicit_title"
 
 [role.api]
 help = """Link to the api.mongodb.com API index."""
-type = { link = "https://api.mongodb.com/%s" }
+type = {link = "https://api.mongodb.com/%s"}
 
 [role.asp]
 help = """Link to the Atlas Search Playground."""
-type = { link = "https://search-playground.mongodb.com/snapshots%s" }
+type = {link = "https://search-playground.mongodb.com/snapshots%s"}
 
 [role.aws]
 help = """Link to the Amazon AWS documentation."""
-type = { link = "http://docs.aws.amazon.com%s" }
+type = {link = "http://docs.aws.amazon.com%s"}
 
 [role.gcp]
 help = "Link to the Google Cloud Platform documentation"
-type = { link = "https://cloud.google.com%s" }
+type = {link = "https://cloud.google.com%s"}
 
 [role.azure]
 help = "Link to the Microsoft Azure documentation"
-type = { link = "https://docs.microsoft.com/en-us/azure%s" }
+type = {link = "https://docs.microsoft.com/en-us/azure%s"}
 
 [role.ftsuservoice]
 help = """Link to the Atlas Search Feedback Engine."""
-type = { link = "https://feedback.mongodb.com/forums/924868-atlas-search%s" }
+type = {link = "https://feedback.mongodb.com/forums/924868-atlas-search%s"}
 
 [role.avsuservoice]
 help = """Link to the Atlas Vector Search Feedback Engine."""
-type = { link = "https://feedback.mongodb.com/forums/957605-vector-search%s" }
+type = {link = "https://feedback.mongodb.com/forums/957605-vector-search%s"}
 
 [role.gettingstarted]
 help = """Link to the MongoDB Getting Started guide."""
-type = { link = "https://docs.mongodb.org/getting-started%s", ensure_trailing_slash = true }
+type = {link = "https://docs.mongodb.org/getting-started%s", ensure_trailing_slash = true}
 
 [role.master]
 help = """Link to a path in the master branch of the current project."""
@@ -1143,43 +1137,43 @@ type = "explicit_title"
 
 [role.docsgithub]
 help = """Link to a MongoDB Manual GitHub path."""
-type = { link = "http://github.com/mongodb/docs/blob/master/%s" }
+type = {link = "http://github.com/mongodb/docs/blob/master/%s"}
 
 [role.guides]
 help = """Link to a page in the MongoDB Guides site."""
-type = { link = "https://www.mongodb.com/docs/guides%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/guides%s", ensure_trailing_slash = true}
 
 [role.mms-docs]
 help = """Link to a page in the Cloud Manager documentation."""
-type = { link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true}
 
 [role.mms-home]
 help = """Link to a MongoDB Cloud Services page."""
-type = { link = "https://cloud.mongodb.com%s" }
+type = {link = "https://cloud.mongodb.com%s"}
 
 [role.osb]
 help = """Link to a page in the Atlas Open Service Broker documentation."""
-type = { link = "https://www.mongodb.com/docs/atlas-open-service-broker/current%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas-open-service-broker/current%s", ensure_trailing_slash = true}
 
 [role.adl]
 help = """Link to a page in the Atlas Data Lake documentation."""
-type = { link = "https://www.mongodb.com/docs/datalake%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/datalake%s", ensure_trailing_slash = true}
 
 [role.dochub]
 help = """Specify a dochub link."""
-type = { link = "https://dochub.mongodb.org/core/%s" }
+type = {link = "https://dochub.mongodb.org/core/%s"}
 
 [role.mongo-spark]
 help = """Link to a page in the MongoDB Spark Connector GitHub project."""
-type = { link = "https://github.com/mongodb/mongo-spark%s" }
+type = {link = "https://github.com/mongodb/mongo-spark%s"}
 
 [role.source]
 help = """Link to a file in the MongoDB server GitHub project."""
-type = { link = "https://github.com/mongodb/mongo/blob/master/%s" }
+type = {link = "https://github.com/mongodb/mongo/blob/master/%s"}
 
 [role.ref]
 help = """Link to a named target."""
-type = { domain = "std", name = "label", format = [] }
+type = {domain = "std", name = "label", format = []}
 
 [role."mongodb:ref"]
 inherit = "ref"
@@ -1194,217 +1188,217 @@ type = "explicit_title"
 
 [role.term]
 help = """Link to a term in the glossary."""
-type = { domain = "std", name = "term", format = [] }
+type = {domain = "std", name = "term", format = []}
 
 [role.issue]
 help = """Link to a JIRA ticket."""
-type = { link = "https://jira.mongodb.org/browse/%s" }
+type = {link = "https://jira.mongodb.org/browse/%s"}
 
 [role.technical-support]
 help = "Link to the MongoDB support site."
-type = { link = "https://www.mongodb.com/docs/manual/support%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/manual/support%s", ensure_trailing_slash = true}
 
 [role.contact]
 help = """Link to the MongoDB contact page."""
-type = { link = "https://www.mongodb.com/contact%s" }
+type = {link = "https://www.mongodb.com/contact%s"}
 
 [role.mdbacct]
 help = """Link to the MongoDB Account page."""
-type = { link = "https://account.mongodb.com/account%s" }
+type = {link = "https://account.mongodb.com/account%s"}
 
 [role.community-forum]
 help = "Link to the MongoDB Community Forums page."
-type = { link = "https://www.mongodb.com/community/forums/%s" }
+type = {link = "https://www.mongodb.com/community/forums/%s"}
 
 [role.perl-api]
 help = "Link to a page in the Perl driver's CPAN API reference."
-type = { link = "https://metacpan.org/pod/MongoDB::%s" }
+type = {link = "https://metacpan.org/pod/MongoDB::%s"}
 
 [role.node-docs]
 help = """Link to a page in the Node.js driver's documentation."""
-type = { link = "http://mongodb.github.io/node-mongodb-native/3.6/%s" }
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/%s"}
 
 [role.node-api]
 help = """Link to a page in the Node.js driver's API reference."""
-type = { link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s" }
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."node-api-4.0"]
 help = """Link to a page in Node.js driver V4.0's API reference."""
-type = { link = "https://mongodb.github.io/node-mongodb-native/4.0/%s" }
+type = {link = "https://mongodb.github.io/node-mongodb-native/4.0/%s"}
 
 [role."node-api-3.6"]
 help = """Link to a page in Node.js driver V3.6's API reference."""
-type = { link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s" }
+type = {link = "http://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."php"]
 help = """Link to a page on PHP.net"""
-type = { link = "https://php.net/%s" }
+type = {link = "https://php.net/%s"}
 
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
-type = { link = "http://api.mongodb.com/ruby/current/Mongo/%s" }
+type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
 
 [role.ruby]
 help = """Link to a page in the Ruby driver's documentation."""
-type = { link = "https://www.mongodb.com/docs/ruby-driver/current%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/ruby-driver/current%s", ensure_trailing_slash = true}
 
 [role.scala-docs]
 help = "Link to a page in the Scala driver's documentation"
-type = { link = "http://mongodb.github.io/mongo-scala-driver/2.9%s" }
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9%s"}
 
 [role.scala-api]
 help = """Link to a page in the Scala driver's API reference."""
-type = { link = "http://mongodb.github.io/mongo-scala-driver/2.9/scaladoc/org/mongodb/scala/MongoCollection.html#%s" }
+type = {link = "http://mongodb.github.io/mongo-scala-driver/2.9/scaladoc/org/mongodb/scala/MongoCollection.html#%s"}
 
 [role.csharp-docs]
 help = """Link to a page in the C# driver's documentation."""
-type = { link = "https://mongodb.github.io/mongo-csharp-driver/2.10/%s" }
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/%s"}
 
 [role.csharp-api]
 help = """Link to a page in the C# driver's API reference."""
-type = { link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/%s.htm" }
+type = {link = "https://mongodb.github.io/mongo-csharp-driver/2.10/apidocs/html/%s.htm"}
 
 [role.java-docs]
 help = """Link to the Java driver's documentation."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.2/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/%s"}
 
 [role."java-docs-4.3"]
 help = """Link to the Java driver's documentation."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.3/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.3/%s"}
 
 [role.java-async-docs]
 help = """Link to the async Java driver's documentation."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.2/driver-reactive/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/driver-reactive/%s"}
 
 [role.java-async-api]
 help = """Link to the async Java driver's API reference."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-reactivestreams/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-reactivestreams/%s"}
 
 [role.java-core-api]
 help = """Link to the core Java driver's API reference."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-core/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-core/%s"}
 
 [role.java-sync-api]
 help = """Link to the synchronous Java driver's API reference."""
-type = { link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-sync/%s" }
+type = {link = "https://mongodb.github.io/mongo-java-driver/4.2/apidocs/mongodb-driver-sync/%s"}
 
 [role.go-api]
 help = """Link to the Go driver's API reference."""
-type = { link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s" }
+type = {link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s"}
 
 [role.atlas]
 help = """Link to the synchronous Atlas documentation."""
-type = { link = "https://www.mongodb.com/docs/atlas%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas%s", ensure_trailing_slash = true}
 
 [role."v2.2"]
-type = { link = "https://www.mongodb.com/docs/v2.2%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v2.2%s", ensure_trailing_slash = true}
 
 [role."v2.4"]
-type = { link = "https://www.mongodb.com/docs/v2.4%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v2.4%s", ensure_trailing_slash = true}
 
 [role."v2.6"]
-type = { link = "https://www.mongodb.com/docs/v2.6%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v2.6%s", ensure_trailing_slash = true}
 
 [role."v3.0"]
-type = { link = "https://www.mongodb.com/docs/v3.0%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v3.0%s", ensure_trailing_slash = true}
 
 [role."v3.2"]
-type = { link = "https://www.mongodb.com/docs/v3.2%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v3.2%s", ensure_trailing_slash = true}
 
 [role."v3.4"]
-type = { link = "https://www.mongodb.com/docs/v3.4%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v3.4%s", ensure_trailing_slash = true}
 
 [role."v3.6"]
-type = { link = "https://www.mongodb.com/docs/v3.6%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v3.6%s", ensure_trailing_slash = true}
 
 [role."v4.0"]
-type = { link = "https://www.mongodb.com/docs/v4.0%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v4.0%s", ensure_trailing_slash = true}
 
 [role."v4.2"]
-type = { link = "https://www.mongodb.com/docs/v4.2%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v4.2%s", ensure_trailing_slash = true}
 
 [role."v4.4"]
-type = { link = "https://www.mongodb.com/docs/v4.4%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v4.4%s", ensure_trailing_slash = true}
 
 [role."v5.0"]
-type = { link = "https://www.mongodb.com/docs/v5.0%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v5.0%s", ensure_trailing_slash = true}
 
 [role."v5.1"]
-type = { link = "https://www.mongodb.com/docs/v5.1%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v5.1%s", ensure_trailing_slash = true}
 
 [role."v5.2"]
-type = { link = "https://www.mongodb.com/docs/v5.2%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v5.2%s", ensure_trailing_slash = true}
 
 [role."v5.3"]
-type = { link = "https://www.mongodb.com/docs/v5.3%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v5.3%s", ensure_trailing_slash = true}
 
 [role."v6.0"]
-type = { link = "https://www.mongodb.com/docs/v6.0%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v6.0%s", ensure_trailing_slash = true}
 
 [role."v7.0"]
-type = { link = "https://www.mongodb.com/docs/v7.0%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/v7.0%s", ensure_trailing_slash = true}
 
 [role."rapid"]
 help = """Links to the latest rapid release and will not be pinned to a specific manual version"""
-type = { link = "https://www.mongodb.com/docs/rapid%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/rapid%s", ensure_trailing_slash = true}
 
 [role."upcoming"]
 help = """Links to the upcoming manual release documentation and will not be pinned to a specific manual version"""
-type = { link = "https://www.mongodb.com/docs/upcoming%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/upcoming%s", ensure_trailing_slash = true}
 
 [role.website]
 help = """Link to a page in the MongoDB website."""
-type = { link = "https://www.mongodb.com%s?tck=docs" }
+type = {link = "https://www.mongodb.com%s?tck=docs"}
 
 [role.legal]
 help = """Link to mongodb.com/legal/whatever"""
-type = { link = "https://www.mongodb.com/legal%s?tck=docs_atlas" }
+type = {link = "https://www.mongodb.com/legal%s?tck=docs_atlas"}
 
 [role.manual]
 help = """Link to a page in the latest stable version of the MongoDB manual."""
-type = { link = "https://www.mongodb.com/docs/manual%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/manual%s", ensure_trailing_slash = true}
 
 [role.cloudmgr]
 help = """Link to a page in the Cloud Manager docs."""
-type = { link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/cloud-manager%s", ensure_trailing_slash = true}
 
 [role.opsmgr]
 help = """Link to a page in the MMS Ops Manager documentation."""
-type = { link = "https://www.mongodb.com/docs/ops-manager/current%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/ops-manager/current%s", ensure_trailing_slash = true}
 
 [role.realm]
 help = """Link to a page in the Realm SDK docs."""
-type = { link = "https://www.mongodb.com/docs/realm%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/realm%s", ensure_trailing_slash = true}
 
 [role.stitch]
 inherit = "realm"
 
 [role.appservices]
 help = """Link to a page in the App Services docs."""
-type = { link = "https://www.mongodb.com/docs/atlas/app-services%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas/app-services%s", ensure_trailing_slash = true}
 
 [role.mdb-shell]
 help = """Link to a page in the MongoDB Shell docs."""
-type = { link = "https://www.mongodb.com/docs/mongodb-shell%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/mongodb-shell%s", ensure_trailing_slash = true}
 
 [role.mongosh]
 inherit = "mdb-shell"
 
 [role.charts]
 help = """Link to a page in the Charts docs."""
-type = { link = "https://www.mongodb.com/docs/charts%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/charts%s", ensure_trailing_slash = true}
 
 [role."charts-v0.10"]
 help = """Link to a page in v0.10 of the Charts docs."""
-type = { link = "https://www.mongodb.com/docs/charts/v0.10%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/charts/v0.10%s", ensure_trailing_slash = true}
 
 [role."charts-v0.9"]
 help = """Link to a page in v0.9 of the Charts docs."""
-type = { link = "https://www.mongodb.com/docs/charts/v0.9%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/charts/v0.9%s", ensure_trailing_slash = true}
 
 [role."charts-onprem"]
 help = """Link to a page in the newest edition of Charts onprem docs."""
-type = { link = "https://www.mongodb.com/docs/charts/onprem%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/charts/onprem%s", ensure_trailing_slash = true}
 
 [role."v0.10"]
 deprecated = true
@@ -1416,221 +1410,221 @@ inherit = "charts-v0.9"
 
 [role.compass]
 help = """Link to a page in the Compass docs."""
-type = { link = "https://www.mongodb.com/docs/compass/current%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/compass/current%s", ensure_trailing_slash = true}
 
 [role."dotnet-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/dotnet/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/dotnet/latest/%s"}
 
 [role.ecosystem]
 help = """Link to a page in the Ecosystem docs."""
-type = { link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true}
 
 [role.driver]
 help = """Link to a driver's page in the Ecosystem docs."""
-type = { link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true}
 
 [role.products]
 help = """Link to a page in the MongoDB Products site."""
-type = { link = "https://www.mongodb.com/products%s" }
+type = {link = "https://www.mongodb.com/products%s"}
 
 [role.bic]
-type = { link = "https://www.mongodb.com/docs/bi-connector/current%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/bi-connector/current%s", ensure_trailing_slash = true}
 
 [role."bic-v2.10"]
-type = { link = "https://www.mongodb.com/docs/bi-connector/v2.10%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/bi-connector/v2.10%s", ensure_trailing_slash = true}
 
 [role.dbtools]
-type = { link = "https://www.mongodb.com/docs/database-tools%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/database-tools%s", ensure_trailing_slash = true}
 
 [role.k8s]
-type = { link = "https://www.mongodb.com/docs/kubernetes-operator/stable%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/kubernetes-operator/stable%s", ensure_trailing_slash = true}
 
 [role.product]
-type = { link = "http://www.mongodb.com/products/%s?tck=docs" }
+type = {link = "http://www.mongodb.com/products/%s?tck=docs"}
 
 [role.dl]
-type = { link = "http://www.mongodb.com/download-center/%s?tck=docs" }
+type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 
 [role.wtdocs]
-type = { link = "http://source.wiredtiger.com/mongodb-3.4%s" }
+type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
 [role."wtdocs-v4.0"]
-type = { link = "http://source.wiredtiger.com/mongodb-4.0%s" }
+type = {link = "http://source.wiredtiger.com/mongodb-4.0%s"}
 
 [role."wtdocs-v4.2"]
-type = { link = "http://source.wiredtiger.com/mongodb-4.2%s" }
+type = {link = "http://source.wiredtiger.com/mongodb-4.2%s"}
 
 [role."wtdocs-v4.4"]
-type = { link = "http://source.wiredtiger.com/mongodb-4.4%s" }
+type = {link = "http://source.wiredtiger.com/mongodb-4.4%s"}
 
 [role."wtdocs-v5.0"]
-type = { link = "http://source.wiredtiger.com/mongodb-5.0%s" }
+type = {link = "http://source.wiredtiger.com/mongodb-5.0%s"}
 
 [role.spec]
-type = { link = "https://github.com/mongodb/specifications/blob/master/source%s" }
+type = {link = "https://github.com/mongodb/specifications/blob/master/source%s"}
 
 [role."js-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/js/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/js/latest/%s"}
 
 [role."realm-react-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/react/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/react/latest/%s"}
 
 [role."js-web-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/js/realm-web/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/js/realm-web/latest/%s"}
 
 [role."facebook"]
-type = { link = "https://developers.facebook.com/%s" }
+type = {link = "https://developers.facebook.com/%s"}
 
 [role."fcm"]
-type = { link = "https://firebase.google.com/docs/%s" }
+type = {link = "https://firebase.google.com/docs/%s"}
 
 [role."git-scm"]
-type = { link = "https://git-scm.com/%s" }
+type = {link = "https://git-scm.com/%s"}
 
 [role."google"]
-type = { link = "https://developers.google.com/%s" }
+type = {link = "https://developers.google.com/%s"}
 
 [role."github"]
-type = { link = "https://github.com/%s" }
+type = {link = "https://github.com/%s"}
 
 [role."github-dev"]
-type = { link = "https://developer.github.com/%s" }
+type = {link = "https://developer.github.com/%s"}
 
 [role."twilio"]
-type = { link = "https://www.twilio.com/%s" }
+type = {link = "https://www.twilio.com/%s"}
 
 [role."mdn"]
-type = { link = "https://developer.mozilla.org/en-US/docs/%s" }
+type = {link = "https://developer.mozilla.org/en-US/docs/%s"}
 
 [role."apollo"]
-type = { link = "https://www.apollographql.com/%s" }
+type = {link = "https://www.apollographql.com/%s"}
 
 [role."aws-docs"]
-type = { link = "https://docs.aws.amazon.com/%s" }
+type = {link = "https://docs.aws.amazon.com/%s"}
 
 [role."aws-go"]
-type = { link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s" }
+type = {link = "https://docs.aws.amazon.com/sdk-for-go/api/service/%s"}
 
 [role."aws-iam"]
-type = { link = "https://docs.aws.amazon.com/IAM/latest/%s" }
+type = {link = "https://docs.aws.amazon.com/IAM/latest/%s"}
 
 [role."aws-reference"]
-type = { link = "https://docs.aws.amazon.com/general/latest/%s" }
+type = {link = "https://docs.aws.amazon.com/general/latest/%s"}
 
 [role."reactjs"]
-type = { link = "https://reactjs.org/%s" }
+type = {link = "https://reactjs.org/%s"}
 
 [role."jwt-io"]
-type = { link = "https://jwt.io/%s" }
+type = {link = "https://jwt.io/%s"}
 
 [role."android"]
-type = { link = "https://developer.android.com/%s" }
+type = {link = "https://developer.android.com/%s"}
 
 [role."apple"]
-type = { link = "https://developer.apple.com/%s" }
+type = {link = "https://developer.apple.com/%s"}
 
 [role."admin-api-endpoint"]
-type = { link = "https://www.mongodb.com/docs/atlas/app-services/admin/api/v3/#%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas/app-services/admin/api/v3/#%s", ensure_trailing_slash = true}
 
 [role."cpp-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/cpp/latest/%s"}
 
 [role."java-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/%s"}
 
 [role."kotlin-ext"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/java/latest/kotlin-extensions/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/java/latest/kotlin-extensions/%s"}
 
 [role."kotlin-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-base/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-base/%s"}
 
 [role."kotlin-sync-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-sync/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/kotlin/latest/library-sync/%s"}
 
 [role."swift-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/swift/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/swift/latest/%s"}
 
 [role."objc-sdk"]
-type = { link = "https://www.mongodb.com/docs/realm-sdks/objc/latest/%s" }
+type = {link = "https://www.mongodb.com/docs/realm-sdks/objc/latest/%s"}
 
 [role."flutter-sdk"]
-type = { link = "https://pub.dev/documentation/realm/latest/%s" }
+type = {link = "https://pub.dev/documentation/realm/latest/%s"}
 
 [role."flutter"]
-type = { link = "https://docs.flutter.dev/%s" }
+type = {link = "https://docs.flutter.dev/%s"}
 
 [role."codesandbox"]
-type = { link = "https://codesandbox.io/%s" }
+type = {link = "https://codesandbox.io/%s"}
 
 [role."graphql"]
-type = { link = "https://graphql.org/%s" }
+type = {link = "https://graphql.org/%s"}
 
 [role."nodejs"]
-type = { link = "https://nodejs.org/%s" }
+type = {link = "https://nodejs.org/%s"}
 
 [role."npm"]
-type = { link = "https://www.npmjs.com/%s" }
+type = {link = "https://www.npmjs.com/%s"}
 
 [role."rubygems"]
-type = { link = "https://rubygems.org/%s" }
+type = {link = "https://rubygems.org/%s"}
 
 [role."kafka-21-javadoc"]
-type = { link = "https://kafka.apache.org/21/javadoc/org/apache/kafka%s" }
+type = {link = "https://kafka.apache.org/21/javadoc/org/apache/kafka%s"}
 
 [role."typescript"]
-type = { link = "https://www.typescriptlang.org/%s" }
+type = {link = "https://www.typescriptlang.org/%s"}
 
 [role."node-driver"]
-type = { link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s" }
+type = {link = "https://mongodb.github.io/node-mongodb-native/3.6/api/%s"}
 
 [role."xamarin"]
-type = { link = "https://docs.microsoft.com/en-us/xamarin/%s" }
+type = {link = "https://docs.microsoft.com/en-us/xamarin/%s"}
 
 [role."maui"]
-type = { link = "https://learn.microsoft.com/en-us/dotnet/maui/%s" }
+type = {link = "https://learn.microsoft.com/en-us/dotnet/maui/%s"}
 
 [role."k8sdocs"]
-type = { link = "https://kubernetes.io/docs%s" }
+type = {link = "https://kubernetes.io/docs%s"}
 
 [role."gopkg"]
-type = { link = "https://godoc.org%s" }
+type = {link = "https://godoc.org%s"}
 
 [role."osi"]
-type = { link = "https://opensource.org%s" }
+type = {link = "https://opensource.org%s"}
 
 [role."osil"]
-type = { link = "https://opensource.org/licenses/%s" }
+type = {link = "https://opensource.org/licenses/%s"}
 
 [role."tldrl"]
-type = { link = "https://www.tldrlegal.com/l/%s" }
+type = {link = "https://www.tldrlegal.com/l/%s"}
 
 [role."q-mdb"]
-type = { link = "https://quay.io/mongodb%s" }
+type = {link = "https://quay.io/mongodb%s"}
 
 [role."qr-mdb"]
-type = { link = "https://quay.io/repository/mongodb%s" }
+type = {link = "https://quay.io/repository/mongodb%s"}
 
 [role."oas-atlas-tag"]
-type = { link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag%s" }
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag%s"}
 
 [role."oas-atlas-op"]
-type = { link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#operation%s" }
+type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#operation%s"}
 
 [role."atlascli"]
 help = """Link to a page in the Atlas CLI documentation."""
-type = { link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas/cli/stable%s", ensure_trailing_slash = true}
 
 [role."mongodb-analyzer"]
 help = """Link to the MongoDB Analyzer documentation."""
-type = { link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/mongodb-analyzer%s", ensure_trailing_slash = true}
 
 [role."mdbu-course"]
 help = """Link to a MongoDB University course."""
-type = { link = "https://learn.mongodb.com%s" }
+type = {link = "https://learn.mongodb.com%s"}
 
 [role."ak8so"]
 help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
-type = { link = "https://www.mongodb.com/docs/atlas/atlas-operator%s", ensure_trailing_slash = true }
+type = {link = "https://www.mongodb.com/docs/atlas/atlas-operator%s", ensure_trailing_slash = true}
 
 ### Types of objects (directive & role pairs)
 [rstobject."py:class"]
@@ -1843,132 +1837,132 @@ help = """mongosync State"""
 
 [tabs]
 cloud-providers = [
-   { id = "aws", title = "AWS" },
-   { id = "azure", title = "Azure" },
-   { id = "gcp", title = "GCP" },
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
 ]
 k8s-orchestrator = [
-   { id = "k8s", title = "Kubernetes" },
-   { id = "openshift", title = "OpenShift" },
+  {id = "k8s", title = "Kubernetes"},
+  {id = "openshift", title = "OpenShift"},
 ]
 cloud = [
-   { id = "cloud", title = "Cloud (Atlas)" },
-   { id = "local", title = "Local Instance" },
+  {id = "cloud", title = "Cloud (Atlas)"},
+  {id = "local", title = "Local Instance"},
 ]
 platforms = [
-   { id = "windows", title = "Windows" },
-   { id = "macos", title = "macOS" },
-   { id = "debian", title = "Ubuntu/Debian" },
-   { id = "rhel", title = "RHEL/CentOS/SLES/AMZ" },
-   { id = "linux", title = "Linux" },
+  {id = "windows", title = "Windows"},
+  {id = "macos", title = "macOS"},
+  {id = "debian", title = "Ubuntu/Debian"},
+  {id = "rhel", title = "RHEL/CentOS/SLES/AMZ"},
+  {id = "linux", title = "Linux"},
 ]
 drivers = [
-   { id = "atlas-cli", title = "Atlas CLI" },
-   { id = "atlas-ui", title = "MongoDB Atlas" },
-   { id = "shell", title = "MongoDB Shell" },
-   { id = "compass", title = "Compass" },
-   { id = "c", title = "C" },
-   { id = "cpp", title = "C++11" },
-   { id = "cpp-sdk", title = "C++" },
-   { id = "csharp", title = "C#" },
-   { id = "dart", title = "Dart" },
-   { id = "go", title = "Go" },
-   { id = "java", title = "Java" },
-   { id = "java-async", title = "Java (Async)" },
-   { id = "java-sync", title = "Java (Sync)" },
-   { id = "javascript", title = "Javascript" },
-   { id = "kotlin", title = "Kotlin" },
-   { id = "java-kotlin", title = "Kotlin (Java SDK)" },
-   { id = "kotlin-coroutine", title = "Kotlin (Coroutine)" },
-   { id = "kotlin-sync", title = "Kotlin (Sync)" },
-   { id = "motor", title = "Motor" },
-   { id = "nodejs", title = "Node.js" },
-   { id = "objectivec", title = "Objective-C" },
-   { id = "perl", title = "Perl" },
-   { id = "php", title = "PHP" },
-   { id = "python", title = "Python" },
-   { id = "ruby", title = "Ruby" },
-   { id = "rust", title = "Rust" },
-   { id = "rust-async", title = "Rust (Async)" },
-   { id = "rust-sync", title = "Rust (Sync)" },
-   { id = "scala", title = "Scala" },
-   { id = "swift", title = "Swift" },
-   { id = "swift-async", title = "Swift (Async)" },
-   { id = "swift-sync", title = "Swift (Sync)" },
-   { id = "typescript", title = "Typescript" },
+  {id = "atlas-cli", title = "Atlas CLI"},
+  {id = "atlas-ui", title = "MongoDB Atlas"},
+  {id = "shell", title = "MongoDB Shell"},
+  {id = "compass", title = "Compass"},
+  {id = "c", title = "C"},
+  {id = "cpp", title = "C++11"},
+  {id = "cpp-sdk", title = "C++"},
+  {id = "csharp", title = "C#"},
+  {id = "dart", title = "Dart"},
+  {id = "go", title = "Go"},
+  {id = "java", title = "Java"},
+  {id = "java-async", title = "Java (Async)"},
+  {id = "java-sync", title = "Java (Sync)"},
+  {id = "javascript", title = "Javascript"},
+  {id = "kotlin", title = "Kotlin"},
+  {id = "java-kotlin", title = "Kotlin (Java SDK)"},
+  {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
+  {id = "kotlin-sync", title = "Kotlin (Sync)"},
+  {id = "motor", title = "Motor"},
+  {id = "nodejs", title = "Node.js"},
+  {id = "objectivec", title = "Objective-C"},
+  {id = "perl", title = "Perl"},
+  {id = "php", title = "PHP"},
+  {id = "python", title = "Python"},
+  {id = "ruby", title = "Ruby"},
+  {id = "rust", title = "Rust"},
+  {id = "rust-async", title = "Rust (Async)"},
+  {id = "rust-sync", title = "Rust (Sync)"},
+  {id = "scala", title = "Scala"},
+  {id = "swift", title = "Swift"},
+  {id = "swift-async", title = "Swift (Async)"},
+  {id = "swift-sync", title = "Swift (Sync)"},
+  {id = "typescript", title = "Typescript"}
 ]
 auth = [
-   { id = "uidpwd", title = "Username and Password" },
-   { id = "ldap", title = "LDAP" },
-   { id = "kerberos", title = "Kerberos" },
+  {id = "uidpwd", title = "Username and Password"},
+  {id = "ldap", title = "LDAP"},
+  {id = "kerberos", title = "Kerberos"},
 ]
 stitch-auth-providers = [
-   { id = "anon-user", title = "Anonymous" },
-   { id = "local-userpass", title = "Email/Password" },
-   { id = "oauth2-google", title = "Google" },
-   { id = "oauth2-facebook", title = "Facebook" },
-   { id = "api-key", title = "API Key Authentication" },
-   { id = "custom-token", title = "Custom" },
+  {id = "anon-user", title = "Anonymous"},
+  {id = "local-userpass", title = "Email/Password"},
+  {id = "oauth2-google", title = "Google"},
+  {id = "oauth2-facebook", title = "Facebook"},
+  {id = "api-key", title = "API Key Authentication"},
+  {id = "custom-token", title = "Custom"},
 ]
 deployments = [
-   { id = "standalone", title = "Standalone" },
-   { id = "repl", title = "Replica Set" },
-   { id = "shard", title = "Sharded Cluster" },
+  {id = "standalone", title = "Standalone"},
+  {id = "repl", title = "Replica Set"},
+  {id = "shard", title = "Sharded Cluster"},
 ]
 stitch-sdks = [
-   { id = "functions", title = "afaunctions" },
-   { id = "json-expressions", title = "Json Expressions" },
-   { id = "javascript", title = "JavaScript SDK" },
-   { id = "android", title = "Android SDK" },
-   { id = "ios", title = "iOS SDK" },
+  {id = "functions", title = "afaunctions"},
+  {id = "json-expressions", title = "Json Expressions"},
+  {id = "javascript", title = "JavaScript SDK"},
+  {id = "android", title = "Android SDK"},
+  {id = "ios", title = "iOS SDK"},
 ]
 stitch-interfaces = [
-   { id = "stitch-ui", title = "Stitch UI" },
-   { id = "import-export", title = "Import/Export" },
+  {id = "stitch-ui", title = "Stitch UI"},
+  {id = "import-export", title = "Import/Export"},
 ]
 realm-languages = [
-   { id = "c-sharp", title = "C#" },
-   { id = "cpp", title = "C++" },
-   { id = "dart", title = "Dart" },
-   { id = "java", title = "Java" },
-   { id = "javascript", title = "JavaScript" },
-   { id = "kotlin", title = "Kotlin" },
-   { id = "objective-c", title = "Objective C" },
-   { id = "swift", title = "Swift" },
-   { id = "typescript", title = "TypeScript" },
+  {id = "c-sharp", title = "C#"},
+  {id = "cpp", title = "C++"},
+  {id = "dart", title = "Dart"},
+  {id = "java", title = "Java"},
+  {id = "javascript", title = "JavaScript"},
+  {id = "kotlin", title = "Kotlin"},
+  {id = "objective-c", title = "Objective C"},
+  {id = "swift", title = "Swift"},
+  {id = "typescript", title = "TypeScript"},
 ]
 realm-sdks = [
-   { id = "functions", title = "Functions" },
-   { id = "json-expressions", title = "JSON Expressions" },
-   { id = "graphql", title = "GraphQL" },
-   { id = "ios", title = "Swift SDK" },
-   { id = "android", title = "Java SDK" },
-   { id = "cpp", title = "C++ SDK" },
-   { id = "kotlin", title = "Kotlin SDK" },
-   { id = "flutter", title = "Flutter SDK" },
-   { id = "dotnet", title = ".NET SDK" },
-   { id = "xamarin", title = "Xamarin SDK" },
-   { id = "javascript", title = "JavaScript SDKs" },
-   { id = "node", title = "Node.js SDK" },
-   { id = "react-native", title = "React Native SDK" },
-   { id = "web", title = "Web SDK" },
+  {id = "functions", title = "Functions"},
+  {id = "json-expressions", title = "JSON Expressions"},
+  {id = "graphql", title = "GraphQL"},
+  {id = "ios", title = "Swift SDK"},
+  {id = "android", title = "Java SDK"},
+  {id = "cpp", title = "C++ SDK"},
+  {id = "kotlin", title = "Kotlin SDK"},
+  {id = "flutter", title = "Flutter SDK"},
+  {id = "dotnet", title = ".NET SDK"},
+  {id = "xamarin", title = "Xamarin SDK"},
+  {id = "javascript", title = "JavaScript SDKs"},
+  {id = "node", title = "Node.js SDK"},
+  {id = "react-native", title = "React Native SDK"},
+  {id = "web", title = "Web SDK"},
 ]
 
 realm-admin-interfaces = [
-   { id = "ui", title = "App Services UI" },
-   { id = "cli", title = "App Services CLI" },
-   { id = "api", title = "Admin API" },
-   { id = "github", title = "GitHub Deploy" },
-   { id = "code-deploy", title = "Code Deploy" },
+  {id = "ui", title = "App Services UI"},
+  {id = "cli", title = "App Services CLI"},
+  {id = "api", title = "Admin API"},
+  {id = "github", title = "GitHub Deploy"},
+  {id = "code-deploy", title = "Code Deploy"},
 ]
 
 realm-auth-providers = [
-   { id = "anon-user", title = "Anonymous" },
-   { id = "local-userpass", title = "Email/Password" },
-   { id = "oauth2-apple", title = "Apple ID" },
-   { id = "oauth2-google", title = "Google" },
-   { id = "oauth2-facebook", title = "Facebook" },
-   { id = "api-key", title = "API Key" },
-   { id = "custom-token", title = "Custom JWT" },
-   { id = "custom-function", title = "Custom Function" },
+  {id = "anon-user", title = "Anonymous"},
+  {id = "local-userpass", title = "Email/Password"},
+  {id = "oauth2-apple", title = "Apple ID"},
+  {id = "oauth2-google", title = "Google"},
+  {id = "oauth2-facebook", title = "Facebook"},
+  {id = "api-key", title = "API Key"},
+  {id = "custom-token", title = "Custom JWT"},
+  {id = "custom-function", title = "Custom Function"},
 ]
