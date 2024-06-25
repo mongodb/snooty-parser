@@ -1,0 +1,225 @@
+[[genre]]
+name = "reference"
+
+[[genre]]
+name = "tutorial"
+
+# trying to map to docs "name" property 
+# for target_product and sub_product
+# as much as possible
+[[target_product]]
+name = "atlas"
+
+  [[target_product.sub_product]]
+  name = "atlas-app-services"
+  display_name = "App Services"
+
+  [[target_product.sub_product]]
+  name = "charts"
+  display_name = "Charts"
+
+  [[target_product.sub_product]]
+  name = "atlas-cli"
+  display_name = "Atlas CLI"
+
+  [[target_product.sub_product]]
+  name = "data-api"
+  display_name = "Data API"
+
+  [[target_product.sub_product]]
+  name = "data-federation"
+
+  [[target_product.sub_product]]
+  name = "data-lake"
+
+  [[target_product.sub_product]]
+  name = "device-sync" #404
+
+  [[target_product.sub_product]]
+  name = "kubernetes-operator"
+
+  [[target_product.sub_product]]
+  name = "online-archive"
+
+  [[target_product.sub_product]]
+  name = "search"
+
+  [[target_product.sub_product]]
+  name = "stream-processing"
+
+  [[target_product.sub_product]]
+  name = "triggers"
+
+[[target_product]]
+name = "bi-connector"
+display_name = "BI Connector"
+
+[[target_product]]
+name = "com"
+display_name = "Cloud Manager"
+
+[[target_product]]
+name = "c2c"
+display_name = "Cluster-to-Cluster Sync"
+
+[[target_product]]
+name = "community-kubernetes-operator"  # 404
+
+[[target_product]]
+name = "compass"
+
+[[target_product]]
+name = "database-tools"
+
+[[target_product]]
+name = "drivers"
+
+[[target_product]]
+name = "enterprise-kubernetes-operator"
+
+[[target_product]]
+name = "kafka-connector"
+
+[[target_product]]
+name = "mongodb-analyzer" # 404
+display_name = "MongoDB Analyzer"
+
+[[target_product]]
+name = "mongocli"
+display_name = "MongoDB CLI"
+
+[[target_product]]
+name = "visual-studio-extension"
+display_name = "MongoDB for VS Code"
+
+[[target_product]]
+name = "mongodb-shell"
+display_name = "MongoDB Shell"
+
+[[target_product]]
+name = "onprem" # verify
+display_name = "Ops Manager"
+
+[[target_product]]
+name = "realm"
+
+  [[target_product.sub_product]]
+  name = "cpp"
+  display_name = "C++ SDK"
+
+  # nestled under docs-realm 
+  [[target_product.sub_product]]
+  name = "flutter"
+  display_name = "Dart Flutter SDK"
+
+  [[target_product.sub_product]]
+  name = "java"
+  display_name = "Java SDK"
+
+  [[target_product.sub_product]]
+  name = "kotlin"
+  display_name = "Kotlin SDK"
+
+  [[target_product.sub_product]]
+  name = "dotnet"
+  display_name = ".NET SDK"
+
+  [[target_product.sub_product]]
+  name = "react-native"
+  display_name = "React Native SDK"
+
+  [[target_product.sub_product]]
+  name = "swift"
+  display_name = "Swift SDK"
+
+  [[target_product.sub_product]]
+  name = "node"
+  display_name = "Node.js SDK"
+
+  [[target_product.sub_product]]
+  name = "web"
+  display_name = "Web SDK"
+
+[[target_product]]
+name = "docs-relational-migrator"
+display_name = "Relational Migrator"
+
+[[target_product]]
+name = "docs"  # verify
+display_name = "Server"
+
+[[target_product]]
+name = "spark-connector"  # verify
+
+# validated against existing search documents
+[[programming_language]]
+name = "objective-c"
+display_name = "Objective C"
+
+[[programming_language]]
+name = "c"
+
+[[programming_language]]
+name = "csharp"
+display_name = "C#"
+
+[[programming_language]]
+name = "cpp"
+display_name = "C++"
+
+[[programming_language]]
+name = "dart"
+
+[[programming_language]]
+name = "go"
+
+[[programming_language]]
+name = "java"
+
+[[programming_language]]
+name = "kotlin"
+
+[[programming_language]]
+name = "perl"
+
+[[programming_language]]
+name = "php"
+display_name = "PHP"
+
+[[programming_language]]
+name = "python"
+
+[[programming_language]]
+name = "ruby"
+
+[[programming_language]]
+name = "rust"
+
+[[programming_language]]
+name = "scala"
+
+[[programming_language]]
+name = "swift"
+
+[[programming_language]]
+name = "javascript/typescript"  # validate
+display_name = "JavaScript/TypeScript"
+
+[[programming_language]]
+name = "shell"
+
+[[programming_language]]
+name = "json"
+display_name = "JSON"
+
+[[programming_language]]
+name = "realmql"
+display_name = "RealmQL"
+
+[[programming_language]]
+name = "graphql"
+display_name = "GraphQL"
+
+[[programming_language]]
+name = "mql"
+display_name = "MQL"

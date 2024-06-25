@@ -3,7 +3,8 @@ name: CI
 on:
   push:
     branches:
-    - latest
+    - main
+    - 'v[0-9]*'
   pull_request:
     branches:
       - latest
@@ -12,18 +13,45 @@ jobs:
   test:
     strategy:
       matrix:
-        platform: [ubuntu-latest]
+        platform: [ubuntu-20.04, macos-latest]
+        python-version: ['3.8', '3.11']
+        # Python 3.8 is only used for Pyston on Linux x86_64
+        exclude:
+          - platform: macos-latest
+            python-version: '3.8'
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: ${{ matrix.python-version }}
         architecture: 'x64'
-    - name: Fetch parser
-      run: |
-        mkdir -p downloaded_parser
-        curl -L "$(python3 ./tools/get_latest_parser_url.py)" -o downloaded_parser/snooty.zip
-        cd downloaded_parser && unzip snooty.zip
-    - name: Test parser
-      run: mkdir empty && ./downloaded_parser/snooty/snooty build --rstspec=snooty/rstspec.toml empty/
+    - name: Setup poetry
+      run: python3 -m pip install poetry
+    - name: Install dependencies
+      run: python3 -m poetry install
+    - name: Run tests
+      run: make test
+  testPackage:
+    strategy:
+      matrix:
+        platform: [ubuntu-20.04, macos-latest]
+        python-version: ['3.11']
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: 'x64'
+    - name: Setup poetry
+      run: python3 -m pip install poetry
+    - name: Install dependencies
+      run: python3 -m poetry install
+    - name: Build package
+      id: build_package
+      run: make package

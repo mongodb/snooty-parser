@@ -1,0 +1,25 @@
+:orphan:
+
+:setting:`net.port` on AWS.
+
+|service| |global-write-clusters| require developers to define
+single or multi-region :guilabel:`Zones`, where each zone supports
+write and read operations from geographically local shards. You can also
+configure zones to support global low-latency secondary reads. For more
+information on |global-write| zones, see :ref:`global-writes-zones`.
+
+|service| does not auto-configure or auto-shard collections.
+Sharded collections must meet specific compatibility requirements to
+utilize |global-write|. For more information on guidance and
+requirements for sharding collections for |global-write|, see
+:ref:`global-writes-collections`.
+
+And this is a link to :method:`amethod`.
+
+And this is a link to :binary:`mongod`.
+
+|service| does not require developers, see :ref:`100_stacked_example`.
+
+|service| does require developers, see  :ref:`z100_stacked_example`.
+
+:ref:`CONNECTION-limits`
