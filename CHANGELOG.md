@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.11] - 2024-06-27
+
 ### Changed
 
 - Drivers tab labels have been updated (#607)
