@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Drivers tab labels have been updated (#607)
+
+### Removed
+
+- The `topic` directive (DOP-4663, #604)
+
 ## [v0.16.10] - 2024-06-20
 
 ### Changed
