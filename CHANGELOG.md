@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The include loop diagnostic has been removed due to false-positives.
+
 ## [v0.16.11] - 2024-06-27
 
 ### Changed
