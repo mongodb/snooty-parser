@@ -3,7 +3,7 @@ from pathlib import Path, PurePath
 from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from . import n
-from .n import FileId, SerializableType
+from .n import SerializableType
 
 
 class MakeCorrectionMixin:
@@ -941,18 +941,5 @@ class OrphanedPage(Diagnostic):
         super().__init__(
             "Page not included in any toctree and not marked :orphan:",
             0,
-            None,
-        )
-
-
-class IncludeLoop(Diagnostic):
-    severity = Diagnostic.Level.error
-
-    def __init__(
-        self, include_list: Sequence[FileId], start: Union[int, Tuple[int, int]]
-    ) -> None:
-        super().__init__(
-            f"Includes loop: {' -> '.join(str(x) for x in include_list)}",
-            start,
             None,
         )

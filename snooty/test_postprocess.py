@@ -16,7 +16,6 @@ from .diagnostics import (
     ExpectedPathArg,
     ExpectedTabs,
     GuideAlreadyHasChapter,
-    IncludeLoop,
     InvalidChapter,
     InvalidChild,
     InvalidContextError,
@@ -3443,39 +3442,3 @@ Alrighty
         assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
-
-
-def test_include_loop() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-.. include:: index.txt
-"""
-        }
-    ) as result:
-        diagnostics = result.diagnostics[FileId("index.txt")]
-        assert [(type(d), d.message) for d in diagnostics] == [
-            (IncludeLoop, "Includes loop: index.txt -> index.txt")
-        ]
-
-    # A more complicated case where A includes B which includes A
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-.. include:: foo.rst
-""",
-            Path(
-                "source/foo.rst"
-            ): """
-.. include:: index.txt
-""",
-        }
-    ) as result:
-        diagnostics = result.diagnostics[FileId("index.txt")]
-        assert [(type(d), d.message) for d in diagnostics] == [
-            (IncludeLoop, "Includes loop: index.txt -> foo.rst -> index.txt")
-        ]
