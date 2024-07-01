@@ -531,7 +531,7 @@ class BaseDocutilsDirective(tinydocutils.directives.Directive):
                 tinydocutils.statemachine.StringList(
                     content_lines, source=self.arguments[0]
                 ),
-                self.content_offset,
+                self.lineno,
                 node,
                 match_titles=True,
             )
