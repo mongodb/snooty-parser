@@ -3826,3 +3826,30 @@ Procedure
     )
     page.finish(diagnostics)
     assert not diagnostics
+
+
+def test_heading_immediately_after_directive_dop_4745() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. note:: /somepath
+   {
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="note"><paragraph><text>/somepath
+{</text></paragraph>
+    </directive>
+</root>""",
+    )
