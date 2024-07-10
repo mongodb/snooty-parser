@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.13] - 2024-07-10
+
 ### Changed
 
 - Bump certifi from 2024.6.2 to 2024.7.4
