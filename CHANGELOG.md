@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bump certifi from 2024.6.2 to 2024.7.4
+- Fix IndexError in tinydocutils
+
 ## [v0.16.12] - 2024-06-27
 
 ### Removed
