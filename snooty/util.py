@@ -30,7 +30,6 @@ from typing import (
     Callable,
     ClassVar,
     Container,
-    Counter,
     Dict,
     Generic,
     Hashable,
@@ -48,9 +47,6 @@ from typing import (
 
 import requests
 import tomli
-import watchdog.events
-import watchdog.observers
-import watchdog.observers.api
 
 from snooty.diagnostics import Diagnostic, NestedProject
 from snooty.n import FileId
@@ -203,119 +199,6 @@ def add_doc_target_ext(target: str, docpath: PurePath, project_root: Path) -> Pa
 
     _, resolved_target_path = reroot_path(target_path, docpath, project_root)
     return resolved_target_path
-
-
-class FileWatcher:
-    """A monitor for file changes."""
-
-    class AssetChangedHandler(watchdog.events.FileSystemEventHandler):
-        """A filesystem event handler which flags pages as having changed
-        after an included asset has changed."""
-
-        def __init__(
-            self,
-            directories: Dict[Path, "FileWatcher.AssetWatch"],
-            on_event: Callable[[watchdog.events.FileSystemEvent], None],
-        ) -> None:
-            super().__init__()
-            self.directories = directories
-            self.on_event = on_event
-
-        def dispatch(self, event: watchdog.events.FileSystemEvent) -> None:
-            """Delegate filesystem events."""
-            path = Path(event.src_path)
-            if (
-                path.parent in self.directories
-                and path.name in self.directories[path.parent]
-            ):
-                self.on_event(event)
-
-    @dataclass
-    class AssetWatch:
-        """Track files in a directory to watch. This reflects the underlying interface
-        exposed by watchdog."""
-
-        _filenames: Counter[str]
-        watch_handle: watchdog.observers.api.ObservedWatch
-
-        def __len__(self) -> int:
-            return len(self._filenames)
-
-        def increment(self, filename: str) -> None:
-            self._filenames[filename] += 1
-
-        def decrement(self, filename: str) -> None:
-            self._filenames[filename] -= 1
-
-        def __getitem__(self, filename: str) -> int:
-            return self._filenames[filename]
-
-        def __delitem__(self, filename: str) -> None:
-            del self._filenames[filename]
-
-        def __contains__(self, filename: str) -> bool:
-            return filename in self._filenames
-
-    def __init__(
-        self, on_event: Callable[[watchdog.events.FileSystemEvent], None]
-    ) -> None:
-        self.lock = threading.Lock()
-        self.observer = watchdog.observers.Observer()
-        self.directories: Dict[Path, FileWatcher.AssetWatch] = {}
-        self.handler = self.AssetChangedHandler(self.directories, on_event)
-
-    def watch_file(self, path: Path) -> None:
-        """Start reporting upon changes to a file."""
-        directory = path.parent
-        logger.debug("Starting watch: %s", path)
-        with self.lock:
-            if directory in self.directories:
-                self.directories[directory].increment(path.name)
-                return
-
-            watch = self.observer.schedule(self.handler, str(directory))
-            self.directories[directory] = self.AssetWatch(
-                Counter({path.name: 1}), watch
-            )
-
-    def end_watch(self, path: Path) -> None:
-        """Stop watching a file."""
-        directory = path.parent
-        with self.lock:
-            if directory not in self.directories:
-                return
-
-            watch = self.directories[directory]
-            watch.decrement(path.name)
-            if watch[path.name] <= 0:
-                del watch[path.name]
-
-            # If there are no files remaining in this watch directory, unwatch it.
-            if len(watch) == 0:
-                self.observer.unschedule(watch.watch_handle)
-                logger.info("Stopping watch: %s", path)
-                del self.directories[directory]
-
-    def start(self) -> None:
-        """Start a thread watching for file changes."""
-        self.observer.start()
-
-    def stop(self, join: bool = False) -> None:
-        """Stop this file watcher."""
-        self.observer.stop()
-        if join:
-            self.observer.join()
-
-    def __enter__(self) -> "FileWatcher":
-        self.start()
-        return self
-
-    def __exit__(self, *args: object) -> None:
-        self.stop()
-
-    def __len__(self) -> int:
-        with self.lock:
-            return sum(len(w) for w in self.directories.values())
 
 
 def option_bool(argument: Optional[str]) -> bool:

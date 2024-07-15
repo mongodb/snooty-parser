@@ -22,10 +22,8 @@ ROOT_PATH = Path("test_data")
 def backend() -> Backend:
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {"commit_hash": "123456", "patch_id": "678"}
-    with Project(
-        Path("test_data/test_postprocessor"), backend, build_identifiers
-    ) as project:
-        project.build()
+    project = Project(Path("test_data/test_postprocessor"), backend, build_identifiers)
+    project.build()
 
     return backend
 

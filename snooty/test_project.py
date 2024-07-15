@@ -1,6 +1,5 @@
 import shutil
 import tempfile
-import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
@@ -8,7 +7,6 @@ from typing import DefaultDict, Dict, List
 
 import pytest
 
-from . import n
 from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
@@ -23,7 +21,6 @@ from .parse_cache import CacheStats
 from .parser import Project, ProjectBackend, ProjectLoadError
 from .target_database import TargetDatabase
 from .types import BuildIdentifierSet, ProjectConfig
-from .util import ast_dive
 from .util_test import (
     BackendTestResults,
     check_ast_testing_string,
@@ -72,39 +69,6 @@ class Backend(ProjectBackend):
 
     def flush(self) -> None:
         pass
-
-
-def test() -> None:
-    backend = Backend()
-    n_threads = len(threading.enumerate())
-    with Project(Path("test_data/test_project"), backend, build_identifiers) as project:
-        project.build()
-        # Ensure that filesystem monitoring threads have been started
-        assert len(threading.enumerate()) > n_threads
-
-        # Ensure that the correct pages and assets exist
-        index_id = FileId("index.txt")
-        assert list(backend.pages.keys()) == [index_id]
-        # Confirm that no diagnostics were created
-        assert backend.diagnostics[index_id] == []
-        code_length = 0
-        checksums: List[str] = []
-        index = backend.pages[index_id]
-        assert len(index.static_assets) == 1
-        assert not index.pending_tasks
-        for node in ast_dive(index.ast):
-            if isinstance(node, n.Code):
-                code_length += len(node.value)
-            elif isinstance(node, n.Directive) and node.name == "figure":
-                checksums.append(node.options["checksum"])
-        assert code_length == 345
-        assert checksums == [
-            "10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947"
-        ]
-        assert backend.updates == [index_id]
-
-    # Ensure that any filesystem monitoring threads have been shut down
-    assert len(threading.enumerate()) == n_threads
 
 
 def test_facet_propagation() -> None:
@@ -266,25 +230,23 @@ full-version = "{+version+}.{+patch-version+}"
 
 def test_target_wipe() -> None:
     backend = Backend()
-    with Project(
-        Path("test_data/test_postprocessor"), backend, {}, watch=False
-    ) as project:
-        project.build()
-        with project._lock:
-            query_result = project._project.targets["std:label:global-writes-zones"][0]
-            assert isinstance(query_result, TargetDatabase.InternalResult)
-            assert query_result.result[0] == "index"
+    project = Project(Path("test_data/test_postprocessor"), backend, {}, watch=False)
+    project.build()
+    with project._lock:
+        query_result = project._project.targets["std:label:global-writes-zones"][0]
+        assert isinstance(query_result, TargetDatabase.InternalResult)
+        assert query_result.result[0] == "index"
 
-        project.update(
-            FileId("index.txt"),
-            ".. _gooblygooblygoo:\n",
-        )
-        project.postprocess()
-        with project._lock:
-            assert not project._project.targets["std:label:global-writes-zones"]
-            query_result = project._project.targets["std:label:gooblygooblygoo"][0]
-            assert isinstance(query_result, TargetDatabase.InternalResult)
-            assert query_result.result[0] == "index"
+    project.update(
+        FileId("index.txt"),
+        ".. _gooblygooblygoo:\n",
+    )
+    project.postprocess()
+    with project._lock:
+        assert not project._project.targets["std:label:global-writes-zones"]
+        query_result = project._project.targets["std:label:gooblygooblygoo"][0]
+        assert isinstance(query_result, TargetDatabase.InternalResult)
+        assert query_result.result[0] == "index"
 
 
 def test_invalid_data() -> None:

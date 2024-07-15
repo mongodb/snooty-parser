@@ -251,8 +251,8 @@ def make_test_project(
 
         backend = BackendTestResults()
 
-        with Project(root, backend, {}, watch=False) as project:
-            yield (project, backend)
+        project = Project(root, backend, {}, watch=False)
+        yield (project, backend)
 
 
 @contextlib.contextmanager

@@ -2,7 +2,6 @@
 
 Usage:
   snooty build [--no-caching]               <source-path> [--output=<path>] [options]
-  snooty watch [--no-caching]               <source-path> [options]
   snooty create-cache [--no-caching]        <source-path> [options]
   snooty [--no-caching] language-server
 
@@ -28,12 +27,10 @@ import os
 import sys
 import zipfile
 from collections import defaultdict
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
 import bson
-import watchdog.events
-import watchdog.observers
 from docopt import docopt
 
 from . import __version__, language_server, specparser
@@ -49,46 +46,6 @@ PATTERNS = ["*" + ext for ext in SOURCE_FILE_EXTENSIONS]
 logger = logging.getLogger(__name__)
 
 EXIT_STATUS_ERROR_DIAGNOSTICS = 2
-
-
-class ObserveHandler(watchdog.events.PatternMatchingEventHandler):
-    def __init__(self, project: Project) -> None:
-        super(ObserveHandler, self).__init__(patterns=PATTERNS)
-        self.project = project
-
-    def dispatch(self, event: watchdog.events.FileSystemEvent) -> None:
-        if event.is_directory:
-            return
-
-        # Ignore non-text files; the Project handles changed static assets.
-        # Eventually this logic should probably be moved into the Project's
-        # filesystem monitor.
-        if PurePath(event.src_path).suffix not in SOURCE_FILE_EXTENSIONS:
-            return
-
-        if event.event_type in (
-            watchdog.events.EVENT_TYPE_CREATED,
-            watchdog.events.EVENT_TYPE_MODIFIED,
-        ):
-            logging.info("Rebuilding %s", event.src_path)
-            self.project.update(
-                self.project.config.get_fileid(PurePath(event.src_path))
-            )
-        elif event.event_type == watchdog.events.EVENT_TYPE_DELETED:
-            logging.info("Deleting %s", event.src_path)
-            self.project.delete(
-                self.project.config.get_fileid(PurePath(event.src_path))
-            )
-        elif isinstance(event, watchdog.events.FileSystemMovedEvent):
-            logging.info("Moving %s", event.src_path)
-            self.project.delete(
-                self.project.config.get_fileid(PurePath(event.src_path))
-            )
-            self.project.update(
-                self.project.config.get_fileid(PurePath(event.dest_path))
-            )
-        else:
-            assert False
 
 
 class Backend(ProjectBackend):
@@ -344,14 +301,6 @@ def main() -> None:
 
         if os.environ.get("SNOOTY_PERF_SUMMARY", "0") == "1":
             PerformanceLogger.singleton().print(sys.stderr)
-
-        if args["watch"]:
-            observer = watchdog.observers.Observer()
-            handler = ObserveHandler(project)
-            logger.info("Watching for changes...")
-            observer.schedule(handler, str(root_path), recursive=True)
-            observer.start()
-            observer.join()
     except KeyboardInterrupt:
         pass
     except:

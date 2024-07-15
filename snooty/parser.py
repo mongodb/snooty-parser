@@ -34,7 +34,6 @@ from typing import (
 
 import networkx
 import requests.exceptions
-import watchdog.events
 from yaml import safe_load
 
 from . import (
@@ -1418,7 +1417,6 @@ class _Project:
         self,
         root: Path,
         backend: ProjectBackend,
-        filesystem_watcher: util.FileWatcher,
         build_identifiers: BuildIdentifierSet,
     ) -> None:
         root = root.resolve(strict=True)
@@ -1464,7 +1462,6 @@ class _Project:
         self.backend = backend
         self._backend_lock = threading.Lock()
 
-        self.filesystem_watcher = filesystem_watcher
         self.build_identifiers = build_identifiers
 
         self.yaml_domain = gizaparser.domain.GizaYamlDomain(
@@ -1737,28 +1734,7 @@ class _Project:
         diagnostics_copy = list(diagnostics)
         page.finish(diagnostics_copy, self)
 
-        # Synchronize our asset watching
-        old_assets: Set[StaticAsset] = set()
-        removed_assets: Set[StaticAsset] = set()
-
         logger.debug("Updated: %s", page.fileid)
-
-        if page.fileid in self.pages:
-            old_page = self.pages._parsed[page.fileid][0]
-            old_assets = old_page.static_assets
-            removed_assets = old_page.static_assets.difference(page.static_assets)
-
-        new_assets = page.static_assets.difference(old_assets)
-        for asset in new_assets:
-            try:
-                self.filesystem_watcher.watch_file(asset.path)
-            except OSError as err:
-                # Missing static asset directory: don't process it. We've already raised a
-                # diagnostic to the user.
-                logger.debug(f"Failed to set up watch: {err}")
-                page.static_assets.remove(asset)
-        for asset in removed_assets:
-            self.filesystem_watcher.end_watch(asset.path)
 
         # Update dependents
         try:
@@ -1782,11 +1758,9 @@ class _Project:
         with self._backend_lock:
             self.on_diagnostics(page.fileid, diagnostics_copy)
 
-    def on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
-        asset_path = self.config.get_fileid(Path(ev.src_path))
-
+    def update_asset(self, fileid: FileId) -> None:
         # Rebuild any pages depending on this asset
-        for page_id in list(self.asset_dg.predecessors(asset_path)):
+        for page_id in list(self.asset_dg.predecessors(fileid)):
             self.update(self.pages[page_id].fileid)
 
 
@@ -1803,15 +1777,8 @@ class Project:
         build_identifiers: BuildIdentifierSet,
         watch: bool = True,
     ) -> None:
-        self._filesystem_watcher = util.FileWatcher(self._on_asset_event)
-        self._project = _Project(
-            root, backend, self._filesystem_watcher, build_identifiers
-        )
+        self._project = _Project(root, backend, build_identifiers)
         self._lock = threading.Lock()
-
-        self.watch = watch
-        if watch:
-            self._filesystem_watcher.start()
 
     @property
     def config(self) -> ProjectConfig:
@@ -1862,22 +1829,7 @@ class Project:
         with self._lock:
             self._project.update_cache(optimize)
 
-    def stop_monitoring(self) -> None:
-        """Stop the filesystem monitoring thread associated with this project."""
-        if self.watch:
-            self._filesystem_watcher.stop(join=True)
-
     @contextlib.contextmanager
     def _get_inner(self) -> Iterator[_Project]:
         with self._lock:
             yield self._project
-
-    def _on_asset_event(self, ev: watchdog.events.FileSystemEvent) -> None:
-        with self._lock:
-            self._project.on_asset_event(ev)
-
-    def __enter__(self) -> "Project":
-        return self
-
-    def __exit__(self, *args: object) -> None:
-        self.stop_monitoring()

@@ -91,12 +91,10 @@ def test_intersphinx_generation() -> None:
 
 def test_dump_target_database() -> None:
     backend = Backend()
-    with Project(Path("test_data/test_intersphinx"), backend, {}) as project:
-        project.build()
-        with project._lock:
-            generated_inventory = project._project.targets.generate_inventory(
-                INVENTORY_URL
-            )
+    project = Project(Path("test_data/test_intersphinx"), backend, {})
+    project.build()
+    with project._lock:
+        generated_inventory = project._project.targets.generate_inventory(INVENTORY_URL)
 
     with open("test_data/test_intersphinx/ecosystem.inv", "rb") as f:
         reference_inventory = Inventory.parse(INVENTORY_URL, f.read())

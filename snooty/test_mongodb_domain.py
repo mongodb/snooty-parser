@@ -14,10 +14,8 @@ from .util_test import check_ast_testing_string
 def backend() -> Backend:
     backend = Backend()
     build_identifiers: BuildIdentifierSet = {}
-    with Project(
-        Path("test_data/test_mongodb_domain"), backend, build_identifiers
-    ) as project:
-        project.build()
+    project = Project(Path("test_data/test_mongodb_domain"), backend, build_identifiers)
+    project.build()
 
     return backend
 
