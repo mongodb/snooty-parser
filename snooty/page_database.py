@@ -47,7 +47,8 @@ class PageDatabase:
 
                 with util.PerformanceLogger.singleton().start("copy"):
                     copied_pages = {}
-                    for k, v in self._parsed.items():
+                    for k in sorted(self._parsed.keys()):
+                        v = self._parsed[k]
                         if cancellation_token.is_set():
                             raise util.CancelledException()
 

@@ -4,6 +4,7 @@ import collections.abc
 import dataclasses
 import datetime
 import enum
+import gzip
 import hashlib
 import io
 import logging
@@ -12,6 +13,7 @@ import pickle
 import queue
 import re
 import sys
+import tarfile
 import tempfile
 import threading
 import time
@@ -564,30 +566,33 @@ class WorkerLauncher(Generic[_T, _R]):
 def bundle(
     filename: PurePath, members: Iterable[Tuple[str, Union[str, bytes]]]
 ) -> bytes:
-    if filename.suffixes[-2:] == [".tar", ".gz"] or filename.suffixes[-1] == ".tar":
-        import tarfile
-
-        compression_flag = "gz" if filename.suffix == ".gz" else "::"
-
-        current_time = time.time()
-        output_file = io.BytesIO()
-        with tarfile.open(
-            None, f"w:{compression_flag}", output_file, format=tarfile.PAX_FORMAT
-        ) as tf:
-            for member_name, member_data in members:
-                if isinstance(member_data, str):
-                    member_data = bytes(member_data, "utf-8")
-                member_file = io.BytesIO(member_data)
-                tar_info = tarfile.TarInfo(name=member_name)
-                tar_info.size = len(member_data)
-                tar_info.mtime = int(current_time)
-                tar_info.mode = 0o644
-                tf.addfile(tar_info, member_file)
-
-        return output_file.getvalue()
-
-    else:
+    if filename.suffixes[-2:] != [".tar", ".gz"] and filename.suffixes[-1] != ".tar":
         raise ValueError(f"Unknown bundling format: {filename.as_posix()}")
+
+    output_file = io.BytesIO()
+    with tarfile.open(None, "w", output_file, format=tarfile.PAX_FORMAT) as tf:
+        # Sort the members list by filename to ensure repeatable bundles
+        sorted_members = sorted(members, key=lambda x: x[0])
+
+        for member_name, member_data in sorted_members:
+            if isinstance(member_data, str):
+                member_data = bytes(member_data, "utf-8")
+            member_file = io.BytesIO(member_data)
+            tar_info = tarfile.TarInfo(name=member_name)
+            tar_info.size = len(member_data)
+            tar_info.mtime = 0
+            tar_info.mode = 0o644
+            tf.addfile(tar_info, member_file)
+
+    result = output_file.getvalue()
+
+    # We want repeatable bundles, but the tarfile interface doesn't allow us to override its gzip timestamp.
+    # So we have to do this separately and waste a bunch of extra RAM. Oh well. There are other ways to feed
+    # this kitty, but this function isn't meant to be used for large amounts of data, so this is fine.
+    if filename.suffix == ".gz":
+        result = gzip.compress(result, mtime=0.0)
+
+    return result
 
 
 class QueueDict(Generic[_K, _T]):

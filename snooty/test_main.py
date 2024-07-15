@@ -4,9 +4,10 @@ import json
 import os
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
-from typing import Any, List
+from typing import IO, Any, List
 
 from . import main
 from .diagnostics import InvalidLiteralInclude, InvalidURL, UnknownSubstitution
@@ -100,20 +101,33 @@ def test_parser_failure() -> None:
 
 
 def test_manifest() -> None:
-    f = io.BytesIO()
-    zf = zipfile.ZipFile(f, mode="w")
-    backend = main.ZipBackend(zf)
-    with Project(Path("test_data/test_project/"), backend, {}) as project:
-        project.build()
-        backend.flush()
-        backend.close()
+    def build() -> IO[bytes]:
+        f = io.BytesIO()
+        zf = zipfile.ZipFile(f, mode="w")
+        backend = main.ZipBackend(zf)
+        with Project(Path("test_data/test_project/"), backend, {}) as project:
+            project.build()
+            backend.flush()
+            backend.close()
 
-        with zipfile.ZipFile(f, mode="r") as zf:
-            zf.testzip()
-            assert set(zf.namelist()) == set(
-                [
-                    "documents/index.bson",
-                    "site.bson",
-                    "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
-                ]
-            )
+            with zipfile.ZipFile(f, mode="r") as zf:
+                zf.testzip()
+                assert set(zf.namelist()) == set(
+                    [
+                        "documents/index.bson",
+                        "site.bson",
+                        "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
+                    ]
+                )
+        return f
+
+    # Ensure a repeatable tarball
+    f1 = build()
+    # Sleep for a beat to ensure timestamps can change
+    time.sleep(0.2)
+    f2 = build()
+
+    f1.seek(0)
+    f2.seek(0)
+
+    assert f1.read() == f2.read()

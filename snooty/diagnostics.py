@@ -1,6 +1,6 @@
 import enum
 from pathlib import Path, PurePath
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import AbstractSet, Dict, List, Optional, Sequence, Tuple, Union
 
 from . import n
 from .n import SerializableType
@@ -662,16 +662,17 @@ class MissingTab(Diagnostic):
 
     def __init__(
         self,
-        tabs: Set[str],
+        tabs: AbstractSet[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ) -> None:
+        sorted_tabs = sorted(tabs)
         super().__init__(
-            f"One or more set of tabs on this page was missing the following tab(s): {tabs}",
+            f"One or more set of tabs on this page was missing the following tab(s): {sorted_tabs}",
             start,
             end,
         )
-        self.tabs = tabs
+        self.tabs = sorted_tabs
 
 
 class ExpectedTabs(Diagnostic):
