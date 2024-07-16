@@ -1566,7 +1566,7 @@ class _Project:
                 pages.append(page)
                 diagnostics[path] = list(diag)
         else:
-            raise ValueError("Unknown file type: " + str(path))
+            self.update_asset(path)
 
         with self._backend_lock:
             for source_path, diagnostic_list in diagnostics.items():
@@ -1585,10 +1585,16 @@ class _Project:
     def delete(self, fileid: FileId) -> None:
         self.yaml_domain.delete(fileid.name)
 
+        if fileid.suffix in RST_EXTENSIONS:
+            del self.pages[fileid]
+        elif self.yaml_domain.is_known_yaml(fileid):
+            self.yaml_domain.update(fileid)
+        else:
+            for predecessor in self.asset_dg.predecessors(fileid):
+                self.update(predecessor)
+
         with self._backend_lock:
             self.backend.on_delete(fileid, self.build_identifiers)
-
-        del self.pages[fileid]
 
     def build(
         self, max_workers: Optional[int] = None, postprocess: bool = True
