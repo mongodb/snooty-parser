@@ -3466,6 +3466,28 @@ def test_nested_collapsibles() -> None:
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
-        print(result.diagnostics)
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], NestedDirective)
+
+
+def test_collapsible_headings() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+   :depth: 2
+
+
+.. collapsible::
+    :heading: Heading goes here
+    :sub_heading: Subheading
+
+    This is content
+            """,
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert len(page.ast.options.get("headings")) == 1
+        assert page.ast.options.get("headings")[0]["title"] == ["Heading goes here"]
