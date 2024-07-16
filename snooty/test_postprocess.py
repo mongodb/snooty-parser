@@ -26,6 +26,7 @@ from .diagnostics import (
     MissingChild,
     MissingTab,
     MissingTocTreeEntry,
+    NestedDirective,
     OrphanedPage,
     SubstitutionRefError,
     TabMustBeDirective,
@@ -3442,3 +3443,29 @@ Alrighty
         assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
+
+
+def test_nested_collapsibles() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. collapsible::
+    :heading: Heading
+    :sub_heading: Subheading
+
+    This is a parent 
+
+    .. collapsible::
+        :heading: Heading 2
+        :sub_heading: Subheading 2
+
+        This is a nested 
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        print(result.diagnostics)
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], NestedDirective)

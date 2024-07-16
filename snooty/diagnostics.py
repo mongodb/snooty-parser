@@ -944,3 +944,19 @@ class OrphanedPage(Diagnostic):
             0,
             None,
         )
+
+
+class NestedDirective(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        nested_directive: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ):
+        super().__init__(
+            f"""Nested directive detected: {nested_directive}.""",
+            start,
+            end,
+        )
