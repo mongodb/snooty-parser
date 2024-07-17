@@ -1042,7 +1042,7 @@ class JSONVisitor:
             else:
                 self.validate_and_add_asset(doc, image_argument, line)
 
-        elif key in {"mongodb:card", "landing:landing:product"}:
+        elif key == "mongodb:card":
             image_argument = options.get("icon")
             url_argument = options.get("url")
 
