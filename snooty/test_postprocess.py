@@ -3489,5 +3489,6 @@ def test_collapsible_headings() -> None:
         }
     ) as result:
         page = result.pages[FileId("index.txt")]
-        assert len(page.ast.options.get("headings")) == 1
-        assert page.ast.options.get("headings")[0]["title"] == ["Heading goes here"]
+        assert page.ast.options.get("headings") == [
+            {"depth": 0, "id": "Heading-goes-here", "title": ["Heading goes here"]}
+        ]
