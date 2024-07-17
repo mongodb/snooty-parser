@@ -131,6 +131,7 @@ def test_chapter() -> None:
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], CannotOpenFile)
 
+
 def test_card() -> None:
     """Test card directive"""
     path = FileId("test.rst")
