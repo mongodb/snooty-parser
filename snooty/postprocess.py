@@ -71,7 +71,7 @@ from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
-from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, bundle, make_html5_id
+from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, bundle
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -468,7 +468,7 @@ class ContentsHandler(Handler):
     class HeadingData(NamedTuple):
         depth: int
         id: str
-        title: Sequence[Union[n.InlineNode, str]]
+        title: Sequence[Union[n.InlineNode, n.Heading]]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -492,10 +492,7 @@ class ContentsHandler(Handler):
                 {
                     "depth": h.depth,
                     "id": h.id,
-                    "title": [
-                        node.serialize() if isinstance(node, n.InlineNode) else node
-                        for node in h.title
-                    ],
+                    "title": [node.serialize() for node in h.title],
                 }
                 for h in self.headings
                 if h.depth - 1 <= self.contents_depth
@@ -529,13 +526,19 @@ class ContentsHandler(Handler):
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
-            html5_id = make_html5_id(node.options["heading"])
+            html5_id = util.make_html5_id(node.options["heading"]).lower()
             node.options["id"] = html5_id
             self.headings.append(
                 ContentsHandler.HeadingData(
                     self.current_depth,
                     html5_id,
-                    [node.options["heading"]],
+                    [
+                        n.Heading(
+                            node.span,
+                            [n.Text(node.span, node.options["heading"])],
+                            html5_id,
+                        )
+                    ],
                 )
             )
 
