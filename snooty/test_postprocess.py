@@ -3495,16 +3495,9 @@ def test_collapsible_headings() -> None:
                 "id": "heading-goes-here",
                 "title": [
                     {
-                        "children": [
-                            {
-                                "position": {"start": {"line": 5}},
-                                "type": "text",
-                                "value": "Heading goes here",
-                            },
-                        ],
-                        "id": "heading-goes-here",
                         "position": {"start": {"line": 5}},
-                        "type": "heading",
+                        "type": "text",
+                        "value": "Heading goes here",
                     },
                 ],
             },

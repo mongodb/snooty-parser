@@ -468,7 +468,7 @@ class ContentsHandler(Handler):
     class HeadingData(NamedTuple):
         depth: int
         id: str
-        title: Sequence[Union[n.InlineNode, n.Heading]]
+        title: Sequence[n.InlineNode]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -532,13 +532,7 @@ class ContentsHandler(Handler):
                 ContentsHandler.HeadingData(
                     self.current_depth,
                     html5_id,
-                    [
-                        n.Heading(
-                            node.span,
-                            [n.Text(node.span, node.options["heading"])],
-                            html5_id,
-                        )
-                    ],
+                    [n.Text(node.span, node.options["heading"])],
                 )
             )
 
