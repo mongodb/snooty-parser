@@ -956,7 +956,7 @@ class NestedDirective(Diagnostic):
         end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
-            f"""Nested directive detected: {nested_directive}.""",
+            f"""Nesting of {nested_directive} directives prohibited""",
             start,
             end,
         )

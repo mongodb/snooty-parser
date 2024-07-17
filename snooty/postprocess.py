@@ -1845,7 +1845,8 @@ class ImageHandler(Handler):
 
 
 class CollapsibleHandler(Handler):
-    """ """
+    """Handles nested collapsible directives on a single page.
+    If a page has multiple collapsibles, raise a diagnostic"""
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
