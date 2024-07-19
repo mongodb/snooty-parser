@@ -90,7 +90,7 @@ def substitute(
             new_str = substitute_text(value, replacements, diagnostics)
             if new_str is not value:
                 changes[obj_field.name] = new_str
-        elif dataclasses.is_dataclass(value):
+        elif not isinstance(value, type) and dataclasses.is_dataclass(value):
             new_value = substitute(value, replacements, diagnostics)
             if new_value is not value:
                 changes[obj_field.name] = new_value

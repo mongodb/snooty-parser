@@ -152,10 +152,10 @@ def english_description_of_type(ty: type) -> Tuple[str, Dict[type, str]]:
         if ty is bool:
             return pluralize("boolean")
 
-        if ty is type(None):  # noqa
+        if ty is type(None):
             return "nothing"
 
-        if ty is object or ty is Any:
+        if ty in (object, Any):
             return "anything"
 
         level += 1
@@ -349,7 +349,7 @@ def check_type(ty: Type[_C], data: object) -> _C:
 
         raise LoadError("Unsupported PEP-484 type", ty, data)
 
-    if ty is object or ty is Any or isinstance(data, ty):
+    if ty in (object, Any) or isinstance(data, ty):
         return cast(_C, data)
 
     raise LoadError("Unloadable type", ty, data)

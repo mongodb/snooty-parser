@@ -34,7 +34,7 @@ FormattingType = Enum("FormattingType", ("strong", "monospace", "emphasis"))
 TargetType = Enum("TargetType", ("plain", "callable", "cmdline_option"))
 
 #: Types of formatting to which date directives must conform.
-DateFormattingType = Enum("DateType", ("iso_8601"))
+DateFormattingType = Enum("DateFormattingType", ("iso_8601"))
 
 _T = TypeVar("_T", "Directive", "Role", "RstObject")
 _V = TypeVar("_V")
