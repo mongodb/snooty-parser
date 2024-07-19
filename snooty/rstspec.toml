@@ -861,6 +861,18 @@ example = """.. facet::
    :values: ${2:value1, value2, value3}
 """
 
+[directive."mongodb:collapsible"]
+help = """Card in a card-group. Each card links to the specified URI, and can include an icon, as well as a call-to-action string"""
+options.heading = {type = "string", required = true}
+options.sub_heading = "string"
+content_type = "block"
+example = """.. collapsible::
+   :heading: ${1:Procdure}
+   :sub_heading: ${2:Description of what is inside the collapsible section}
+
+   ${3:collapsible content block.}
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"

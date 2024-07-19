@@ -58,6 +58,7 @@ from .diagnostics import (
     MissingOption,
     MissingTab,
     MissingTocTreeEntry,
+    NestedDirective,
     OrphanedPage,
     SubstitutionRefError,
     TargetNotFound,
@@ -522,6 +523,17 @@ class ContentsHandler(Handler):
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
                 ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
+            )
+
+        if isinstance(node, n.Directive) and node.name == "collapsible":
+            html5_id = util.make_html5_id(node.options["heading"]).lower()
+            node.options["id"] = html5_id
+            self.headings.append(
+                ContentsHandler.HeadingData(
+                    self.current_depth,
+                    html5_id,
+                    [n.Text(node.span, node.options["heading"])],
+                )
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
@@ -1829,6 +1841,28 @@ class ImageHandler(Handler):
             self.current_img_index += 1
 
 
+class CollapsibleHandler(Handler):
+    """Handles nested collapsible directives on a single page.
+    If a page has multiple collapsibles, raise a diagnostic"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.collapsible_detected = False
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "collapsible":
+            return
+        if self.collapsible_detected:
+            self.context.diagnostics[fileid_stack.current].append(
+                NestedDirective("collapsible", node.span[0])
+            )
+        self.collapsible_detected = True
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Directive) and node.name == "collapsible":
+            self.collapsible_detected = False
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -1894,6 +1928,7 @@ class Postprocessor:
             OpenAPIChangelogHandler,
             FacetsHandler,
             ImageHandler,
+            CollapsibleHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

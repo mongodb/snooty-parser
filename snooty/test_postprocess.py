@@ -26,6 +26,7 @@ from .diagnostics import (
     MissingChild,
     MissingTab,
     MissingTocTreeEntry,
+    NestedDirective,
     OrphanedPage,
     SubstitutionRefError,
     TabMustBeDirective,
@@ -3442,3 +3443,62 @@ Alrighty
         assert slug_to_breadcrumb_label_entry["page1"] == "Look at This"
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
+
+
+def test_nested_collapsibles() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. collapsible::
+    :heading: Heading
+    :sub_heading: Subheading
+
+    This is a parent 
+
+    .. collapsible::
+        :heading: Heading 2
+        :sub_heading: Subheading 2
+
+        This is a nested 
+            """,
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], NestedDirective)
+
+
+def test_collapsible_headings() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+   :depth: 2
+
+
+.. collapsible::
+    :heading: Heading goes here
+    :sub_heading: Subheading
+
+    This is content
+            """,
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert page.ast.options.get("headings") == [
+            {
+                "depth": 0,
+                "id": "heading-goes-here",
+                "title": [
+                    {
+                        "position": {"start": {"line": 5}},
+                        "type": "text",
+                        "value": "Heading goes here",
+                    },
+                ],
+            },
+        ]

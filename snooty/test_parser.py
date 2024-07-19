@@ -21,6 +21,7 @@ from .diagnostics import (
     MakeCorrectionMixin,
     MalformedGlossary,
     MalformedRelativePath,
+    MissingChild,
     MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
@@ -3853,3 +3854,52 @@ def test_heading_immediately_after_directive_dop_4745() -> None:
     </directive>
 </root>""",
     )
+
+
+def test_collapsible() -> None:
+    """Test collapsible directive"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. collapsible::
+   :heading: This is a heading
+   :sub_heading: This is a subheading
+
+   This is collapsible content
+
+   .. code-block:: javascript
+      
+      This is code within collapsible content
+""",
+    )
+
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive name="collapsible" heading="This is a heading" sub_heading="This is a subheading" domain="mongodb">
+        <paragraph><text>This is collapsible content</text></paragraph>
+        <code lang="javascript" copyable="True">This is code within collapsible content</code>
+    </directive>
+</root>""",
+    )
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. collapsible::
+   :heading: This is a heading
+   :sub_heading: This is a subheading
+
+""",
+    )
+    assert len(diagnostics) == 1
+    assert [type(d) for d in diagnostics] == [MissingChild]

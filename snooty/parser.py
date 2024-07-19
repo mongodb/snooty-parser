@@ -1059,6 +1059,12 @@ class JSONVisitor:
             elif image_argument:
                 self.validate_and_add_asset(doc, image_argument, line)
 
+        elif key == "mongodb:collapsible":
+            if not node.children:
+                self.diagnostics.append(
+                    MissingChild("mongodb:card", "content block", line)
+                )
+
         elif name == "facet":
             self.handle_facet(node, line)
 
