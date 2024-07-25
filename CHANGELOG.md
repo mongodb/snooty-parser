@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A new `collapsible` directive (DOP-4690, #611)
+
+### Removed
+
+- Landing page directives with no current use (DOP-4647, #612)
+
 ## [v0.16.14] - 2024-07-17
 
 ### Changed
