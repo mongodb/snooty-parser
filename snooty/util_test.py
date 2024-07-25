@@ -251,7 +251,7 @@ def make_test_project(
 
         backend = BackendTestResults()
 
-        project = Project(root, backend, {}, watch=False)
+        project = Project(root, backend, {})
         yield (project, backend)
 
 

@@ -1781,7 +1781,6 @@ class Project:
         root: Path,
         backend: ProjectBackend,
         build_identifiers: BuildIdentifierSet,
-        watch: bool = True,
     ) -> None:
         self._project = _Project(root, backend, build_identifiers)
         self._lock = threading.Lock()

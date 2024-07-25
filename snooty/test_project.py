@@ -230,7 +230,7 @@ full-version = "{+version+}.{+patch-version+}"
 
 def test_target_wipe() -> None:
     backend = Backend()
-    project = Project(Path("test_data/test_postprocessor"), backend, {}, watch=False)
+    project = Project(Path("test_data/test_postprocessor"), backend, {})
     project.build()
     with project._lock:
         query_result = project._project.targets["std:label:global-writes-zones"][0]

@@ -603,6 +603,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def m_exit(self, **_kwargs: object) -> None:
         self._endpoint.shutdown()
         self._debouncer.stop()
+        self._postprocessor_debouncer.stop()
 
     def __enter__(self) -> "LanguageServer":
         return self
