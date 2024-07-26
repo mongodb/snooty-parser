@@ -129,6 +129,19 @@ class TextDocumentEdit:
     edits: List[TextEdit]
 
 
+class FileChangeType(enum.IntEnum):
+    Created = 1
+    Changed = 2
+    Deleted = 3
+
+
+@checked
+@dataclass
+class FileEvent:
+    uri: str
+    type: int
+
+
 if sys.platform == "win32":
     import ctypes
 
@@ -276,24 +289,40 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         )
         self._shutdown = False
         self._debouncer = Debouncer()
+        self._postprocessor_debouncer = Debouncer()
 
         self.project: Optional[Project] = None
         self._project_lock = threading.Lock()
 
-        self.pending_updates: util.QueueDict[FileId, Optional[str]] = util.QueueDict()
+        self.pending_updates: util.QueueDict[
+            FileId, Tuple[FileChangeType, Optional[str]]
+        ] = util.QueueDict()
 
         def update_thread() -> None:
+            """Monitor the update queue. As updates come in, process them, and start
+            a debouncer for running the postprocessor."""
             while True:
-                path, content = self.pending_updates.get()
+                path, pair = self.pending_updates.get()
+                file_change_type, new_content = pair
+
                 with self._project_lock:
                     if not self.project:
                         return
 
-                    logger.info("Updating " + path.as_posix())
                     try:
-                        self.project.update(path, content)
+                        if file_change_type in (
+                            FileChangeType.Changed,
+                            FileChangeType.Created,
+                        ):
+                            logger.info("Updating " + path.as_posix())
+                            self.project.update(path, new_content)
+                        elif file_change_type == FileChangeType.Deleted:
+                            logger.info("Deleting " + path.as_posix())
+                            self.project.delete(path)
                     except Exception as err:
                         logger.exception(err)
+
+                    self._postprocessor_debouncer.run([(0.25, self.postprocess)])
 
         self.update_thread = threading.Thread(
             target=update_thread, name="update-thread", daemon=True
@@ -314,7 +343,12 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         self.backend.pending_diagnostics.clear()
 
-    def update_file(self, page_path: FileId, change: Optional[str] = None) -> None:
+    def update_file(
+        self,
+        page_path: FileId,
+        change_type: FileChangeType,
+        new_text: Optional[str] = None,
+    ) -> None:
         if page_path.suffix not in util.SOURCE_FILE_EXTENSIONS:
             return
 
@@ -324,7 +358,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
             self.project.cancel_postprocessor()
 
-        self.pending_updates.put(page_path, change)
+        self.pending_updates.put(page_path, (change_type, new_text))
 
     def _set_diagnostics(self, fileid: FileId, diagnostics: List[Diagnostic]) -> None:
         self.diagnostics[fileid] = diagnostics
@@ -407,7 +441,12 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
             watching_thread.daemon = True
             watching_thread.start()
 
-        return {"capabilities": {"textDocumentSync": 1}}
+        return {
+            "capabilities": {"textDocumentSync": 1},
+            "workspace": {
+                "workspaceFolders": {"supported": True, "changeNotifications": True}
+            },
+        }
 
     def m_initialized(self, **kwargs: object) -> None:
         # Ignore this message to avoid logging a pointless warning
@@ -510,7 +549,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         fileid = self.uri_to_fileid(item.uri)
         entry = WorkspaceEntry(fileid, item.uri, [])
         self.workspace[item.uri] = entry
-        self.update_file(fileid, item.text)
+        self.update_file(fileid, FileChangeType.Changed, item.text)
 
     def m_text_document__did_change(
         self, textDocument: SerializableType, contentChanges: SerializableType
@@ -528,8 +567,12 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
 
         self._debouncer.run(
             [
-                (0.1, lambda: self.update_file(fileid, change.text)),
-                (0.25, self.postprocess),
+                (
+                    0.1,
+                    lambda: self.update_file(
+                        fileid, FileChangeType.Changed, change.text
+                    ),
+                )
             ]
         )
 
@@ -541,7 +584,18 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
         identifier = check_type(TextDocumentIdentifier, textDocument)
         fileid = self.uri_to_fileid(identifier.uri)
         del self.workspace[identifier.uri]
-        self.update_file(fileid)
+        self.update_file(fileid, FileChangeType.Changed)
+
+    def m_workspace__did_change_watched_files(self, changes: List[FileEvent]) -> None:
+        if not self.project:
+            return
+
+        for c in changes:
+            change = check_type(FileEvent, c)
+            fileid = self.uri_to_fileid(change.uri)
+            logger.info("did_change_watched_files: " + str(fileid))
+
+            self.update_file(fileid, FileChangeType(change.type))
 
     def m_shutdown(self, **_kwargs: object) -> None:
         self._shutdown = True
@@ -549,8 +603,7 @@ class LanguageServer(pyls_jsonrpc.dispatchers.MethodDispatcher):
     def m_exit(self, **_kwargs: object) -> None:
         self._endpoint.shutdown()
         self._debouncer.stop()
-        if self.project:
-            self.project.stop_monitoring()
+        self._postprocessor_debouncer.stop()
 
     def __enter__(self) -> "LanguageServer":
         return self

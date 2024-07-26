@@ -105,20 +105,20 @@ def test_manifest() -> None:
         f = io.BytesIO()
         zf = zipfile.ZipFile(f, mode="w")
         backend = main.ZipBackend(zf)
-        with Project(Path("test_data/test_project/"), backend, {}) as project:
-            project.build()
-            backend.flush()
-            backend.close()
+        project = Project(Path("test_data/test_project/"), backend, {})
+        project.build()
+        backend.flush()
+        backend.close()
 
-            with zipfile.ZipFile(f, mode="r") as zf:
-                zf.testzip()
-                assert set(zf.namelist()) == set(
-                    [
-                        "documents/index.bson",
-                        "site.bson",
-                        "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
-                    ]
-                )
+        with zipfile.ZipFile(f, mode="r") as zf:
+            zf.testzip()
+            assert set(zf.namelist()) == set(
+                [
+                    "documents/index.bson",
+                    "site.bson",
+                    "assets/10e351828f156afcafc7744c30d7b2564c6efba1ca7c55cac59560c67581f947",
+                ]
+            )
         return f
 
     # Ensure a repeatable tarball

@@ -111,6 +111,8 @@ class PageDatabase:
             except KeyError:
                 pass
 
+            self.__changed_pages.add(key)
+
     def add_to_cache(self, cache: parse_cache.CacheData) -> None:
         with self._lock:
             for data in self._parsed.values():
