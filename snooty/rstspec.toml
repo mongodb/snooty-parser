@@ -797,6 +797,20 @@ example = """.. collapsible::
    ${3:collapsible content block.}
 """
 
+[directive."mongodb:wayfinding"]
+help = "Helps list out related URL pages for drivers."
+content_type = "block"
+example = """.. wayfinding::
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/drivers/node/current/usage-examples/findOne/
+      :id: nodejs
+"""
+
+[directive."mongodb:wayfinding-option"]
+help = "An option for wayfinding."
+argument_type = {type = "uri", required = true}
+options.id = {type = "string", required = true}
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -1902,4 +1916,26 @@ realm-auth-providers = [
   {id = "api-key", title = "API Key"},
   {id = "custom-token", title = "Custom JWT"},
   {id = "custom-function", title = "Custom Function"},
+]
+
+[wayfinding]
+options = [
+   {id = "c", language = "c", title = "C"},
+   {id = "csharp", language = "c#", title = "C#", show_first = true},
+   {id = "cpp", language = "c++", title = "C++"},
+   {id = "go", language = "golang", title = "Go"},
+   {id = "java-rs", language = "java", title = "Reactive Streams"},
+   {id = "java-sync", language = "java", title = "Java Sync", show_first = true},
+   {id = "nodejs", language = "javascript", title = "Node.js", show_first = true},
+   {id = "kotlin-coroutine", language = "kotlin", title = "Kotlin Coroutine"},
+   {id = "kotlin-sync", language = "kotlin", title = "Kotlin Sync"},
+   {id = "php", language = "php", title = "PHP"},
+   {id = "motor", language = "python" , title = "Motor"},
+   {id = "pymongo", language = "python" , title = "Pymongo"},
+   {id = "python", language = "python" , title = "Python", show_first = true},
+   {id = "mongoid", language = "ruby" , title = "Mongoid"},
+   {id = "rust", language = "rust" , title = "Rust"},
+   {id = "scala", language = "scala" , title = "Scala"},
+   {id = "swift", language = "swift" , title = "Swift"},
+   {id = "typescript", language = "typescript" , title = "Typescript"},
 ]

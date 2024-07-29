@@ -960,3 +960,19 @@ class NestedDirective(Diagnostic):
             start,
             end,
         )
+
+
+class UnknownWayfindingOption(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        invalid_id: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ):
+        super().__init__(
+            f"Wayfinding option id {invalid_id} is not valid.",
+            start,
+            end,
+        )

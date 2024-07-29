@@ -13,6 +13,7 @@ from .diagnostics import (
     IconMustBeDefined,
     IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
+    InvalidChild,
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
@@ -28,6 +29,7 @@ from .diagnostics import (
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
+    UnknownWayfindingOption,
 )
 from .n import FileId
 from .parser import InlineJSONVisitor, JSONVisitor
@@ -3873,4 +3875,237 @@ def test_collapsible() -> None:
 """,
     )
     assert len(diagnostics) == 1
+    assert [type(d) for d in diagnostics] == [MissingChild]
+
+
+def test_wayfinding_sorted() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. wayfinding::
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: php
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: c
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: java-sync
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: scala
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: csharp
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: kotlin-coroutine
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: pymongo
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: mongoid
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: motor
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: python
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: nodejs
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: kotlin-sync
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: rust
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: java-rs
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: go
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: cpp
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: swift
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: typescript
+
+    """,
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+
+    ast_to_testing_string(page.ast)
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+	<directive domain="mongodb" name="wayfinding">
+		<directive domain="mongodb" name="wayfinding-option" id="csharp">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="java-sync">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="nodejs">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="python">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="c">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="cpp">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="go">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="java-rs">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="kotlin-coroutine">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="kotlin-sync">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="php">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="motor">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="pymongo">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="mongoid">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="rust">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="scala">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="swift">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+		<directive domain="mongodb" name="wayfinding-option" id="typescript">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+	</directive>
+</root>
+""",
+    )
+
+
+def test_wayfinding_errors() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test invalid syntax
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. wayfinding::
+
+   Hello this is text
+   
+   .. wayfinding-option::
+      :id: php
+    
+   .. note::
+
+      This is an admonition that does not belong!
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: c
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: java-sync
+    
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: bad-id
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+
+    """,
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [
+        # Missing argument
+        DocUtilsParseError,
+        # Missing option
+        DocUtilsParseError,
+        # Paragraph
+        InvalidChild,
+        # Note
+        InvalidChild,
+        # bad-id
+        UnknownWayfindingOption,
+    ]
+
+    # Test missing children
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. wayfinding::
+
+    """,
+    )
+    page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [MissingChild]

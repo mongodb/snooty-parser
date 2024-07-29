@@ -58,6 +58,7 @@ from .diagnostics import (
     FetchError,
     IconMustBeDefined,
     ImageSuggested,
+    InvalidChild,
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
@@ -74,6 +75,7 @@ from .diagnostics import (
     UnexpectedIndentation,
     UnknownTabID,
     UnknownTabset,
+    UnknownWayfindingOption,
     UnmarshallingError,
 )
 from .icon_names import ICON_SET, LG_ICON_SET
@@ -553,6 +555,9 @@ class JSONVisitor:
 
         elif isinstance(popped, n.Directive) and popped.name == "step":
             popped.children = [n.Section((node.get_line(),), popped.children)]
+        
+        elif isinstance(popped, n.Directive) and popped.name == "wayfinding":
+            self.handle_wayfinding(popped)
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
@@ -643,6 +648,52 @@ class JSONVisitor:
             node.children,
             key=lambda x: tabid_list.index(cast(n.Directive, x).options["tabid"]),
         )
+    
+    def handle_wayfinding(self, node: n.Directive) -> None:
+        valid_options = specparser.Spec.get().wayfinding["options"]
+        valid_options_dict = {option.id: option for option in valid_options}
+        valid_children: List[n.Directive] = []
+        expected_child_name = "wayfinding-option"
+        wayfinding_name = "wayfinding"
+
+        if not node.children:
+            self.diagnostics.append(MissingChild(wayfinding_name, expected_child_name, node.start[0]))
+            return
+        
+        # Validate children
+        for child in node.children:
+            child_line_start = child.start[0]
+
+            invalid_child = None
+            if not isinstance(child, n.Directive):
+                # Catches additional unwanted types like Paragraph
+                invalid_child = child.type
+            elif child.name != expected_child_name:
+                invalid_child = child.name
+            if invalid_child:
+                self.diagnostics.append(InvalidChild(invalid_child, wayfinding_name, expected_child_name, child_line_start))
+                continue
+
+            option_id = child.options.get("id")
+
+            if not (child.argument and option_id):
+                # Don't append diagnostic since docutils should already 
+                # complain about missing argument and ID option
+                continue
+
+            if not option_id in valid_options_dict:
+                self.diagnostics.append(UnknownWayfindingOption(option_id, child_line_start))
+                continue
+        
+            valid_children.append(child)
+
+        def sort_key(node: n.Directive):
+            # Associate the child node with the actual wayfinding option
+            wayfinding_option = valid_options_dict[node.options["id"]]
+            return (not wayfinding_option.show_first, wayfinding_option.language, wayfinding_option.title)
+
+        new_children = sorted(valid_children, key=sort_key)
+        node.children = new_children
 
     def handle_directive(
         self, node: rstparser.directive, line: int
