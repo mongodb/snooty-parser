@@ -3502,3 +3502,58 @@ def test_collapsible_headings() -> None:
                 ],
             },
         ]
+
+
+def test_wayfinding() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. wayfinding::
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: c
+
+.. wayfinding::
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: scala
+""",
+            Path(
+                "source/includes/included_wayfinding.rst"
+            ): """
+.. wayfinding::
+   
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: c
+""",
+            Path(
+                "source/nested_wayfinding.txt"
+            ): """
+:orphan:
+
+=================
+Nested Wayfinding
+=================
+
+.. note::
+
+   .. include:: /includes/included_wayfinding.rst
+""",
+            Path(
+                "source/valid_wayfinding.txt"
+            ): """
+:orphan:
+
+================
+Valid Wayfinding
+================
+
+.. include:: /includes/included_wayfinding.rst
+"""
+        }
+    ) as result:
+        assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [DuplicateDirective]
+        assert [type(x) for x in result.diagnostics[FileId("includes/included_wayfinding.rst")]] == [NestedDirective]
+        assert len(result.diagnostics[FileId("valid_wayfinding.txt")]) == 0
