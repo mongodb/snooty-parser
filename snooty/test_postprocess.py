@@ -3551,9 +3551,14 @@ Valid Wayfinding
 ================
 
 .. include:: /includes/included_wayfinding.rst
-"""
+""",
         }
     ) as result:
-        assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [DuplicateDirective]
-        assert [type(x) for x in result.diagnostics[FileId("includes/included_wayfinding.rst")]] == [NestedDirective]
+        assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
+            DuplicateDirective
+        ]
+        assert [
+            type(x)
+            for x in result.diagnostics[FileId("includes/included_wayfinding.rst")]
+        ] == [NestedDirective]
         assert len(result.diagnostics[FileId("valid_wayfinding.txt")]) == 0

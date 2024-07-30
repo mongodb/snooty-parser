@@ -1976,7 +1976,7 @@ class Postprocessor:
             FacetsHandler,
             ImageHandler,
             CollapsibleHandler,
-            WayfindingHandler
+            WayfindingHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
