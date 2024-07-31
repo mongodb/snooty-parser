@@ -1905,7 +1905,7 @@ class WayfindingHandler(Handler):
         if node.name != self.wayfinding_name:
             self.nesting_level -= 1
 
-    def enter_page(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.nesting_level = 0
         self.wayfinding_detected = False
 

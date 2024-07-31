@@ -652,7 +652,7 @@ class JSONVisitor:
     def handle_wayfinding(self, node: n.Directive) -> None:
         valid_options = specparser.Spec.get().wayfinding["options"]
         valid_options_dict = {option.id: option for option in valid_options}
-        valid_children: List[n.Directive] = []
+        valid_children: list[n.Node] = []
         expected_child_name = "wayfinding-option"
         wayfinding_name = "wayfinding"
 
@@ -683,6 +683,8 @@ class JSONVisitor:
                 )
                 continue
 
+            # Type is ambiguous now despite if statements above
+            assert isinstance(child, n.Directive)
             option_id = child.options.get("id")
 
             if not (child.argument and option_id):
@@ -698,7 +700,9 @@ class JSONVisitor:
 
             valid_children.append(child)
 
-        def sort_key(node: n.Directive):
+        def sort_key(node: n.Node) -> tuple[bool, str, str]:
+            # All children should be directives; keeping Node type for type compatibility of new children
+            assert isinstance(node, n.Directive)
             # Associate the child node with the actual wayfinding option
             wayfinding_option = valid_options_dict[node.options["id"]]
             return (
