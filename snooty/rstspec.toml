@@ -800,11 +800,16 @@ example = """.. collapsible::
 [directive."mongodb:wayfinding"]
 help = "Helps list out related URL pages for drivers."
 content_type = "block"
+argument_type = "string"
 example = """.. wayfinding::
    
    .. wayfinding-option:: https://www.mongodb.com/docs/drivers/node/current/usage-examples/findOne/
       :id: nodejs
 """
+
+[directive."mongodb:wayfinding-description"]
+help = "A description for wayfinding."
+content_type = "block"
 
 [directive."mongodb:wayfinding-option"]
 help = "An option for wayfinding."

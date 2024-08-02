@@ -6,6 +6,7 @@ from .diagnostics import (
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
+    DuplicateWayfindingOption,
     ErrorParsingYAMLFile,
     ExpectedOption,
     ExpectedPathArg,
@@ -3887,7 +3888,7 @@ def test_wayfinding_sorted() -> None:
         parser,
         path,
         """
-.. wayfinding::
+.. wayfinding:: MongoDB for drivers
    
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: php
@@ -3943,6 +3944,10 @@ def test_wayfinding_sorted() -> None:
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: typescript
 
+      
+   .. wayfinding-description::
+
+      This page is for mongosh. For pages specific to a driver, see the following:
     """,
     )
     page.finish(diagnostics)
@@ -3954,92 +3959,96 @@ def test_wayfinding_sorted() -> None:
         """
 <root fileid="test.rst">
 	<directive domain="mongodb" name="wayfinding">
-		<directive domain="mongodb" name="wayfinding-option" id="csharp">
+        <text>MongoDB for drivers</text>
+        <directive domain="mongodb" name="wayfinding-description">
+            <paragraph><text>This page is for mongosh. For pages specific to a driver, see the following:</text></paragraph>
+        </directive>
+		<directive domain="mongodb" name="wayfinding-option" id="csharp" title="C#" language="c#">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="java-sync">
+		<directive domain="mongodb" name="wayfinding-option" id="java-sync" title="Java Sync" language="java">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="nodejs">
+		<directive domain="mongodb" name="wayfinding-option" id="nodejs" title="Node.js" language="javascript">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="python">
+		<directive domain="mongodb" name="wayfinding-option" id="python" title="Python" language="python">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="c">
+		<directive domain="mongodb" name="wayfinding-option" id="c" title="C" language="c">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="cpp">
+		<directive domain="mongodb" name="wayfinding-option" id="cpp" title="C++" language="c++">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="go">
+		<directive domain="mongodb" name="wayfinding-option" id="go" title="Go" language="golang">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="java-rs">
+		<directive domain="mongodb" name="wayfinding-option" id="java-rs" title="Reactive Streams" language="java">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="kotlin-coroutine">
+		<directive domain="mongodb" name="wayfinding-option" id="kotlin-coroutine" title="Kotlin Coroutine" language="kotlin">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="kotlin-sync">
+		<directive domain="mongodb" name="wayfinding-option" id="kotlin-sync" title="Kotlin Sync" language="kotlin">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="php">
+		<directive domain="mongodb" name="wayfinding-option" id="php" title="PHP" language="php">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="motor">
+		<directive domain="mongodb" name="wayfinding-option" id="motor" title="Motor" language="python">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="pymongo">
+		<directive domain="mongodb" name="wayfinding-option" id="pymongo" title="Pymongo" language="python">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="mongoid">
+		<directive domain="mongodb" name="wayfinding-option" id="mongoid" title="Mongoid" language="ruby">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="rust">
+		<directive domain="mongodb" name="wayfinding-option" id="rust" title="Rust" language="rust">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="scala">
+		<directive domain="mongodb" name="wayfinding-option" id="scala" title="Scala" language="scala">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="swift">
+		<directive domain="mongodb" name="wayfinding-option" id="swift" title="Swift" language="swift">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="typescript">
+		<directive domain="mongodb" name="wayfinding-option" id="typescript" title="Typescript" language="typescript">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
@@ -4082,6 +4091,12 @@ def test_wayfinding_errors() -> None:
    
    .. wayfinding-option:: https://www.mongodb.com/docs/
 
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: c
+    
+   .. wayfinding-description::
+
+      This is a description of the wayfinding component
     """,
     )
     page.finish(diagnostics)
@@ -4096,6 +4111,8 @@ def test_wayfinding_errors() -> None:
         InvalidChild,
         # bad-id
         UnknownWayfindingOption,
+        # Duplicate "c" id
+        DuplicateWayfindingOption,
     ]
 
     # Test missing children
@@ -4108,4 +4125,4 @@ def test_wayfinding_errors() -> None:
     """,
     )
     page.finish(diagnostics)
-    assert [type(d) for d in diagnostics] == [MissingChild]
+    assert [type(d) for d in diagnostics] == [MissingChild, MissingChild]

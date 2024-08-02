@@ -52,6 +52,7 @@ from .diagnostics import (
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
+    DuplicateWayfindingOption,
     ExpectedOption,
     ExpectedPathArg,
     ExpectedStringArg,
@@ -650,17 +651,16 @@ class JSONVisitor:
         )
 
     def handle_wayfinding(self, node: n.Directive) -> None:
-        valid_options = specparser.Spec.get().wayfinding["options"]
-        valid_options_dict = {option.id: option for option in valid_options}
-        valid_children: list[n.Node] = []
-        expected_child_name = "wayfinding-option"
+        expected_options = specparser.Spec.get().wayfinding["options"]
+        expected_options_dict = {option.id: option for option in expected_options}
+        expected_child_opt_name = "wayfinding-option"
+        expected_child_desc_name = "wayfinding-description"
+        expected_children_names = {expected_child_opt_name, expected_child_desc_name}
         wayfinding_name = "wayfinding"
 
-        if not node.children:
-            self.diagnostics.append(
-                MissingChild(wayfinding_name, expected_child_name, node.start[0])
-            )
-            return
+        valid_opts: list[n.Node] = []
+        valid_desc: n.Node | None = None
+        used_ids: set[str] = set()
 
         # Validate children
         for child in node.children:
@@ -670,14 +670,15 @@ class JSONVisitor:
             if not isinstance(child, n.Directive):
                 # Catches additional unwanted types like Paragraph
                 invalid_child = child.type
-            elif child.name != expected_child_name:
+            elif not child.name in expected_children_names:
                 invalid_child = child.name
+
             if invalid_child:
                 self.diagnostics.append(
                     InvalidChild(
                         invalid_child,
                         wayfinding_name,
-                        expected_child_name,
+                        f"{expected_child_opt_name} or {expected_child_desc_name}",
                         child_line_start,
                     )
                 )
@@ -685,6 +686,10 @@ class JSONVisitor:
 
             # Type is ambiguous now despite if statements above
             assert isinstance(child, n.Directive)
+            if child.name == expected_child_desc_name:
+                valid_desc = child
+                continue
+
             option_id = child.options.get("id")
 
             if not (child.argument and option_id):
@@ -692,26 +697,50 @@ class JSONVisitor:
                 # complain about missing argument and ID option
                 continue
 
-            if not option_id in valid_options_dict:
+            if not option_id in expected_options_dict:
                 self.diagnostics.append(
                     UnknownWayfindingOption(option_id, child_line_start)
                 )
                 continue
 
-            valid_children.append(child)
+            if option_id in used_ids:
+                self.diagnostics.append(
+                    DuplicateWayfindingOption(option_id, child_line_start)
+                )
+                continue
+
+            option_details = expected_options_dict[option_id]
+            child.options["title"] = option_details.title
+            child.options["language"] = option_details.language
+            valid_opts.append(child)
+            used_ids.add(option_id)
 
         def sort_key(node: n.Node) -> tuple[bool, str, str]:
             # All children should be directives; keeping Node type for type compatibility of new children
             assert isinstance(node, n.Directive)
             # Associate the child node with the actual wayfinding option
-            wayfinding_option = valid_options_dict[node.options["id"]]
+            wayfinding_option = expected_options_dict[node.options["id"]]
             return (
                 not wayfinding_option.show_first,
                 wayfinding_option.language,
                 wayfinding_option.title,
             )
 
-        new_children = sorted(valid_children, key=sort_key)
+        new_children = sorted(valid_opts, key=sort_key)
+
+        line_start = node.start[0]
+        if not valid_desc:
+            self.diagnostics.append(
+                MissingChild(wayfinding_name, expected_child_desc_name, line_start)
+            )
+        else:
+            new_children.insert(0, valid_desc)
+
+        if not valid_opts:
+            self.diagnostics.append(
+                MissingChild(wayfinding_name, expected_child_opt_name, line_start)
+            )
+
         node.children = new_children
 
     def handle_directive(

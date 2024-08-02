@@ -3512,10 +3512,18 @@ def test_wayfinding() -> None:
             ): """
 .. wayfinding::
    
+   .. wayfinding-description::
+
+      Wayfinding for mongosh
+
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: c
 
 .. wayfinding::
+
+   .. wayfinding-description::
+
+      Wayfinding for mongosh 2
 
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: scala
@@ -3525,6 +3533,10 @@ def test_wayfinding() -> None:
             ): """
 .. wayfinding::
    
+   .. wayfinding-description::
+
+      Wayfinding for mongosh
+
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: c
 """,
@@ -3554,6 +3566,7 @@ Valid Wayfinding
 """,
         }
     ) as result:
+        print(result.diagnostics[FileId("index.txt")])
         assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
             DuplicateDirective
         ]
