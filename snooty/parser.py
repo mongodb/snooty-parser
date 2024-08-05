@@ -658,9 +658,9 @@ class JSONVisitor:
         expected_children_names = {expected_child_opt_name, expected_child_desc_name}
         wayfinding_name = "wayfinding"
 
-        valid_opts: list[n.Node] = []
+        valid_opts: List[n.Node] = []
         valid_desc: n.Node | None = None
-        used_ids: set[str] = set()
+        used_ids: Set[str] = set()
 
         # Validate children
         for child in node.children:
