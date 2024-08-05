@@ -1936,7 +1936,7 @@ options = [
    {id = "kotlin-sync", language = "kotlin", title = "Kotlin Sync"},
    {id = "php", language = "php", title = "PHP"},
    {id = "motor", language = "python" , title = "Motor"},
-   {id = "pymongo", language = "python" , title = "Pymongo"},
+   {id = "pymongo", language = "python" , title = "PyMongo"},
    {id = "python", language = "python" , title = "Python", show_first = true},
    {id = "mongoid", language = "ruby" , title = "Mongoid"},
    {id = "rust", language = "rust" , title = "Rust"},
