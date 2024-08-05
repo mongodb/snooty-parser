@@ -3998,7 +3998,7 @@ def test_wayfinding_sorted() -> None:
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="java-rs" title="Reactive Streams" language="java">
+		<directive domain="mongodb" name="wayfinding-option" id="java-rs" title="Java RS" language="java">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>

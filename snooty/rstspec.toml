@@ -1929,7 +1929,7 @@ options = [
    {id = "csharp", language = "c#", title = "C#", show_first = true},
    {id = "cpp", language = "c++", title = "C++"},
    {id = "go", language = "golang", title = "Go"},
-   {id = "java-rs", language = "java", title = "Reactive Streams"},
+   {id = "java-rs", language = "java", title = "Java RS"},
    {id = "java-sync", language = "java", title = "Java Sync", show_first = true},
    {id = "nodejs", language = "javascript", title = "Node.js", show_first = true},
    {id = "kotlin-coroutine", language = "kotlin", title = "Kotlin Coroutine"},
