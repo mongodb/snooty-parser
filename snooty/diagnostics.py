@@ -968,12 +968,12 @@ class UnknownWayfindingOption(Diagnostic):
     def __init__(
         self,
         invalid_id: str,
-        valid_ids: AbstractSet[str],
+        valid_ids: List[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
-            f"Wayfinding option id {invalid_id} is not valid. Expected one of the following: {sorted(valid_ids)}",
+            f"Wayfinding option id {invalid_id} is not valid. Expected one of the following: {valid_ids}",
             start,
             end,
         )

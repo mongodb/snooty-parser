@@ -698,11 +698,10 @@ class JSONVisitor:
                 continue
 
             if not option_id in expected_options_dict:
-                available_ids = set(expected_options_dict.keys())
+                available_ids = list(expected_options_dict.keys())
+                available_ids.sort()
                 self.diagnostics.append(
-                    UnknownWayfindingOption(
-                        option_id, available_ids, child_line_start
-                    )
+                    UnknownWayfindingOption(option_id, available_ids, child_line_start)
                 )
                 continue
 
