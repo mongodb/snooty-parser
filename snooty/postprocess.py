@@ -1863,6 +1863,53 @@ class CollapsibleHandler(Handler):
             self.collapsible_detected = False
 
 
+class WayfindingHandler(Handler):
+    """Handles page-level validations for wayfinding directive."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.wayfinding_name = "wayfinding"
+        self.include_names = {"include", "sharedinclude"}
+        self.wayfinding_detected = False
+        self.nesting_level = 0
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        # Skip include directives since they should be allowed to nest wayfinding in them
+        if not isinstance(node, n.Directive) or node.name in self.include_names:
+            return
+
+        # Track if node is nested deeper than intended
+        if node.name != self.wayfinding_name:
+            self.nesting_level += 1
+            return
+
+        line_start = node.span[0]
+
+        if self.wayfinding_detected:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, line_start)
+            )
+            return
+
+        if self.nesting_level > 0:
+            self.context.diagnostics[fileid_stack.current].append(
+                NestedDirective(node.name, line_start)
+            )
+            return
+
+        self.wayfinding_detected = True
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name in self.include_names:
+            return
+        if node.name != self.wayfinding_name:
+            self.nesting_level -= 1
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.nesting_level = 0
+        self.wayfinding_detected = False
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -1929,6 +1976,7 @@ class Postprocessor:
             FacetsHandler,
             ImageHandler,
             CollapsibleHandler,
+            WayfindingHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

@@ -119,6 +119,15 @@ class TabDefinition:
 
 @checked
 @dataclass
+class WayfindingOption:
+    id: str
+    language: str
+    title: str
+    show_first: bool = field(default=False)
+
+
+@checked
+@dataclass
 class LinkRoleType:
     """Configuration for a role which links to a specific URL template."""
 
@@ -275,6 +284,7 @@ class Spec:
     role: Dict[str, Role] = field(default_factory=dict)
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
     tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
+    wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
