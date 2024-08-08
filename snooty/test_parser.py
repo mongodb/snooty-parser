@@ -3952,8 +3952,6 @@ def test_wayfinding_sorted() -> None:
     )
     page.finish(diagnostics)
     assert not diagnostics
-
-    ast_to_testing_string(page.ast)
     check_ast_testing_string(
         page.ast,
         """

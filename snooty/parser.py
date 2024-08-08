@@ -658,8 +658,8 @@ class JSONVisitor:
         expected_children_names = {expected_child_opt_name, expected_child_desc_name}
         wayfinding_name = "wayfinding"
 
-        valid_opts: List[n.Node] = []
-        valid_desc: n.Node | None = None
+        valid_children: List[n.Directive] = []
+        valid_desc: n.Directive | None = None
         used_ids: Set[str] = set()
 
         # Validate children
@@ -712,12 +712,10 @@ class JSONVisitor:
             option_details = expected_options_dict[option_id]
             child.options["title"] = option_details.title
             child.options["language"] = option_details.language
-            valid_opts.append(child)
+            valid_children.append(child)
             used_ids.add(option_id)
 
-        def sort_key(node: n.Node) -> tuple[bool, str, str]:
-            # All children should be directives; keeping Node type for type compatibility of new children
-            assert isinstance(node, n.Directive)
+        def sort_key(node: n.Directive) -> tuple[bool, str, str]:
             # Associate the child node with the actual wayfinding option
             wayfinding_option = expected_options_dict[node.options["id"]]
             return (
@@ -726,22 +724,22 @@ class JSONVisitor:
                 wayfinding_option.title,
             )
 
-        new_children = sorted(valid_opts, key=sort_key)
-
+        valid_children.sort(key=sort_key)
         line_start = node.start[0]
+
+        if not valid_children:
+            self.diagnostics.append(
+                MissingChild(wayfinding_name, expected_child_opt_name, line_start)
+            )
+
         if not valid_desc:
             self.diagnostics.append(
                 MissingChild(wayfinding_name, expected_child_desc_name, line_start)
             )
         else:
-            new_children.insert(0, valid_desc)
+            valid_children.insert(0, valid_desc)
 
-        if not valid_opts:
-            self.diagnostics.append(
-                MissingChild(wayfinding_name, expected_child_opt_name, line_start)
-            )
-
-        node.children = new_children
+        node.children = cast(List[n.Node], valid_children)
 
     def handle_directive(
         self, node: rstparser.directive, line: int

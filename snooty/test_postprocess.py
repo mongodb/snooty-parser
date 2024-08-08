@@ -3566,7 +3566,6 @@ Valid Wayfinding
 """,
         }
     ) as result:
-        print(result.diagnostics[FileId("index.txt")])
         assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
             DuplicateDirective
         ]
