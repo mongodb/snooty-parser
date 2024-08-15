@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for the `wayfinding` family of directives (DOP-4692, #613)
+
+### Changed
+
+- When running as a language server, the language client is now used for file watching
+  instead of snooty having its own file watch implementation. This should yield a much more
+  reliable file watch experience. (DOP-4829, #610).
+
+### Removed
+
+- The `watch` subcommand has been removed. It was an escoteric feature with questionable reliability
+  and a highly problematic implementation.
+
 ## [v0.16.15] - 2024-07-25
 
 ### Added
