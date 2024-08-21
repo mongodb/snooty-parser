@@ -962,34 +962,36 @@ class NestedDirective(Diagnostic):
         )
 
 
-class UnknownWayfindingOption(Diagnostic):
+class UnknownOptionId(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
+        directive_name: str,
         invalid_id: str,
         valid_ids: List[str],
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
-            f"Wayfinding option id {invalid_id} is not valid. Expected one of the following: {valid_ids}",
+            f"{directive_name} id {invalid_id} is not valid. Expected one of the following: {valid_ids}",
             start,
             end,
         )
 
 
-class DuplicateWayfindingOption(Diagnostic):
+class DuplicateOptionId(Diagnostic):
     severity = Diagnostic.Level.error
 
     def __init__(
         self,
+        directive_name: str,
         invalid_id: str,
         start: Union[int, Tuple[int, int]],
         end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
-            f"Wayfinding option id {invalid_id} is already used in current wayfinding context.",
+            f"{directive_name} option id {invalid_id} is already used in current context.",
             start,
             end,
         )

@@ -112,7 +112,7 @@ class DirectiveOption:
 
 @checked
 @dataclass
-class WayfindingOption:
+class MethodSelectorOption:
     id: str
     title: str
 

@@ -52,7 +52,7 @@ from .diagnostics import (
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
-    DuplicateWayfindingOption,
+    DuplicateOptionId,
     ExpectedOption,
     ExpectedPathArg,
     ExpectedStringArg,
@@ -74,9 +74,9 @@ from .diagnostics import (
     TabMustBeDirective,
     TodoInfo,
     UnexpectedIndentation,
+    UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
-    UnknownWayfindingOption,
     UnmarshallingError,
 )
 from .icon_names import ICON_SET, LG_ICON_SET
@@ -701,13 +701,15 @@ class JSONVisitor:
                 available_ids = list(expected_options_dict.keys())
                 available_ids.sort()
                 self.diagnostics.append(
-                    UnknownWayfindingOption(option_id, available_ids, child_line_start)
+                    UnknownOptionId(
+                        child.name, option_id, available_ids, child_line_start
+                    )
                 )
                 continue
 
             if option_id in used_ids:
                 self.diagnostics.append(
-                    DuplicateWayfindingOption(option_id, child_line_start)
+                    DuplicateOptionId(child.name, option_id, child_line_start)
                 )
                 continue
 
@@ -743,15 +745,21 @@ class JSONVisitor:
 
         node.children = cast(List[n.Node], valid_children)
 
-    def is_valid_child(self, parent: n.Node, child: MutableSequence[n.Node], expected_children_names: Set[str], directives_only: bool = False):
+    def check_valid_child(
+        self,
+        parent: n.Node,
+        child: MutableSequence[n.Node],
+        expected_children_names: Set[str],
+        directives_only: bool = False,
+    ) -> None:
         # TODO: Fill this out and reuse for wayfinding, method-selector, and method-option
         pass
 
-    def handle_method_selector(self, node: n.Directive):
+    def handle_method_selector(self, node: n.Directive) -> None:
         expected_options = specparser.Spec.get().method_selector["options"]
         expected_options_dict = {option.id: option for option in expected_options}
         expected_child_name = "method-option"
-        
+
         valid_children: List[n.Directive] = []
         used_ids: Set[str] = set()
 
@@ -777,6 +785,7 @@ class JSONVisitor:
                 )
                 continue
 
+            assert isinstance(child, n.Directive)
             option_id = child.options.get("id")
             if not option_id:
                 # Don't append diagnostic since docutils should already
@@ -786,16 +795,16 @@ class JSONVisitor:
             if not option_id in expected_options_dict:
                 available_ids = list(expected_options_dict.keys())
                 available_ids.sort()
-                # TODO: Generalize UnknownOption?
                 self.diagnostics.append(
-                    UnknownWayfindingOption(option_id, available_ids, child_line_start)
+                    UnknownOptionId(
+                        child.name, option_id, available_ids, child_line_start
+                    )
                 )
                 continue
 
             if option_id in used_ids:
-                # TODO: Generalize DuplicateOption?
                 self.diagnostics.append(
-                    DuplicateWayfindingOption(option_id, child_line_start)
+                    DuplicateOptionId(child.name, option_id, child_line_start)
                 )
                 continue
 
@@ -808,7 +817,7 @@ class JSONVisitor:
             child.options["title"] = option_details.title
             valid_children.append(child)
             used_ids.add(option_id)
-        
+
         node.children = cast(List[n.Node], valid_children)
 
     def handle_directive(

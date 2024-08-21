@@ -6,7 +6,7 @@ from .diagnostics import (
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
-    DuplicateWayfindingOption,
+    DuplicateOptionId,
     ErrorParsingYAMLFile,
     ExpectedOption,
     ExpectedPathArg,
@@ -28,9 +28,9 @@ from .diagnostics import (
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     UnexpectedIndentation,
+    UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
-    UnknownWayfindingOption,
 )
 from .n import FileId
 from .parser import InlineJSONVisitor, JSONVisitor
@@ -4108,9 +4108,9 @@ def test_wayfinding_errors() -> None:
         # Note
         InvalidChild,
         # bad-id
-        UnknownWayfindingOption,
+        UnknownOptionId,
         # Duplicate "c" id
-        DuplicateWayfindingOption,
+        DuplicateOptionId,
     ]
 
     # Test missing children
@@ -4124,7 +4124,3 @@ def test_wayfinding_errors() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [MissingChild, MissingChild]
-
-
-def test_method_selector() -> None:
-    pass
