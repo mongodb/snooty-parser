@@ -73,6 +73,7 @@ from .diagnostics import (
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
+    UnexpectedDirectiveOrder,
     UnexpectedIndentation,
     UnknownOptionId,
     UnknownTabID,
@@ -752,7 +753,7 @@ class JSONVisitor:
         expected_children_names: Set[str],
         directives_only: bool = False,
     ) -> None:
-        # TODO: Fill this out and reuse for wayfinding, method-selector, and method-option
+        # TODO: Fill this out and reuse for wayfinding, method-selector, etc.
         pass
 
     def handle_method_selector(self, node: n.Directive) -> None:
@@ -810,8 +811,9 @@ class JSONVisitor:
 
             # The Drivers option should be encouraged to be first
             if option_id == "drivers" and valid_children:
-                # TODO: Add warning diagnostic
-                pass
+                self.diagnostics.append(
+                    UnexpectedDirectiveOrder(f"{child.name} with id \"{option_id}\" should be the first child of {node.name}", child_line_start)
+                )
 
             option_details = expected_options_dict[option_id]
             child.options["title"] = option_details.title
@@ -819,6 +821,26 @@ class JSONVisitor:
             used_ids.add(option_id)
 
         node.children = cast(List[n.Node], valid_children)
+    
+    def handle_method_option(self, node: n.Directive) -> None:
+        """Moves method-description as the first child of the option to help enforce order."""
+
+        expected_desc_name = "method-description"
+        target_idx = -1
+
+        for idx, child in enumerate(node.children):
+            if isinstance(child, n.Directive) and child.name == expected_desc_name:
+                target_idx = idx
+
+                if idx != 0:
+                    self.diagnostics.append(
+                        UnexpectedDirectiveOrder(f"{expected_desc_name} should be the first child of {node.name}", child.start[0])
+                    )
+
+                break
+
+        if target_idx >= 0:
+            node.children.insert(0, node.children.pop(target_idx))
 
     def handle_directive(
         self, node: rstparser.directive, line: int

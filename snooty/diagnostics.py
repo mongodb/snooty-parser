@@ -995,3 +995,19 @@ class DuplicateOptionId(Diagnostic):
             start,
             end,
         )
+
+
+class UnexpectedDirectiveOrder(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        message: str, 
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None
+    ):
+        super().__init__(
+            f"Unexpected directive order. Expected: {message}",
+            start,
+            end
+        )
