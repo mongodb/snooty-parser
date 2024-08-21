@@ -743,8 +743,73 @@ class JSONVisitor:
 
         node.children = cast(List[n.Node], valid_children)
 
-    def handle_method_selector(self, node: n.Directive):
+    def is_valid_child(self, parent: n.Node, child: MutableSequence[n.Node], expected_children_names: Set[str], directives_only: bool = False):
+        # TODO: Fill this out and reuse for wayfinding, method-selector, and method-option
         pass
+
+    def handle_method_selector(self, node: n.Directive):
+        expected_options = specparser.Spec.get().method_selector["options"]
+        expected_options_dict = {option.id: option for option in expected_options}
+        expected_child_name = "method-option"
+        
+        valid_children: List[n.Directive] = []
+        used_ids: Set[str] = set()
+
+        # Validate children
+        for child in node.children:
+            child_line_start = child.start[0]
+
+            invalid_child = None
+            if not isinstance(child, n.Directive):
+                # Catches additional unwanted types like Paragraph
+                invalid_child = child.type
+            elif child.name != expected_child_name:
+                invalid_child = child.name
+
+            if invalid_child:
+                self.diagnostics.append(
+                    InvalidChild(
+                        invalid_child,
+                        node.name,
+                        expected_child_name,
+                        child_line_start,
+                    )
+                )
+                continue
+
+            option_id = child.options.get("id")
+            if not option_id:
+                # Don't append diagnostic since docutils should already
+                # complain about missing argument and ID option
+                continue
+
+            if not option_id in expected_options_dict:
+                available_ids = list(expected_options_dict.keys())
+                available_ids.sort()
+                # TODO: Generalize UnknownOption?
+                self.diagnostics.append(
+                    UnknownWayfindingOption(option_id, available_ids, child_line_start)
+                )
+                continue
+
+            if option_id in used_ids:
+                # TODO: Generalize DuplicateOption?
+                self.diagnostics.append(
+                    DuplicateWayfindingOption(option_id, child_line_start)
+                )
+                continue
+
+            # The Drivers option should be encouraged to be first
+            if option_id == "drivers" and valid_children:
+                # TODO: Add warning diagnostic
+                pass
+
+            option_details = expected_options_dict[option_id]
+            child.options["title"] = option_details.title
+            valid_children.append(child)
+            used_ids.add(option_id)
+        
+        node.children = cast(List[n.Node], valid_children)
 
     def handle_directive(
         self, node: rstparser.directive, line: int

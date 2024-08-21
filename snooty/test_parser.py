@@ -4124,3 +4124,7 @@ def test_wayfinding_errors() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [MissingChild, MissingChild]
+
+
+def test_method_selector() -> None:
+    pass
