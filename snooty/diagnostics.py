@@ -1002,15 +1002,11 @@ class UnexpectedDirectiveOrder(Diagnostic):
 
     def __init__(
         self,
-        message: str, 
+        message: str,
         start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None
+        end: Union[None, int, Tuple[int, int]] = None,
     ):
-        super().__init__(
-            f"Unexpected directive order. Expected: {message}",
-            start,
-            end
-        )
+        super().__init__(f"Unexpected directive order. Expected: {message}", start, end)
 
 
 class InvalidChildCount(Diagnostic):
@@ -1020,12 +1016,12 @@ class InvalidChildCount(Diagnostic):
         self,
         parent_name: str,
         child_name: str,
-        expected: str, 
+        expected: str,
         start: Union[int, Tuple[int, int]],
-        end: Union[None, int, Tuple[int, int]] = None
+        end: Union[None, int, Tuple[int, int]] = None,
     ):
         super().__init__(
             f"Unexpected number of {child_name} in {parent_name}. Expected: {expected}",
             start,
-            end
+            end,
         )

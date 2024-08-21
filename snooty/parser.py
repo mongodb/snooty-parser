@@ -813,7 +813,10 @@ class JSONVisitor:
             # The Drivers option should be encouraged to be first
             if option_id == "drivers" and valid_children:
                 self.diagnostics.append(
-                    UnexpectedDirectiveOrder(f"{child.name} with id \"{option_id}\" should be the first child of {node.name}", child_line_start)
+                    UnexpectedDirectiveOrder(
+                        f'{child.name} with id "{option_id}" should be the first child of {node.name}',
+                        child_line_start,
+                    )
                 )
 
             option_details = expected_options_dict[option_id]
@@ -823,11 +826,13 @@ class JSONVisitor:
 
         if len(valid_children) < 2 or len(valid_children) > 6:
             self.diagnostics.append(
-                InvalidChildCount(node.name, expected_child_name, "2-6 options", node.start[0])
+                InvalidChildCount(
+                    node.name, expected_child_name, "2-6 options", node.start[0]
+                )
             )
 
         node.children = cast(List[n.Node], valid_children)
-    
+
     def handle_method_option(self, node: n.Directive) -> None:
         """Moves method-description as the first child of the option to help enforce order."""
 
@@ -840,7 +845,10 @@ class JSONVisitor:
 
                 if idx != 0:
                     self.diagnostics.append(
-                        UnexpectedDirectiveOrder(f"{expected_desc_name} should be the first child of {node.name}", child.start[0])
+                        UnexpectedDirectiveOrder(
+                            f"{expected_desc_name} should be the first child of {node.name}",
+                            child.start[0],
+                        )
                     )
 
                 break
