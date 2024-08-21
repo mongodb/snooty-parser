@@ -60,6 +60,7 @@ from .diagnostics import (
     IconMustBeDefined,
     ImageSuggested,
     InvalidChild,
+    InvalidChildCount,
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
@@ -819,6 +820,11 @@ class JSONVisitor:
             child.options["title"] = option_details.title
             valid_children.append(child)
             used_ids.add(option_id)
+
+        if len(valid_children) < 2 or len(valid_children) > 6:
+            self.diagnostics.append(
+                InvalidChildCount(node.name, expected_child_name, "2-6 options", node.start[0])
+            )
 
         node.children = cast(List[n.Node], valid_children)
     

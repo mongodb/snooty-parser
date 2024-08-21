@@ -1011,3 +1011,21 @@ class UnexpectedDirectiveOrder(Diagnostic):
             start,
             end
         )
+
+
+class InvalidChildCount(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        parent_name: str,
+        child_name: str,
+        expected: str, 
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None
+    ):
+        super().__init__(
+            f"Unexpected number of {child_name} in {parent_name}. Expected: {expected}",
+            start,
+            end
+        )
