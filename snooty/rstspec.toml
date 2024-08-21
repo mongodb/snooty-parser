@@ -1790,6 +1790,16 @@ prefix = "autoencryptkeyword"
 [rstobject."mongodb:c2cstate"]
 help = """mongosync State"""
 
+[method-selector]
+options = [
+  {id = "driver", title = "Driver"},
+  {id = "cli", title = "CLI"},
+  {id = "api", title = "API"},
+  {id = "mongosh", title = "Mongosh"},
+  {id = "ui", title = "UI"},
+  {id = "compass", title = "Compass"},
+]
+
 [tabs]
 cloud-providers = [
   {id = "aws", title = "AWS"},

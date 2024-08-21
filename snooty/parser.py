@@ -743,6 +743,9 @@ class JSONVisitor:
 
         node.children = cast(List[n.Node], valid_children)
 
+    def handle_method_selector(self, node: n.Directive):
+        pass
+
     def handle_directive(
         self, node: rstparser.directive, line: int
     ) -> Optional[n.Node]:
