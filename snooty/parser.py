@@ -562,6 +562,12 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "wayfinding":
             self.handle_wayfinding(popped)
 
+        elif isinstance(popped, n.Directive) and popped.name == "method-selector":
+            self.handle_method_selector(popped)
+
+        elif isinstance(popped, n.Directive) and popped.name == "method-option":
+            self.handle_method_option(popped)
+
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
             return
