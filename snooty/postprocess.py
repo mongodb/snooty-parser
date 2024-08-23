@@ -1863,29 +1863,30 @@ class CollapsibleHandler(Handler):
             self.collapsible_detected = False
 
 
-class WayfindingHandler(Handler):
-    """Handles page-level validations for wayfinding directive."""
+class NestedDirectiveHandler(Handler):
+    """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""
 
-    def __init__(self, context: Context) -> None:
+    def __init__(
+        self, context: Context, directive_name: str, skippable_directives: Set[str]
+    ):
         super().__init__(context)
-        self.wayfinding_name = "wayfinding"
-        self.include_names = {"include", "sharedinclude"}
-        self.wayfinding_detected = False
+        self.directive_name = directive_name
+        self.skippable_directives = skippable_directives
+        self.directive_detected = False
         self.nesting_level = 0
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        # Skip include directives since they should be allowed to nest wayfinding in them
-        if not isinstance(node, n.Directive) or node.name in self.include_names:
+        if not isinstance(node, n.Directive) or node.name in self.skippable_directives:
             return
 
         # Track if node is nested deeper than intended
-        if node.name != self.wayfinding_name:
+        if node.name != self.directive_name:
             self.nesting_level += 1
             return
 
         line_start = node.span[0]
 
-        if self.wayfinding_detected:
+        if self.directive_detected:
             self.context.diagnostics[fileid_stack.current].append(
                 DuplicateDirective(node.name, line_start)
             )
@@ -1897,17 +1898,35 @@ class WayfindingHandler(Handler):
             )
             return
 
-        self.wayfinding_detected = True
+        self.directive_detected = True
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or node.name in self.include_names:
+        if not isinstance(node, n.Directive) or node.name in self.skippable_directives:
             return
-        if node.name != self.wayfinding_name:
+        if node.name != self.directive_name:
             self.nesting_level -= 1
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.nesting_level = 0
-        self.wayfinding_detected = False
+        self.directive_detected = False
+
+
+class WayfindingHandler(NestedDirectiveHandler):
+    """Handles page-level validations for method-selector directive and its children."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context, "wayfinding", {"include", "sharedinclude"})
+
+
+class MethodSelectorHandler(NestedDirectiveHandler):
+    """Handles page-level validations for method-selector directive and its children."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context, "method-selector", {"include", "sharedinclude"})
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if self.directive_detected:
+            page.ast.options["has_method_selector"] = True
 
 
 class PostprocessorResult(NamedTuple):
@@ -1977,6 +1996,7 @@ class Postprocessor:
             ImageHandler,
             CollapsibleHandler,
             WayfindingHandler,
+            MethodSelectorHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

@@ -3574,3 +3574,157 @@ Valid Wayfinding
             for x in result.diagnostics[FileId("includes/included_wayfinding.rst")]
         ] == [NestedDirective]
         assert len(result.diagnostics[FileId("valid_wayfinding.txt")]) == 0
+
+
+def test_method_selector() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+============
+Landing page
+============
+            
+.. include:: /includes/included_method_selector.rst
+         
+.. method-selector::
+
+   .. method-option::
+      :id: cli
+
+      .. collapsible::
+         :heading: Collapsible 1
+         :sub_heading: Subheading 1
+      
+         Collapsible 1 content.
+
+      .. collapsible::
+         :heading: Collapsible 2
+         :sub_heading: Subheading 2
+
+         Collapsible 2 content.
+   
+   .. method-option::
+      :id: mongosh
+
+      .. collapsible::
+         :heading: Collapsible 1
+         :sub_heading: Subheading 1
+      
+         Collapsible 1 content.
+
+      .. collapsible::
+         :heading: Collapsible 2
+         :sub_heading: Subheading 2
+
+         Collapsible 2 content.
+""",
+            Path(
+                "source/includes/included_method_selector.rst"
+            ): """
+.. method-selector::
+   
+   .. method-option::
+      :id: driver
+
+      .. method-description::
+         
+         This is an optional description for drivers. Go to the `docs homepage <https://mongodb.com/docs/>`__ for more info.
+      
+         .. tabs-selector:: drivers
+
+      .. collapsible::
+         :heading: Collapsible 1
+         :sub_heading: Subheading 1
+      
+         Collapsible 1 content.
+
+      .. collapsible::
+         :heading: Collapsible 2
+         :sub_heading: Subheading 2
+
+         Collapsible 2 content.
+
+         .. tabs-drivers::
+         
+            .. tab::
+               :tabid: c
+
+               C tab content.
+            
+            .. tab::
+               :tabid: cpp
+
+               C++ tab content.
+    
+   .. method-option::
+      :id: ui
+
+      .. collapsible::
+         :heading: Collapsible 1
+         :sub_heading: Subheading 1
+      
+         Collapsible 1 content.
+
+      .. collapsible::
+         :heading: Collapsible 2
+         :sub_heading: Subheading 2
+
+         Collapsible 2 content.
+   
+   .. method-option::
+      :id: compass
+
+      .. collapsible::
+         :heading: Collapsible 1
+         :sub_heading: Subheading 1
+      
+         Collapsible 1 content.
+
+      .. collapsible::
+         :heading: Collapsible 2
+         :sub_heading: Subheading 2
+
+         Collapsible 2 content.
+""",
+            Path(
+                "source/nested_method_selector.txt"
+            ): """
+:orphan:
+
+======================
+Nested Method Selector
+======================
+
+.. note::
+
+   .. include:: /includes/included_method_selector.rst
+""",
+            Path(
+                "source/valid_method_selector.txt"
+            ): """
+:orphan:
+
+=====================
+Valid Method Selector
+=====================
+
+.. include:: /includes/included_method_selector.rst
+""",
+        }
+    ) as result:
+        assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
+            DuplicateDirective
+        ]
+        assert result.pages[FileId("index.txt")].ast.options.get("has_method_selector")
+        assert [
+            type(x)
+            for x in result.diagnostics[FileId("includes/included_method_selector.rst")]
+        ] == [NestedDirective]
+        assert len(result.diagnostics[FileId("valid_method_selector.txt")]) == 0
+
+        target_option_field = "has_method_selector"
+        assert result.pages[FileId("index.txt")].ast.options.get(target_option_field, False)
+        assert not result.pages[FileId("nested_method_selector.txt")].ast.options.get(target_option_field, False)
+        assert result.pages[FileId("valid_method_selector.txt")].ast.options.get(target_option_field, False)
