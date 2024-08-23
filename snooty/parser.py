@@ -109,6 +109,12 @@ class ProjectLoadError(Exception):
     pass
 
 
+class ChildValidationError(Exception):
+    """Empty exception expected to continue"""
+
+    pass
+
+
 def eligible_for_paragraph_to_block_substitution(node: tinydocutils.nodes.Node) -> bool:
     """Test if a docutils node should emit a BlockSubstitutionReference *instead* of a normal
     Paragraph."""
@@ -672,55 +678,17 @@ class JSONVisitor:
 
         # Validate children
         for child in node.children:
-            child_line_start = child.start[0]
-
-            invalid_child = None
-            if not isinstance(child, n.Directive):
-                # Catches additional unwanted types like Paragraph
-                invalid_child = child.type
-            elif not child.name in expected_children_names:
-                invalid_child = child.name
-
-            if invalid_child:
-                self.diagnostics.append(
-                    InvalidChild(
-                        invalid_child,
-                        wayfinding_name,
-                        f"{expected_child_opt_name} or {expected_child_desc_name}",
-                        child_line_start,
-                    )
-                )
+            try:
+                self.check_valid_child(node, child, expected_children_names)
+                assert isinstance(child, n.Directive)
+                if child.name == expected_child_desc_name:
+                    valid_desc = child
+                    continue
+                self.check_valid_option_id(child, expected_options_dict, used_ids)
+            except ChildValidationError:
                 continue
 
-            # Type is ambiguous now despite if statements above
-            assert isinstance(child, n.Directive)
-            if child.name == expected_child_desc_name:
-                valid_desc = child
-                continue
-
-            option_id = child.options.get("id")
-
-            if not (child.argument and option_id):
-                # Don't append diagnostic since docutils should already
-                # complain about missing argument and ID option
-                continue
-
-            if not option_id in expected_options_dict:
-                available_ids = list(expected_options_dict.keys())
-                available_ids.sort()
-                self.diagnostics.append(
-                    UnknownOptionId(
-                        child.name, option_id, available_ids, child_line_start
-                    )
-                )
-                continue
-
-            if option_id in used_ids:
-                self.diagnostics.append(
-                    DuplicateOptionId(child.name, option_id, child_line_start)
-                )
-                continue
-
+            option_id = child.options.get("id", "")
             option_details = expected_options_dict[option_id]
             child.options["title"] = option_details.title
             child.options["language"] = option_details.language
@@ -755,13 +723,57 @@ class JSONVisitor:
 
     def check_valid_child(
         self,
-        parent: n.Node,
-        child: MutableSequence[n.Node],
+        parent: n.Directive,
+        child: n.Node,
         expected_children_names: Set[str],
-        directives_only: bool = False,
     ) -> None:
-        # TODO: Fill this out and reuse for wayfinding, method-selector, etc.
-        pass
+        invalid_child = None
+        if not isinstance(child, n.Directive):
+            # Catches additional unwanted types like Paragraph
+            invalid_child = child.type
+        elif not child.name in expected_children_names:
+            invalid_child = child.name
+
+        if invalid_child:
+            expected_children_str = (
+                next(iter(expected_children_names))
+                if len(expected_children_names) == 1
+                else str(expected_children_names)
+            )
+            self.diagnostics.append(
+                InvalidChild(
+                    invalid_child,
+                    parent.name,
+                    expected_children_str,
+                    child.start[0],
+                )
+            )
+            raise ChildValidationError()
+
+    def check_valid_option_id(
+        self,
+        child: n.Directive,
+        expected_options: dict[str, Any],
+        used_ids: Set[str],
+    ) -> None:
+        option_id = child.options.get("id")
+        if not option_id:
+            # Don't append diagnostic since docutils should already
+            # complain about missing argument and ID option
+            raise ChildValidationError()
+
+        if not option_id in expected_options:
+            available_ids = list(expected_options.keys())
+            available_ids.sort()
+            self.diagnostics.append(
+                UnknownOptionId(child.name, option_id, available_ids, child.start[0])
+            )
+            raise ChildValidationError()
+
+        if option_id in used_ids:
+            self.diagnostics.append(
+                DuplicateOptionId(child.name, option_id, child.start[0])
+            )
 
     def handle_method_selector(self, node: n.Directive) -> None:
         expected_options = specparser.Spec.get().method_selector["options"]
@@ -773,55 +785,20 @@ class JSONVisitor:
 
         # Validate children
         for child in node.children:
-            child_line_start = child.start[0]
-
-            invalid_child = None
-            if not isinstance(child, n.Directive):
-                # Catches additional unwanted types like Paragraph
-                invalid_child = child.type
-            elif child.name != expected_child_name:
-                invalid_child = child.name
-
-            if invalid_child:
-                self.diagnostics.append(
-                    InvalidChild(
-                        invalid_child,
-                        node.name,
-                        expected_child_name,
-                        child_line_start,
-                    )
-                )
-                continue
-
-            assert isinstance(child, n.Directive)
-            option_id = child.options.get("id")
-            if not option_id:
-                # Don't append diagnostic since docutils should already
-                # complain about missing argument and ID option
-                continue
-
-            if not option_id in expected_options_dict:
-                available_ids = list(expected_options_dict.keys())
-                available_ids.sort()
-                self.diagnostics.append(
-                    UnknownOptionId(
-                        child.name, option_id, available_ids, child_line_start
-                    )
-                )
-                continue
-
-            if option_id in used_ids:
-                self.diagnostics.append(
-                    DuplicateOptionId(child.name, option_id, child_line_start)
-                )
+            try:
+                self.check_valid_child(node, child, {expected_child_name})
+                assert isinstance(child, n.Directive)
+                self.check_valid_option_id(child, expected_options_dict, used_ids)
+            except ChildValidationError:
                 continue
 
             # The Drivers option should be encouraged to be first
+            option_id = child.options.get("id", "")
             if option_id == "drivers" and valid_children:
                 self.diagnostics.append(
                     UnexpectedDirectiveOrder(
                         f'{child.name} with id "{option_id}" should be the first child of {node.name}',
-                        child_line_start,
+                        child.start[0],
                     )
                 )
 
