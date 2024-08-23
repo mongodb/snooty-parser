@@ -3725,6 +3725,12 @@ Valid Method Selector
         assert len(result.diagnostics[FileId("valid_method_selector.txt")]) == 0
 
         target_option_field = "has_method_selector"
-        assert result.pages[FileId("index.txt")].ast.options.get(target_option_field, False)
-        assert not result.pages[FileId("nested_method_selector.txt")].ast.options.get(target_option_field, False)
-        assert result.pages[FileId("valid_method_selector.txt")].ast.options.get(target_option_field, False)
+        assert result.pages[FileId("index.txt")].ast.options.get(
+            target_option_field, False
+        )
+        assert not result.pages[FileId("nested_method_selector.txt")].ast.options.get(
+            target_option_field, False
+        )
+        assert result.pages[FileId("valid_method_selector.txt")].ast.options.get(
+            target_option_field, False
+        )
