@@ -31,6 +31,7 @@ from .diagnostics import (
     SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
+    UnexpectedDirectiveOrder,
 )
 from .n import FileId
 from .util_test import (
@@ -3712,6 +3713,45 @@ Valid Method Selector
 
 .. include:: /includes/included_method_selector.rst
 """,
+            Path(
+                "source/testing_tabs_selector.txt"
+            ): """
+:orphan:
+
+=====================
+Testing Tabs Selector
+=====================
+
+.. tabs-selector:: drivers
+
+.. method-selector::
+   
+   .. method-option::
+      :id: driver
+
+      .. method-description::
+         
+         This is an optional description for drivers. Go to the `docs homepage <https://mongodb.com/docs/>`__ for more info.
+
+      Foo
+
+      .. tabs-drivers::
+
+         .. tab::
+            :tabid: c
+
+            C tab
+
+         .. tab::
+            :tabid: cpp
+
+            C++ tab
+    
+   .. method-option::
+      :id: ui
+
+      Bar
+""",
         }
     ) as result:
         assert [type(x) for x in result.diagnostics[FileId("index.txt")]] == [
@@ -3722,6 +3762,9 @@ Valid Method Selector
             type(x)
             for x in result.diagnostics[FileId("includes/included_method_selector.rst")]
         ] == [NestedDirective]
+        assert [
+            type(x) for x in result.diagnostics[FileId("testing_tabs_selector.txt")]
+        ] == [UnexpectedDirectiveOrder]
         assert len(result.diagnostics[FileId("valid_method_selector.txt")]) == 0
 
         target_option_field = "has_method_selector"

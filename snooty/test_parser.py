@@ -27,6 +27,7 @@ from .diagnostics import (
     MissingFacet,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
+    UnexpectedDirectiveOrder,
     UnexpectedIndentation,
     UnknownOptionId,
     UnknownTabID,
@@ -4242,7 +4243,7 @@ Test Page
 """,
     )
 
-    # Valid case
+    # Errors case
     page, diagnostics = parse_rst(
         parser,
         path,
@@ -4313,6 +4314,8 @@ Test Page
         InvalidChild,
         # not-valid option id
         UnknownOptionId,
+        # driver option is not first
+        UnexpectedDirectiveOrder,
         # Duplicate "cli" id
         DuplicateOptionId,
     ]

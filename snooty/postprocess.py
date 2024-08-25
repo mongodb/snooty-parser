@@ -62,6 +62,7 @@ from .diagnostics import (
     OrphanedPage,
     SubstitutionRefError,
     TargetNotFound,
+    UnexpectedDirectiveOrder,
     UnnamedPage,
     UnsupportedFormat,
 )
@@ -1923,10 +1924,54 @@ class MethodSelectorHandler(NestedDirectiveHandler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context, "method-selector", {"include", "sharedinclude"})
+        self.method_option_name = "method-option"
+        self.method_description_name = "method-description"
+        self.within_description = False
+        self.current_method_option: Optional[str] = None
+        self.pending_diagnostics: List[Diagnostic] = []
+
+    def __add_pending_diagnostics(self, fileid: FileId) -> None:
+        self.context.diagnostics[fileid].extend(self.pending_diagnostics)
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        super().enter_node(fileid_stack, node)
+
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name == "tabs-selector" and (
+            self.current_method_option != "driver" and not self.within_description
+        ):
+            self.pending_diagnostics.append(
+                UnexpectedDirectiveOrder(
+                    'tabs-selector can only be used in the method-description of the "driver" option when page has method-selector.',
+                    node.start[0],
+                )
+            )
+            return
+
+        option_id = node.options.get("id", "")
+        if node.name == self.method_option_name and option_id:
+            self.current_method_option = option_id
+        elif node.name == self.method_description_name:
+            self.within_description = True
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        super().exit_node(fileid_stack, node)
+
+        if not (isinstance(node, n.Directive)):
+            return
+
+        if node.name == self.method_option_name:
+            self.current_method_option = None
+        elif node.name == self.method_description_name:
+            self.within_description = False
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if self.directive_detected:
             page.ast.options["has_method_selector"] = True
+            self.__add_pending_diagnostics(fileid_stack.current)
+        self.pending_diagnostics = []
 
 
 class PostprocessorResult(NamedTuple):

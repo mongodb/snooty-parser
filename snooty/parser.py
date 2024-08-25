@@ -794,7 +794,7 @@ class JSONVisitor:
 
             # The Drivers option should be encouraged to be first
             option_id = child.options.get("id", "")
-            if option_id == "drivers" and valid_children:
+            if option_id == "driver" and valid_children:
                 self.diagnostics.append(
                     UnexpectedDirectiveOrder(
                         f'{child.name} with id "{option_id}" should be the first child of {node.name}',
