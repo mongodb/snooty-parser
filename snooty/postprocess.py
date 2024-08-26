@@ -1876,6 +1876,10 @@ class NestedDirectiveHandler(Handler):
         self.directive_detected = False
         self.nesting_level = 0
 
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.nesting_level = 0
+        self.directive_detected = False
+
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name in self.skippable_directives:
             return
@@ -1906,10 +1910,6 @@ class NestedDirectiveHandler(Handler):
             return
         if node.name != self.directive_name:
             self.nesting_level -= 1
-
-    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.nesting_level = 0
-        self.directive_detected = False
 
 
 class WayfindingHandler(NestedDirectiveHandler):
