@@ -2083,7 +2083,9 @@ class Postprocessor:
                 "toctree": toctree,
                 "toctreeOrder": cls.toctree_order(tree),
                 "parentPaths": cls.breadcrumbs(tree),
-                "multiPageTutorials": cls.multi_page_tutorials(tree, multi_pages_tutorials),
+                "multiPageTutorials": cls.multi_page_tutorials(
+                    tree, multi_pages_tutorials
+                ),
             }
         )
 
@@ -2304,7 +2306,7 @@ class Postprocessor:
                             if title_nodes
                             else None
                         )
-                    
+
                     # print("slug", slug)
 
                     toctree_node_options: Dict[str, Any] = {
@@ -2352,8 +2354,6 @@ class Postprocessor:
 
                 if toctree_node:
                     node["children"].append(toctree_node)
-                
-
 
         # Locate the correct directive object containing the toctree within this AST
         for child_ast in ast.children:
@@ -2368,9 +2368,10 @@ class Postprocessor:
                 visited_file_ids,
             )
 
-
     @staticmethod
-    def multi_page_tutorials(tree: Dict[str, SerializableType], multi_page_tutorials: List[str]) -> Dict[str, List[str]]:
+    def multi_page_tutorials(
+        tree: Dict[str, SerializableType], multi_page_tutorials: List[str]
+    ) -> Dict[str, List[str]]:
         """Generate steps for multi page tutorials for each parent listed in the multi_page_tutorials array"""
         result = {}
 
@@ -2381,9 +2382,8 @@ class Postprocessor:
             assert isinstance(tree["children"], List)
             for node in tree["children"]:
                 find_and_count_children(node, multi_page_tutorials, result)
-        
-        return result
 
+        return result
 
     @staticmethod
     def breadcrumbs(tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
@@ -2398,7 +2398,7 @@ class Postprocessor:
                 paths: List[str] = []
                 get_paths(node, [], paths)
                 all_paths.extend(paths)
-        
+
         # print("all_paths", all_paths)
 
         # Populate page_dict with a list of parent paths for each slug
@@ -2447,14 +2447,18 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
             get_paths(child, subpath, all_paths)
 
 
-def find_and_count_children(node: Dict[str, SerializableType], multi_page_tutorials: List[str], result: Dict[str, List[str]]) -> None:
+def find_and_count_children(
+    node: Dict[str, SerializableType],
+    multi_page_tutorials: List[str],
+    result: Dict[str, List[str]],
+) -> None:
     if "slug" in node:
         slug = node["slug"]
         formatted_slug = f"/{slug}"
         if formatted_slug in multi_page_tutorials:
             result[slug] = {
                 "total_steps": len(node.get("children", [])),
-                "slugs": [child["slug"] for child in node.get("children", [])]
+                "slugs": [child["slug"] for child in node.get("children", [])],
             }
 
         for child in node.get("children", []):
