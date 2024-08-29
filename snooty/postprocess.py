@@ -77,19 +77,6 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-@dataclass
-class MultiPageTutorial:
-    slugs: List[str]
-    total_steps: int
-
-    def serialize(self) -> n.SerializedNode:
-        result: n.SerializedNode = {
-            "slugs": self.slugs,
-            "total_steps": self.total_steps,
-        }
-        return result
-
-
 # XXX: The following two functions should probably be combined at some point
 def get_title_injection_candidate(node: n.Node) -> Optional[n.Parent[n.Node]]:
     """Dive into a tree of nodes, and return the deepest non-inline node if and only if the tree is linear."""
@@ -2391,7 +2378,7 @@ class Postprocessor:
 
         if "children" in tree and isinstance(tree["children"], List):
             for node in tree["children"]:
-                find_and_count_children(node, multi_page_tutorials, result)
+                find_multi_page_tutorial_children(node, multi_page_tutorials, result)
 
         return result
 
@@ -2455,7 +2442,7 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
             get_paths(child, subpath, all_paths)
 
 
-def find_and_count_children(
+def find_multi_page_tutorial_children(
     node: Dict[str, SerializableType],
     multi_page_tutorials: List[str],
     result: Dict[str, n.SerializedNode],
@@ -2476,7 +2463,7 @@ def find_and_count_children(
         }
 
     for child in children:
-        find_and_count_children(child, multi_page_tutorials, result)        
+        find_multi_page_tutorial_children(child, multi_page_tutorials, result)        
 
 
 def clean_slug(slug: str) -> str:
