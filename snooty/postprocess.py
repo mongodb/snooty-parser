@@ -77,6 +77,19 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
+@dataclass
+class MultiPageTutorial:
+    slugs: List[str]
+    total_steps: int
+
+    def serialize(self) -> n.SerializedNode:
+        result: n.SerializedNode = {
+            "slugs": self.slugs,
+            "total_steps": self.total_steps,
+        }
+        return result
+
+
 # XXX: The following two functions should probably be combined at some point
 def get_title_injection_candidate(node: n.Node) -> Optional[n.Parent[n.Node]]:
     """Dive into a tree of nodes, and return the deepest non-inline node if and only if the tree is linear."""
@@ -2307,8 +2320,6 @@ class Postprocessor:
                             else None
                         )
 
-                    # print("slug", slug)
-
                     toctree_node_options: Dict[str, Any] = {
                         "drawer": slug not in toc_landing_pages
                     }
@@ -2371,15 +2382,14 @@ class Postprocessor:
     @staticmethod
     def multi_page_tutorials(
         tree: Dict[str, SerializableType], multi_page_tutorials: List[str]
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, n.SerializedNode]:
         """Generate steps for multi page tutorials for each parent listed in the multi_page_tutorials array"""
-        result = {}
+        result: Dict[str, n.SerializedNode] = {}
 
         if not multi_page_tutorials:
             return result
 
-        if "children" in tree:
-            assert isinstance(tree["children"], List)
+        if "children" in tree and isinstance(tree["children"], List):
             for node in tree["children"]:
                 find_and_count_children(node, multi_page_tutorials, result)
 
@@ -2398,8 +2408,6 @@ class Postprocessor:
                 paths: List[str] = []
                 get_paths(node, [], paths)
                 all_paths.extend(paths)
-
-        # print("all_paths", all_paths)
 
         # Populate page_dict with a list of parent paths for each slug
         for path in all_paths:
@@ -2450,19 +2458,25 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
 def find_and_count_children(
     node: Dict[str, SerializableType],
     multi_page_tutorials: List[str],
-    result: Dict[str, List[str]],
+    result: Dict[str, n.SerializedNode],
 ) -> None:
-    if "slug" in node:
-        slug = node["slug"]
-        formatted_slug = f"/{slug}"
-        if formatted_slug in multi_page_tutorials:
-            result[slug] = {
-                "total_steps": len(node.get("children", [])),
-                "slugs": [child["slug"] for child in node.get("children", [])],
-            }
+    slug = node.get("slug", "")
+    if not (slug and isinstance(slug, str)):
+        return
 
-        for child in node.get("children", []):
-            find_and_count_children(child, multi_page_tutorials, result)
+    children = node.get("children", [])
+    if not (children and isinstance(children, List)):
+        return
+
+    formatted_slug = f"/{slug}"
+    if formatted_slug in multi_page_tutorials:
+        result[slug] = {
+            "total_steps": len(children),
+            "slugs": [child["slug"] for child in children],
+        }
+
+    for child in children:
+        find_and_count_children(child, multi_page_tutorials, result)        
 
 
 def clean_slug(slug: str) -> str:
