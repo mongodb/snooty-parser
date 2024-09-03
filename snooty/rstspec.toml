@@ -1962,6 +1962,7 @@ options = [
    {id = "pymongo", language = "python" , title = "PyMongo"},
    {id = "python", language = "python" , title = "Python", show_first = true},
    {id = "mongoid", language = "ruby" , title = "Mongoid"},
+   {id = "ruby", language = "ruby", title = "Ruby"},
    {id = "rust", language = "rust" , title = "Rust"},
    {id = "scala", language = "scala" , title = "Scala"},
    {id = "swift", language = "swift" , title = "Swift"},

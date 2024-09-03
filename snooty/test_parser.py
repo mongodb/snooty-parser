@@ -3945,6 +3945,9 @@ def test_wayfinding_sorted() -> None:
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: typescript
 
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: ruby 
+
       
    .. wayfinding-description::
 
@@ -4028,6 +4031,11 @@ def test_wayfinding_sorted() -> None:
 			</reference>
 		</directive>
 		<directive domain="mongodb" name="wayfinding-option" id="mongoid" title="Mongoid" language="ruby">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
+        <directive domain="mongodb" name="wayfinding-option" id="ruby" title="Ruby" language="ruby">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
