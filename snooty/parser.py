@@ -680,6 +680,7 @@ class JSONVisitor:
         for child in node.children:
             try:
                 self.check_valid_child(node, child, expected_children_names)
+                # check_valid_child verifies that the child is a directive
                 assert isinstance(child, n.Directive)
                 if child.name == expected_child_desc_name:
                     valid_desc = child
@@ -727,6 +728,11 @@ class JSONVisitor:
         child: n.Node,
         expected_children_names: Set[str],
     ) -> None:
+        """
+        Ensures that a child node matches a name that a parent directive expects. Valid
+        children are expected to be directives.
+        """
+
         invalid_child = None
         if not isinstance(child, n.Directive):
             # Catches additional unwanted types like Paragraph
@@ -753,13 +759,15 @@ class JSONVisitor:
     def check_valid_option_id(
         self,
         child: n.Directive,
-        expected_options: dict[str, Any],
+        expected_options: Dict[str, Any],
         used_ids: Set[str],
     ) -> None:
+        """Ensures that a child directive has a unique option "id" that is correctly defined."""
+
         option_id = child.options.get("id")
         if not option_id:
             # Don't append diagnostic since docutils should already
-            # complain about missing argument and ID option
+            # complain about missing ID option
             raise ChildValidationError()
 
         if not option_id in expected_options:
@@ -774,6 +782,7 @@ class JSONVisitor:
             self.diagnostics.append(
                 DuplicateOptionId(child.name, option_id, child.start[0])
             )
+            raise ChildValidationError()
 
     def handle_method_selector(self, node: n.Directive) -> None:
         expected_options = specparser.Spec.get().method_selector["options"]
@@ -787,6 +796,7 @@ class JSONVisitor:
         for child in node.children:
             try:
                 self.check_valid_child(node, child, {expected_child_name})
+                # check_valid_child verifies that the child is a directive
                 assert isinstance(child, n.Directive)
                 self.check_valid_option_id(child, expected_options_dict, used_ids)
             except ChildValidationError:
