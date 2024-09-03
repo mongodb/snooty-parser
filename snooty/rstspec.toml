@@ -816,6 +816,19 @@ help = "An option for wayfinding."
 argument_type = {type = "uri", required = true}
 options.id = {type = "string", required = true}
 
+[directive."mongodb:method-selector"]
+help = "Top-level selector for methods a user may choose from for content. Only a single one should be used on a page."
+content_type = "block"
+
+[directive."mongodb:method-option"]
+help = "An option to be used for the method-selector directive."
+content_type = "block"
+options.id = {type = "string", required = true}
+
+[directive."mongodb:method-description"]
+help = "An optional description to be used for a method option."
+content_type = "block"
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -1789,6 +1802,16 @@ prefix = "autoencryptkeyword"
 
 [rstobject."mongodb:c2cstate"]
 help = """mongosync State"""
+
+[method_selector]
+options = [
+  {id = "driver", title = "Driver"},
+  {id = "cli", title = "CLI"},
+  {id = "api", title = "API"},
+  {id = "mongosh", title = "Mongosh"},
+  {id = "ui", title = "UI"},
+  {id = "compass", title = "Compass"},
+]
 
 [tabs]
 cloud-providers = [
