@@ -1913,7 +1913,7 @@ class NestedDirectiveHandler(Handler):
 
 
 class WayfindingHandler(NestedDirectiveHandler):
-    """Handles page-level validations for method-selector directive and its children."""
+    """Handles page-level validations for wayfinding directive and its children."""
 
     def __init__(self, context: Context) -> None:
         super().__init__(context, "wayfinding", {"include", "sharedinclude"})

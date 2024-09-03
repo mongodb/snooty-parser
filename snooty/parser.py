@@ -110,8 +110,6 @@ class ProjectLoadError(Exception):
 
 
 class ChildValidationError(Exception):
-    """Empty exception expected to continue"""
-
     pass
 
 
