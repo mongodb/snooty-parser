@@ -1974,6 +1974,45 @@ class MethodSelectorHandler(NestedDirectiveHandler):
         self.pending_diagnostics = []
 
 
+class MultiPageTutorialHandler(Handler):
+    """Handles page-wide settings for a multi-page tutorial page."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.target_directive_name = "multi-page-tutorial"
+        self.found_directive: Optional[n.Directive] = None
+        self.pending_node_removals: List[n.Directive] = []
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.found_directive = None
+        self.pending_node_removals = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != self.target_directive_name:
+            return
+
+        self.pending_node_removals.append(node)
+
+        if self.found_directive:
+            DuplicateDirective(self.target_directive_name, node.start[0])
+            return
+
+        self.found_directive = node
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.found_directive:
+            return
+
+        page.ast.options["multi_page_tutorial_settings"] = {
+            "time_required": self.found_directive.options.get("time-required", 0),
+            "show_next_top": self.found_directive.options.get("show-next-top", False),
+        }
+
+        # Remove AST(s) to avoid unnecessary duplicate data
+        for node in self.pending_node_removals:
+            page.ast.children.remove(node)
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -2042,6 +2081,7 @@ class Postprocessor:
             CollapsibleHandler,
             WayfindingHandler,
             MethodSelectorHandler,
+            MultiPageTutorialHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
@@ -2528,7 +2568,7 @@ def find_multi_page_tutorial_children(
         }
 
     for child in children:
-        find_multi_page_tutorial_children(child, multi_page_tutorials, result)        
+        find_multi_page_tutorial_children(child, multi_page_tutorials, result)
 
 
 def clean_slug(slug: str) -> str:
