@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.17.1] - 2024-09-05
+
+### Added
+
+- Implementation for new `way-finding` directive
+
+### Changed
+
+- Add ruby driver to wayfinding component
+
 ## [v0.17.0] - 2024-08-15
 
 ### Added
