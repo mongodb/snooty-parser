@@ -62,6 +62,7 @@ from .diagnostics import (
     OrphanedPage,
     SubstitutionRefError,
     TargetNotFound,
+    UnexpectedDirectiveOrder,
     UnnamedPage,
     UnsupportedFormat,
 )
@@ -1863,29 +1864,34 @@ class CollapsibleHandler(Handler):
             self.collapsible_detected = False
 
 
-class WayfindingHandler(Handler):
-    """Handles page-level validations for wayfinding directive."""
+class NestedDirectiveHandler(Handler):
+    """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""
 
-    def __init__(self, context: Context) -> None:
+    def __init__(
+        self, context: Context, directive_name: str, skippable_directives: Set[str]
+    ):
         super().__init__(context)
-        self.wayfinding_name = "wayfinding"
-        self.include_names = {"include", "sharedinclude"}
-        self.wayfinding_detected = False
+        self.directive_name = directive_name
+        self.skippable_directives = skippable_directives
+        self.directive_detected = False
         self.nesting_level = 0
 
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.nesting_level = 0
+        self.directive_detected = False
+
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        # Skip include directives since they should be allowed to nest wayfinding in them
-        if not isinstance(node, n.Directive) or node.name in self.include_names:
+        if not isinstance(node, n.Directive) or node.name in self.skippable_directives:
             return
 
         # Track if node is nested deeper than intended
-        if node.name != self.wayfinding_name:
+        if node.name != self.directive_name:
             self.nesting_level += 1
             return
 
         line_start = node.span[0]
 
-        if self.wayfinding_detected:
+        if self.directive_detected:
             self.context.diagnostics[fileid_stack.current].append(
                 DuplicateDirective(node.name, line_start)
             )
@@ -1897,17 +1903,75 @@ class WayfindingHandler(Handler):
             )
             return
 
-        self.wayfinding_detected = True
+        self.directive_detected = True
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Directive) or node.name in self.include_names:
+        if not isinstance(node, n.Directive) or node.name in self.skippable_directives:
             return
-        if node.name != self.wayfinding_name:
+        if node.name != self.directive_name:
             self.nesting_level -= 1
 
-    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.nesting_level = 0
-        self.wayfinding_detected = False
+
+class WayfindingHandler(NestedDirectiveHandler):
+    """Handles page-level validations for wayfinding directive and its children."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context, "wayfinding", {"include", "sharedinclude"})
+
+
+class MethodSelectorHandler(NestedDirectiveHandler):
+    """Handles page-level validations for method-selector directive and its children."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context, "method-selector", {"include", "sharedinclude"})
+        self.method_option_name = "method-option"
+        self.method_description_name = "method-description"
+        self.within_description = False
+        self.current_method_option: Optional[str] = None
+        self.pending_diagnostics: List[Diagnostic] = []
+
+    def __add_pending_diagnostics(self, fileid: FileId) -> None:
+        self.context.diagnostics[fileid].extend(self.pending_diagnostics)
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        super().enter_node(fileid_stack, node)
+
+        if not isinstance(node, n.Directive):
+            return
+
+        if node.name == "tabs-selector" and (
+            self.current_method_option != "driver" and not self.within_description
+        ):
+            self.pending_diagnostics.append(
+                UnexpectedDirectiveOrder(
+                    'tabs-selector can only be used in the method-description of the "driver" option when page has method-selector.',
+                    node.start[0],
+                )
+            )
+            return
+
+        option_id = node.options.get("id", "")
+        if node.name == self.method_option_name and option_id:
+            self.current_method_option = option_id
+        elif node.name == self.method_description_name:
+            self.within_description = True
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        super().exit_node(fileid_stack, node)
+
+        if not (isinstance(node, n.Directive)):
+            return
+
+        if node.name == self.method_option_name:
+            self.current_method_option = None
+        elif node.name == self.method_description_name:
+            self.within_description = False
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if self.directive_detected:
+            page.ast.options["has_method_selector"] = True
+            self.__add_pending_diagnostics(fileid_stack.current)
+        self.pending_diagnostics = []
 
 
 class PostprocessorResult(NamedTuple):
@@ -1977,6 +2041,7 @@ class Postprocessor:
             ImageHandler,
             CollapsibleHandler,
             WayfindingHandler,
+            MethodSelectorHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

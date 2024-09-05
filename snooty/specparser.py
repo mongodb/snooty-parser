@@ -112,6 +112,13 @@ class DirectiveOption:
 
 @checked
 @dataclass
+class MethodSelectorOption:
+    id: str
+    title: str
+
+
+@checked
+@dataclass
 class TabDefinition:
     id: str
     title: str
@@ -283,6 +290,7 @@ class Spec:
     directive: Dict[str, Directive] = field(default_factory=dict)
     role: Dict[str, Role] = field(default_factory=dict)
     rstobject: Dict[str, RstObject] = field(default_factory=dict)
+    method_selector: Dict[str, List[MethodSelectorOption]] = field(default_factory=dict)
     tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
     wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
