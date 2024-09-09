@@ -1569,19 +1569,19 @@ class AddTitlesToLabelTargetsHandler(Handler):
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)) and not (
-            isinstance(node, n.Directive) and "heading" in node.options.keys()
+            isinstance(node, n.Directive) and "heading" in node.options
         ):
             self.pending_targets = []
 
         if isinstance(node, n.Target) and node.domain == "std" and node.name == "label":
             self.pending_targets.extend(node.children)
         elif isinstance(node, n.Section) or (
-            isinstance(node, n.Directive) and "heading" in node.options.keys()
+            isinstance(node, n.Directive) and "heading" in node.options
         ):
             for target in self.pending_targets:
                 if isinstance(node, n.Section):
                     heading = next(node.get_child_of_type(n.Heading), None)
-                if isinstance(node, n.Directive) and "heading" in node.options.keys():
+                elif isinstance(node, n.Directive) and "heading" in node.options:
                     heading_option = node.options.get("heading")
                     if heading_option:
                         heading = n.Heading(
