@@ -3523,7 +3523,7 @@ Subsection heading
                 ],
             },
             {
-                "depth": 4,
+                "depth": 3,
                 "id": "this-is-content",
                 "title": [
                     {
@@ -3559,6 +3559,9 @@ Section heading
 
     This is a child paragraph of collapsible
 
+    There is another heading
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
 There should be a link to collapsible :ref:`ref_to_collapsible`.
 
 There should be a link to section heading :ref:`ref-to-heading`.
@@ -3582,8 +3585,9 @@ There should be a link to section heading :ref:`ref-to-heading`.
             <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
          </target>
          <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
+            <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
             <section>
-               <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
+               <heading id="there-is-another-heading"><text>There is another heading</text></heading>
             </section>
          </directive>
          <paragraph><text>There should be a link to collapsible </text>
@@ -3599,11 +3603,6 @@ There should be a link to section heading :ref:`ref-to-heading`.
    </section>
 </root>
 """,
-        )
-        print(
-            ast_to_testing_string(
-                page.ast,
-            )
         )
 
 

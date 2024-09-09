@@ -561,7 +561,7 @@ class JSONVisitor:
                 target.children = [identifier]
                 item.term.append(target)
 
-        elif isinstance(popped, n.Directive) and (popped.name in DIR_NAMES_WITH_SECTIONED_CHILDREN):
+        elif isinstance(popped, n.Directive) and popped.name == "step":
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
         elif isinstance(popped, n.Directive) and popped.name == "wayfinding":
@@ -572,6 +572,12 @@ class JSONVisitor:
 
         elif isinstance(popped, n.Directive) and popped.name == "method-option":
             self.handle_method_option(popped)
+
+        elif isinstance(popped, n.Directive) and popped.name == "collapsible":
+            section = popped.get_child_of_type(n.Section)
+            heading = popped.get_child_of_type(n.Heading)
+            if not section and not heading:
+                popped.children = [n.Section((node.get_line(),), popped.children)]
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
@@ -1265,7 +1271,7 @@ class JSONVisitor:
         elif key == "mongodb:collapsible":
             if not node.children:
                 self.diagnostics.append(
-                    MissingChild("mongodb:card", "content block", line)
+                    MissingChild("mongodb:collapsible", "content block", line)
                 )
 
         elif name == "facet":
