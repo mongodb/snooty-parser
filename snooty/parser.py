@@ -485,6 +485,7 @@ class JSONVisitor:
 
         popped = self.state.pop()
         top_of_state = self.state[-1]
+        DIR_NAMES_WITH_SECTIONED_CHILDREN = ["step", "collapsible"]
 
         if isinstance(popped, _DefinitionListTerm):
             assert isinstance(
@@ -560,7 +561,7 @@ class JSONVisitor:
                 target.children = [identifier]
                 item.term.append(target)
 
-        elif isinstance(popped, n.Directive) and popped.name == "step":
+        elif isinstance(popped, n.Directive) and (popped.name in DIR_NAMES_WITH_SECTIONED_CHILDREN):
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
         elif isinstance(popped, n.Directive) and popped.name == "wayfinding":
