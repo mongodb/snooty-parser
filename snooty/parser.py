@@ -485,7 +485,6 @@ class JSONVisitor:
 
         popped = self.state.pop()
         top_of_state = self.state[-1]
-        DIR_NAMES_WITH_SECTIONED_CHILDREN = ["step", "collapsible"]
 
         if isinstance(popped, _DefinitionListTerm):
             assert isinstance(
