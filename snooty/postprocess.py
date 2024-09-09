@@ -1582,11 +1582,13 @@ class AddTitlesToLabelTargetsHandler(Handler):
                 if isinstance(node, n.Section):
                     heading = next(node.get_child_of_type(n.Heading), None)
                 if isinstance(node, n.Directive) and "heading" in node.options.keys():
-                    heading = n.Heading(
-                        (node.span[0],),
-                        [n.Text((node.span[0],), node.options.get("heading"))],
-                        util.make_html5_id(node.options.get("heading").strip()).lower(),
-                    )
+                    heading_option = node.options.get("heading")
+                    if heading_option:
+                        heading = n.Heading(
+                            (node.span[0],),
+                            [n.Text((node.span[0],), heading_option)],
+                            util.make_html5_id(heading_option.strip()).lower(),
+                        )
                 if heading is not None:
                     assert isinstance(target, n.Parent)
                     target.children = heading.children
