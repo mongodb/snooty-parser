@@ -1568,14 +1568,25 @@ class AddTitlesToLabelTargetsHandler(Handler):
         self.pending_targets: List[n.Node] = []
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)):
+        if not isinstance(node, (n.Target, n.Section, n.TargetIdentifier)) and not (
+            isinstance(node, n.Directive) and "heading" in node.options.keys()
+        ):
             self.pending_targets = []
 
         if isinstance(node, n.Target) and node.domain == "std" and node.name == "label":
             self.pending_targets.extend(node.children)
-        elif isinstance(node, n.Section):
+        elif isinstance(node, n.Section) or (
+            isinstance(node, n.Directive) and "heading" in node.options.keys()
+        ):
             for target in self.pending_targets:
-                heading = next(node.get_child_of_type(n.Heading), None)
+                if isinstance(node, n.Section):
+                    heading = next(node.get_child_of_type(n.Heading), None)
+                if isinstance(node, n.Directive) and "heading" in node.options.keys():
+                    heading = n.Heading(
+                        (node.span[0],),
+                        [n.Text((node.span[0],), node.options.get("heading"))],
+                        util.make_html5_id(node.options.get("heading").strip()).lower(),
+                    )
                 if heading is not None:
                     assert isinstance(target, n.Parent)
                     target.children = heading.children
