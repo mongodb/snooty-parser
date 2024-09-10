@@ -3923,7 +3923,6 @@ Words!
         # Ensure metadata has a record of all multi-page tutorials
         multi_page_tutorials = result.metadata.get("multiPageTutorials", None)
         assert isinstance(multi_page_tutorials, Dict)
-        print(multi_page_tutorials)
         assert multi_page_tutorials == {
             "getting-started": {
                 "total_steps": 5,
