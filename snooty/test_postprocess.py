@@ -3844,7 +3844,9 @@ Words!!!
 """
 
     # Handles nested TOC case
-    mock_files[PurePath("source/create-connect-deployments.txt")] = """
+    mock_files[
+        PurePath("source/create-connect-deployments.txt")
+    ] = """
 ==============================
 Create and Connect Deployments
 ==============================
