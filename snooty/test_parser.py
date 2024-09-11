@@ -3860,8 +3860,8 @@ def test_collapsible() -> None:
         """
 <root fileid="test.rst">
     <directive name="collapsible" heading="This is a heading" sub_heading="This is a subheading" domain="mongodb">
-            <paragraph><text>This is collapsible content</text></paragraph>
-            <code lang="javascript" copyable="True">This is code within collapsible content</code>
+        <paragraph><text>This is collapsible content</text></paragraph>
+        <code lang="javascript" copyable="True">This is code within collapsible content</code>
     </directive>
 </root>""",
     )

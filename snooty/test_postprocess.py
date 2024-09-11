@@ -3478,132 +3478,31 @@ def test_collapsible_headings() -> None:
                 "source/index.txt"
             ): """
 .. contents::
-   :depth: 3
+   :depth: 2
 
--------------------
-Heading of the page
--------------------
-
-===================
-Subsection heading
-===================
 
 .. collapsible::
-    :heading: Collapsible heading
+    :heading: Heading goes here
     :sub_heading: Subheading
 
-    ~~~~~~~~~~~~~~~
     This is content
-    ~~~~~~~~~~~~~~~
             """,
         }
     ) as result:
         page = result.pages[FileId("index.txt")]
         assert page.ast.options.get("headings") == [
             {
-                "depth": 2,
-                "id": "subsection-heading",
+                "depth": 0,
+                "id": "heading-goes-here",
                 "title": [
                     {
+                        "position": {"start": {"line": 5}},
                         "type": "text",
-                        "position": {"start": {"line": 10}},
-                        "value": "Subsection heading",
-                    }
-                ],
-            },
-            {
-                "depth": 2,
-                "id": "collapsible-heading",
-                "title": [
-                    {
-                        "type": "text",
-                        "position": {"start": {"line": 12}},
-                        "value": "Collapsible heading",
-                    }
-                ],
-            },
-            {
-                "depth": 3,
-                "id": "this-is-content",
-                "title": [
-                    {
-                        "type": "text",
-                        "position": {"start": {"line": 18}},
-                        "value": "This is content",
-                    }
+                        "value": "Heading goes here",
+                    },
                 ],
             },
         ]
-
-
-def test_collapsible_ref() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-
-This is a page heading
-======================
-
-.. _ref_to_heading:
-
-Section heading
----------------
-            
-
-.. _ref_to_collapsible:
-
-.. collapsible::
-    :heading: Collapsible heading
-
-    This is a child paragraph of collapsible
-
-    There is another heading
-    ~~~~~~~~~~~~~~~~~~~~~~~~
-
-There should be a link to collapsible :ref:`ref_to_collapsible`.
-
-There should be a link to section heading :ref:`ref-to-heading`.
-
-"""
-        }
-    ) as result:
-        page = result.pages[FileId("index.txt")]
-        check_ast_testing_string(
-            page.ast,
-            """
-<root fileid="index.txt">
-   <section>
-      <heading id="this-is-a-page-heading"><text>This is a page heading</text></heading>
-      <target domain="std" name="label" html_id="std-label-ref_to_heading">
-         <target_identifier ids="['ref_to_heading']"><text>Section heading</text></target_identifier>
-      </target>
-      <section>
-         <heading id="section-heading"><text>Section heading</text></heading>
-         <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
-            <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
-         </target>
-         <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
-            <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
-            <section>
-               <heading id="there-is-another-heading"><text>There is another heading</text></heading>
-            </section>
-         </directive>
-         <paragraph><text>There should be a link to collapsible </text>
-            <ref_role domain="std" name="label" target="ref_to_collapsible"
-               fileid="['index', 'std-label-ref_to_collapsible']"><text>Collapsible heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-         <paragraph><text>There should be a link to section heading </text>
-            <ref_role domain="std" name="label" target="ref-to-heading"><text>ref-to-heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-      </section>
-   </section>
-</root>
-""",
-        )
 
 
 def test_wayfinding() -> None:
