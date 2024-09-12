@@ -308,6 +308,9 @@ class JSONVisitor:
             )
         elif isinstance(node, rstparser.directive):
             directive = self.handle_directive(node, line)
+            # if directive and node["name"] == "collapsible":
+            #     self.state.append(n.Section((node.get_line(),), [directive]))
+            # elif directive:
             if directive:
                 self.state.append(directive)
         elif isinstance(node, tinydocutils.nodes.Text):
@@ -573,9 +576,9 @@ class JSONVisitor:
             self.handle_method_option(popped)
 
         elif isinstance(popped, n.Directive) and popped.name == "collapsible":
-            section = popped.get_child_of_type(n.Section)
-            heading = popped.get_child_of_type(n.Heading)
-            if not section and not heading:
+            has_section = any(True for _ in popped.get_child_of_type(n.Section))
+            has_heading = any(True for _ in popped.get_child_of_type(n.Heading))
+            if not has_section and not has_heading:
                 popped.children = [n.Section((node.get_line(),), popped.children)]
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:

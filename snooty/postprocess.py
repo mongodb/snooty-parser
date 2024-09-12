@@ -502,7 +502,7 @@ class ContentsHandler(Handler):
                 page.ast.options["headings"] = heading_list
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Section):
+        if isinstance(node, n.Section) or (isinstance(node, n.Directive) and node.name == "collapsible"):
             self.current_depth += 1
             return
 
@@ -538,7 +538,7 @@ class ContentsHandler(Handler):
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Section):
+        if isinstance(node, n.Section) or (isinstance(node, n.Directive) and node.name == 'collapsible'):
             self.current_depth -= 1
 
 
