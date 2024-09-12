@@ -3577,6 +3577,43 @@ Subsubsection heading
             }
         ]
 
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+    :depth: 1
+
+===================
+Heading of the page
+===================
+
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert page.ast.options.get("headings") == [
+            {
+                "depth": 2,
+                "id": "collapsible-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 8}},
+                        "value": "Collapsible heading",
+                    }
+                ],
+            }
+        ]
+
 
 def test_collapsible_ref() -> None:
     with make_test(
