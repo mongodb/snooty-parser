@@ -502,7 +502,9 @@ class ContentsHandler(Handler):
                 page.ast.options["headings"] = heading_list
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Section) or (isinstance(node, n.Directive) and node.name == "collapsible"):
+        if isinstance(node, n.Section) or (
+            isinstance(node, n.Directive) and node.name == "collapsible"
+        ):
             self.current_depth += 1
             return
 
@@ -527,18 +529,18 @@ class ContentsHandler(Handler):
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
-            html5_id = util.make_html5_id(node.options["heading"]).lower()
-            node.options["id"] = html5_id
             self.headings.append(
                 ContentsHandler.HeadingData(
                     self.current_depth,
-                    html5_id,
+                    node.options["id"],
                     [n.Text(node.span, node.options["heading"])],
                 )
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Section) or (isinstance(node, n.Directive) and node.name == 'collapsible'):
+        if isinstance(node, n.Section) or (
+            isinstance(node, n.Directive) and node.name == "collapsible"
+        ):
             self.current_depth -= 1
 
 

@@ -3859,7 +3859,7 @@ def test_collapsible() -> None:
         page.ast,
         """
 <root fileid="test.rst">
-    <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading">
+    <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
         <section>
             <paragraph><text>This is collapsible content</text></paragraph><code lang="javascript" copyable="True">This is code within collapsible content</code>
         </section>
@@ -3907,7 +3907,7 @@ This is the main heading
 <root fileid="test.rst">
    <section>
       <heading id="this-is-the-main-heading"><text>This is the main heading</text></heading>
-        <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading">
+        <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
             <section>
                 <heading id="there-is-a-heading-inside"><text>There is a heading inside</text></heading>
                 <paragraph><text>And more content within</text></paragraph>

@@ -3628,7 +3628,7 @@ There should be a link to section heading :ref:`ref-to-heading`.
       <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
         <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
       </target>
-      <directive domain="mongodb" name="collapsible" heading="Collapsible heading">
+      <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
         <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
         <section>
           <heading id="there-is-another-heading"><text>There is another heading</text></heading>
