@@ -359,10 +359,12 @@ class Spec:
         elif isinstance(option_spec, PrimitiveType):
             return VALIDATORS[option_spec]
         elif isinstance(option_spec, str) and option_spec == "iso_8601":
+
             def validator(argument: str) -> object:
                 # Error is thrown if format is wrong
                 datetime.fromisoformat(argument)
                 return argument
+
             return validator
         elif isinstance(option_spec, str) and option_spec in self.enum:
             return lambda argument: tinydocutils.directives.choice(
