@@ -3612,8 +3612,6 @@ There should be a link to section heading :ref:`ref-to-heading`.
         }
     ) as result:
         page = result.pages[FileId("index.txt")]
-        print(ast_to_testing_string(page.ast))
-        # TODO BELOW: the collapsible should have an id
         check_ast_testing_string(
             page.ast,
             """
