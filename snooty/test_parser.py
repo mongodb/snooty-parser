@@ -4346,6 +4346,8 @@ Test Page
 .. video:: https://www.youtube.com/embed/XrJG994YxD8
    
 .. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :title: Mastering Indexing for Perfect Query Matches
+   :description: In this video, we learn about how Atlas Search indexes can be used to optimize queries.
    :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
    :upload-date: 2023-11-08T05:00:28-08:00
 
@@ -4367,7 +4369,7 @@ Test Page
                 <text>https://www.youtube.com/embed/XrJG994YxD8</text>
             </reference>
         </directive>
-        <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08T05:00:28-08:00">
+        <directive name="video" title="Mastering Indexing for Perfect Query Matches" description="In this video, we learn about how Atlas Search indexes can be used to optimize queries." thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08T05:00:28-08:00">
             <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
                 <text>https://www.youtube.com/embed/XrJG994YxD8</text>
             </reference>
