@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
@@ -357,6 +358,12 @@ class Spec:
             return validator
         elif isinstance(option_spec, PrimitiveType):
             return VALIDATORS[option_spec]
+        elif isinstance(option_spec, str) and option_spec == "iso_8601":
+            def validator(argument: str) -> object:
+                # Error is thrown if format is wrong
+                datetime.fromisoformat(argument)
+                return argument
+            return validator
         elif isinstance(option_spec, str) and option_spec in self.enum:
             return lambda argument: tinydocutils.directives.choice(
                 argument, self.enum[option_spec]

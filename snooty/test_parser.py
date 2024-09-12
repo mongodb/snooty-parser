@@ -4327,3 +4327,75 @@ Test Page
         # Duplicate "cli" id
         DuplicateOptionId,
     ]
+
+
+def test_video() -> None:
+    path = FileId("test.txt")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Valid cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08T05:00:28-08:00
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08
+    """,
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.txt">
+    <section>
+        <heading id="test-page"><text>Test Page</text></heading>
+        <directive name="video">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08T05:00:28-08:00">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    # Error cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 11-11-2011
+    """,
+    )
+    page.finish(diagnostics)
+    # Diagnostic due to invalid upload-date format
+    assert [type(x) for x in diagnostics] == [DocUtilsParseError]

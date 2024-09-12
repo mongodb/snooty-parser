@@ -886,7 +886,12 @@ options.type = "string"
 [directive.video]
 help = "Embed a video in your article"
 argument_type = "uri"
-example = """.. video:: ${1: full video url}"""
+options.thumbnail-url = "uri"
+options.upload-date = "iso_8601"
+example = """.. video:: ${1: full video url}
+   :thumbnail-url: ${2: video's thumbnail url}
+   :upload-date: ${3: video's original upload date in ISO-8601 format}
+"""
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
