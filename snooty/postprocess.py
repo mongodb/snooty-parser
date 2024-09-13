@@ -527,12 +527,10 @@ class ContentsHandler(Handler):
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
-            self.current_depth += 1
-            if self.current_depth - 1 > self.contents_depth:
-                return
             self.headings.append(
                 ContentsHandler.HeadingData(
-                    self.current_depth,
+                    # Add 1 since section appears as a child
+                    self.current_depth + 1,
                     node.options["id"],
                     [n.Text(node.span, node.options["heading"])],
                 )

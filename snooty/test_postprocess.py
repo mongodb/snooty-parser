@@ -3484,6 +3484,30 @@ def test_collapsible_headings() -> None:
 Heading of the page
 ===================
 
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+    :depth: 2
+
+===================
+Heading of the page
+===================
+
 Subsection heading
 ------------------
 
@@ -3574,7 +3598,18 @@ Subsubsection heading
                         "value": "Subsection heading",
                     }
                 ],
-            }
+            },
+            {
+                "depth": 2,
+                "id": "collapsible-heading-2",
+                "title": [
+                    {
+                        "position": {"start": {"line": 22}},
+                        "type": "text",
+                        "value": "Collapsible heading 2",
+                    }
+                ],
+            },
         ]
 
     with make_test(
