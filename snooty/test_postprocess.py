@@ -3598,18 +3598,7 @@ Subsubsection heading
                         "value": "Subsection heading",
                     }
                 ],
-            },
-            {
-                "depth": 2,
-                "id": "collapsible-heading-2",
-                "title": [
-                    {
-                        "position": {"start": {"line": 22}},
-                        "type": "text",
-                        "value": "Collapsible heading 2",
-                    }
-                ],
-            },
+            }
         ]
 
     with make_test(
