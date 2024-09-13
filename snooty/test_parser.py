@@ -3909,8 +3909,10 @@ This is the main heading
       <heading id="this-is-the-main-heading"><text>This is the main heading</text></heading>
         <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
             <section>
-                <heading id="there-is-a-heading-inside"><text>There is a heading inside</text></heading>
-                <paragraph><text>And more content within</text></paragraph>
+                <section>
+                    <heading id="there-is-a-heading-inside"><text>There is a heading inside</text></heading>
+                    <paragraph><text>And more content within</text></paragraph>
+                </section>
             </section>
         </directive>
    </section>
