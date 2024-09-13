@@ -2188,7 +2188,7 @@ class Postprocessor:
                 "toctree": toctree,
                 "toctreeOrder": cls.toctree_order(tree),
                 "parentPaths": cls.breadcrumbs(tree),
-                "multiPageTutorials": cls.multi_page_tutorials(
+                "multiPageTutorials": cls.generate_multi_page_tutorials(
                     tree, multi_pages_tutorials
                 ),
             }
@@ -2472,7 +2472,7 @@ class Postprocessor:
             )
 
     @staticmethod
-    def multi_page_tutorials(
+    def generate_multi_page_tutorials(
         tree: Dict[str, SerializableType], multi_page_tutorials: List[str]
     ) -> Dict[str, n.SerializedNode]:
         """Generate steps for multi page tutorials for each parent listed in the multi_page_tutorials array"""
