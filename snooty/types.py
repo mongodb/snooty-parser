@@ -210,6 +210,7 @@ class ProjectConfig:
     sharedinclude_root: Optional[str] = field(default=None)
     substitutions: Dict[str, str] = field(default_factory=dict)
     toc_landing_pages: List[str] = field(default_factory=list)
+    multi_page_tutorials: List[str] = field(default_factory=list)
     page_groups: Dict[str, List[str]] = field(default_factory=dict)
     manpages: Dict[str, ManPageConfig] = field(default_factory=dict)
     bundle: BundleConfig = field(default_factory=BundleConfig)

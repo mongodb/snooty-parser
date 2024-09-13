@@ -829,6 +829,15 @@ options.id = {type = "string", required = true}
 help = "An optional description to be used for a method option."
 content_type = "block"
 
+[directive."mongodb:multi-page-tutorial"]
+help = "Configure settings for a multi-page tutorial page, if it is one."
+options.time-required = {type = "nonnegative_integer", required = true}
+options.show-next-top = "flag"
+example = """.. multi-page-tutorial::
+   :time-required: 5
+   :show-next-top:
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"

@@ -1987,6 +1987,45 @@ class MethodSelectorHandler(NestedDirectiveHandler):
         self.pending_diagnostics = []
 
 
+class MultiPageTutorialHandler(Handler):
+    """Handles page-wide settings for a multi-page tutorial page."""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.target_directive_name = "multi-page-tutorial"
+        self.found_directive: Optional[n.Directive] = None
+        self.pending_node_removals: List[n.Directive] = []
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.found_directive = None
+        self.pending_node_removals = []
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != self.target_directive_name:
+            return
+
+        self.pending_node_removals.append(node)
+
+        if self.found_directive:
+            DuplicateDirective(self.target_directive_name, node.start[0])
+            return
+
+        self.found_directive = node
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.found_directive:
+            return
+
+        page.ast.options["multi_page_tutorial_settings"] = {
+            "time_required": self.found_directive.options.get("time-required", 0),
+            "show_next_top": self.found_directive.options.get("show-next-top", False),
+        }
+
+        # Remove AST(s) to avoid unnecessary duplicate data
+        for node in self.pending_node_removals:
+            page.ast.children.remove(node)
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -2055,6 +2094,7 @@ class Postprocessor:
             CollapsibleHandler,
             WayfindingHandler,
             MethodSelectorHandler,
+            MultiPageTutorialHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
@@ -2147,6 +2187,7 @@ class Postprocessor:
             )
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
+        multi_pages_tutorials = context[ProjectConfig].multi_page_tutorials
         # Run postprocessing operations related to toctree and append to metadata document.
         # If iatree is found, use it to generate breadcrumbs and parent paths and save it to metadata as well.
         iatree = cls.build_iatree(context)
@@ -2160,6 +2201,9 @@ class Postprocessor:
                 "toctree": toctree,
                 "toctreeOrder": cls.toctree_order(tree),
                 "parentPaths": cls.breadcrumbs(tree),
+                "multiPageTutorials": cls.generate_multi_page_tutorials(
+                    tree, multi_pages_tutorials
+                ),
             }
         )
 
@@ -2441,6 +2485,22 @@ class Postprocessor:
             )
 
     @staticmethod
+    def generate_multi_page_tutorials(
+        tree: Dict[str, SerializableType], multi_page_tutorials: List[str]
+    ) -> Dict[str, n.SerializedNode]:
+        """Generate steps for multi page tutorials for each parent listed in the multi_page_tutorials array"""
+        result: Dict[str, n.SerializedNode] = {}
+
+        if not multi_page_tutorials:
+            return result
+
+        if "children" in tree and isinstance(tree["children"], List):
+            for node in tree["children"]:
+                find_multi_page_tutorial_children(node, multi_page_tutorials, result)
+
+        return result
+
+    @staticmethod
     def breadcrumbs(tree: Dict[str, SerializableType]) -> Dict[str, List[str]]:
         """Generate breadcrumbs for each page represented in the provided toctree"""
         page_dict: Dict[str, List[str]] = {}
@@ -2498,6 +2558,30 @@ def get_paths(node: Dict[str, Any], path: List[str], all_paths: List[Any]) -> No
             subpath = path[:]
             subpath.append(clean_slug(node["slug"]))
             get_paths(child, subpath, all_paths)
+
+
+def find_multi_page_tutorial_children(
+    node: Dict[str, SerializableType],
+    multi_page_tutorials: List[str],
+    result: Dict[str, n.SerializedNode],
+) -> None:
+    slug = node.get("slug", "")
+    if not (slug and isinstance(slug, str)):
+        return
+
+    children = node.get("children", [])
+    if not (children and isinstance(children, List)):
+        return
+
+    formatted_slug = f"/{slug}"
+    if formatted_slug in multi_page_tutorials:
+        result[slug] = {
+            "total_steps": len(children),
+            "slugs": [child["slug"] for child in children],
+        }
+
+    for child in children:
+        find_multi_page_tutorial_children(child, multi_page_tutorials, result)
 
 
 def clean_slug(slug: str) -> str:
