@@ -470,6 +470,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
+        selector_id: Optional[str]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -477,6 +478,7 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
+        self.scanned_pattern = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
@@ -494,6 +496,7 @@ class ContentsHandler(Handler):
                     "depth": h.depth,
                     "id": h.id,
                     "title": [node.serialize() for node in h.title],
+                    "selector_id": h.selector_id,
                 }
                 for h in self.headings
                 if h.depth - 1 <= self.contents_depth
@@ -505,6 +508,9 @@ class ContentsHandler(Handler):
         if isinstance(node, n.Section):
             self.current_depth += 1
             return
+
+        if isinstance(node, n.Directive):
+            self.scanned_pattern.append((node.name, node.options))
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -520,10 +526,16 @@ class ContentsHandler(Handler):
         if self.current_depth - 1 > self.contents_depth:
             return
 
+        selector_id = None
+        if len(self.scanned_pattern) > 0:
+                for item in self.scanned_pattern:
+                    if item[0] == "method-option":
+                        selector_id = item[1]["id"]
+
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
-                ContentsHandler.HeadingData(self.current_depth, node.id, node.children)
+                ContentsHandler.HeadingData(self.current_depth, node.id, node.children, selector_id)
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
@@ -534,10 +546,13 @@ class ContentsHandler(Handler):
                     self.current_depth,
                     html5_id,
                     [n.Text(node.span, node.options["heading"])],
+                    selector_id
                 )
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Directive):
+            self.scanned_pattern.pop()
         if isinstance(node, n.Section):
             self.current_depth -= 1
 
