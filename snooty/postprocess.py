@@ -527,12 +527,11 @@ class ContentsHandler(Handler):
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
-            html5_id = util.make_html5_id(node.options["heading"]).lower()
-            node.options["id"] = html5_id
             self.headings.append(
                 ContentsHandler.HeadingData(
-                    self.current_depth,
-                    html5_id,
+                    # Add 1 since section appears as a child
+                    self.current_depth + 1,
+                    node.options["id"],
                     [n.Text(node.span, node.options["heading"])],
                 )
             )
@@ -716,13 +715,25 @@ class HeadingHandler(Handler):
         return slug in self.slug_title_mapping
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if not isinstance(node, n.Heading):
+        if not (
+            isinstance(node, n.Heading)
+            or (isinstance(node, n.Directive) and node.name == "collapsible")
+        ):
             return
 
-        counter = self.heading_counter[node.id]
-        self.heading_counter[node.id] += 1
+        id = node.id if isinstance(node, n.Heading) else node.options.get("id", "")
+
+        # ensure uniqueness within headings
+        counter = self.heading_counter[id]
+        self.heading_counter[id] += 1
         if counter > 0:
-            node.id += f"-{counter}"
+            if isinstance(node, n.Heading):
+                node.id += f"-{counter}"
+            if isinstance(node, n.Directive):
+                node.options["id"] += f"-{counter}"
+
+        if not isinstance(node, n.Heading):
+            return
 
         slug = fileid_stack.root.without_known_suffix
 
@@ -734,7 +745,7 @@ class HeadingHandler(Handler):
                 (slug,),
                 fileid_stack.root,
                 node.children,
-                util.make_html5_id(node.id),
+                util.make_html5_id(id),
             )
             self.slug_title_mapping[slug] = node.children
             self.targets.define_local_target(
@@ -743,7 +754,7 @@ class HeadingHandler(Handler):
                 (fileid_stack.root.without_known_suffix,),
                 fileid_stack.root,
                 node.children,
-                util.make_html5_id(node.id),
+                util.make_html5_id(id),
             )
 
 

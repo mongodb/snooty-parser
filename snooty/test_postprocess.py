@@ -3478,15 +3478,17 @@ def test_collapsible_headings() -> None:
                 "source/index.txt"
             ): """
 .. contents::
-   :depth: 3
+    :depth: 2
 
--------------------
+===================
 Heading of the page
--------------------
+===================
 
-===================
 Subsection heading
-===================
+------------------
+
+Subsubsection heading
+~~~~~~~~~~~~~~~~~~~~~
 
 .. collapsible::
     :heading: Collapsible heading
@@ -3495,6 +3497,68 @@ Subsection heading
     ~~~~~~~~~~~~~~~
     This is content
     ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("headings")) == [
+            {
+                "depth": 2,
+                "id": "subsection-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 9}},
+                        "value": "Subsection heading",
+                    }
+                ],
+            },
+            {
+                "depth": 3,
+                "id": "subsubsection-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 12}},
+                        "value": "Subsubsection heading",
+                    }
+                ],
+            },
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+   :depth: 1
+
+===================
+Heading of the page
+===================
+
+Subsection heading
+------------------
+
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+
+Subsubsection heading
+~~~~~~~~~~~~~~~~~~~~~
+
+.. collapsible::
+    :heading: Collapsible heading 2
+    :sub_heading: Subheading 2
+
+    ~~~~~~~~~~~~~~~~~
+    This is content 2
+    ~~~~~~~~~~~~~~~~~
             """,
         }
     ) as result:
@@ -3506,33 +3570,48 @@ Subsection heading
                 "title": [
                     {
                         "type": "text",
-                        "position": {"start": {"line": 10}},
+                        "position": {"start": {"line": 9}},
                         "value": "Subsection heading",
                     }
                 ],
-            },
+            }
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+    :depth: 1
+
+===================
+Heading of the page
+===================
+
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert page.ast.options.get("headings") == [
             {
                 "depth": 2,
                 "id": "collapsible-heading",
                 "title": [
                     {
                         "type": "text",
-                        "position": {"start": {"line": 12}},
+                        "position": {"start": {"line": 8}},
                         "value": "Collapsible heading",
                     }
                 ],
-            },
-            {
-                "depth": 3,
-                "id": "this-is-content",
-                "title": [
-                    {
-                        "type": "text",
-                        "position": {"start": {"line": 18}},
-                        "value": "This is content",
-                    }
-                ],
-            },
+            }
         ]
 
 
@@ -3574,33 +3653,33 @@ There should be a link to section heading :ref:`ref-to-heading`.
             page.ast,
             """
 <root fileid="index.txt">
-   <section>
-      <heading id="this-is-a-page-heading"><text>This is a page heading</text></heading>
-      <target domain="std" name="label" html_id="std-label-ref_to_heading">
-         <target_identifier ids="['ref_to_heading']"><text>Section heading</text></target_identifier>
+  <section>
+    <heading id="this-is-a-page-heading"><text>This is a page heading</text></heading>
+    <target domain="std" name="label" html_id="std-label-ref_to_heading">
+      <target_identifier ids="['ref_to_heading']"><text>Section heading</text></target_identifier>
+    </target>
+    <section>
+      <heading id="section-heading"><text>Section heading</text></heading>
+      <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
+        <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
       </target>
-      <section>
-         <heading id="section-heading"><text>Section heading</text></heading>
-         <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
-            <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
-         </target>
-         <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
+      <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
+        <section>
             <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
             <section>
-               <heading id="there-is-another-heading"><text>There is another heading</text></heading>
+            <heading id="there-is-another-heading"><text>There is another heading</text></heading>
             </section>
-         </directive>
-         <paragraph><text>There should be a link to collapsible </text>
-            <ref_role domain="std" name="label" target="ref_to_collapsible"
-               fileid="['index', 'std-label-ref_to_collapsible']"><text>Collapsible heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-         <paragraph><text>There should be a link to section heading </text>
-            <ref_role domain="std" name="label" target="ref-to-heading"><text>ref-to-heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-      </section>
-   </section>
+        </section>
+      </directive>
+      <paragraph><text>There should be a link to collapsible </text>
+        <ref_role domain="std" name="label" target="ref_to_collapsible"
+          fileid="['index', 'std-label-ref_to_collapsible']"><text>Collapsible heading</text></ref_role><text>.</text>
+      </paragraph>
+      <paragraph><text>There should be a link to section heading </text>
+        <ref_role domain="std" name="label" target="ref-to-heading"><text>ref-to-heading</text></ref_role><text>.</text>
+      </paragraph>
+    </section>
+  </section>
 </root>
 """,
         )

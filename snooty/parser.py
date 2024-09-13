@@ -573,10 +573,9 @@ class JSONVisitor:
             self.handle_method_option(popped)
 
         elif isinstance(popped, n.Directive) and popped.name == "collapsible":
-            section = popped.get_child_of_type(n.Section)
-            heading = popped.get_child_of_type(n.Heading)
-            if not section and not heading:
-                popped.children = [n.Section((node.get_line(),), popped.children)]
+            html5_id = util.make_html5_id(popped.options.get("heading", "")).lower()
+            popped.options["id"] = html5_id
+            popped.children = [n.Section((node.get_line(),), popped.children)]
 
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
