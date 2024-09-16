@@ -3859,9 +3859,10 @@ def test_collapsible() -> None:
         page.ast,
         """
 <root fileid="test.rst">
-    <directive name="collapsible" heading="This is a heading" sub_heading="This is a subheading" domain="mongodb">
-            <paragraph><text>This is collapsible content</text></paragraph>
-            <code lang="javascript" copyable="True">This is code within collapsible content</code>
+    <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
+        <section>
+            <paragraph><text>This is collapsible content</text></paragraph><code lang="javascript" copyable="True">This is code within collapsible content</code>
+        </section>
     </directive>
 </root>""",
     )
@@ -3878,6 +3879,45 @@ def test_collapsible() -> None:
     )
     assert len(diagnostics) == 1
     assert [type(d) for d in diagnostics] == [MissingChild]
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+========================
+This is the main heading
+========================
+
+
+.. collapsible::
+   :heading: This is a heading
+   :sub_heading: This is a subheading
+
+   There is a heading inside
+   -------------------------
+
+   And more content within
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+   <section>
+      <heading id="this-is-the-main-heading"><text>This is the main heading</text></heading>
+        <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
+            <section>
+                <section>
+                    <heading id="there-is-a-heading-inside"><text>There is a heading inside</text></heading>
+                    <paragraph><text>And more content within</text></paragraph>
+                </section>
+            </section>
+        </directive>
+   </section>
+</root>""",
+    )
 
 
 def test_wayfinding_sorted() -> None:

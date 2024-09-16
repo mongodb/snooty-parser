@@ -1,7 +1,7 @@
 """An alternative and more granular approach to writing postprocessing tests.
    Eventually most postprocessor tests should probably be moved into this format."""
 
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Dict, cast
 
 from snooty.types import Facet
@@ -3478,15 +3478,17 @@ def test_collapsible_headings() -> None:
                 "source/index.txt"
             ): """
 .. contents::
-   :depth: 3
+    :depth: 2
 
--------------------
+===================
 Heading of the page
--------------------
+===================
 
-===================
 Subsection heading
-===================
+------------------
+
+Subsubsection heading
+~~~~~~~~~~~~~~~~~~~~~
 
 .. collapsible::
     :heading: Collapsible heading
@@ -3495,6 +3497,70 @@ Subsection heading
     ~~~~~~~~~~~~~~~
     This is content
     ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("headings")) == [
+            {
+                "depth": 2,
+                "id": "subsection-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 9}},
+                        "value": "Subsection heading",
+                    }
+                ],
+                "selector_id": None,
+            },
+            {
+                "depth": 3,
+                "id": "subsubsection-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 12}},
+                        "value": "Subsubsection heading",
+                    }
+                ],
+                "selector_id": None,
+            },
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+   :depth: 1
+
+===================
+Heading of the page
+===================
+
+Subsection heading
+------------------
+
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+
+Subsubsection heading
+~~~~~~~~~~~~~~~~~~~~~
+
+.. collapsible::
+    :heading: Collapsible heading 2
+    :sub_heading: Subheading 2
+
+    ~~~~~~~~~~~~~~~~~
+    This is content 2
+    ~~~~~~~~~~~~~~~~~
             """,
         }
     ) as result:
@@ -3506,36 +3572,50 @@ Subsection heading
                 "title": [
                     {
                         "type": "text",
-                        "position": {"start": {"line": 10}},
+                        "position": {"start": {"line": 9}},
                         "value": "Subsection heading",
                     }
                 ],
                 "selector_id": None,
-            },
+            }
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+    :depth: 1
+
+===================
+Heading of the page
+===================
+
+.. collapsible::
+    :heading: Collapsible heading
+    :sub_heading: Subheading
+
+    ~~~~~~~~~~~~~~~
+    This is content
+    ~~~~~~~~~~~~~~~
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert page.ast.options.get("headings") == [
             {
                 "depth": 2,
                 "id": "collapsible-heading",
                 "title": [
                     {
                         "type": "text",
-                        "position": {"start": {"line": 12}},
+                        "position": {"start": {"line": 8}},
                         "value": "Collapsible heading",
                     }
                 ],
                 "selector_id": None,
-            },
-            {
-                "depth": 3,
-                "id": "this-is-content",
-                "title": [
-                    {
-                        "type": "text",
-                        "position": {"start": {"line": 18}},
-                        "value": "This is content",
-                    }
-                ],
-                "selector_id": None,
-            },
+            }
         ]
 
 
@@ -3577,33 +3657,33 @@ There should be a link to section heading :ref:`ref-to-heading`.
             page.ast,
             """
 <root fileid="index.txt">
-   <section>
-      <heading id="this-is-a-page-heading"><text>This is a page heading</text></heading>
-      <target domain="std" name="label" html_id="std-label-ref_to_heading">
-         <target_identifier ids="['ref_to_heading']"><text>Section heading</text></target_identifier>
+  <section>
+    <heading id="this-is-a-page-heading"><text>This is a page heading</text></heading>
+    <target domain="std" name="label" html_id="std-label-ref_to_heading">
+      <target_identifier ids="['ref_to_heading']"><text>Section heading</text></target_identifier>
+    </target>
+    <section>
+      <heading id="section-heading"><text>Section heading</text></heading>
+      <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
+        <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
       </target>
-      <section>
-         <heading id="section-heading"><text>Section heading</text></heading>
-         <target domain="std" name="label" html_id="std-label-ref_to_collapsible">
-            <target_identifier ids="['ref_to_collapsible']"><text>Collapsible heading</text></target_identifier>
-         </target>
-         <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
+      <directive domain="mongodb" name="collapsible" heading="Collapsible heading" id="collapsible-heading">
+        <section>
             <paragraph><text>This is a child paragraph of collapsible</text></paragraph>
             <section>
-               <heading id="there-is-another-heading"><text>There is another heading</text></heading>
+            <heading id="there-is-another-heading"><text>There is another heading</text></heading>
             </section>
-         </directive>
-         <paragraph><text>There should be a link to collapsible </text>
-            <ref_role domain="std" name="label" target="ref_to_collapsible"
-               fileid="['index', 'std-label-ref_to_collapsible']"><text>Collapsible heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-         <paragraph><text>There should be a link to section heading </text>
-            <ref_role domain="std" name="label" target="ref-to-heading"><text>ref-to-heading</text></ref_role>
-            <text>.</text>
-         </paragraph>
-      </section>
-   </section>
+        </section>
+      </directive>
+      <paragraph><text>There should be a link to collapsible </text>
+        <ref_role domain="std" name="label" target="ref_to_collapsible"
+          fileid="['index', 'std-label-ref_to_collapsible']"><text>Collapsible heading</text></ref_role><text>.</text>
+      </paragraph>
+      <paragraph><text>There should be a link to section heading </text>
+        <ref_role domain="std" name="label" target="ref-to-heading"><text>ref-to-heading</text></ref_role><text>.</text>
+      </paragraph>
+    </section>
+  </section>
 </root>
 """,
         )
@@ -3881,3 +3961,169 @@ Testing Tabs Selector
         assert result.pages[FileId("valid_method_selector.txt")].ast.options.get(
             target_option_field, False
         )
+
+
+def test_multi_page_tutorials() -> None:
+    test_page_template = """
+.. multi-page-tutorial::
+   :time-required: 3
+   :show-next-top:
+
+=========
+Test Page
+=========
+
+Words.
+
+"""
+
+    mock_filenames = [
+        "tutorial/create-new-cluster.txt",
+        "tutorial/create-serverless-instance.txt",
+        "tutorial/create-global-cluster.txt",
+        "tutorial/create-atlas-account.txt",
+        "tutorial/deploy-free-tier-cluster.txt",
+        "tutorial/create-mongodb-user-for-cluster.txt",
+        "tutorial/connect-to-your-cluster.txt",
+        "tutorial/insert-data-into-your-cluster.txt",
+    ]
+    mock_files: Dict[PurePath, Any] = {}
+    for filename in mock_filenames:
+        mock_files[PurePath(f"source/{filename}")] = test_page_template
+
+    mock_files[
+        PurePath("snooty.toml")
+    ] = """
+name = "test_multi_page_tutorials"
+title = "MongoDB title"
+
+toc_landing_pages = [
+    "/create-connect-deployments",
+    "/create-database-deployment",
+    "/getting-started",
+    "/foo",
+]
+
+multi_page_tutorials = [
+    "/create-database-deployment",
+    "/getting-started",
+]
+"""
+    mock_files[
+        PurePath("source/index.txt")
+    ] = """
+========
+Homepage
+========
+
+Words!!!
+
+.. toctree::
+   :titlesonly:
+      
+   Getting Started </getting-started>
+   Create & Connect Deployments </create-connect-deployments>
+   Foo </foo>
+
+"""
+
+    # Handles nested TOC case
+    mock_files[
+        PurePath("source/create-connect-deployments.txt")
+    ] = """
+==============================
+Create and Connect Deployments
+==============================
+
+Words.
+
+.. toctree::
+   :titlesonly:
+
+   Create a Cluster </create-database-deployment>
+
+"""
+    mock_files[
+        PurePath("source/create-database-deployment.txt")
+    ] = """
+.. toctree::
+   :titlesonly:
+      
+   Cluster </tutorial/create-new-cluster>
+   Serverless Instance </tutorial/create-serverless-instance>
+   Global Cluster </tutorial/create-global-cluster>
+
+==========================
+Create Database Deployment
+==========================
+
+Words.
+
+"""
+
+    # Handles root TOC case
+    mock_files[
+        PurePath("source/getting-started.txt")
+    ] = """
+===============
+Getting Started
+===============
+
+Words.
+
+.. toctree::
+   :titlesonly:
+
+   Create an Account </tutorial/create-atlas-account>
+   Deploy a Free Cluster </tutorial/deploy-free-tier-cluster>
+   Manage Database Users </tutorial/create-mongodb-user-for-cluster>
+   Connect to the Cluster </tutorial/connect-to-your-cluster>
+   Insert and View a Document </tutorial/insert-data-into-your-cluster>
+
+"""
+
+    # Control; not intended to be included as MTP
+    mock_files[
+        PurePath("source/foo.txt")
+    ] = """
+===
+Foo
+===
+
+Words!
+
+"""
+
+    with make_test(mock_files) as result:
+        # Ensure handler adds settings to page options
+        for filename in mock_filenames:
+            mtp_options = result.pages[FileId(filename)].ast.options.get(
+                "multi_page_tutorial_settings", None
+            )
+            assert isinstance(mtp_options, Dict)
+            assert mtp_options.get("time_required", 0) > 0
+            assert mtp_options.get("show_next_top", False)
+
+        # Ensure metadata has a record of all multi-page tutorials
+        multi_page_tutorials = result.metadata.get("multiPageTutorials", None)
+        assert isinstance(multi_page_tutorials, Dict)
+        assert multi_page_tutorials == {
+            "getting-started": {
+                "total_steps": 5,
+                "slugs": [
+                    "tutorial/create-atlas-account",
+                    "tutorial/deploy-free-tier-cluster",
+                    "tutorial/create-mongodb-user-for-cluster",
+                    "tutorial/connect-to-your-cluster",
+                    "tutorial/insert-data-into-your-cluster",
+                ],
+            },
+            "create-database-deployment": {
+                "total_steps": 3,
+                "slugs": [
+                    "tutorial/create-new-cluster",
+                    "tutorial/create-serverless-instance",
+                    "tutorial/create-global-cluster",
+                ],
+            },
+        }
