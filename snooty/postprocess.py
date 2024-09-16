@@ -478,7 +478,7 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.scanned_pattern = []
+        self.scanned_pattern: List[Tuple[str, Dict[str, str]]] = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
@@ -528,14 +528,16 @@ class ContentsHandler(Handler):
 
         selector_id = None
         if len(self.scanned_pattern) > 0:
-                for item in self.scanned_pattern:
-                    if item[0] == "method-option":
-                        selector_id = item[1]["id"]
+            for item in self.scanned_pattern:
+                if item[0] == "method-option":
+                    selector_id = item[1]["id"]
 
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
-                ContentsHandler.HeadingData(self.current_depth, node.id, node.children, selector_id)
+                ContentsHandler.HeadingData(
+                    self.current_depth, node.id, node.children, selector_id
+                )
             )
 
         if isinstance(node, n.Directive) and node.name == "collapsible":
@@ -546,7 +548,7 @@ class ContentsHandler(Handler):
                     self.current_depth,
                     html5_id,
                     [n.Text(node.span, node.options["heading"])],
-                    selector_id
+                    selector_id,
                 )
             )
 

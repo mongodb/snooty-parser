@@ -2347,7 +2347,7 @@ A Heading
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}]}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}]}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}]}]">
+<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}], 'selector_id': None}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}], 'selector_id': None}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}], 'selector_id': None}]">
 <section>
 <heading id="title"><text>Title</text></heading>
 <directive name="contents" depth="2" />
@@ -3510,6 +3510,7 @@ Subsection heading
                         "value": "Subsection heading",
                     }
                 ],
+                "selector_id": None,
             },
             {
                 "depth": 2,
@@ -3521,6 +3522,7 @@ Subsection heading
                         "value": "Collapsible heading",
                     }
                 ],
+                "selector_id": None,
             },
             {
                 "depth": 3,
@@ -3532,6 +3534,7 @@ Subsection heading
                         "value": "This is content",
                     }
                 ],
+                "selector_id": None,
             },
         ]
 
