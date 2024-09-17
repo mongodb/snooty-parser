@@ -478,7 +478,7 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.scanned_pattern: List[Tuple[str, Dict[str, str]]] = []
+        self.scanned_pattern: List[str] = []
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
@@ -509,8 +509,8 @@ class ContentsHandler(Handler):
             self.current_depth += 1
             return
 
-        if isinstance(node, n.Directive):
-            self.scanned_pattern.append((node.name, node.options))
+        if isinstance(node, n.Directive) and node.name == "method-option":
+            self.scanned_pattern.append(node.options["id"])
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -529,8 +529,7 @@ class ContentsHandler(Handler):
         selector_id = None
         if len(self.scanned_pattern) > 0:
             for item in self.scanned_pattern:
-                if item[0] == "method-option":
-                    selector_id = item[1]["id"]
+                selector_id = item
 
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
@@ -552,7 +551,7 @@ class ContentsHandler(Handler):
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Directive):
+        if isinstance(node, n.Directive) and node.name == "method-option":
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):
             self.current_depth -= 1
