@@ -25,6 +25,7 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingChild,
     MissingFacet,
+    MissingStructuredDataFields,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     UnexpectedDirectiveOrder,
@@ -4354,10 +4355,18 @@ Test Page
 .. video:: https://www.youtube.com/embed/XrJG994YxD8
    :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
    :upload-date: 2023-11-08
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :description: This is an educational video.
     """,
     )
     page.finish(diagnostics)
-    assert not diagnostics
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], MissingStructuredDataFields)
+    assert "['title', 'description']" in diagnostics[0].message
+    assert isinstance(diagnostics[1], MissingStructuredDataFields)
+    assert "['title', 'thumbnail-url', 'upload-date']" in diagnostics[1].message
+
     check_ast_testing_string(
         page.ast,
         """
@@ -4375,6 +4384,11 @@ Test Page
             </reference>
         </directive>
         <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" description="This is an educational video.">
             <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
                 <text>https://www.youtube.com/embed/XrJG994YxD8</text>
             </reference>
