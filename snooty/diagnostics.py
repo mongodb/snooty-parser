@@ -892,11 +892,17 @@ class InvalidVersion(Diagnostic, MakeCorrectionMixin):
 class MissingStructuredDataFields(Diagnostic):
     severity = Diagnostic.Level.warning
 
-    def __init__(self, directive_name: str, fields: List[str], start: Union[int, Tuple[int, int]], end: Union[None, int, Tuple[int, int]] = None) -> None:
+    def __init__(
+        self,
+        directive_name: str,
+        fields: List[str],
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ) -> None:
         super().__init__(
             f"""Fields for {directive_name} structured data SEO are partially defined. Missing the following options: {fields}""",
             start,
-            end
+            end,
         )
 
 

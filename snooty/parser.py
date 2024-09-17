@@ -1232,9 +1232,14 @@ class JSONVisitor:
                 self.validate_and_add_asset(doc, icon_argument, line)
 
         elif name == "video":
-            sd_req_option_names = ["title", "thumbnail-url", "upload-date", "description"]
+            sd_req_option_names = [
+                "title",
+                "thumbnail-url",
+                "upload-date",
+                "description",
+            ]
             missing_option_names = []
-            
+
             for option_name in sd_req_option_names:
                 val = options.get(option_name, None)
                 if not val:
@@ -1242,8 +1247,12 @@ class JSONVisitor:
 
             # We want to encourage defining all of these options together or not at all for structured data SEO
             missing_options_len = len(missing_option_names)
-            if (missing_options_len > 0 and missing_options_len != len(sd_req_option_names)):
-                self.diagnostics.append(MissingStructuredDataFields(name, missing_option_names, line))
+            if missing_options_len > 0 and missing_options_len != len(
+                sd_req_option_names
+            ):
+                self.diagnostics.append(
+                    MissingStructuredDataFields(name, missing_option_names, line)
+                )
 
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
