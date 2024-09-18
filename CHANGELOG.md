@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.17.1] - 2024-09-05
 
-## [v0.17.1] - 2024-09-05
-
 ### Added
 
 - Implementation for new `way-finding` directive
