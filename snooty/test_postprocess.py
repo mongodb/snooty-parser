@@ -3963,6 +3963,97 @@ Testing Tabs Selector
         )
 
 
+def test_method_selector_headings() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents::
+    :depth: 2
+
+===================
+Heading of the page
+===================
+
+Subsection heading
+------------------
+
+.. method-selector::
+
+   .. method-option::
+      :id: driver
+
+      WHAT
+      ~~~~
+
+      .. method-description::
+
+         This is an optional description. Learn more about drivers at `MongoDB Documentation <https://www.mongodb.com/docs/drivers/>`__.
+
+      This is content in the Driver method haha.
+
+   .. method-option::
+      :id: cli
+
+      This is a heading
+      ~~~~~~~~~~~~~~~~~
+
+      .. method-description::
+
+         This is a description under the heading for cli.
+      
+      This is content in the CLI method haha.
+
+   .. method-option::
+      :id: mongosh
+
+      Foo
+      
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("headings")) == [
+            {
+                "depth": 2,
+                "id": "subsection-heading",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 9}},
+                        "value": "Subsection heading",
+                    }
+                ],
+                "selector_id": None,
+            },
+            {
+                "depth": 3,
+                "id": "what",
+                "selector_id": "driver",
+                "title": [
+                    {
+                        "position": {"start": {"line": 17}},
+                        "type": "text",
+                        "value": "WHAT",
+                    }
+                ],
+            },
+            {
+                "depth": 3,
+                "id": "this-is-a-heading",
+                "selector_id": "cli",
+                "title": [
+                    {
+                        "position": {"start": {"line": 29}},
+                        "type": "text",
+                        "value": "This is a heading",
+                    }
+                ],
+            },
+        ]
+
+
 def test_multi_page_tutorials() -> None:
     test_page_template = """
 .. multi-page-tutorial::
