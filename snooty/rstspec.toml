@@ -895,7 +895,16 @@ options.type = "string"
 [directive.video]
 help = "Embed a video in your article"
 argument_type = "uri"
-example = """.. video:: ${1: full video url}"""
+options.title = "string"
+options.thumbnail-url = "uri"
+options.upload-date = "iso_8601"
+options.description = "string"
+example = """.. video:: ${1: https://www.youtube.com/embed/XrJG994YxD8}
+   :title: {$2: Mastering Indexing for Perfect Query Matches}
+   :thumbnail-url: ${3: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg}
+   :upload-date: ${4: 2023-11-08T05:00:28-08:00}
+   :description: {$5: Learn how to make Atlas Search indexes to improve search speed and quality.}
+"""
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"

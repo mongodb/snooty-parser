@@ -25,6 +25,7 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingChild,
     MissingFacet,
+    MissingStructuredDataFields,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     UnexpectedDirectiveOrder,
@@ -4367,3 +4368,90 @@ Test Page
         # Duplicate "cli" id
         DuplicateOptionId,
     ]
+
+
+def test_video() -> None:
+    path = FileId("test.txt")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Valid cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :title: Mastering Indexing for Perfect Query Matches
+   :description: In this video, we learn about how Atlas Search indexes can be used to optimize queries.
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08T05:00:28-08:00
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :description: This is an educational video.
+    """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], MissingStructuredDataFields)
+    assert "['title', 'description']" in diagnostics[0].message
+    assert isinstance(diagnostics[1], MissingStructuredDataFields)
+    assert "['title', 'thumbnail-url', 'upload-date']" in diagnostics[1].message
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.txt">
+    <section>
+        <heading id="test-page"><text>Test Page</text></heading>
+        <directive name="video">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" title="Mastering Indexing for Perfect Query Matches" description="In this video, we learn about how Atlas Search indexes can be used to optimize queries." thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08T05:00:28-08:00">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" description="This is an educational video.">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    # Error cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 11-11-2011
+    """,
+    )
+    page.finish(diagnostics)
+    # Diagnostic due to invalid upload-date format
+    assert [type(x) for x in diagnostics] == [DocUtilsParseError]
