@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.18.0] - 2024-09-18
 
+### Added
+
+- DOP-4689: Implement multi-page tutorials by @rayangler in #617
+
+### Changed
+
+- DOP-4983: improve heading content and sectioning by @seungpark in #618
+- DOP-4983: controlled sections and refs for collapsibles by @seungpark in #616
+
 ## [v0.17.1] - 2024-09-05
 
 ### Added
