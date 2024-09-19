@@ -472,6 +472,9 @@ class Literal(InlineParent):
     __slots__ = ()
     type = "literal"
 
+    def get_text(self) -> str:
+        return "".join(node.value for node in self.children)
+
 
 @dataclass
 class Emphasis(InlineParent):
