@@ -6,7 +6,7 @@ from .diagnostics import (
     CannotOpenFile,
     Diagnostic,
     DocUtilsParseError,
-    DuplicateWayfindingOption,
+    DuplicateOptionId,
     ErrorParsingYAMLFile,
     ExpectedOption,
     ExpectedPathArg,
@@ -25,12 +25,14 @@ from .diagnostics import (
     MalformedRelativePath,
     MissingChild,
     MissingFacet,
+    MissingStructuredDataFields,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
+    UnexpectedDirectiveOrder,
     UnexpectedIndentation,
+    UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
-    UnknownWayfindingOption,
 )
 from .n import FileId
 from .parser import InlineJSONVisitor, JSONVisitor
@@ -3858,9 +3860,10 @@ def test_collapsible() -> None:
         page.ast,
         """
 <root fileid="test.rst">
-    <directive name="collapsible" heading="This is a heading" sub_heading="This is a subheading" domain="mongodb">
-        <paragraph><text>This is collapsible content</text></paragraph>
-        <code lang="javascript" copyable="True">This is code within collapsible content</code>
+    <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
+        <section>
+            <paragraph><text>This is collapsible content</text></paragraph><code lang="javascript" copyable="True">This is code within collapsible content</code>
+        </section>
     </directive>
 </root>""",
     )
@@ -3877,6 +3880,45 @@ def test_collapsible() -> None:
     )
     assert len(diagnostics) == 1
     assert [type(d) for d in diagnostics] == [MissingChild]
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+========================
+This is the main heading
+========================
+
+
+.. collapsible::
+   :heading: This is a heading
+   :sub_heading: This is a subheading
+
+   There is a heading inside
+   -------------------------
+
+   And more content within
+""",
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+   <section>
+      <heading id="this-is-the-main-heading"><text>This is the main heading</text></heading>
+        <directive domain="mongodb" name="collapsible" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
+            <section>
+                <section>
+                    <heading id="there-is-a-heading-inside"><text>There is a heading inside</text></heading>
+                    <paragraph><text>And more content within</text></paragraph>
+                </section>
+            </section>
+        </directive>
+   </section>
+</root>""",
+    )
 
 
 def test_wayfinding_sorted() -> None:
@@ -3943,6 +3985,9 @@ def test_wayfinding_sorted() -> None:
 
    .. wayfinding-option:: https://www.mongodb.com/docs/
       :id: typescript
+
+   .. wayfinding-option:: https://www.mongodb.com/docs/
+      :id: ruby 
 
       
    .. wayfinding-description::
@@ -4031,6 +4076,11 @@ def test_wayfinding_sorted() -> None:
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
+        <directive domain="mongodb" name="wayfinding-option" id="ruby" title="Ruby" language="ruby">
+			<reference refuri="https://www.mongodb.com/docs/">
+				<text>https://www.mongodb.com/docs/</text>
+			</reference>
+		</directive>
 		<directive domain="mongodb" name="wayfinding-option" id="rust" title="Rust" language="rust">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
@@ -4108,9 +4158,9 @@ def test_wayfinding_errors() -> None:
         # Note
         InvalidChild,
         # bad-id
-        UnknownWayfindingOption,
+        UnknownOptionId,
         # Duplicate "c" id
-        DuplicateWayfindingOption,
+        DuplicateOptionId,
     ]
 
     # Test missing children
@@ -4124,3 +4174,284 @@ def test_wayfinding_errors() -> None:
     )
     page.finish(diagnostics)
     assert [type(d) for d in diagnostics] == [MissingChild, MissingChild]
+
+
+def test_method_selector() -> None:
+    path = FileId("test.txt")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Valid case
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. method-selector::
+   
+   .. method-option::
+      :id: driver
+
+      .. method-description::
+         
+         This is an optional description for drivers. Go to the `docs homepage <https://mongodb.com/docs/>`__ for more info.
+
+      This only shows when driver is selected.
+
+   .. method-option::
+      :id: cli
+
+      This only shows when cli is selected.
+
+   .. method-option::
+      :id: api
+
+      This only shows when cli is selected.
+
+   .. method-option::
+      :id: mongosh
+
+      This only shows when cli is selected.
+
+   .. method-option::
+      :id: compass
+
+      .. method-description::
+         
+         This is an optional description for compass. Compass is a tool to interact with MongoDB data.
+
+      This only shows when compass is selected.
+
+   .. method-option::
+      :id: ui
+
+      This only shows when ui is selected.
+    """,
+    )
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.txt">
+    <section>
+        <heading id="test-page">
+            <text>Test Page</text>
+        </heading>
+        <directive domain="mongodb" name="method-selector">
+            <directive domain="mongodb" name="method-option" id="driver" title="Driver">
+                <directive domain="mongodb" name="method-description">
+                    <paragraph>
+                        <text>This is an optional description for drivers. Go to the </text>
+                        <reference refuri="https://mongodb.com/docs/">
+                            <text>docs homepage</text>
+                        </reference>
+                        <text> for more info.</text>
+                    </paragraph>
+                </directive>
+                <paragraph>
+                    <text>This only shows when driver is selected.</text>
+                </paragraph>
+            </directive>
+            <directive domain="mongodb" name="method-option" id="cli" title="CLI">
+                <paragraph>
+                    <text>This only shows when cli is selected.</text>
+                </paragraph>
+            </directive>
+            <directive domain="mongodb" name="method-option" id="api" title="API">
+                <paragraph>
+                    <text>This only shows when cli is selected.</text>
+                </paragraph>
+            </directive>
+            <directive domain="mongodb" name="method-option" id="mongosh" title="Mongosh">
+                <paragraph>
+                    <text>This only shows when cli is selected.</text>
+                </paragraph>
+            </directive>
+            <directive domain="mongodb" name="method-option" id="compass" title="Compass">
+                <directive domain="mongodb" name="method-description">
+                    <paragraph>
+                        <text>This is an optional description for compass. Compass is a tool to interact with MongoDB data.</text>
+                    </paragraph>
+                </directive>
+                <paragraph>
+                    <text>This only shows when compass is selected.</text>
+                </paragraph>
+            </directive>
+            <directive domain="mongodb" name="method-option" id="ui" title="UI">
+                <paragraph>
+                    <text>This only shows when ui is selected.</text>
+                </paragraph>
+            </directive>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    # Errors case
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. method-selector::
+
+   .. method-option::
+
+      Missing option id.
+
+   .. method-description::
+      
+      This does not belong here.
+
+   .. method-option::
+      :id: cli
+
+      This only shows when cli is selected.
+
+   .. method-option::
+      :id: not-valid
+
+      This only shows when cli is selected.
+
+   .. method-option::
+      :id: mongosh
+
+      This only shows when cli is selected.
+    
+   .. method-option::
+      :id: driver
+
+      .. method-description::
+         
+         This is an optional description for drivers. Go to the `docs homepage <https://mongodb.com/docs/>`__ for more info.
+
+      This only shows when driver is selected.
+
+   .. method-option::
+      :id: compass
+
+      .. method-description::
+         
+         This is an optional description for compass. Compass is a tool to interact with MongoDB data.
+
+      This only shows when compass is selected.
+
+   .. method-option::
+      :id: ui
+
+      This only shows when ui is selected.
+
+   .. method-option::
+      :id: cli
+
+      This only shows when cli is selected.
+    """,
+    )
+    page.finish(diagnostics)
+    assert [type(d) for d in diagnostics] == [
+        # Missing option id
+        DocUtilsParseError,
+        # Extra method-description in method-selector
+        InvalidChild,
+        # not-valid option id
+        UnknownOptionId,
+        # driver option is not first
+        UnexpectedDirectiveOrder,
+        # Duplicate "cli" id
+        DuplicateOptionId,
+    ]
+
+
+def test_video() -> None:
+    path = FileId("test.txt")
+    project_config = ProjectConfig(ROOT_PATH, "")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Valid cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :title: Mastering Indexing for Perfect Query Matches
+   :description: In this video, we learn about how Atlas Search indexes can be used to optimize queries.
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08T05:00:28-08:00
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 2023-11-08
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :description: This is an educational video.
+    """,
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 2
+    assert isinstance(diagnostics[0], MissingStructuredDataFields)
+    assert "['title', 'description']" in diagnostics[0].message
+    assert isinstance(diagnostics[1], MissingStructuredDataFields)
+    assert "['title', 'thumbnail-url', 'upload-date']" in diagnostics[1].message
+
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.txt">
+    <section>
+        <heading id="test-page"><text>Test Page</text></heading>
+        <directive name="video">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" title="Mastering Indexing for Perfect Query Matches" description="In this video, we learn about how Atlas Search indexes can be used to optimize queries." thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08T05:00:28-08:00">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" thumbnail-url="https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg" upload-date="2023-11-08">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+        <directive name="video" description="This is an educational video.">
+            <reference refuri="https://www.youtube.com/embed/XrJG994YxD8">
+                <text>https://www.youtube.com/embed/XrJG994YxD8</text>
+            </reference>
+        </directive>
+    </section>
+</root>
+""",
+    )
+
+    # Error cases
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+=========
+Test Page
+=========
+
+.. video:: https://www.youtube.com/embed/XrJG994YxD8
+   :thumbnail-url: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg
+   :upload-date: 11-11-2011
+    """,
+    )
+    page.finish(diagnostics)
+    # Diagnostic due to invalid upload-date format
+    assert [type(x) for x in diagnostics] == [DocUtilsParseError]

@@ -52,7 +52,7 @@ from .diagnostics import (
     ConfigurationProblem,
     Diagnostic,
     DocUtilsParseError,
-    DuplicateWayfindingOption,
+    DuplicateOptionId,
     ExpectedOption,
     ExpectedPathArg,
     ExpectedStringArg,
@@ -60,6 +60,7 @@ from .diagnostics import (
     IconMustBeDefined,
     ImageSuggested,
     InvalidChild,
+    InvalidChildCount,
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
@@ -70,13 +71,15 @@ from .diagnostics import (
     MissingAssociatedToc,
     MissingChild,
     MissingFacet,
+    MissingStructuredDataFields,
     RemovedLiteralBlockSyntax,
     TabMustBeDirective,
     TodoInfo,
+    UnexpectedDirectiveOrder,
     UnexpectedIndentation,
+    UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
-    UnknownWayfindingOption,
     UnmarshallingError,
 )
 from .icon_names import ICON_SET, LG_ICON_SET
@@ -104,6 +107,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProjectLoadError(Exception):
+    pass
+
+
+class ChildValidationError(Exception):
     pass
 
 
@@ -560,6 +567,17 @@ class JSONVisitor:
         elif isinstance(popped, n.Directive) and popped.name == "wayfinding":
             self.handle_wayfinding(popped)
 
+        elif isinstance(popped, n.Directive) and popped.name == "method-selector":
+            self.handle_method_selector(popped)
+
+        elif isinstance(popped, n.Directive) and popped.name == "method-option":
+            self.handle_method_option(popped)
+
+        elif isinstance(popped, n.Directive) and popped.name == "collapsible":
+            html5_id = util.make_html5_id(popped.options.get("heading", "")).lower()
+            popped.options["id"] = html5_id
+            popped.children = [n.Section((node.get_line(),), popped.children)]
+
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
             return
@@ -664,53 +682,18 @@ class JSONVisitor:
 
         # Validate children
         for child in node.children:
-            child_line_start = child.start[0]
-
-            invalid_child = None
-            if not isinstance(child, n.Directive):
-                # Catches additional unwanted types like Paragraph
-                invalid_child = child.type
-            elif not child.name in expected_children_names:
-                invalid_child = child.name
-
-            if invalid_child:
-                self.diagnostics.append(
-                    InvalidChild(
-                        invalid_child,
-                        wayfinding_name,
-                        f"{expected_child_opt_name} or {expected_child_desc_name}",
-                        child_line_start,
-                    )
-                )
+            try:
+                self.check_valid_child(node, child, expected_children_names)
+                # check_valid_child verifies that the child is a directive
+                assert isinstance(child, n.Directive)
+                if child.name == expected_child_desc_name:
+                    valid_desc = child
+                    continue
+                self.check_valid_option_id(child, expected_options_dict, used_ids)
+            except ChildValidationError:
                 continue
 
-            # Type is ambiguous now despite if statements above
-            assert isinstance(child, n.Directive)
-            if child.name == expected_child_desc_name:
-                valid_desc = child
-                continue
-
-            option_id = child.options.get("id")
-
-            if not (child.argument and option_id):
-                # Don't append diagnostic since docutils should already
-                # complain about missing argument and ID option
-                continue
-
-            if not option_id in expected_options_dict:
-                available_ids = list(expected_options_dict.keys())
-                available_ids.sort()
-                self.diagnostics.append(
-                    UnknownWayfindingOption(option_id, available_ids, child_line_start)
-                )
-                continue
-
-            if option_id in used_ids:
-                self.diagnostics.append(
-                    DuplicateWayfindingOption(option_id, child_line_start)
-                )
-                continue
-
+            option_id = child.options.get("id", "")
             option_details = expected_options_dict[option_id]
             child.options["title"] = option_details.title
             child.options["language"] = option_details.language
@@ -742,6 +725,133 @@ class JSONVisitor:
             valid_children.insert(0, valid_desc)
 
         node.children = cast(List[n.Node], valid_children)
+
+    def check_valid_child(
+        self,
+        parent: n.Directive,
+        child: n.Node,
+        expected_children_names: Set[str],
+    ) -> None:
+        """
+        Ensures that a child node matches a name that a parent directive expects. Valid
+        children are expected to be directives.
+        """
+
+        invalid_child = None
+        if not isinstance(child, n.Directive):
+            # Catches additional unwanted types like Paragraph
+            invalid_child = child.type
+        elif not child.name in expected_children_names:
+            invalid_child = child.name
+
+        if invalid_child:
+            expected_children_str = (
+                next(iter(expected_children_names))
+                if len(expected_children_names) == 1
+                else str(expected_children_names)
+            )
+            self.diagnostics.append(
+                InvalidChild(
+                    invalid_child,
+                    parent.name,
+                    expected_children_str,
+                    child.start[0],
+                )
+            )
+            raise ChildValidationError()
+
+    def check_valid_option_id(
+        self,
+        child: n.Directive,
+        expected_options: Dict[str, Any],
+        used_ids: Set[str],
+    ) -> None:
+        """Ensures that a child directive has a unique option "id" that is correctly defined."""
+
+        option_id = child.options.get("id")
+        if not option_id:
+            # Don't append diagnostic since docutils should already
+            # complain about missing ID option
+            raise ChildValidationError()
+
+        if not option_id in expected_options:
+            available_ids = list(expected_options.keys())
+            available_ids.sort()
+            self.diagnostics.append(
+                UnknownOptionId(child.name, option_id, available_ids, child.start[0])
+            )
+            raise ChildValidationError()
+
+        if option_id in used_ids:
+            self.diagnostics.append(
+                DuplicateOptionId(child.name, option_id, child.start[0])
+            )
+            raise ChildValidationError()
+
+    def handle_method_selector(self, node: n.Directive) -> None:
+        expected_options = specparser.Spec.get().method_selector["options"]
+        expected_options_dict = {option.id: option for option in expected_options}
+        expected_child_name = "method-option"
+
+        valid_children: List[n.Directive] = []
+        used_ids: Set[str] = set()
+
+        # Validate children
+        for child in node.children:
+            try:
+                self.check_valid_child(node, child, {expected_child_name})
+                # check_valid_child verifies that the child is a directive
+                assert isinstance(child, n.Directive)
+                self.check_valid_option_id(child, expected_options_dict, used_ids)
+            except ChildValidationError:
+                continue
+
+            # The Drivers option should be encouraged to be first
+            option_id = child.options.get("id", "")
+            if option_id == "driver" and valid_children:
+                self.diagnostics.append(
+                    UnexpectedDirectiveOrder(
+                        f'{child.name} with id "{option_id}" should be the first child of {node.name}',
+                        child.start[0],
+                    )
+                )
+
+            option_details = expected_options_dict[option_id]
+            child.options["title"] = option_details.title
+            valid_children.append(child)
+            used_ids.add(option_id)
+
+        if len(valid_children) < 2 or len(valid_children) > 6:
+            self.diagnostics.append(
+                InvalidChildCount(
+                    node.name, expected_child_name, "2-6 options", node.start[0]
+                )
+            )
+
+        node.children = cast(List[n.Node], valid_children)
+
+    def handle_method_option(self, node: n.Directive) -> None:
+        """Moves method-description as the first child of the option to help enforce order."""
+
+        expected_desc_name = "method-description"
+        target_idx = -1
+
+        for idx, child in enumerate(node.children):
+            if isinstance(child, n.Directive) and child.name == expected_desc_name:
+                target_idx = idx
+
+                if idx != 0:
+                    self.diagnostics.append(
+                        UnexpectedDirectiveOrder(
+                            f"{expected_desc_name} should be the first child of {node.name}",
+                            child.start[0],
+                        )
+                    )
+
+                break
+
+        if target_idx >= 0:
+            node.children.insert(0, node.children.pop(target_idx))
 
     def handle_directive(
         self, node: rstparser.directive, line: int
@@ -1126,6 +1236,29 @@ class JSONVisitor:
             if icon_argument:
                 self.validate_and_add_asset(doc, icon_argument, line)
 
+        elif name == "video":
+            sd_req_option_names = [
+                "title",
+                "thumbnail-url",
+                "upload-date",
+                "description",
+            ]
+            missing_option_names = []
+
+            for option_name in sd_req_option_names:
+                val = options.get(option_name, None)
+                if not val:
+                    missing_option_names.append(option_name)
+
+            # We want to encourage defining all of these options together or not at all for structured data SEO
+            missing_options_len = len(missing_option_names)
+            if missing_options_len > 0 and missing_options_len != len(
+                sd_req_option_names
+            ):
+                self.diagnostics.append(
+                    MissingStructuredDataFields(name, missing_option_names, line)
+                )
+
         elif name in {"pubdate", "updated-date"}:
             if "date" in node:
                 doc.options["date"] = node["date"]
@@ -1160,7 +1293,7 @@ class JSONVisitor:
         elif key == "mongodb:collapsible":
             if not node.children:
                 self.diagnostics.append(
-                    MissingChild("mongodb:card", "content block", line)
+                    MissingChild("mongodb:collapsible", "content block", line)
                 )
 
         elif name == "facet":

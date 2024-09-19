@@ -816,6 +816,28 @@ help = "An option for wayfinding."
 argument_type = {type = "uri", required = true}
 options.id = {type = "string", required = true}
 
+[directive."mongodb:method-selector"]
+help = "Top-level selector for methods a user may choose from for content. Only a single one should be used on a page."
+content_type = "block"
+
+[directive."mongodb:method-option"]
+help = "An option to be used for the method-selector directive."
+content_type = "block"
+options.id = {type = "string", required = true}
+
+[directive."mongodb:method-description"]
+help = "An optional description to be used for a method option."
+content_type = "block"
+
+[directive."mongodb:multi-page-tutorial"]
+help = "Configure settings for a multi-page tutorial page, if it is one."
+options.time-required = {type = "nonnegative_integer", required = true}
+options.show-next-top = "flag"
+example = """.. multi-page-tutorial::
+   :time-required: 5
+   :show-next-top:
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -873,7 +895,16 @@ options.type = "string"
 [directive.video]
 help = "Embed a video in your article"
 argument_type = "uri"
-example = """.. video:: ${1: full video url}"""
+options.title = "string"
+options.thumbnail-url = "uri"
+options.upload-date = "iso_8601"
+options.description = "string"
+example = """.. video:: ${1: https://www.youtube.com/embed/XrJG994YxD8}
+   :title: {$2: Mastering Indexing for Perfect Query Matches}
+   :thumbnail-url: ${3: https://i.ytimg.com/vi/XrJG994YxD8/maxresdefault.jpg}
+   :upload-date: ${4: 2023-11-08T05:00:28-08:00}
+   :description: {$5: Learn how to make Atlas Search indexes to improve search speed and quality.}
+"""
 
 [directive.youtube]
 help = "Embed a video from YouTube in your article"
@@ -1790,6 +1821,16 @@ prefix = "autoencryptkeyword"
 [rstobject."mongodb:c2cstate"]
 help = """mongosync State"""
 
+[method_selector]
+options = [
+  {id = "driver", title = "Driver"},
+  {id = "cli", title = "CLI"},
+  {id = "api", title = "API"},
+  {id = "mongosh", title = "Mongosh"},
+  {id = "ui", title = "UI"},
+  {id = "compass", title = "Compass"},
+]
+
 [tabs]
 cloud-providers = [
   {id = "aws", title = "AWS"},
@@ -1939,6 +1980,7 @@ options = [
    {id = "pymongo", language = "python" , title = "PyMongo"},
    {id = "python", language = "python" , title = "Python", show_first = true},
    {id = "mongoid", language = "ruby" , title = "Mongoid"},
+   {id = "ruby", language = "ruby", title = "Ruby"},
    {id = "rust", language = "rust" , title = "Rust"},
    {id = "scala", language = "scala" , title = "Scala"},
    {id = "swift", language = "swift" , title = "Swift"},
