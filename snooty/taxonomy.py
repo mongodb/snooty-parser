@@ -16,9 +16,7 @@ class FacetDefinition:
 
 @checked
 @dataclass
-class TargetProductDefinition:
-    name: str
-    display_name: Optional[str]
+class TargetProductDefinition(FacetDefinition):
     sub_product: Optional[List[FacetDefinition]]
     version: Optional[List[FacetDefinition]]
 

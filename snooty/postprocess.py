@@ -1784,11 +1784,24 @@ class FacetsHandler(Handler):
 
         facet_values = node.options["values"]
         parent = None
+        parent_facets = []
         if self.parent_stack:
             parent = self.parent_stack[-1][0]
+            parent_facets = list(map(lambda tuple: tuple[0], self.parent_stack))
 
         for facet_value in facet_values.split(","):
-            facet_node = Facet(category=node.options["name"], value=facet_value.strip())
+            unparsed_facet = {
+                "value": facet_value.strip(),
+                "category": node.options["name"],
+            }
+            facet_display_name = ProjectConfig.get_facet_display_name(
+                parent_facets, unparsed_facet
+            )
+            facet_node = Facet(
+                category=unparsed_facet["category"],
+                value=unparsed_facet["value"],
+                display_name=facet_display_name,
+            )
 
             if not parent:
                 self.facets.append(facet_node)
