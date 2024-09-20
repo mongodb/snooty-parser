@@ -3126,7 +3126,11 @@ Facets
                     value="atlas",
                     sub_facets=[
                         Facet(category="version", value="v1.2"),
-                        Facet(category="sub_product", value="charts", display_name="Charts"),
+                        Facet(
+                            category="sub_product",
+                            value="charts",
+                            display_name="Charts",
+                        ),
                     ],
                 ),
             ]
@@ -3212,12 +3216,22 @@ value = "test"
                     value="atlas",
                     sub_facets=[
                         Facet(category="version", value="v1.2", display_name="v1.2"),
-                        Facet(category="sub_product", value="charts", display_name="Charts"),
-                        Facet(category="sub_product", value="atlas-cli", display_name="Atlas CLI"),
+                        Facet(
+                            category="sub_product",
+                            value="charts",
+                            display_name="Charts",
+                        ),
+                        Facet(
+                            category="sub_product",
+                            value="atlas-cli",
+                            display_name="Atlas CLI",
+                        ),
                     ],
-                    display_name="Atlas"
+                    display_name="Atlas",
                 ),
-                Facet(category="programming_language", value="shell", display_name="Shell"),
+                Facet(
+                    category="programming_language", value="shell", display_name="Shell"
+                ),
             ]
         )
 
