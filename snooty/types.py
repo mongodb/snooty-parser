@@ -461,6 +461,7 @@ class ProjectConfig:
             )
         except Exception as e:
             logger.warning(f"Display name not found for invalid facet {unparsed_facet}")
+            return ""
 
     @staticmethod
     def _substitute(
