@@ -473,7 +473,7 @@ class Literal(InlineParent):
     type = "literal"
 
     def get_text(self) -> str:
-        return "".join(node.value for node in self.children)
+        return "".join(getattr(node, "value", "") for node in self.children)
 
 
 @dataclass

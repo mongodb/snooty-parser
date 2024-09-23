@@ -3445,6 +3445,51 @@ Alrighty
         assert slug_to_breadcrumb_label_entry["page2"] == "Well, You Learned It"
         assert slug_to_breadcrumb_label_entry["ref/page3"] == "Page Three Title"
 
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+==========
+Index Page
+==========
+
+.. toctree::
+   :titlesonly:
+
+   </page1>
+   </page2>
+""",
+            Path(
+                "source/page1.txt"
+            ): """
+==============
+Configure ``mongosh``
+==============
+
+Text for configuration.
+
+""",
+            Path(
+                "source/page2.txt"
+            ): """
+==============
+Customize the :binary:`~bin.mongosh` Prompt
+==============
+
+A very well-written page.
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 0
+
+        slug_to_breadcrumb_label_entry = cast(
+            Dict[str, str], result.metadata["slugToBreadcrumbLabel"]
+        )
+        assert slug_to_breadcrumb_label_entry["page1"] == "Configure mongosh"
+        assert slug_to_breadcrumb_label_entry["page2"] == "Customize the mongosh Prompt"
+
 
 def test_nested_collapsibles() -> None:
     with make_test(
