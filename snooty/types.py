@@ -459,7 +459,7 @@ class ProjectConfig:
                 taxonomy_ref["display_name"]
                 or str(taxonomy_ref["name"]).replace(r"\_", " ").title()
             )
-        except Exception as e:
+        except Exception:
             logger.warning(f"Display name not found for invalid facet {unparsed_facet}")
             return ""
 
