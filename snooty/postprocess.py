@@ -2210,7 +2210,7 @@ class Postprocessor:
             k: (
                 context[TocTitleHandler].get_title(f"/{k}")
                 if f"/{k}" in context[TocTitleHandler].slug_title_mapping
-                else v[0].get_text()
+                else "".join(node.get_text() for node in v)
             )
             for k, v in context[HeadingHandler].slug_title_mapping.items()
         }
