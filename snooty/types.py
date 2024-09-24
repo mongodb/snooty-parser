@@ -445,19 +445,24 @@ class ProjectConfig:
         parent_facets: List[Facet], unparsed_facet: Dict[str, Any]
     ) -> str:
         try:
+            # for version facets, return the version name as is
             if unparsed_facet["category"] == "version":
                 return str(unparsed_facet["value"])
+
+            # start with base taxonomy and iterate through parent facets list
             taxonomy_ref = asdict(taxonomy.TaxonomySpec.get_taxonomy())
             for parent in parent_facets:
                 options_list = taxonomy_ref[parent.category] or []
                 taxonomy_ref = [x for x in options_list if x["name"] == parent.value][0]
+
+            # find target unparsed_facet within taxonomy facet
             options_list = taxonomy_ref[unparsed_facet["category"]]
             taxonomy_ref = [
                 x for x in options_list if x["name"] == str(unparsed_facet["value"])
             ][0]
             return str(
                 taxonomy_ref["display_name"]
-                or str(taxonomy_ref["name"]).replace(r"\_", " ").title()
+                or re.sub("_|-", " ", str(taxonomy_ref["name"])).title()
             )
         except Exception:
             logger.warning(f"Display name not found for invalid facet {unparsed_facet}")

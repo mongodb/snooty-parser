@@ -3104,7 +3104,7 @@ def test_facets() -> None:
 
    .. facet::
       :name: sub_product
-      :values: charts
+      :values: charts, data-federation
 
 
 ===========================
@@ -3130,6 +3130,11 @@ Facets
                             category="sub_product",
                             value="charts",
                             display_name="Charts",
+                        ),
+                        Facet(
+                            category="sub_product",
+                            value="data-federation",
+                            display_name="Data Federation",
                         ),
                     ],
                 ),
