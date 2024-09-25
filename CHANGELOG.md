@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.1] - 2024-09-25
+
 ### Added
 
 - Add video options for video metadata (DOP-4917, #617)
