@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add video options for video metadata (DOP-4917, #617)
+- Add gold role (DOP-4947, #623)
+
+### Changed
+
+- Contextualize headings in method selector for "On This Page" list (DOP-4967, #620)
+
+### Fixed
+
+- Parse literals in titles (DOP-4959, #622)
+
 ## [v0.18.0] - 2024-09-18
 
 ### Added
