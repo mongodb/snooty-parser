@@ -1034,6 +1034,9 @@ type = "text"
 [role.red]
 type = "text"
 
+[role.gold]
+type = "text"
+
 [role.icon-fa5]
 help = """Show a FontAwesome 5 Solid icon."""
 type = "explicit_title"
