@@ -3104,7 +3104,7 @@ def test_facets() -> None:
 
    .. facet::
       :name: sub_product
-      :values: charts
+      :values: charts, data-federation
 
 
 ===========================
@@ -3126,7 +3126,16 @@ Facets
                     value="atlas",
                     sub_facets=[
                         Facet(category="version", value="v1.2"),
-                        Facet(category="sub_product", value="charts"),
+                        Facet(
+                            category="sub_product",
+                            value="charts",
+                            display_name="Charts",
+                        ),
+                        Facet(
+                            category="sub_product",
+                            value="data-federation",
+                            display_name="Data Federation",
+                        ),
                     ],
                 ),
             ]
@@ -3153,6 +3162,7 @@ def test_toml_facets() -> None:
 .. facet::
    :name: genre
    :values: reference
+
 .. facet::
    :name: target_product
    :values: atlas
@@ -3160,9 +3170,11 @@ def test_toml_facets() -> None:
    .. facet::
       :name: version
       :values: v1.2
+
    .. facet::
       :name: sub_product
       :values: charts,atlas-cli
+
 .. facet::
    :name: genre
    :values: tutorial
@@ -3202,18 +3214,29 @@ value = "test"
         assert facets is not None
         assert sorted(facets) == sorted(
             [
-                Facet(category="genre", value="reference"),
-                Facet(category="genre", value="tutorial"),
+                Facet(category="genre", value="reference", display_name="Reference"),
+                Facet(category="genre", value="tutorial", display_name="Tutorial"),
                 Facet(
                     category="target_product",
                     value="atlas",
                     sub_facets=[
-                        Facet(category="version", value="v1.2"),
-                        Facet(category="sub_product", value="charts"),
-                        Facet(category="sub_product", value="atlas-cli"),
+                        Facet(category="version", value="v1.2", display_name="v1.2"),
+                        Facet(
+                            category="sub_product",
+                            value="charts",
+                            display_name="Charts",
+                        ),
+                        Facet(
+                            category="sub_product",
+                            value="atlas-cli",
+                            display_name="Atlas CLI",
+                        ),
                     ],
+                    display_name="Atlas",
                 ),
-                Facet(category="programming_language", value="shell"),
+                Facet(
+                    category="programming_language", value="shell", display_name="Shell"
+                ),
             ]
         )
 

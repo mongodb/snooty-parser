@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os.path
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePath
 from typing import (
     Any,
@@ -132,6 +132,7 @@ class ParsedBannerConfig:
 class Facet:
     category: str
     value: str
+    display_name: Optional[str] = ""
     sub_facets: Optional[List["Facet"]] = None
 
     def __lt__(self, other: "Facet") -> bool:
@@ -151,6 +152,7 @@ class Facet:
             "category": self.category,
             "value": self.value,
             "sub_facets": None,
+            "display_name": self.display_name,
         }
         if self.sub_facets:
             result["sub_facets"] = [
@@ -346,6 +348,7 @@ class ProjectConfig:
                     category=facet.category,
                     value=facet.value,
                     sub_facets=validated_sub_facets,
+                    display_name=facet.display_name,
                 )
 
                 validated_facets.append(validated_facet)
@@ -362,12 +365,22 @@ class ProjectConfig:
         return validated_facets, diagnostics
 
     @staticmethod
-    def parse_facet(unparsed_facet: Dict[str, Any]) -> Facet:
+    def parse_facet(
+        unparsed_facet: Dict[str, Any], parent_facets: List[Facet]
+    ) -> Facet:
         try:
-            facet = Facet(**unparsed_facet)
+            display_name = ProjectConfig.get_facet_display_name(
+                parent_facets, unparsed_facet
+            )
+            facet = Facet(
+                **unparsed_facet,
+                display_name=display_name,
+            )
             if facet.sub_facets:
+                new_parent_facets = parent_facets + [facet]
                 facet.sub_facets = [
-                    ProjectConfig.parse_facet(f) for f in unparsed_facet["sub_facets"]
+                    ProjectConfig.parse_facet(f, new_parent_facets)
+                    for f in unparsed_facet["sub_facets"]
                 ]
         except Exception as e:
             logger.error(e)
@@ -384,7 +397,7 @@ class ProjectConfig:
         try:
             with path.open("rb") as f:
                 data = tomli.load(f)["facets"]
-                facets = [ProjectConfig.parse_facet(facet) for facet in data]
+                facets = [ProjectConfig.parse_facet(facet, []) for facet in data]
                 (
                     validated_facets_result,
                     validation_diagnostics,
@@ -426,6 +439,34 @@ class ProjectConfig:
                 merged_facets.append(facet)
 
         return merged_facets
+
+    @staticmethod
+    def get_facet_display_name(
+        parent_facets: List[Facet], unparsed_facet: Dict[str, Any]
+    ) -> str:
+        try:
+            # for version facets, return the version name as is
+            if unparsed_facet["category"] == "version":
+                return str(unparsed_facet["value"])
+
+            # start with base taxonomy and iterate through parent facets list
+            taxonomy_ref = asdict(taxonomy.TaxonomySpec.get_taxonomy())
+            for parent in parent_facets:
+                options_list = taxonomy_ref[parent.category] or []
+                taxonomy_ref = [x for x in options_list if x["name"] == parent.value][0]
+
+            # find target unparsed_facet within taxonomy facet
+            options_list = taxonomy_ref[unparsed_facet["category"]]
+            taxonomy_ref = [
+                x for x in options_list if x["name"] == str(unparsed_facet["value"])
+            ][0]
+            return str(
+                taxonomy_ref["display_name"]
+                or re.sub("_|-", " ", str(taxonomy_ref["name"])).title()
+            )
+        except Exception:
+            logger.warning(f"Display name not found for invalid facet {unparsed_facet}")
+            return ""
 
     @staticmethod
     def _substitute(
