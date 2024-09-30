@@ -470,7 +470,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_id: Optional[str]
+        selector_ids: List[object]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -496,7 +496,7 @@ class ContentsHandler(Handler):
                     "depth": h.depth,
                     "id": h.id,
                     "title": [node.serialize() for node in h.title],
-                    "selector_id": h.selector_id,
+                    "selector_ids": h.selector_ids,
                 }
                 for h in self.headings
                 if h.depth - 1 <= self.contents_depth
@@ -509,8 +509,13 @@ class ContentsHandler(Handler):
             self.current_depth += 1
             return
 
-        if isinstance(node, n.Directive) and node.name == "method-option":
-            self.scanned_pattern.append(node.options["id"])
+        # add tab selectors here as well
+
+        if isinstance(node, n.Directive):
+            if node.name == "method-option":
+                self.scanned_pattern.append((node.name, node.options["id"]))
+            elif node.name == "tab":
+                self.scanned_pattern.append((node.name, node.options["tabid"]))
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -526,16 +531,16 @@ class ContentsHandler(Handler):
         if self.current_depth - 1 > self.contents_depth:
             return
 
-        selector_id = None
+        selector_ids = []
         if len(self.scanned_pattern) > 0:
             for item in self.scanned_pattern:
-                selector_id = item
+                selector_ids.append({item[0]: item[1]})
 
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
                 ContentsHandler.HeadingData(
-                    self.current_depth, node.id, node.children, selector_id
+                    self.current_depth, node.id, node.children, selector_ids
                 )
             )
 
@@ -546,12 +551,12 @@ class ContentsHandler(Handler):
                     self.current_depth + 1,
                     node.options["id"],
                     [n.Text(node.span, node.options["heading"])],
-                    selector_id,
+                    selector_ids,
                 )
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Directive) and node.name == "method-option":
+        if isinstance(node, n.Directive) and (node.name == "method-option" or node.name == "tab"):
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):
             self.current_depth -= 1
