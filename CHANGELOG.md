@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.2] - 2024-10-02
+
 ### Added
 
 - Add display names to facets (DOP-4915, #621)
