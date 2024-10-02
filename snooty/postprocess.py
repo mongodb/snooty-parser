@@ -470,7 +470,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_ids: List[object]
+        selector_ids: object
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -479,6 +479,17 @@ class ContentsHandler(Handler):
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
         self.scanned_pattern: List[str] = []
+
+    def scan_pattern(self, arr) -> object:
+        if arr is []: 
+            return {}
+        if len(arr) == 1:
+            return {arr[0][0]: arr[0][1]}
+        scanned_pattern = {
+            arr[0][0]: arr[0][1],
+            "children": self.scan_pattern(arr[1:])
+        }
+        return scanned_pattern
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
@@ -531,11 +542,10 @@ class ContentsHandler(Handler):
         if self.current_depth - 1 > self.contents_depth:
             return
 
-        selector_ids = []
+        selector_ids = {}
         if len(self.scanned_pattern) > 0:
-            for item in self.scanned_pattern:
-                selector_ids.append({item[0]: item[1]})
-
+            selector_ids = self.scan_pattern(self.scanned_pattern)
+                
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
