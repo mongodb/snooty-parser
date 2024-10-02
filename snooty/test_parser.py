@@ -4021,7 +4021,7 @@ def test_wayfinding_sorted() -> None:
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="python" title="Python" language="python">
+		<directive domain="mongodb" name="wayfinding-option" id="pymongo" title="PyMongo" language="python">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
@@ -4066,7 +4066,7 @@ def test_wayfinding_sorted() -> None:
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
 		</directive>
-		<directive domain="mongodb" name="wayfinding-option" id="pymongo" title="PyMongo" language="python">
+		<directive domain="mongodb" name="wayfinding-option" id="python" title="Python" language="python">
 			<reference refuri="https://www.mongodb.com/docs/">
 				<text>https://www.mongodb.com/docs/</text>
 			</reference>
