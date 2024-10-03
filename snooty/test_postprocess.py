@@ -2347,7 +2347,7 @@ A Heading
         check_ast_testing_string(
             page.ast,
             """
-<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}], 'selector_id': None}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}], 'selector_id': None}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}], 'selector_id': None}]">
+<root fileid="page.txt" headings="[{'depth': 2, 'id': 'first-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 9}}, 'value': 'First Heading'}], 'selector_ids': {}}, {'depth': 3, 'id': 'second-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 12}}, 'value': 'Second Heading'}], 'selector_ids': {}}, {'depth': 2, 'id': 'third-heading', 'title': [{'type': 'text', 'position': {'start': {'line': 18}}, 'value': 'Third Heading'}], 'selector_ids': {}}]">
 <section>
 <heading id="title"><text>Title</text></heading>
 <directive name="contents" depth="2" />
@@ -3557,7 +3557,7 @@ Subsubsection heading
                         "value": "Subsection heading",
                     }
                 ],
-                "selector_id": None,
+                "selector_ids": {},
             },
             {
                 "depth": 3,
@@ -3569,7 +3569,7 @@ Subsubsection heading
                         "value": "Subsubsection heading",
                     }
                 ],
-                "selector_id": None,
+                "selector_ids": {},
             },
         ]
 
@@ -3621,7 +3621,7 @@ Subsubsection heading
                         "value": "Subsection heading",
                     }
                 ],
-                "selector_id": None,
+                "selector_ids": {},
             }
         ]
 
@@ -3659,7 +3659,7 @@ Heading of the page
                         "value": "Collapsible heading",
                     }
                 ],
-                "selector_id": None,
+                "selector_ids": {},
             }
         ]
 
@@ -4070,12 +4070,12 @@ Subsection heading
                         "value": "Subsection heading",
                     }
                 ],
-                "selector_id": None,
+                "selector_ids": {},
             },
             {
                 "depth": 3,
                 "id": "what",
-                "selector_id": "driver",
+                "selector_ids": {"method-option": "driver"},
                 "title": [
                     {
                         "position": {"start": {"line": 17}},
@@ -4087,7 +4087,7 @@ Subsection heading
             {
                 "depth": 3,
                 "id": "this-is-a-heading",
-                "selector_id": "cli",
+                "selector_ids": {"method-option": "cli"},
                 "title": [
                     {
                         "position": {"start": {"line": 29}},
@@ -4095,6 +4095,68 @@ Subsection heading
                         "value": "This is a heading",
                     }
                 ],
+            },
+        ]
+
+def test_tab_headings() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents:: On this page
+   :depth: 3
+
+Title here
+==========
+
+.. tabs::
+         
+    .. tab:: tabs1
+        :tabid: tabs1
+
+        Heading here
+        ------------
+        This is content in tab1.
+
+        .. tabs::
+
+            .. tab:: tabby
+                :tabid: tabby
+
+                This is another headinge!
+                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                Text ext text
+      
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("headings")) == [
+            {
+                "depth": 2,
+                "id": "heading-here",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 13}},
+                        "value": "Heading here",
+                    }
+                ],
+                "selector_ids": {"tab": "tabs1"},
+            },
+            {
+                "depth": 3,
+                "id": "this-is-another-headinge-",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 22}},
+                        "value": "This is another headinge!",
+                    }
+                ],
+                "selector_ids": {"tab": "tabs1", "children": {"tab": "tabby"}},
             },
         ]
 

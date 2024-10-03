@@ -470,7 +470,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_ids: object
+        selector_ids: Dict[Any, Any]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -478,17 +478,14 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.scanned_pattern: List[str] = []
+        self.scanned_pattern: List[Tuple[str, str]] = []
 
-    def scan_pattern(self, arr) -> object:
-        if arr is []: 
+    def scan_pattern(self, arr: List[Tuple[str, str]]) -> Dict[Any, Any]:
+        if arr is []:
             return {}
         if len(arr) == 1:
             return {arr[0][0]: arr[0][1]}
-        scanned_pattern = {
-            arr[0][0]: arr[0][1],
-            "children": self.scan_pattern(arr[1:])
-        }
+        scanned_pattern = {arr[0][0]: arr[0][1], "children": self.scan_pattern(arr[1:])}
         return scanned_pattern
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -545,7 +542,7 @@ class ContentsHandler(Handler):
         selector_ids = {}
         if len(self.scanned_pattern) > 0:
             selector_ids = self.scan_pattern(self.scanned_pattern)
-                
+
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
@@ -566,7 +563,9 @@ class ContentsHandler(Handler):
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Directive) and (node.name == "method-option" or node.name == "tab"):
+        if isinstance(node, n.Directive) and (
+            node.name == "method-option" or node.name == "tab"
+        ):
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):
             self.current_depth -= 1
