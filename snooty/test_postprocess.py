@@ -4098,6 +4098,7 @@ Subsection heading
             },
         ]
 
+
 def test_tab_headings() -> None:
     with make_test(
         {
