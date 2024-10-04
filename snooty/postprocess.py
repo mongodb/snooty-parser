@@ -517,8 +517,6 @@ class ContentsHandler(Handler):
             self.current_depth += 1
             return
 
-        # add tab selectors here as well
-
         if isinstance(node, n.Directive):
             if node.name == "method-option":
                 self.scanned_pattern.append((node.name, node.options["id"]))
