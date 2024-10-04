@@ -463,6 +463,9 @@ class NamedReferenceHandlerPass2(Handler):
         node.refuri = refuri
 
 
+SelectorId = Union[str, Dict[str, "SelectorId"]]
+
+
 class ContentsHandler(Handler):
     """Identify all headings on a given page. If a contents directive appears on the page, save list of headings as a page-level option."""
 
@@ -470,7 +473,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_ids: Dict[Any, Any]
+        selector_ids: Dict[str, SelectorId]
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
