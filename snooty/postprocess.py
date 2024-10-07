@@ -463,7 +463,7 @@ class NamedReferenceHandlerPass2(Handler):
         node.refuri = refuri
 
 
-SelectorId = Union[str, Dict[str, "SelectorId"]]
+SelectorId = Dict[str, Union[str, "SelectorId"]]
 
 
 class ContentsHandler(Handler):
@@ -473,7 +473,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_ids: Dict[str, SelectorId]
+        selector_ids: SelectorId
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -483,12 +483,15 @@ class ContentsHandler(Handler):
         self.headings: List[ContentsHandler.HeadingData] = []
         self.scanned_pattern: List[Tuple[str, str]] = []
 
-    def scan_pattern(self, arr: List[Tuple[str, str]]) -> Dict[Any, Any]:
-        if arr is []:
+    def scan_pattern(self, arr: List[Tuple[str, str]]) -> SelectorId:
+        if not arr:
             return {}
         if len(arr) == 1:
             return {arr[0][0]: arr[0][1]}
-        scanned_pattern = {arr[0][0]: arr[0][1], "children": self.scan_pattern(arr[1:])}
+        scanned_pattern: SelectorId = {
+            arr[0][0]: arr[0][1],
+            "children": self.scan_pattern(arr[1:]),
+        }
         return scanned_pattern
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
