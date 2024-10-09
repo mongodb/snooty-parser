@@ -789,10 +789,12 @@ example = """.. facet::
 help = """Card in a card-group. Each card links to the specified URI, and can include an icon, as well as a call-to-action string"""
 options.heading = {type = "string", required = true}
 options.sub_heading = "string"
+options.expanded = "flag"
 content_type = "block"
 example = """.. collapsible::
    :heading: ${1:Procdure}
    :sub_heading: ${2:Description of what is inside the collapsible section}
+   :expanded:
 
    ${3:collapsible content block.}
 """
