@@ -3921,6 +3921,39 @@ This is the main heading
     )
 
 
+def test_collapsible_options() -> None:
+    """Test collapsible directive"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. collapsible::
+   :heading: This is a heading
+   :expanded:
+
+   This is default-expanded collapsible content
+""",
+    )
+
+    page.finish(diagnostics)
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+    <directive domain="mongodb" name="collapsible" heading="This is a heading" id="this-is-a-heading" expanded="True">
+        <section>
+            <paragraph><text>This is default-expanded collapsible content</text></paragraph>
+        </section>
+    </directive>
+</root>""",
+    )
+
+
 def test_wayfinding_sorted() -> None:
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "")
