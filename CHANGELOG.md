@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.18.3] - 2024-10-09
 
+### Added
+
+- Add expanded option to Collapsibles (DOP-5059, #626)
+
+### Changed
+
+- Prioritize PyMongo in wayfinding component (DOP-5046, #624)
+
 ## [v0.18.2] - 2024-10-02
 
 ### Added
