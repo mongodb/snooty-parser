@@ -463,6 +463,9 @@ class NamedReferenceHandlerPass2(Handler):
         node.refuri = refuri
 
 
+SelectorId = Dict[str, Union[str, "SelectorId"]]
+
+
 class ContentsHandler(Handler):
     """Identify all headings on a given page. If a contents directive appears on the page, save list of headings as a page-level option."""
 
@@ -470,7 +473,7 @@ class ContentsHandler(Handler):
         depth: int
         id: str
         title: Sequence[n.InlineNode]
-        selector_id: Optional[str]
+        selector_ids: SelectorId
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -478,7 +481,18 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.scanned_pattern: List[str] = []
+        self.scanned_pattern: List[Tuple[str, str]] = []
+
+    def scan_pattern(self, arr: List[Tuple[str, str]]) -> SelectorId:
+        if not arr:
+            return {}
+        if len(arr) == 1:
+            return {arr[0][0]: arr[0][1]}
+        scanned_pattern: SelectorId = {
+            arr[0][0]: arr[0][1],
+            "children": self.scan_pattern(arr[1:]),
+        }
+        return scanned_pattern
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.contents_depth = sys.maxsize
@@ -496,7 +510,7 @@ class ContentsHandler(Handler):
                     "depth": h.depth,
                     "id": h.id,
                     "title": [node.serialize() for node in h.title],
-                    "selector_id": h.selector_id,
+                    "selector_ids": h.selector_ids,
                 }
                 for h in self.headings
                 if h.depth - 1 <= self.contents_depth
@@ -509,8 +523,11 @@ class ContentsHandler(Handler):
             self.current_depth += 1
             return
 
-        if isinstance(node, n.Directive) and node.name == "method-option":
-            self.scanned_pattern.append(node.options["id"])
+        if isinstance(node, n.Directive):
+            if node.name == "method-option":
+                self.scanned_pattern.append((node.name, node.options["id"]))
+            elif node.name == "tab":
+                self.scanned_pattern.append((node.name, node.options["tabid"]))
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -526,16 +543,15 @@ class ContentsHandler(Handler):
         if self.current_depth - 1 > self.contents_depth:
             return
 
-        selector_id = None
+        selector_ids = {}
         if len(self.scanned_pattern) > 0:
-            for item in self.scanned_pattern:
-                selector_id = item
+            selector_ids = self.scan_pattern(self.scanned_pattern)
 
         # Omit title headings (depth = 1) from heading list
         if isinstance(node, n.Heading) and self.current_depth > 1:
             self.headings.append(
                 ContentsHandler.HeadingData(
-                    self.current_depth, node.id, node.children, selector_id
+                    self.current_depth, node.id, node.children, selector_ids
                 )
             )
 
@@ -546,12 +562,14 @@ class ContentsHandler(Handler):
                     self.current_depth + 1,
                     node.options["id"],
                     [n.Text(node.span, node.options["heading"])],
-                    selector_id,
+                    selector_ids,
                 )
             )
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Directive) and node.name == "method-option":
+        if isinstance(node, n.Directive) and (
+            node.name == "method-option" or node.name == "tab"
+        ):
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):
             self.current_depth -= 1
