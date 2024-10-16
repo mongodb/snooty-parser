@@ -1640,6 +1640,28 @@ class AddTitlesToLabelTargetsHandler(Handler):
             self.pending_targets = []
 
 
+class FootnoteHandler(Handler):
+    """
+    Handles normalizing footnotes and their references to make sure footnotes spread across include files are not repeated
+    across a single page.
+    """
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        # Footnote reference ids from tinydocutils starts at 1
+        self.id_counter = 1
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.id_counter = 1
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.FootnoteReference):
+            return
+
+        node.id = f"id{self.id_counter}"
+        self.id_counter += 1
+
+
 class RefsHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -2139,6 +2161,7 @@ class Postprocessor:
             HeadingHandler,
             TocTitleHandler,
             AddTitlesToLabelTargetsHandler,
+            FootnoteHandler,
             ProgramOptionHandler,
             TabsSelectorHandler,
             ContentsHandler,
