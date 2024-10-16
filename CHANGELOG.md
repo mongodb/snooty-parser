@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.4] - 2024-10-16
+
+### Changed
+
+- "On this page" subnav incorrectly displays headings for all language tabs (DOP-3424, #625)
+
 ## [v0.18.3] - 2024-10-09
 
 ### Added
