@@ -726,10 +726,12 @@ options.path = "string"
 [directive."mongodb:procedure"]
 help = "Make a set of numbered steps."
 example = """.. procedure::
-   :style: ${0: string}
+   :title: ${0: Name for Procedure's structured data for SEO purposes (Optional)}
+   :style: ${1: string}
 
 ${1: Steps content}"""
 content_type = "block"
+options.title = "string"
 options.style = "procedure_styles"
 
 [directive."mongodb:quiz"]
