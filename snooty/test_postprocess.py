@@ -4349,3 +4349,183 @@ Words!
                 ],
             },
         }
+
+
+def test_footnote_id_numbers() -> None:
+    with make_test(
+        {
+            Path(
+                "source/includes/testing-footnotes-inside-includes.rst"
+            ): """
+This is content within an include for a footnote related to [#footnote-inside-includes]_ .
+""",
+            Path(
+                "source/index.txt"
+            ): """
+=================
+Testing Footnotes
+=================
+
+Two within same content block
+-----------------------------
+
+This is a paragraph with a footnote to [#footnote-same-block]_ . Here is another sentence
+with another reference to the [#footnote-same-block]_ footnote.
+
+.. [#footnote-same-block]
+
+   Footnote within same content block.
+
+Inside of includes
+------------------
+
+.. include:: /includes/testing-footnotes-inside-includes.rst
+
+.. include:: /includes/testing-footnotes-inside-includes.rst
+
+.. include:: /includes/testing-footnotes-inside-includes.rst
+
+.. include:: /includes/testing-footnotes-inside-includes.rst
+
+.. [#footnote-inside-includes]
+
+   Footnotes inside of the same includes files, but different instances.
+
+Numbered footnotes
+------------------
+
+This is a paragraph with a footnote to [1]_ . Here is another sentence
+with another reference to the [1]_ footnote.
+
+This is a paragraph with a footnote to [2]_ . Here is another sentence
+with another reference to the [3]_ footnote.
+
+This is a paragraph with a footnote to [3]_ . Here is another sentence
+with another reference to the [2]_ footnote [1]_.
+
+.. [1] Footnote 1?
+
+.. [2] Footnote 2?
+
+.. [3] 
+   
+   Footnote 3?
+""",
+        }
+    ) as result:
+        test_fileid = FileId("index.txt")
+        page = result.pages[test_fileid]
+        diagnostics = result.diagnostics[test_fileid]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+	<section>
+		<heading id="testing-footnotes"><text>Testing Footnotes</text></heading>
+		<section>
+			<heading id="two-within-same-content-block"><text>Two within same content block</text></heading>
+			<paragraph>
+				<text>This is a paragraph with a footnote to </text>
+				<footnote_reference id="id1" refname="footnote-same-block"></footnote_reference>
+				<text> . Here is another sentence
+with another reference to the </text>
+				<footnote_reference id="id2" refname="footnote-same-block"></footnote_reference>
+				<text> footnote.</text>
+			</paragraph>
+			<footnote id="footnote-same-block" name="footnote-same-block">
+				<paragraph>
+					<text>Footnote within same content block.</text>
+				</paragraph>
+			</footnote>
+		</section>
+		<section>
+			<heading id="inside-of-includes"><text>Inside of includes</text></heading>
+			<directive name="include">
+				<text>/includes/testing-footnotes-inside-includes.rst</text>
+				<root fileid="includes/testing-footnotes-inside-includes.rst">
+					<paragraph>
+						<text>This is content within an include for a footnote related to </text>
+						<footnote_reference id="id3" refname="footnote-inside-includes"></footnote_reference>
+						<text> .</text>
+					</paragraph>
+				</root>
+			</directive>
+			<directive name="include">
+				<text>/includes/testing-footnotes-inside-includes.rst</text>
+				<root fileid="includes/testing-footnotes-inside-includes.rst">
+					<paragraph>
+						<text>This is content within an include for a footnote related to </text>
+						<footnote_reference id="id4" refname="footnote-inside-includes"></footnote_reference>
+						<text> .</text>
+					</paragraph>
+				</root>
+			</directive>
+			<directive name="include">
+				<text>/includes/testing-footnotes-inside-includes.rst</text>
+				<root fileid="includes/testing-footnotes-inside-includes.rst">
+					<paragraph>
+						<text>This is content within an include for a footnote related to </text>
+						<footnote_reference id="id5" refname="footnote-inside-includes"></footnote_reference>
+						<text> .</text>
+					</paragraph>
+				</root>
+			</directive>
+			<directive name="include">
+				<text>/includes/testing-footnotes-inside-includes.rst</text>
+				<root fileid="includes/testing-footnotes-inside-includes.rst">
+					<paragraph>
+						<text>This is content within an include for a footnote related to </text>
+						<footnote_reference id="id6" refname="footnote-inside-includes"></footnote_reference>
+						<text> .</text>
+					</paragraph>
+				</root>
+			</directive>
+			<footnote id="footnote-inside-includes" name="footnote-inside-includes">
+				<paragraph>
+					<text>Footnotes inside of the same includes files, but different instances.</text>
+				</paragraph>
+			</footnote>
+		</section>
+		<section>
+			<heading id="numbered-footnotes"><text>Numbered footnotes</text></heading>
+			<paragraph>
+				<text>This is a paragraph with a footnote to </text>
+				<footnote_reference id="id7" refname="1"><text>1</text></footnote_reference>
+				<text> . Here is another sentence
+with another reference to the </text>
+				<footnote_reference id="id8" refname="1"><text>1</text></footnote_reference>
+				<text> footnote.</text>
+			</paragraph>
+			<paragraph>
+				<text>This is a paragraph with a footnote to </text>
+				<footnote_reference id="id9" refname="2"><text>2</text></footnote_reference>
+				<text> . Here is another sentence
+with another reference to the </text>
+				<footnote_reference id="id10" refname="3"><text>3</text></footnote_reference>
+				<text> footnote.</text>
+			</paragraph>
+			<paragraph>
+				<text>This is a paragraph with a footnote to </text>
+				<footnote_reference id="id11" refname="3">
+					<text>3</text>
+				</footnote_reference>
+				<text> . Here is another sentence
+with another reference to the </text>
+				<footnote_reference id="id12" refname="2">
+					<text>2</text>
+				</footnote_reference>
+				<text> footnote </text>
+				<footnote_reference id="id13" refname="1">
+					<text>1</text>
+				</footnote_reference>
+				<text>.</text>
+			</paragraph>
+			<footnote id="id10" name="1"><paragraph><text>Footnote 1?</text></paragraph></footnote>
+			<footnote id="id11" name="2"><paragraph><text>Footnote 2?</text></paragraph></footnote>
+			<footnote id="id12" name="3"><paragraph><text>Footnote 3?</text></paragraph></footnote>
+		</section>
+	</section>
+</root>
+""",
+        )
