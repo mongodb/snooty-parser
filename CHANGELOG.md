@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.5] - 2024-10-23
+
 ### Added
 
 - The `procedure` directive now accepts a `title` option (#628)
