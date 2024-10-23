@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `procedure` directive now accepts a `title` option (#628)
+
+### Fixed
+
+- Footnote reference IDs are now unique on each page (DOP-5060, #627)
+
 ## [v0.18.4] - 2024-10-16
 
 ### Changed
