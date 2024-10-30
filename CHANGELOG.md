@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Revert "Bump dependencies to support Python 3.13"
+
 ## [v0.18.5] - 2024-10-23
 
 ### Added
