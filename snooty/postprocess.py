@@ -578,6 +578,7 @@ class ContentsHandler(Handler):
 class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
+        self.default_tabs: Dict[str, str] = {}
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.scanned_pattern: List[str] = []
         self.target_pattern = ["tabs", "tabs", "procedure"]
@@ -633,6 +634,9 @@ class TabsSelectorHandler(Handler):
                 if tab.name == "tab" and "tabid" in tab.options
             }
             self.selectors[tabset_name].append(tabs)
+        
+        if tabset_name == "drivers" and node.options.get("default-tab-id"):
+            self.default_tabs[tabset_name] = node.options.get("default-tab-id")
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
@@ -676,6 +680,14 @@ class TabsSelectorHandler(Handler):
                     tabid: [node.serialize() for node in title]
                     for tabid, title in tabsets[0].items()
                 }
+
+                # If default_tabs are present, append to page options
+                if self.default_tabs.get(tabset_name):
+                    if not page.ast.options.get("default_tabs"):
+                        page.ast.options["default_tabs"] = {}
+
+                    assert isinstance(page.ast.options["default_tabs"], Dict)
+                    page.ast.options["default_tabs"][tabset_name] = self.default_tabs[tabset_name]
 
 
 class TargetHandler(Handler):
