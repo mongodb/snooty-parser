@@ -344,6 +344,12 @@ options.glob = "flag"
 [directive.tabs-selector]
 help = """Add dropdown selector used to select the specified tabset."""
 argument_type = "string"
+options.default-tabid = "string"
+example = """.. tabs-selector:: ${1: string}
+   :default-tabid: ${2:id of the default tab (Optional for drivers)}
+
+   ${0:Content block}
+"""
 
 [directive.tabs-pillstrip]
 deprecated = true
@@ -357,7 +363,6 @@ content_type = "block"
 argument_type = "string"
 options.hidden = "boolean"
 options.tabset = "string"
-options.default-tab-id = "string"
 example = """.. tabs:: ${1: string}
    :hidden: ${2|true,false|}
    :tabset: ${3:string}
@@ -373,10 +378,9 @@ inherit = "tabs"
 
 [directive.tabs-drivers]
 inherit = "tabs"
-example = """.. tabs:: ${1: string}
+example = """.. tabs-drivers:: ${1: string}
    :hidden: ${2|true,false|}
    :tabset: ${3:string}
-   :default-tab-id: ${4:id of the default tab (Optional)}
 
    ${0:Content block}
 """

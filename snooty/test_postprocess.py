@@ -4529,3 +4529,39 @@ with another reference to the </text>
 </root>
 """,
         )
+
+
+def test_default_tabs() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. tabs-selector:: drivers
+   :default-tabid: python
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: c
+
+      C
+
+   .. tab::
+      :tabid: nodejs
+
+      Node.js
+
+   .. tab::
+      :tabid: python
+
+      Python
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("default_tabs")) == {"drivers": "python"}
