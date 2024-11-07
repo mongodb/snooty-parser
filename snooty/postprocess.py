@@ -578,7 +578,7 @@ class ContentsHandler(Handler):
 class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.default_tabs: Dict[Optional[str], Optional[str]] = {}
+        self.default_tabs: Dict[str, Optional[str]] = {}
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.scanned_pattern: List[str] = []
         self.target_pattern = ["tabs", "tabs", "procedure"]
