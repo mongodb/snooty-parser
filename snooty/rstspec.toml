@@ -378,12 +378,6 @@ inherit = "tabs"
 
 [directive.tabs-drivers]
 inherit = "tabs"
-example = """.. tabs-drivers:: ${1: string}
-   :hidden: ${2|true,false|}
-   :tabset: ${3:string}
-
-   ${0:Content block}
-"""
 
 [directive.tabs-auth]
 inherit = "tabs"

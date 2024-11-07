@@ -620,7 +620,7 @@ class TabsSelectorHandler(Handler):
                 )
                 return
 
-            if tabset_name == "drivers" and node.options.get("default-tabid"):
+            if tabset_name == "drivers" and "default-tabid" in node.options:
                 self.default_tabs[tabset_name] = node.options.get("default-tabid")
 
             self.selectors[tabset_name] = []
@@ -682,7 +682,7 @@ class TabsSelectorHandler(Handler):
                 }
 
                 # If default_tabs are present, append to page options
-                if self.default_tabs.get(tabset_name):
+                if tabset_name in self.default_tabs:
                     if not page.ast.options.get("default_tabs"):
                         page.ast.options["default_tabs"] = {}
 
