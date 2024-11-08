@@ -63,6 +63,7 @@ from .diagnostics import (
     SubstitutionRefError,
     TargetNotFound,
     UnexpectedDirectiveOrder,
+    UnknownDefaultTabId,
     UnnamedPage,
     UnsupportedFormat,
 )
@@ -683,6 +684,16 @@ class TabsSelectorHandler(Handler):
 
                 # If default_tabs are present, append to page options
                 if tabset_name in self.default_tabs:
+                    default_tab_is_in_selectors = (
+                        self.default_tabs[tabset_name]
+                        in page.ast.options["selectors"][tabset_name].keys()
+                    )
+                    if not default_tab_is_in_selectors:
+                        self.context.diagnostics[fileid_stack.current].append(
+                            UnknownDefaultTabId(self.default_tabs[tabset_name] or "", 0)
+                        )
+                        return
+
                     if not page.ast.options.get("default_tabs"):
                         page.ast.options["default_tabs"] = {}
 

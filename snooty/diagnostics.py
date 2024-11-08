@@ -1042,3 +1042,19 @@ class InvalidChildCount(Diagnostic):
             start,
             end,
         )
+
+
+class UnknownDefaultTabId(Diagnostic):
+    severity = Diagnostic.Level.warning
+
+    def __init__(
+        self,
+        unknown_id: str,
+        start: Union[int, Tuple[int, int]],
+        end: Union[None, int, Tuple[int, int]] = None,
+    ):
+        super().__init__(
+            f"Option :default-tabid: '{unknown_id}' is not present in tabs on page.",
+            start,
+            end,
+        )

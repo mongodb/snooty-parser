@@ -32,6 +32,7 @@ from .diagnostics import (
     TabMustBeDirective,
     TargetNotFound,
     UnexpectedDirectiveOrder,
+    UnknownDefaultTabId,
 )
 from .n import FileId
 from .util_test import (
@@ -4565,3 +4566,40 @@ Heading of the page
     ) as result:
         page = result.pages[FileId("index.txt")]
         assert (page.ast.options.get("default_tabs")) == {"drivers": "python"}
+
+
+def test_default_tabs_not_present() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. tabs-selector:: drivers
+   :default-tabid: no-language
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: c
+
+      C
+
+   .. tab::
+      :tabid: nodejs
+
+      Node.js
+
+   .. tab::
+      :tabid: python
+
+      Python
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert isinstance(diagnostics[0], UnknownDefaultTabId)
