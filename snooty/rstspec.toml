@@ -347,8 +347,6 @@ argument_type = "string"
 options.default-tabid = "string"
 example = """.. tabs-selector:: ${1: string}
    :default-tabid: ${2:id of the default tab (Optional for drivers)}
-
-   ${0:Content block}
 """
 
 [directive.tabs-pillstrip]
