@@ -3921,7 +3921,7 @@ This is the main heading
     )
 
 
-def test_collapsible_options() -> None:
+def test_collapsible_options_true() -> None:
     """Test collapsible directive"""
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -3933,7 +3933,7 @@ def test_collapsible_options() -> None:
         """
 .. collapsible::
    :heading: This is a heading
-   :expanded:
+   :expanded: true
 
    This is default-expanded collapsible content
 """,
