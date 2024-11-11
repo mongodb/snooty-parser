@@ -63,6 +63,7 @@ from .diagnostics import (
     SubstitutionRefError,
     TargetNotFound,
     UnexpectedDirectiveOrder,
+    UnknownDefaultTabId,
     UnnamedPage,
     UnsupportedFormat,
 )
@@ -578,6 +579,7 @@ class ContentsHandler(Handler):
 class TabsSelectorHandler(Handler):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
+        self.default_tabs: Dict[str, str] = {}
         self.selectors: Dict[str, List[Dict[str, MutableSequence[n.Text]]]] = {}
         self.scanned_pattern: List[str] = []
         self.target_pattern = ["tabs", "tabs", "procedure"]
@@ -618,6 +620,9 @@ class TabsSelectorHandler(Handler):
                     DuplicateDirective(node.name, node.start[0])
                 )
                 return
+
+            if tabset_name == "drivers" and "default-tabid" in node.options:
+                self.default_tabs[tabset_name] = node.options.get("default-tabid", "")
 
             self.selectors[tabset_name] = []
             return
@@ -676,6 +681,26 @@ class TabsSelectorHandler(Handler):
                     tabid: [node.serialize() for node in title]
                     for tabid, title in tabsets[0].items()
                 }
+
+                # If default_tabs are present, append to page options
+                if tabset_name in self.default_tabs:
+                    default_tab_is_in_selectors = (
+                        self.default_tabs[tabset_name]
+                        in page.ast.options["selectors"][tabset_name].keys()
+                    )
+                    if not default_tab_is_in_selectors:
+                        self.context.diagnostics[fileid_stack.current].append(
+                            UnknownDefaultTabId(self.default_tabs[tabset_name] or "", 0)
+                        )
+                        return
+
+                    if not page.ast.options.get("default_tabs"):
+                        page.ast.options["default_tabs"] = {}
+
+                    assert isinstance(page.ast.options["default_tabs"], Dict)
+                    page.ast.options["default_tabs"][tabset_name] = self.default_tabs[
+                        tabset_name
+                    ]
 
 
 class TargetHandler(Handler):

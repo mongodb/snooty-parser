@@ -344,6 +344,10 @@ options.glob = "flag"
 [directive.tabs-selector]
 help = """Add dropdown selector used to select the specified tabset."""
 argument_type = "string"
+options.default-tabid = "string"
+example = """.. tabs-selector:: ${1: string}
+   :default-tabid: ${2:id of the default tab (Optional for drivers)}
+"""
 
 [directive.tabs-pillstrip]
 deprecated = true
