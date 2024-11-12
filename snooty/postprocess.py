@@ -2042,7 +2042,6 @@ class MethodSelectorHandler(Handler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.method_selector_name = "method-selector"
         self.method_option_name = "method-option"
         self.method_description_name = "method-description"
         self.within_description = False
@@ -2072,7 +2071,7 @@ class MethodSelectorHandler(Handler):
             return
 
         option_id = node.options.get("id", "")
-        if node.name == self.method_selector_name:
+        if node.name == "method-selector":
             if self.page_has_method_selector:
                 self.context.diagnostics[fileid_stack.current].append(
                     DuplicateDirective(node.name, node.span[0])
