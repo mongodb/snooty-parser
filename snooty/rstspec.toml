@@ -795,14 +795,14 @@ example = """.. facet::
 help = """Card in a card-group. Each card links to the specified URI, and can include an icon, as well as a call-to-action string"""
 options.heading = {type = "string", required = true}
 options.sub_heading = "string"
-options.expanded = "flag"
+options.expanded = "boolean"
 content_type = "block"
 example = """.. collapsible::
-   :heading: ${1:Procdure}
+   :heading: ${1:Procedure}
    :sub_heading: ${2:Description of what is inside the collapsible section}
-   :expanded:
+   :expanded: ${3:Boolean - default true}
 
-   ${3:collapsible content block.}
+   ${0:collapsible content block.}
 """
 
 [directive."mongodb:wayfinding"]
