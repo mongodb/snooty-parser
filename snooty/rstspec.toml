@@ -802,7 +802,7 @@ example = """.. collapsible::
    :sub_heading: ${2:Description of what is inside the collapsible section}
    :expanded: ${3:Boolean - default true}
 
-   ${3:collapsible content block.}
+   ${0:collapsible content block.}
 """
 
 [directive."mongodb:wayfinding"]
