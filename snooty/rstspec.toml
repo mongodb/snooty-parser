@@ -1180,6 +1180,11 @@ help = """Create a reference, embedded within cards, with additional styling, th
 example = """:card-ref:`Android <android-intro>`"""
 inherit = "ref"
 
+[role.link-new-tab]
+help = """Link to a URL but open in a new tab"""
+type = "explicit_title"
+example = """:link-new-tab:`Atlas Playground <https://search-playground.mongodb.com/snapshots/new>`"""
+
 [role."mongodb:required"]
 type = "explicit_title"
 
