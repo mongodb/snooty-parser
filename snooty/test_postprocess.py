@@ -3943,19 +3943,6 @@ Landing page
          Collapsible 2 content.
 """,
             Path(
-                "source/nested_method_selector.txt"
-            ): """
-:orphan:
-
-======================
-Nested Method Selector
-======================
-
-.. note::
-
-   .. include:: /includes/included_method_selector.rst
-""",
-            Path(
                 "source/valid_method_selector.txt"
             ): """
 :orphan:
@@ -4012,19 +3999,12 @@ Testing Tabs Selector
         ]
         assert result.pages[FileId("index.txt")].ast.options.get("has_method_selector")
         assert [
-            type(x)
-            for x in result.diagnostics[FileId("includes/included_method_selector.rst")]
-        ] == [NestedDirective]
-        assert [
             type(x) for x in result.diagnostics[FileId("testing_tabs_selector.txt")]
         ] == [UnexpectedDirectiveOrder]
         assert len(result.diagnostics[FileId("valid_method_selector.txt")]) == 0
 
         target_option_field = "has_method_selector"
         assert result.pages[FileId("index.txt")].ast.options.get(
-            target_option_field, False
-        )
-        assert not result.pages[FileId("nested_method_selector.txt")].ast.options.get(
             target_option_field, False
         )
         assert result.pages[FileId("valid_method_selector.txt")].ast.options.get(

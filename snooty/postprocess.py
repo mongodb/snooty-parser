@@ -2037,23 +2037,25 @@ class WayfindingHandler(NestedDirectiveHandler):
         super().__init__(context, "wayfinding", {"include", "sharedinclude"})
 
 
-class MethodSelectorHandler(NestedDirectiveHandler):
+class MethodSelectorHandler(Handler):
     """Handles page-level validations for method-selector directive and its children."""
 
     def __init__(self, context: Context) -> None:
-        super().__init__(context, "method-selector", {"include", "sharedinclude"})
+        super().__init__(context)
         self.method_option_name = "method-option"
         self.method_description_name = "method-description"
         self.within_description = False
         self.current_method_option: Optional[str] = None
         self.pending_diagnostics: List[Diagnostic] = []
+        self.page_has_method_selector = False
 
     def __add_pending_diagnostics(self, fileid: FileId) -> None:
         self.context.diagnostics[fileid].extend(self.pending_diagnostics)
 
-    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        super().enter_node(fileid_stack, node)
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.page_has_method_selector = False
 
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive):
             return
 
@@ -2069,14 +2071,19 @@ class MethodSelectorHandler(NestedDirectiveHandler):
             return
 
         option_id = node.options.get("id", "")
-        if node.name == self.method_option_name and option_id:
+        if node.name == "method-selector":
+            if self.page_has_method_selector:
+                self.context.diagnostics[fileid_stack.current].append(
+                    DuplicateDirective(node.name, node.span[0])
+                )
+                return
+            self.page_has_method_selector = True
+        elif node.name == self.method_option_name and option_id:
             self.current_method_option = option_id
         elif node.name == self.method_description_name:
             self.within_description = True
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        super().exit_node(fileid_stack, node)
-
         if not (isinstance(node, n.Directive)):
             return
 
@@ -2086,7 +2093,7 @@ class MethodSelectorHandler(NestedDirectiveHandler):
             self.within_description = False
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        if self.directive_detected:
+        if self.page_has_method_selector:
             page.ast.options["has_method_selector"] = True
             self.__add_pending_diagnostics(fileid_stack.current)
         self.pending_diagnostics = []
