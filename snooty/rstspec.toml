@@ -1238,11 +1238,15 @@ type = {link = "https://php.net/%s"}
 
 [role.ruby-api]
 help = """Link to a page in the Ruby driver's API reference."""
-type = {link = "http://api.mongodb.com/ruby/current/Mongo/%s"}
+type = {link = "https://www.mongodb.com/docs/ruby-driver/current/api/Mongo/%s"}
 
 [role.ruby]
 help = """Link to a page in the Ruby driver's documentation."""
 type = {link = "https://www.mongodb.com/docs/ruby-driver/current%s", ensure_trailing_slash = true}
+
+[role.mongoid-api]
+help = """Link to a page in the Mongoid ODM's API reference."""
+type = {link = "https://www.mongodb.com/docs/mongoid/master/api/%s"}
 
 [role.scala-docs]
 help = "Link to a page in the Scala driver's documentation"
