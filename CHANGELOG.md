@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- "default-tabid" option on drivers tabs (#629)
+- "expanded" option on collapsibles now a boolean (#630)
+- New "link-new-tab" directive (#632)
+
+### Fixed
+
+- Removed nested directive errors for method selector (#631)
+
 ## [v0.18.6] - 2024-10-30
 
 ### Fixed
