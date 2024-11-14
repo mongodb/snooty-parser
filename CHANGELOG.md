@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.7] - 2024-11-14
+
 ### Added
 
 - "default-tabid" option on drivers tabs (#629)
