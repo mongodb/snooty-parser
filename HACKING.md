@@ -1,5 +1,7 @@
 # Snooty Parser
 
+![Data flowchart](./docs/flowchart.svg)
+
 ## Organization
 
 The snooty parser has the following key parts:
@@ -145,7 +147,7 @@ To release snooty, do the following:
 
 1. Make sure you are on the `main` branch.
 
-2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and 
+2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and
    commit any changes you've made.
 
 3. Run `make cut-release BUMP_TO_VERSION=<new_version>`.
@@ -184,3 +186,29 @@ tag if it was created.
 * Flutter is currently a fork to add support for line numbers. We need to
   figure out a cleaner way of doing this so we can merge it into the
   upstream codebase.
+
+## Glossary
+
+<dl>
+  <dt>reStructuredText</dt>
+  <dd>A markup language identified with the Python ecosystem.</dd>
+
+  <dt>Abstract Syntax Tree (AST)</dt>
+  <dd>A tree of nodes which reflect the syntactic structure of an unparsed textual document.</dd>
+
+  <dt>Postprocessor</dt>
+  <dd>The component of snooty which performs global link analysis and other forms of processing that spans multiple files.</dd>
+
+  <dt>docutils</dt>
+  <dd>The canonical parsing library for reStructuredText.</dd>
+
+
+  <dt>tinydocutils</dt>
+  <dd>Our vendored fork of docutils, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
+
+  <dt>Giza</dt>
+  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the `gizaparser/` directory for compatibility), and invoke Sphinx.</dd>
+
+  <dt>Sphinx</dt>
+  <dd>The primary unofficially official documentation toolchain for reStructuredText.</dd>
+</dl>
