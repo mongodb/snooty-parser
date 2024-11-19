@@ -351,12 +351,12 @@ class HTTPCache:
                 mktime(mtime.timetuple()), usegmt=True
             )
 
-        is_raw_gh_content = urllib.parse.urlparse(url).netloc == "raw.githubusercontent.com"
-        print(f"is_raw_gh_content: {is_raw_gh_content}")
-        if (
+        # Put this directly into the if statement after testing
+        is_raw_gh_content = (
             urllib.parse.urlparse(url).netloc == "raw.githubusercontent.com"
-            and GH_TOKEN
-        ):
+        )
+        print(f"is_raw_gh_content: {is_raw_gh_content}")
+        if is_raw_gh_content and GH_TOKEN:
             print(f"Testing token: {GH_TOKEN[-4:]}")
             request_headers["Authorization"] = f"token {GH_TOKEN}"
 
