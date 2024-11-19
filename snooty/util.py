@@ -325,8 +325,20 @@ class HTTPCache:
             datetime.timedelta(hours=1) if cache_interval is None else cache_interval
         )
 
+        request_headers: Dict[str, str] = {}
+
+        # Put this directly into the if statement after testing
+        url_netloc = urllib.parse.urlparse(url).netloc
+        is_raw_gh_content = url_netloc == "raw.githubusercontent.com"
+        print(
+            f"is_raw_gh_content: {is_raw_gh_content} / url: {url} / netloc: {url_netloc}"
+        )
+        if is_raw_gh_content and GH_TOKEN:
+            print(f"Testing token: {GH_TOKEN[-4:]}")
+            request_headers["Authorization"] = f"token {GH_TOKEN}"
+
         if self.cache_dir is None:
-            res = requests.get(url)
+            res = requests.get(url, headers=request_headers)
             res.raise_for_status()
             return res.content
 
@@ -336,7 +348,6 @@ class HTTPCache:
         inventory_path = self.cache_dir.joinpath(filename)
 
         # Only re-request if more than an hour old
-        request_headers: Dict[str, str] = {}
         mtime: Optional[datetime.datetime] = None
         try:
             mtime = datetime.datetime.fromtimestamp(inventory_path.stat().st_mtime)
@@ -350,15 +361,6 @@ class HTTPCache:
             request_headers["If-Modified-Since"] = formatdate(
                 mktime(mtime.timetuple()), usegmt=True
             )
-
-        # Put this directly into the if statement after testing
-        is_raw_gh_content = (
-            urllib.parse.urlparse(url).netloc == "raw.githubusercontent.com"
-        )
-        print(f"is_raw_gh_content: {is_raw_gh_content}")
-        if is_raw_gh_content and GH_TOKEN:
-            print(f"Testing token: {GH_TOKEN[-4:]}")
-            request_headers["Authorization"] = f"token {GH_TOKEN}"
 
         res = requests.get(url, headers=request_headers)
 
