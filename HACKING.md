@@ -63,6 +63,9 @@ a docutils parser; passes the markup into it; and uses the visitor to
 create the AST. The parent `parser.Project` then calls the configured
 callbacks to notify the backend of the parsed page.
 
+![Data flow example](./docs/node-conversion-example.svg)
+
+
 The parser transforms Giza-style YAML files using the `gizaparser`
 package. This uses the `flutter` library to deserialize the YAML files
 into Python classes, and check types to ensure there are no errors.
