@@ -202,7 +202,6 @@ tag if it was created.
   <dt>docutils</dt>
   <dd>The canonical parsing library for reStructuredText.</dd>
 
-
   <dt>tinydocutils</dt>
   <dd>Our vendored fork of docutils, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
 
@@ -211,4 +210,18 @@ tag if it was created.
 
   <dt>Sphinx</dt>
   <dd>The primary unofficially official documentation toolchain for reStructuredText.</dd>
+
+  <dt>Project</dt>
+  <dd>A directory with a `snooty.toml` file and a source directory containing reStructuredText source files.
+  A project typically corresponds to a distinct site.</dd>
+
+  <dt>Page</dt>
+  <dd>A page is a full self-contained document, typically corresponding to a `.txt` file.</dd>
+
+  <dt>Include</dt>
+  <dd>A document fragment meant to be included in a Page or in other include files. Typically these are created
+  by `.rst` or giza `.yaml` files.</dd>
+
+  <dt>Intersphinx</dt>
+  <dd>A protocol by which project data can be shared with other projects. This data is encoded in an `objects.inv` file, and facilitates cross-project links.</dd>
 </dl>
