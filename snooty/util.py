@@ -64,6 +64,7 @@ RST_EXTENSIONS = {".txt", ".rst"}
 EXT_FOR_PAGE = ".txt"
 EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
 SNOOTY_TOML = "snooty.toml"
+GH_TOKEN = os.environ.get("GH_TOKEN")
 PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__
 assert PACKAGE_ROOT_STRING is not None
 PACKAGE_ROOT = Path(PACKAGE_ROOT_STRING).resolve().parent
@@ -349,6 +350,9 @@ class HTTPCache:
             request_headers["If-Modified-Since"] = formatdate(
                 mktime(mtime.timetuple()), usegmt=True
             )
+        
+        if urllib.parse.urlparse(url).netloc == "raw.githubcontentuser.com" and GH_TOKEN:
+            request_headers["Authorization"] = f"token {GH_TOKEN}"
 
         res = requests.get(url, headers=request_headers)
 
