@@ -1,5 +1,7 @@
 # Snooty Parser
 
+![Data flowchart](./docs/flowchart.svg)
+
 ## Organization
 
 The snooty parser has the following key parts:
@@ -60,6 +62,9 @@ reStructuredText directory
 a docutils parser; passes the markup into it; and uses the visitor to
 create the AST. The parent `parser.Project` then calls the configured
 callbacks to notify the backend of the parsed page.
+
+![Data flow example](./docs/node-conversion-example.svg)
+
 
 The parser transforms Giza-style YAML files using the `gizaparser`
 package. This uses the `flutter` library to deserialize the YAML files
@@ -145,7 +150,7 @@ To release snooty, do the following:
 
 1. Make sure you are on the `main` branch.
 
-2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and 
+2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and
    commit any changes you've made.
 
 3. Run `make cut-release BUMP_TO_VERSION=<new_version>`.
@@ -184,3 +189,57 @@ tag if it was created.
 * Flutter is currently a fork to add support for line numbers. We need to
   figure out a cleaner way of doing this so we can merge it into the
   upstream codebase.
+
+## Glossary
+
+<dl>
+  <dt>reStructuredText</dt>
+  <dd>A markup language identified with the Python ecosystem.</dd>
+
+  <dt>Abstract Syntax Tree (AST)</dt>
+  <dd>A tree of nodes which reflect the syntactic structure of an unparsed textual document.</dd>
+
+  <dt>Postprocessor</dt>
+  <dd>The component of snooty which performs global link analysis and other forms of processing that spans multiple files.</dd>
+
+  <dt>docutils</dt>
+  <dd>The canonical parsing library for reStructuredText. We use our own vendored fork called <code>tinydocutils</code>, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
+
+  <dt>Giza</dt>
+  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the <code>gizaparser/</code> directory for compatibility), and invoke Sphinx. Giza is no longer used, and only lives on in our support for some of its <code>.yaml</code> files.</dd>
+
+  <dt>Sphinx</dt>
+  <dd>The primary unofficially official documentation toolchain for reStructuredText. The Snooty parser is effectively a from-scratch blackbox reimplementation.</dd>
+
+  <dt>Project</dt>
+  <dd>A directory with a <code>snooty.toml</code> file and a source directory containing reStructuredText source files.
+  A project typically corresponds to a distinct site.</dd>
+
+  <dt>Page</dt>
+  <dd>A page is a full self-contained document, typically corresponding to a <code>.txt</code> file.</dd>
+
+  <dt>Include</dt>
+  <dd>A document fragment meant to be included in a Page or in other include files. Typically these are created
+  by <code>.rst</code> or giza <code>.yaml</code> files.</dd>
+
+  <dt>Intersphinx</dt>
+  <dd>A protocol by which project data can be shared with other projects. This data is encoded in an <code>objects.inv</code> file, and facilitates cross-project links.</dd>
+
+  <dt>Role</dt>
+  <dd>A reStructuredText syntactic construct for custom inline behavior, roughly equivalent to a <code>&lt;span&gt;</code> in HTML. For example:
+
+  <pre><code>
+:ref:`A Link <a-link-target>`
+  </code></pre>
+  </dd>
+
+  <dt>Directive</dt>
+  <dd>A reStructuredText syntactic construct for custom block behavior, roughly equivalent to a <pre>&lt;div&gt;</pre> in HTML. For example:
+
+  <pre><code>
+.. note::
+
+   A note about something.
+  </code></pre>
+  </dd>
+</dl>
