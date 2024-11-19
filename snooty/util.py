@@ -350,8 +350,11 @@ class HTTPCache:
             request_headers["If-Modified-Since"] = formatdate(
                 mktime(mtime.timetuple()), usegmt=True
             )
-        
-        if urllib.parse.urlparse(url).netloc == "raw.githubcontentuser.com" and GH_TOKEN:
+
+        if (
+            urllib.parse.urlparse(url).netloc == "raw.githubcontentuser.com"
+            and GH_TOKEN
+        ):
             request_headers["Authorization"] = f"token {GH_TOKEN}"
 
         res = requests.get(url, headers=request_headers)
