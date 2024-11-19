@@ -200,30 +200,30 @@ tag if it was created.
   <dd>The component of snooty which performs global link analysis and other forms of processing that spans multiple files.</dd>
 
   <dt>docutils</dt>
-  <dd>The canonical parsing library for reStructuredText. We use our own vendored fork called <tt>tinydocutils</tt>, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
+  <dd>The canonical parsing library for reStructuredText. We use our own vendored fork called <code>tinydocutils</code>, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
 
   <dt>Giza</dt>
-  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the <tt>gizaparser/</tt> directory for compatibility), and invoke Sphinx. Giza is no longer used, and only lives on in our support for some of its <tt>.yaml</tt> files.</dd>
+  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the <code>gizaparser/</code> directory for compatibility), and invoke Sphinx. Giza is no longer used, and only lives on in our support for some of its <code>.yaml</code> files.</dd>
 
   <dt>Sphinx</dt>
   <dd>The primary unofficially official documentation toolchain for reStructuredText. The Snooty parser is effectively a from-scratch blackbox reimplementation.</dd>
 
   <dt>Project</dt>
-  <dd>A directory with a <tt>snooty.toml</tt> file and a source directory containing reStructuredText source files.
+  <dd>A directory with a <code>snooty.toml</code> file and a source directory containing reStructuredText source files.
   A project typically corresponds to a distinct site.</dd>
 
   <dt>Page</dt>
-  <dd>A page is a full self-contained document, typically corresponding to a <tt>.txt</tt> file.</dd>
+  <dd>A page is a full self-contained document, typically corresponding to a <code>.txt</code> file.</dd>
 
   <dt>Include</dt>
   <dd>A document fragment meant to be included in a Page or in other include files. Typically these are created
-  by <tt>.rst</tt> or giza <tt>.yaml</tt> files.</dd>
+  by <code>.rst</code> or giza <code>.yaml</code> files.</dd>
 
   <dt>Intersphinx</dt>
-  <dd>A protocol by which project data can be shared with other projects. This data is encoded in an <tt>objects.inv</tt> file, and facilitates cross-project links.</dd>
+  <dd>A protocol by which project data can be shared with other projects. This data is encoded in an <code>objects.inv</code> file, and facilitates cross-project links.</dd>
 
   <dt>Role</dt>
-  <dd>A reStructuredText syntactic construct for custom inline behavior, roughly equivalent to a <tt>&lt;span&gt;</tt> in HTML. For example:
+  <dd>A reStructuredText syntactic construct for custom inline behavior, roughly equivalent to a <code>&lt;span&gt;</code> in HTML. For example:
 
   <pre><code>
 :ref:`A Link <a-link-target>`
