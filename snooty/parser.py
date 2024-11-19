@@ -1193,6 +1193,7 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, node.get_line()))
                 return doc
 
+            print("Testing here")
             if self.project_config.sharedinclude_root is None:
                 self.diagnostics.append(
                     ConfigurationProblem(
