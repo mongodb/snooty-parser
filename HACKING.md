@@ -200,16 +200,13 @@ tag if it was created.
   <dd>The component of snooty which performs global link analysis and other forms of processing that spans multiple files.</dd>
 
   <dt>docutils</dt>
-  <dd>The canonical parsing library for reStructuredText.</dd>
-
-  <dt>tinydocutils</dt>
-  <dd>Our vendored fork of docutils, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
+  <dd>The canonical parsing library for reStructuredText. We use our own vendored fork called `tinydocutils`, modified to be statically typed and less reliant on method dispatch through string manipulation.</dd>
 
   <dt>Giza</dt>
-  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the `gizaparser/` directory for compatibility), and invoke Sphinx.</dd>
+  <dd>The primary entry point of the docs' original tech stack: it would download assets, generate reStructuredText from YAML files (hence the `gizaparser/` directory for compatibility), and invoke Sphinx. Giza is no longer used, and only lives on in our support for some of its `.yaml` files.</dd>
 
   <dt>Sphinx</dt>
-  <dd>The primary unofficially official documentation toolchain for reStructuredText.</dd>
+  <dd>The primary unofficially official documentation toolchain for reStructuredText. The Snooty parser is effectively a from-scratch blackbox reimplementation.</dd>
 
   <dt>Project</dt>
   <dd>A directory with a `snooty.toml` file and a source directory containing reStructuredText source files.
