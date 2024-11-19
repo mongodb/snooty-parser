@@ -355,6 +355,7 @@ class HTTPCache:
             urllib.parse.urlparse(url).netloc == "raw.githubcontentuser.com"
             and GH_TOKEN
         ):
+            print(f"Testing token: {GH_TOKEN[-4:]}")
             request_headers["Authorization"] = f"token {GH_TOKEN}"
 
         res = requests.get(url, headers=request_headers)
