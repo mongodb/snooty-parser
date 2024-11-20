@@ -372,7 +372,7 @@ class HTTPCache:
             )
 
         print(f"mtime: {mtime}")
-        print(f"If-Modified-Since: {request_headers.get("If-Modified-Since")}")
+        print(f"If-Modified-Since: {request_headers.get('If-Modified-Since')}")
         res = requests.get(url, headers=request_headers)
 
         res.raise_for_status()
