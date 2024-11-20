@@ -329,12 +329,12 @@ class HTTPCache:
 
         # Put this directly into the if statement after testing
         url_netloc = urllib.parse.urlparse(url).netloc
-        is_raw_gh_content = url_netloc == "raw.githubusercontent.com"
+        is_raw_gh_content_url = url_netloc == "raw.githubusercontent.com"
         print(
-            f"is_raw_gh_content: {is_raw_gh_content} / url: {url} / netloc: {url_netloc}"
+            f"is_raw_gh_content: {is_raw_gh_content_url} / url: {url} / netloc: {url_netloc}"
         )
         print(f"self.cache_dir: {self.cache_dir}")
-        if is_raw_gh_content and GH_TOKEN:
+        if is_raw_gh_content_url and GH_TOKEN:
             print(f"Testing token: {GH_TOKEN[-4:]}")
             request_headers["Authorization"] = f"token {GH_TOKEN}"
 
@@ -345,14 +345,20 @@ class HTTPCache:
             except:
                 print("Failed to get content 1")
 
+        target_url = (
+            f"https://deploy-preview-2--docs-csharp-rayangler.netlify.app/.netlify/functions/fetchURL?url={url}"
+            if is_raw_gh_content_url
+            else url
+        )
+
         # THIS IS NEVER NOT NONE because of __init__??? :thinking:
         if self.cache_dir is None:
-            res = requests.get(url, headers=request_headers)
+            res = requests.get(target_url, headers=request_headers)
             res.raise_for_status()
             return res.content
 
         # Make our user's cache directory if it doesn't exist
-        filename = urllib.parse.quote(url, safe="")
+        filename = urllib.parse.quote(target_url, safe="")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         inventory_path = self.cache_dir.joinpath(filename)
 
@@ -373,7 +379,7 @@ class HTTPCache:
 
         print(f"mtime: {mtime}")
         print(f"If-Modified-Since: {request_headers.get('If-Modified-Since')}")
-        res = requests.get(url, headers=request_headers)
+        res = requests.get(target_url, headers=request_headers)
 
         res.raise_for_status()
         if res.status_code == 304:
