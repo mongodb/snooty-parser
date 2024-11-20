@@ -333,10 +333,19 @@ class HTTPCache:
         print(
             f"is_raw_gh_content: {is_raw_gh_content} / url: {url} / netloc: {url_netloc}"
         )
+        print(f"self.cache_dir: {self.cache_dir}")
         if is_raw_gh_content and GH_TOKEN:
             print(f"Testing token: {GH_TOKEN[-4:]}")
             request_headers["Authorization"] = f"token {GH_TOKEN}"
 
+            # Just testing if things throw
+            try:
+                res = requests.get(url, headers=request_headers)
+                res.raise_for_status()
+            except:
+                print("Failed to get content 1")
+
+        # THIS IS NEVER NOT NONE because of __init__??? :thinking:
         if self.cache_dir is None:
             res = requests.get(url, headers=request_headers)
             res.raise_for_status()
@@ -362,6 +371,8 @@ class HTTPCache:
                 mktime(mtime.timetuple()), usegmt=True
             )
 
+        print(f"mtime: {mtime}")
+        print(f"If-Modified-Since: {request_headers.get("If-Modified-Since")}")
         res = requests.get(url, headers=request_headers)
 
         res.raise_for_status()
