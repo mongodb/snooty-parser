@@ -330,23 +330,9 @@ class HTTPCache:
         # Put this directly into the if statement after testing
         url_netloc = urllib.parse.urlparse(url).netloc
         is_raw_gh_content_url = url_netloc == "raw.githubusercontent.com"
-        print(
-            f"is_raw_gh_content: {is_raw_gh_content_url} / url: {url} / netloc: {url_netloc}"
-        )
-        print(f"self.cache_dir: {self.cache_dir}")
-        if is_raw_gh_content_url and GH_TOKEN:
-            print(f"Testing token: {GH_TOKEN[-4:]}")
-            request_headers["Authorization"] = f"token {GH_TOKEN}"
-
-            # Just testing if things throw
-            try:
-                res = requests.get(url, headers=request_headers)
-                res.raise_for_status()
-            except:
-                print("Failed to get content 1")
 
         target_url = (
-            f"https://deploy-preview-2--docs-csharp-rayangler.netlify.app/.netlify/functions/fetchURL?url={url}"
+            f"https://deploy-preview-1310--docs-frontend-stg.netlify.app/.netlify/functions/fetch-url?url={url}"
             if is_raw_gh_content_url
             else url
         )
