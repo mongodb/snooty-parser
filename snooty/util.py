@@ -324,13 +324,21 @@ class HTTPCache:
             datetime.timedelta(hours=1) if cache_interval is None else cache_interval
         )
 
+        url_netloc = urllib.parse.urlparse(url).netloc
+        is_raw_gh_content_url = url_netloc == "raw.githubusercontent.com"
+        target_url = (
+            f"https://docs-frontend-stg.netlify.app/.netlify/functions/fetch-url?url={url}"
+            if is_raw_gh_content_url
+            else url
+        )
+
         if self.cache_dir is None:
-            res = requests.get(url)
+            res = requests.get(target_url)
             res.raise_for_status()
             return res.content
 
         # Make our user's cache directory if it doesn't exist
-        filename = urllib.parse.quote(url, safe="")
+        filename = urllib.parse.quote(target_url, safe="")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         inventory_path = self.cache_dir.joinpath(filename)
 
@@ -350,7 +358,7 @@ class HTTPCache:
                 mktime(mtime.timetuple()), usegmt=True
             )
 
-        res = requests.get(url, headers=request_headers)
+        res = requests.get(target_url, headers=request_headers)
 
         res.raise_for_status()
         if res.status_code == 304:
