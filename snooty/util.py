@@ -327,7 +327,7 @@ class HTTPCache:
         url_netloc = urllib.parse.urlparse(url).netloc
         is_raw_gh_content_url = url_netloc == "raw.githubusercontent.com"
         target_url = (
-            f"https://deploy-preview-1310--docs-frontend-stg.netlify.app/.netlify/functions/fetch-url?url={url}"
+            f"https://docs-frontend-stg.netlify.app/.netlify/functions/fetch-url?url={url}"
             if is_raw_gh_content_url
             else url
         )
