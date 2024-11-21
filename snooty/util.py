@@ -325,12 +325,8 @@ class HTTPCache:
             datetime.timedelta(hours=1) if cache_interval is None else cache_interval
         )
 
-        request_headers: Dict[str, str] = {}
-
-        # Put this directly into the if statement after testing
         url_netloc = urllib.parse.urlparse(url).netloc
         is_raw_gh_content_url = url_netloc == "raw.githubusercontent.com"
-
         target_url = (
             f"https://deploy-preview-1310--docs-frontend-stg.netlify.app/.netlify/functions/fetch-url?url={url}"
             if is_raw_gh_content_url
@@ -339,7 +335,7 @@ class HTTPCache:
 
         # THIS IS NEVER NOT NONE because of __init__??? :thinking:
         if self.cache_dir is None:
-            res = requests.get(target_url, headers=request_headers)
+            res = requests.get(target_url)
             res.raise_for_status()
             return res.content
 
@@ -349,6 +345,7 @@ class HTTPCache:
         inventory_path = self.cache_dir.joinpath(filename)
 
         # Only re-request if more than an hour old
+        request_headers: Dict[str, str] = {}
         mtime: Optional[datetime.datetime] = None
         try:
             mtime = datetime.datetime.fromtimestamp(inventory_path.stat().st_mtime)
@@ -363,8 +360,6 @@ class HTTPCache:
                 mktime(mtime.timetuple()), usegmt=True
             )
 
-        print(f"mtime: {mtime}")
-        print(f"If-Modified-Since: {request_headers.get('If-Modified-Since')}")
         res = requests.get(target_url, headers=request_headers)
 
         res.raise_for_status()
