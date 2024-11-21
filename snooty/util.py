@@ -64,7 +64,6 @@ RST_EXTENSIONS = {".txt", ".rst"}
 EXT_FOR_PAGE = ".txt"
 EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
 SNOOTY_TOML = "snooty.toml"
-GH_TOKEN = os.environ.get("GH_TOKEN")
 PACKAGE_ROOT_STRING = sys.modules["snooty"].__file__
 assert PACKAGE_ROOT_STRING is not None
 PACKAGE_ROOT = Path(PACKAGE_ROOT_STRING).resolve().parent
@@ -333,7 +332,6 @@ class HTTPCache:
             else url
         )
 
-        # THIS IS NEVER NOT NONE because of __init__??? :thinking:
         if self.cache_dir is None:
             res = requests.get(target_url)
             res.raise_for_status()
