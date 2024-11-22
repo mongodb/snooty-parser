@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v0.18.8] - 2024-11-22
 
+### Added
+- "mongoid-api" role (#633)
+
+### Changed
+- "ruby" role link (#633)
+- Improved onboarding docs (#634)
+- Proxy requests to raw GH content (#635)
+
 ## [v0.18.7] - 2024-11-14
 
 ### Added
