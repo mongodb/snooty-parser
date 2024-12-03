@@ -1102,7 +1102,7 @@ type = {link = "https://api.mongodb.com/%s"}
 
 [role.asp]
 help = """Link to the Atlas Search Playground."""
-type = {link = "https://search-playground.mongodb.com/snapshots%s"}
+type = {link = "https://search-playground.mongodb.com/tools/code-sandbox/snapshots%s"}
 
 [role.aws]
 help = """Link to the Amazon AWS documentation."""
@@ -1183,7 +1183,7 @@ inherit = "ref"
 [role.link-new-tab]
 help = """Link to a URL but open in a new tab"""
 type = "explicit_title"
-example = """:link-new-tab:`Atlas Playground <https://search-playground.mongodb.com/snapshots/new>`"""
+example = """:link-new-tab:`Atlas Playground <https://search-playground.mongodb.com/tools/code-sandbox/snapshots/new>`"""
 
 [role."mongodb:required"]
 type = "explicit_title"
