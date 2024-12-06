@@ -2187,30 +2187,31 @@ class Postprocessor:
     """
 
     PASSES: Sequence[Sequence[Type[Handler]]] = [
-        [IncludeHandler],
-        [SubstitutionHandler],
-        [
-            HeadingHandler,
-            TocTitleHandler,
-            AddTitlesToLabelTargetsHandler,
-            FootnoteHandler,
-            ProgramOptionHandler,
-            TabsSelectorHandler,
-            ContentsHandler,
-            InstruqtHandler,
-            BannerHandler,
-            GuidesHandler,
-            OpenAPIHandler,
-            OpenAPIChangelogHandler,
-            FacetsHandler,
-            ImageHandler,
-            CollapsibleHandler,
-            WayfindingHandler,
-            MethodSelectorHandler,
-            MultiPageTutorialHandler,
-        ],
-        [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
-        [RefsHandler, NamedReferenceHandlerPass2],
+        [],[],[]
+        # [IncludeHandler],
+        # [SubstitutionHandler],
+        # [
+        #     HeadingHandler,
+        #     TocTitleHandler,
+        #     AddTitlesToLabelTargetsHandler,
+        #     FootnoteHandler,
+        #     ProgramOptionHandler,
+        #     TabsSelectorHandler,
+        #     ContentsHandler,
+        #     InstruqtHandler,
+        #     BannerHandler,
+        #     GuidesHandler,
+        #     OpenAPIHandler,
+        #     OpenAPIChangelogHandler,
+        #     FacetsHandler,
+        #     ImageHandler,
+        #     CollapsibleHandler,
+        #     WayfindingHandler,
+        #     MethodSelectorHandler,
+        #     MultiPageTutorialHandler,
+        # ],
+        # [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
+        # [RefsHandler, NamedReferenceHandlerPass2],
     ]
 
     def __init__(self, project_config: ProjectConfig, targets: TargetDatabase) -> None:
@@ -2263,10 +2264,10 @@ class Postprocessor:
                 ],
             )
 
-        document = self.generate_metadata(context)
-        self.finalize(context, document)
+        # document = self.generate_metadata(context)
+        self.finalize(context, {})
         return PostprocessorResult(
-            self.pages, document, context.diagnostics, self.targets
+            self.pages, {}, context.diagnostics, self.targets
         )
 
     def finalize(self, context: Context, metadata: n.SerializedNode) -> None:
