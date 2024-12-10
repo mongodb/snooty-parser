@@ -4543,8 +4543,8 @@ Heading of the page
       Python
 """,
             Path(
-                    "source/no-default.txt"
-                ): """
+                "source/no-default.txt"
+            ): """
 =================
 No Default Tab ID
 =================
