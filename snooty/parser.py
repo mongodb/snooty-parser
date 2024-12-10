@@ -1855,13 +1855,21 @@ class _Project:
             for path in ast_pages:
                 fileid = self.config.get_fileid(path)
                 text, _ = self.config.read(fileid)
-                ast = json.loads(text)
-                util.deserialize_ast(ast)
+                ast_json = json.loads(text)
+
+                if not (
+                    isinstance(ast_json, Dict)
+                    and ast_json.get("type", "") == n.Root.type
+                ):
+                    # TODO-5237: Add diagnostic
+                    continue
+
+                ast_root = n.Root.deserialize(ast_json)
                 new_page = Page.create(
                     fileid,
                     fileid.as_posix().replace(".ast", ".txt"),
                     "",
-                    util.deserialize_ast(ast),
+                    ast_root,
                 )
                 self._page_updated(new_page, [])
 

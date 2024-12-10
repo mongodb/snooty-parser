@@ -1,6 +1,6 @@
 import dataclasses
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import PurePosixPath
@@ -140,10 +140,10 @@ class Node:
     @classmethod
     def deserialize(cls, node: Dict[str, SerializableType]) -> Self:
         fields = [field.name for field in dataclasses.fields(cls)]
-        filtered_fields = {k: node.get(k) for k in fields if k in fields}
+        filtered_fields = {k: node.get(k) for k in fields}
 
-        if not filtered_fields["span"]:
-            filtered_fields["span"] = (0,)
+        if "span" in filtered_fields:
+            del filtered_fields["span"]
 
         node_classes: List[Type[Node]] = [
             Code,
@@ -191,19 +191,23 @@ class Node:
                     return c
             return None
 
+        # "span" is expected to be passed in first
+        deserialized_node = cls((0,), **filtered_fields)
         deserialized_children = []
-        if "children" in filtered_fields and isinstance(
-            filtered_fields["children"], List
+
+        if (
+            "children" in filtered_fields
+            and isinstance(filtered_fields["children"], List)
+            and isinstance(deserialized_node, Parent)
         ):
             for child in filtered_fields["children"]:
                 node_type = find_matching_type(child)
                 if node_type:
                     deserialized_children.append(node_type.deserialize(child))
 
-            # if "children" in filtered_fields:
-            filtered_fields["children"] = deserialized_children
+            deserialized_node.children = deserialized_children
 
-        return cls(**filtered_fields)
+        return deserialized_node
 
     def get_text(self) -> str:
         """Return pure textual content from a given AST node. Most nodes will return an empty string."""
