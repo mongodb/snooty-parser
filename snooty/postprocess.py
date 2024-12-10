@@ -650,6 +650,7 @@ class TabsSelectorHandler(Handler):
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.selectors = {}
+        self.default_tabs = {}
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.scanned_pattern = []

@@ -4542,10 +4542,40 @@ Heading of the page
 
       Python
 """,
-        }
+            Path(
+                "source/no-default.txt"
+            ): """
+=================
+No Default Tab ID
+=================
+
+.. tabs-selector:: drivers
+
+.. tabs-drivers::
+
+   .. tab::
+      :tabid: c
+
+      C
+
+   .. tab::
+      :tabid: nodejs
+
+      Node.js
+
+   .. tab::
+      :tabid: python
+
+      Python
+""",
+        },
     ) as result:
         page = result.pages[FileId("index.txt")]
         assert (page.ast.options.get("default_tabs")) == {"drivers": "python"}
+
+        # Ensure previously set default tabs are reset on the next page
+        no_default_page = result.pages[FileId("no-default.txt")]
+        assert (no_default_page.ast.options.get("default_tabs")) == None
 
 
 def test_default_tabs_not_present() -> None:
