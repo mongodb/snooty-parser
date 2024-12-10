@@ -1,5 +1,6 @@
 import collections
 import errno
+import json
 import logging
 import os.path
 import sys
@@ -2228,6 +2229,13 @@ class Postprocessor:
             return PostprocessorResult({}, {}, {}, self.targets)
 
         self.pages = pages
+        # print(self.pages)
+
+        # For debugging purposes
+        # print("Foofoo")
+        # data = self.pages.get(FileId("api/example.txt")).ast.serialize()
+        # print(json.dumps(data, indent=2))
+
         self.cancellation_token = cancellation_token
         context = Context(pages)
         context.add(self.project_config)

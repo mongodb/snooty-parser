@@ -49,7 +49,7 @@ import requests
 import tomli
 
 from snooty.diagnostics import Diagnostic, NestedProject
-from snooty.n import FileId
+from snooty.n import FileId, SerializableType
 
 from . import n, tinydocutils
 
@@ -618,6 +618,61 @@ def structural_hash(obj: object) -> bytes:
         raise TypeError("Unhashable type", obj)
 
     return hasher.digest()
+
+
+def deserialize_ast(node: SerializableType) -> n.Node | None:
+    if not isinstance(node, dict):
+        return None
+
+    node_classes = [
+        n.Code,
+        n.Comment,
+        n.Label,
+        n.Section,
+        n.Paragraph,
+        n.Footnote,
+        n.FootnoteReference,
+        n.SubstitutionDefinition,
+        n.SubstitutionReference,
+        n.BlockSubstitutionReference,
+        n.Root,
+        n.Heading,
+        n.DefinitionListItem,
+        n.DefinitionList,
+        n.ListNodeItem,
+        n.ListNode,
+        n.Line,
+        n.LineBlock,
+        n.Directive,
+        n.TocTreeDirective,
+        n.DirectiveArgument,
+        n.Target,
+        n.TargetIdentifier,
+        n.InlineTarget,
+        n.NamedReference,
+        n.Role,
+        n.RefRole,
+        n.Text,
+        n.Literal,
+        n.Emphasis,
+        n.Field,
+        n.FieldList,
+        n.Strong,
+        n.Transition,
+        n.Table,
+    ]
+
+    def find_matching_type():
+        for c in node_classes:
+            if c.type == node["type"]:
+                return c
+        return None
+
+    node_type = find_matching_type()
+    if node_type:
+        return node_type.deserialize(node)
+
+    return None
 
 
 class TOMLDecodeErrorWithSourceInfo(tomli.TOMLDecodeError):

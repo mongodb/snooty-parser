@@ -1843,6 +1843,28 @@ class _Project:
             fileids = (self.config.get_fileid(path) for path in paths)
             self.parse_rst_files(fileids, max_workers)
 
+        # Handle custom AST from API reference docs
+        with util.PerformanceLogger.singleton().start("parse pre-existing AST"):
+            ast_pages = util.get_files(
+                self.config.source_path,
+                {".ast"},
+                self.config.root,
+                nested_projects_diagnostics,
+            )
+
+            for path in ast_pages:
+                fileid = self.config.get_fileid(path)
+                text, _ = self.config.read(fileid)
+                ast = json.loads(text)
+                util.deserialize_ast(ast)
+                new_page = Page.create(
+                    fileid,
+                    fileid.as_posix().replace(".ast", ".txt"),
+                    "",
+                    util.deserialize_ast(ast),
+                )
+                self._page_updated(new_page, [])
+
         for nested_path, diagnostics in nested_projects_diagnostics.items():
             with self._backend_lock:
                 self.on_diagnostics(nested_path, diagnostics)

@@ -22,6 +22,8 @@ from typing import (
     Union,
 )
 
+from typing_extensions import Self
+
 __all__ = (
     "Node",
     "InlineNode",
@@ -60,7 +62,7 @@ _T = TypeVar("_T")
 class FileId(PurePosixPath):
     """An unambiguous file path relative to the local project's root."""
 
-    PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
+    PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml)|(ast))$")
 
     def collapse_dots(self) -> "FileId":
         result: List[str] = []
@@ -134,6 +136,74 @@ class Node:
 
         del result["span"]
         return result
+
+    @classmethod
+    def deserialize(cls, node: Dict[str, SerializableType]) -> Self:
+        fields = [field.name for field in dataclasses.fields(cls)]
+        filtered_fields = {k: node.get(k) for k in fields if k in fields}
+
+        if not filtered_fields["span"]:
+            filtered_fields["span"] = (0,)
+
+        node_classes: List[Type[Node]] = [
+            Code,
+            Comment,
+            Label,
+            Section,
+            Paragraph,
+            Footnote,
+            FootnoteReference,
+            SubstitutionDefinition,
+            SubstitutionReference,
+            BlockSubstitutionReference,
+            Root,
+            Heading,
+            DefinitionListItem,
+            DefinitionList,
+            ListNodeItem,
+            ListNode,
+            Line,
+            LineBlock,
+            Directive,
+            TocTreeDirective,
+            DirectiveArgument,
+            Target,
+            TargetIdentifier,
+            InlineTarget,
+            NamedReference,
+            Role,
+            RefRole,
+            Text,
+            Literal,
+            Emphasis,
+            Field,
+            FieldList,
+            Strong,
+            Transition,
+            Table,
+        ]
+
+        def find_matching_type(
+            node: Dict[str, SerializableType]
+        ) -> Optional[Type[Node]]:
+            for c in node_classes:
+                if c.type == node["type"]:
+                    return c
+            return None
+
+        deserialized_children = []
+        if "children" in filtered_fields and isinstance(
+            filtered_fields["children"], List
+        ):
+            for child in filtered_fields["children"]:
+                node_type = find_matching_type(child)
+                if node_type:
+                    deserialized_children.append(node_type.deserialize(child))
+
+            # if "children" in filtered_fields:
+            filtered_fields["children"] = deserialized_children
+
+        return cls(**filtered_fields)
 
     def get_text(self) -> str:
         """Return pure textual content from a given AST node. Most nodes will return an empty string."""
