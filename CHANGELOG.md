@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.9] - 2024-12-11
+
 ### Changed
 
 - Update Search Playground snapshot URLs (#636)
