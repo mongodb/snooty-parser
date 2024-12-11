@@ -4488,3 +4488,7 @@ Test Page
     page.finish(diagnostics)
     # Diagnostic due to invalid upload-date format
     assert [type(x) for x in diagnostics] == [DocUtilsParseError]
+
+
+def test_parse_ast() -> None:
+    pass

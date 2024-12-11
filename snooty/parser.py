@@ -77,6 +77,7 @@ from .diagnostics import (
     TodoInfo,
     UnexpectedDirectiveOrder,
     UnexpectedIndentation,
+    UnexpectedNodeType,
     UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
@@ -1854,24 +1855,39 @@ class _Project:
 
             for path in ast_pages:
                 fileid = self.config.get_fileid(path)
-                text, _ = self.config.read(fileid)
-                ast_json = json.loads(text)
+                diagnostics: List[Diagnostic] = []
 
-                if not (
-                    isinstance(ast_json, Dict)
-                    and ast_json.get("type", "") == n.Root.type
-                ):
-                    # TODO-5237: Add diagnostic
-                    continue
+                try:
+                    text, read_diagnostics = self.config.read(fileid)
+                    diagnostics.extend(read_diagnostics)
+                    ast_json = json.loads(text)
+                    is_valid_ast_root = (
+                        isinstance(ast_json, Dict)
+                        and ast_json.get("type") == n.Root.type
+                    )
 
-                ast_root = n.Root.deserialize(ast_json)
-                new_page = Page.create(
-                    fileid,
-                    fileid.as_posix().replace(".ast", ".txt"),
-                    "",
-                    ast_root,
-                )
-                self._page_updated(new_page, [])
+                    if not is_valid_ast_root:
+                        diagnostics.append(UnexpectedNodeType(ast_json.get("type"), "root", 0))
+
+                    ast_root = (
+                        n.Root.deserialize(ast_json) if is_valid_ast_root else None
+                    )
+                    new_page = Page.create(
+                        fileid,
+                        fileid.as_posix().replace(".ast", ".txt"),
+                        "",
+                        ast_root,
+                    )
+                    self._page_updated(new_page, diagnostics)
+                except NotImplementedError as e:
+                    if e.args:
+                        invalid_node_type = e.args[0]
+                        diagnostics.append(UnexpectedNodeType(invalid_node_type, None, 0))
+                        self.pages.set_orphan_diagnostics(fileid, diagnostics)
+                        with self._backend_lock:
+                            self.on_diagnostics(fileid, diagnostics)
+                except Exception as e:
+                    logger.error(e)
 
         for nested_path, diagnostics in nested_projects_diagnostics.items():
             with self._backend_lock:

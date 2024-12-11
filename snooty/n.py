@@ -168,6 +168,7 @@ class Node:
             Literal,
             NamedReference,
             Paragraph,
+            Reference,
             RefRole,
             Role,
             Root,
@@ -185,7 +186,7 @@ class Node:
 
         def find_matching_type(
             node: Dict[str, SerializableType]
-        ) -> Optional[Type[Node]]:
+        ) -> Union[Type[Node], None]:
             for c in node_classes:
                 if c.type == node["type"]:
                     return c
@@ -201,9 +202,14 @@ class Node:
             and isinstance(deserialized_node, Parent)
         ):
             for child in filtered_fields["children"]:
+                if not isinstance(child, dict):
+                    continue
+
                 node_type = find_matching_type(child)
                 if node_type:
                     deserialized_children.append(node_type.deserialize(child))
+                else:
+                    raise NotImplementedError(child.get("type"))
 
             deserialized_node.children = deserialized_children
 

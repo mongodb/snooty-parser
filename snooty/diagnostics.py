@@ -149,6 +149,21 @@ class ExpectedStringArg(Diagnostic):
         self.name = name
 
 
+class UnexpectedNodeType(Diagnostic):
+    severity = Diagnostic.Level.error
+
+    def __init__(
+        self,
+        found_type: Union[str, None],
+        expected_type: Optional[str],
+        start: Union[int, Tuple[int, int]],
+    ) -> None:
+        suggestion = f' Expected: "{expected_type}".' if expected_type else ""
+        super().__init__(
+            f'Found unexpected node type "{found_type}".{suggestion}', start
+        )
+
+
 class UnnamedPage(Diagnostic):
     severity = Diagnostic.Level.error
 
