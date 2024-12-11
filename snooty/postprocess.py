@@ -1,6 +1,5 @@
 import collections
 import errno
-import json
 import logging
 import os.path
 import sys
