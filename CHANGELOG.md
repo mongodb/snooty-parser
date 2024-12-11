@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update Search Playground snapshot URLs (#636)
+
+### Fixed
+
+- Ensure default tabids don't persist across pages (#637)
+
 ## [v0.18.8] - 2024-11-22
 
 ### Added
