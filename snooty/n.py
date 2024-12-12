@@ -138,13 +138,8 @@ class Node:
         return result
 
     @classmethod
-    def deserialize(cls, node: Dict[str, SerializableType]) -> Self:
-        fields = [field.name for field in dataclasses.fields(cls)]
-        filtered_fields = {k: node.get(k) for k in fields}
-
-        if "span" in filtered_fields:
-            del filtered_fields["span"]
-
+    def deserialize(cls, node: Dict[str, SerializedNode]) -> Self:
+        filtered_fields = {}
         node_classes: List[Type[Node]] = [
             BlockSubstitutionReference,
             Code,
@@ -185,35 +180,41 @@ class Node:
         ]
 
         def find_matching_type(
-            node: Dict[str, SerializableType]
-        ) -> Union[Type[Node], None]:
+            node: SerializedNode
+        ) -> Optional[Type[Node]]:
             for c in node_classes:
                 if c.type == node["type"]:
                     return c
             return None
 
-        # "span" is expected to be passed in first
-        deserialized_node = cls((0,), **filtered_fields)
-        deserialized_children = []
+        for field in dataclasses.fields(cls):
+            # We don't need "span" to be present here since we need to hardcode it as the first argument of Node
+            if field.name == "span":
+                continue
 
-        if (
-            "children" in filtered_fields
-            and isinstance(filtered_fields["children"], List)
-            and isinstance(deserialized_node, Parent)
-        ):
-            for child in filtered_fields["children"]:
-                if not isinstance(child, dict):
-                    continue
+            node_value = node.get(field.name)
+            has_nested_children = field.name == "children" and issubclass(cls, Parent)
+            has_nested_argument = field.name == "argument" and issubclass(cls, Directive)
+            if isinstance(node_value, List) and (has_nested_children or has_nested_argument):
+                deserialized_children = []
 
-                node_type = find_matching_type(child)
-                if node_type:
-                    deserialized_children.append(node_type.deserialize(child))
-                else:
-                    raise NotImplementedError(child.get("type"))
+                for child in node_value:
+                    if not isinstance(child, dict):
+                        continue
 
-            deserialized_node.children = deserialized_children
+                    child_node_type = find_matching_type(child)
+                    if child_node_type:
+                        deserialized_children.append(child_node_type.deserialize(child))
+                    else:
+                        raise NotImplementedError(child.get("type"))
+                
+                filtered_fields[field.name] = deserialized_children
+            else:
+                # Ideally, we validate that the data types of the fields match the data types of the JSON node,
+                # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.
+                filtered_fields[field.name] = node_value
 
-        return deserialized_node
+        return cls((0,), **filtered_fields)
 
     def get_text(self) -> str:
         """Return pure textual content from a given AST node. Most nodes will return an empty string."""

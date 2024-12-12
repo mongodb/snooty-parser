@@ -30,6 +30,7 @@ from .diagnostics import (
     TabMustBeDirective,
     UnexpectedDirectiveOrder,
     UnexpectedIndentation,
+    UnexpectedNodeType,
     UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
@@ -4491,4 +4492,99 @@ Test Page
 
 
 def test_parse_ast() -> None:
-    pass
+    with make_test(
+        {
+            Path(
+                "source/test.ast"
+            ): """
+{
+    "type": "root",
+    "children": [
+        {
+            "type": "section",
+            "children": [
+                {
+                    "type": "heading",
+                    "children": [
+                        {
+                            "type": "text",
+                            "value": "Interface GridFSBucket"
+                        }
+                    ],
+                    "id": "interface-gridfsbucket"
+                },
+                {
+                    "type": "paragraph",
+                    "children": [
+                        {
+                            "type": "reference",
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "value": "@ThreadSafe"
+                                }
+                            ],
+                            "refuri": "http://mongodb.github.io/mongo-java-driver/5.2/apidocs/mongodb-driver-core/com/mongodb/annotations/ThreadSafe.html"
+                        }
+                    ]
+                },
+                {
+                    "type": "directive",
+                    "name": "important",
+                    "domain": "",
+                    "argument": [
+                        {
+                            "type": "text",
+                            "value": "Important Callout Heading"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "paragraph",
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "value": "Important Callout Body Text"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "fileid": "test.ast"
+}
+""",
+            Path(
+                "source/bad-types.ast"
+            ): """
+{
+    "type": "root",
+    "children": [
+        {
+            "type": "section",
+            "children": [
+                {
+                    "type": "beep",
+                    "children": [
+                        {
+                            "type": "text",
+                            "value": "Interface GridFSBucket"
+                        }
+                    ],
+                    "id": "interface-gridfsbucket"
+                }
+            ]
+        }
+    ],
+    "fileid": "bad-types.ast"
+}
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("test.ast")]
+        assert not diagnostics
+        bad_types_diagnostics = result.diagnostics[FileId("bad-types.ast")]
+        result.pages
+        assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
