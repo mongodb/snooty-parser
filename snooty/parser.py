@@ -1867,7 +1867,9 @@ class _Project:
                     )
 
                     if not is_valid_ast_root:
-                        diagnostics.append(UnexpectedNodeType(ast_json.get("type"), "root", 0))
+                        diagnostics.append(
+                            UnexpectedNodeType(ast_json.get("type"), "root", 0)
+                        )
 
                     ast_root = (
                         n.Root.deserialize(ast_json) if is_valid_ast_root else None
@@ -1882,7 +1884,9 @@ class _Project:
                 except NotImplementedError as e:
                     if e.args:
                         invalid_node_type = e.args[0]
-                        diagnostics.append(UnexpectedNodeType(invalid_node_type, None, 0))
+                        diagnostics.append(
+                            UnexpectedNodeType(invalid_node_type, None, 0)
+                        )
                         self.pages.set_orphan_diagnostics(fileid, diagnostics)
                         with self._backend_lock:
                             self.on_diagnostics(fileid, diagnostics)

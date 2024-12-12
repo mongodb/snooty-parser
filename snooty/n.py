@@ -179,9 +179,7 @@ class Node:
             Transition,
         ]
 
-        def find_matching_type(
-            node: SerializedNode
-        ) -> Optional[Type[Node]]:
+        def find_matching_type(node: SerializedNode) -> Optional[Type[Node]]:
             for c in node_classes:
                 if c.type == node["type"]:
                     return c
@@ -194,8 +192,12 @@ class Node:
 
             node_value = node.get(field.name)
             has_nested_children = field.name == "children" and issubclass(cls, Parent)
-            has_nested_argument = field.name == "argument" and issubclass(cls, Directive)
-            if isinstance(node_value, List) and (has_nested_children or has_nested_argument):
+            has_nested_argument = field.name == "argument" and issubclass(
+                cls, Directive
+            )
+            if isinstance(node_value, List) and (
+                has_nested_children or has_nested_argument
+            ):
                 deserialized_children = []
 
                 for child in node_value:
@@ -207,7 +209,7 @@ class Node:
                         deserialized_children.append(child_node_type.deserialize(child))
                     else:
                         raise NotImplementedError(child.get("type"))
-                
+
                 filtered_fields[field.name] = deserialized_children
             else:
                 # Ideally, we validate that the data types of the fields match the data types of the JSON node,
