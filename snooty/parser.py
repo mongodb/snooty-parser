@@ -1883,15 +1883,6 @@ class _Project:
                         ast_root,
                     )
                     self._page_updated(new_page, diagnostics)
-                except NotImplementedError as e:
-                    if e.args:
-                        invalid_node_type = e.args[0]
-                        diagnostics.append(
-                            UnexpectedNodeType(invalid_node_type, None, 0)
-                        )
-                        self.pages.set_orphan_diagnostics(fileid, diagnostics)
-                        with self._backend_lock:
-                            self.on_diagnostics(fileid, diagnostics)
                 except Exception as e:
                     logger.error(e)
 
