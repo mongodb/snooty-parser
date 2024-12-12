@@ -1872,7 +1872,9 @@ class _Project:
                         )
 
                     ast_root = (
-                        n.Root.deserialize(ast_json) if is_valid_ast_root else None
+                        util.deserialize_ast(ast_json, n.Root, diagnostics)
+                        if is_valid_ast_root
+                        else None
                     )
                     new_page = Page.create(
                         fileid,
