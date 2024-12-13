@@ -154,14 +154,17 @@ class UnexpectedNodeType(Diagnostic):
 
     def __init__(
         self,
-        found_type: Union[str, None],
+        found_type: Optional[str],
         expected_type: Optional[str],
         start: Union[int, Tuple[int, int]],
     ) -> None:
-        suggestion = f' Expected: "{expected_type}".' if expected_type else ""
-        super().__init__(
-            f'Found unexpected node type "{found_type}".{suggestion}', start
-        )
+        msg = f'Found unexpected node type "{found_type}".'
+
+        if expected_type:
+            suggestion = f'Expected: "{expected_type}".'
+            msg += " " + suggestion
+
+        super().__init__(msg, start)
 
 
 class UnnamedPage(Diagnostic):

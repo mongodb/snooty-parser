@@ -1872,7 +1872,7 @@ class _Project:
                         )
 
                     ast_root = (
-                        util.deserialize_ast(ast_json, n.Root, diagnostics)
+                        util.NodeDeserializer.deserialize(ast_json, n.Root, diagnostics)
                         if is_valid_ast_root
                         else None
                     )
