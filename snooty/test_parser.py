@@ -4586,5 +4586,4 @@ def test_parse_ast() -> None:
         diagnostics = result.diagnostics[FileId("test.ast")]
         assert not diagnostics
         bad_types_diagnostics = result.diagnostics[FileId("bad-types.ast")]
-        result.pages
         assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
