@@ -60,7 +60,7 @@ _T = TypeVar("_T")
 class FileId(PurePosixPath):
     """An unambiguous file path relative to the local project's root."""
 
-    PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml))$")
+    PAT_FILE_EXTENSIONS = re.compile(r"\.((txt)|(rst)|(yaml)|(ast))$")
 
     def collapse_dots(self) -> "FileId":
         result: List[str] = []

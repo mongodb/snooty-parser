@@ -40,6 +40,7 @@ from typing import (
     Set,
     TextIO,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -48,7 +49,7 @@ from typing import (
 import requests
 import tomli
 
-from snooty.diagnostics import Diagnostic, NestedProject
+from snooty.diagnostics import Diagnostic, NestedProject, UnexpectedNodeType
 from snooty.n import FileId
 
 from . import n, tinydocutils
@@ -452,6 +453,98 @@ class WorkerLauncher(Generic[_T, _R]):
                 self.__thread.join()
 
         self.__cancel.clear()
+
+
+class NodeDeserializer:
+    node_types: List[Type[n.Node]] = [
+        n.BlockSubstitutionReference,
+        n.Code,
+        n.Comment,
+        n.DefinitionList,
+        n.DefinitionListItem,
+        n.Directive,
+        n.DirectiveArgument,
+        n.Emphasis,
+        n.Field,
+        n.FieldList,
+        n.Footnote,
+        n.FootnoteReference,
+        n.Heading,
+        n.InlineTarget,
+        n.Label,
+        n.Line,
+        n.LineBlock,
+        n.ListNode,
+        n.ListNodeItem,
+        n.Literal,
+        n.NamedReference,
+        n.Paragraph,
+        n.Reference,
+        n.RefRole,
+        n.Role,
+        n.Root,
+        n.Section,
+        n.Strong,
+        n.SubstitutionDefinition,
+        n.SubstitutionReference,
+        n.Table,
+        n.Target,
+        n.TargetIdentifier,
+        n.Text,
+        n.TocTreeDirective,
+        n.Transition,
+    ]
+    node_classes: Dict[str, Type[n.Node]] = {
+        node_class.type: node_class for node_class in node_types
+    }
+
+    @classmethod
+    def deserialize(
+        cls,
+        node: n.SerializedNode,
+        node_type: Type[n._N],
+        diagnostics: List[Diagnostic],
+    ) -> n._N:
+        filtered_fields: Dict[str, Any] = {}
+
+        for field in dataclasses.fields(node_type):
+            # We don't need "span" to be present here since we need to hardcode it as the first argument of Node
+            if field.name == "span":
+                continue
+
+            node_value = node.get(field.name)
+            has_nested_children = field.name == "children" and issubclass(
+                node_type, n.Parent
+            )
+            has_nested_argument = field.name == "argument" and issubclass(
+                node_type, n.Directive
+            )
+            if isinstance(node_value, List) and (
+                has_nested_children or has_nested_argument
+            ):
+                deserialized_children: List[n.Node] = []
+
+                for child in node_value:
+                    if not isinstance(child, dict):
+                        continue
+
+                    child_type: str = child.get("type", "")
+                    child_node_type = cls.node_classes.get(child_type)
+                    if child_node_type:
+                        deserialized_children.append(
+                            cls.deserialize(child, child_node_type, diagnostics)
+                        )
+                    else:
+                        diagnostics.append(UnexpectedNodeType(child_type, None, 0))
+                        continue
+
+                filtered_fields[field.name] = deserialized_children
+            else:
+                # Ideally, we validate that the data types of the fields match the data types of the JSON node,
+                # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.
+                filtered_fields[field.name] = node_value
+
+        return node_type((0,), **filtered_fields)
 
 
 def bundle(

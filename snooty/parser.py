@@ -77,6 +77,7 @@ from .diagnostics import (
     TodoInfo,
     UnexpectedDirectiveOrder,
     UnexpectedIndentation,
+    UnexpectedNodeType,
     UnknownOptionId,
     UnknownTabID,
     UnknownTabset,
@@ -1842,6 +1843,48 @@ class _Project:
             )
             fileids = (self.config.get_fileid(path) for path in paths)
             self.parse_rst_files(fileids, max_workers)
+
+        # Handle custom AST from API reference docs
+        with util.PerformanceLogger.singleton().start("parse pre-existing AST"):
+            ast_pages = util.get_files(
+                self.config.source_path,
+                {".ast"},
+                self.config.root,
+                nested_projects_diagnostics,
+            )
+
+            for path in ast_pages:
+                fileid = self.config.get_fileid(path)
+                diagnostics: List[Diagnostic] = []
+
+                try:
+                    text, read_diagnostics = self.config.read(fileid)
+                    diagnostics.extend(read_diagnostics)
+                    ast_json = json.loads(text)
+                    is_valid_ast_root = (
+                        isinstance(ast_json, Dict)
+                        and ast_json.get("type") == n.Root.type
+                    )
+
+                    if not is_valid_ast_root:
+                        diagnostics.append(
+                            UnexpectedNodeType(ast_json.get("type"), "root", 0)
+                        )
+
+                    ast_root = (
+                        util.NodeDeserializer.deserialize(ast_json, n.Root, diagnostics)
+                        if is_valid_ast_root
+                        else None
+                    )
+                    new_page = Page.create(
+                        fileid,
+                        fileid.as_posix().replace(".ast", ".txt"),
+                        "",
+                        ast_root,
+                    )
+                    self._page_updated(new_page, diagnostics)
+                except Exception as e:
+                    logger.error(e)
 
         for nested_path, diagnostics in nested_projects_diagnostics.items():
             with self._backend_lock:
