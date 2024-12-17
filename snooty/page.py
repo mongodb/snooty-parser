@@ -63,6 +63,9 @@ class Page:
     def fake_full_fileid(self) -> FileId:
         """Return a fictitious path (hopefully) uniquely identifying this output artifact."""
         if self.category:
+            if self.category == "ast":
+                return FileId(self.output_filename)
+
             # Giza wrote out yaml file artifacts under a directory. e.g. steps-foo.yaml becomes
             # steps/foo.rst
             return self.fileid.parent.joinpath(
