@@ -530,10 +530,10 @@ class NodeDeserializer:
 
                     child_type: str = child.get("type", "")
                     child_node_type = cls.node_classes.get(child_type)
-                    if child_node_type == n.Directive and node.get("name") == "toctree":
-                        child_node_type = n.TocTreeDirective
-
                     if child_node_type:
+                        if child_node_type == n.Directive and node.get("name") == "toctree":
+                            child_node_type = n.TocTreeDirective
+
                         deserialized_children.append(
                             cls.deserialize(child, child_node_type, diagnostics)
                         )
