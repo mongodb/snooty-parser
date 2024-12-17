@@ -1878,11 +1878,10 @@ class _Project:
                     )
                     new_page = Page.create(
                         FileId(fileid.as_posix().replace(".ast", ".txt")),
-                        fileid.as_posix().replace(".ast", ".txt"),
+                        None,
                         "",
                         ast_root,
                     )
-                    new_page.category = "ast"
                     self._page_updated(new_page, diagnostics)
                 except Exception as e:
                     logger.error(e)
