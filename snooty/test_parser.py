@@ -4548,7 +4548,8 @@ def test_parse_ast() -> None:
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "options": \{\}
                 }
             ]
         }
