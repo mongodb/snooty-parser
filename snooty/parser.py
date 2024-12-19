@@ -1877,8 +1877,8 @@ class _Project:
                         else None
                     )
                     new_page = Page.create(
-                        fileid,
-                        fileid.as_posix().replace(".ast", ".txt"),
+                        FileId(fileid.as_posix().replace(".ast", ".txt")),
+                        None,
                         "",
                         ast_root,
                     )

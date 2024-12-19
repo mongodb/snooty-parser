@@ -184,7 +184,7 @@ class ZipBackend(Backend):
         fully_qualified_pageid: str,
         document: Dict[str, Any],
     ) -> None:
-        if page_id.suffix not in [EXT_FOR_PAGE, ".ast"]:
+        if page_id.suffix != EXT_FOR_PAGE:
             return
         super().handle_document(
             build_identifiers, page_id, fully_qualified_pageid, document

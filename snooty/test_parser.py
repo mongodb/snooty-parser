@@ -4548,12 +4548,14 @@ def test_parse_ast() -> None:
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "options": {}
                 }
             ]
         }
     ],
-    "fileid": "test.ast"
+    "fileid": "test.txt",
+    "options": {}
 }
 """,
             Path(
@@ -4578,12 +4580,13 @@ def test_parse_ast() -> None:
             ]
         }
     ],
-    "fileid": "bad-types.ast"
+    "fileid": "bad-types.txt",
+    "options": {}
 }
 """,
         }
     ) as result:
-        diagnostics = result.diagnostics[FileId("test.ast")]
+        diagnostics = result.diagnostics[FileId("test.txt")]
         assert not diagnostics
-        bad_types_diagnostics = result.diagnostics[FileId("bad-types.ast")]
+        bad_types_diagnostics = result.diagnostics[FileId("bad-types.txt")]
         assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
