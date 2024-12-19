@@ -491,7 +491,6 @@ class NodeDeserializer:
         n.Target,
         n.TargetIdentifier,
         n.Text,
-        n.TocTreeDirective,
         n.Transition,
     ]
     node_classes: Dict[str, Type[n.Node]] = {
@@ -512,6 +511,7 @@ class NodeDeserializer:
             if field.name == "span":
                 continue
 
+            placeholder_span = (0,)
             node_value = node.get(field.name)
             has_nested_children = field.name == "children" and issubclass(
                 node_type, n.Parent
@@ -531,6 +531,12 @@ class NodeDeserializer:
                     child_type: str = child.get("type", "")
                     child_node_type = cls.node_classes.get(child_type)
                     if child_node_type:
+                        if (
+                            child_node_type == n.Directive
+                            and node.get("name") == "toctree"
+                        ):
+                            child_node_type = n.TocTreeDirective
+
                         deserialized_children.append(
                             cls.deserialize(child, child_node_type, diagnostics)
                         )
@@ -539,12 +545,20 @@ class NodeDeserializer:
                         continue
 
                 filtered_fields[field.name] = deserialized_children
+            elif field.type == FileId and isinstance(node_value, str):
+                filtered_fields[field.name] = field.type(node_value)
             else:
                 # Ideally, we validate that the data types of the fields match the data types of the JSON node,
                 # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.
                 filtered_fields[field.name] = node_value
 
-        return node_type((0,), **filtered_fields)
+        deserialized_node = node_type(placeholder_span, **filtered_fields)
+
+        # Finalize any needed node types and their fields
+        if isinstance(deserialized_node, n.Heading) and not deserialized_node.id:
+            deserialized_node.id = make_html5_id(deserialized_node.get_text().lower())
+
+        return deserialized_node
 
 
 def bundle(
