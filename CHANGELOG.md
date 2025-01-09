@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.10] - 2025-01-09
+
 ### Added
 
 - Preparatory logic for loading pre-parsed AST files (DOP-5237 #638, DOP-5250 #639)
