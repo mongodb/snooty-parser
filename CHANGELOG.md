@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.11] - 2025-01-15
+
 ### Added
 
 - New role for downloads page (DOCSP-46042, #641)
