@@ -193,7 +193,7 @@ def propagate_facets(pages: Dict[FileId, Page], context: Context) -> None:
                 file_path = Path(os.path.join(base, file))
                 fileid = config.get_fileid(file_path)
 
-                if (ext == ".ast"):
+                if ext == ".ast":
                     # .ast files have their .txt fileids spoofed
                     fileid = FileId(fileid.as_posix().replace(".ast", ".txt"))
 
