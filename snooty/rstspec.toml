@@ -1451,6 +1451,9 @@ type = {link = "http://www.mongodb.com/products/%s?tck=docs"}
 [role.dl]
 type = {link = "http://www.mongodb.com/download-center/%s?tck=docs"}
 
+[role.download]
+type = {link = "http://www.mongodb.com/try%s"}
+
 [role.wtdocs]
 type = {link = "http://source.wiredtiger.com/mongodb-3.4%s"}
 
