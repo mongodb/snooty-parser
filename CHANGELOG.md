@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for propagating facets to AST files (#642)
+
 ## [v0.18.11] - 2025-01-15
 
 ### Added
