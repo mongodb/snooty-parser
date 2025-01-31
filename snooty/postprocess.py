@@ -2197,12 +2197,6 @@ class ListTableHandler(Handler):
                 )
                 cells.append(nested_row)
 
-        print("HMMM after")
-        print(node.serialize())
-
-    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        pass
-
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "list-table":
             return
@@ -2212,9 +2206,6 @@ class ListTableHandler(Handler):
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and node.name == "list-table":
             self.is_in_list_table = False
-
-    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        pass
 
 
 class PostprocessorResult(NamedTuple):
