@@ -2143,6 +2143,70 @@ class MultiPageTutorialHandler(Handler):
             page.ast.children.remove(node)
 
 
+class ListTableHandler(Handler):
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+
+    def __identify_expandable_content(self, node: n.Directive) -> None:
+        print("HMMM before")
+        print(node.serialize())
+        # List tables have nested list nodes and list items, so we attempt to destructure them
+        list_node = node.children[0]
+        assert(isinstance(list_node, n.ListNode))
+        rows = list_node.children
+
+        # Need to determine if any cell in a row has a nested table. If that's the case, any list-table, and any sibling
+        # after it, will be in a nested row directive
+        for row in rows:
+            list_node = row.children[0]
+            assert(isinstance(list_node, n.ListNode))
+            cells = list_node.children
+            nested_row_cells = []
+            found_nested_list_table = False
+
+            for cell in cells:
+                nested_row_cell_content = []
+                nested_list_table_index = next((i for i, cell_content_node in enumerate(cell.children) if isinstance(cell_content_node, n.Directive) and cell_content_node.name == "list-table"), -1)
+                if (cell.children and nested_list_table_index > -1):
+                    nested_row_cell_content = cell.children[nested_list_table_index:]
+                    cell.children = cell.children[:nested_list_table_index]
+                    found_nested_list_table = True
+                
+                nested_row_cell = n.Directive((0,), nested_row_cell_content, "mongodb", "cell", [], {})
+                nested_row_cells.append(nested_row_cell)
+
+            if (found_nested_list_table):
+                # We append a nested row to the end of the cells to simulate the rST structure:
+                # .. table::
+                #    .. row::
+                #       .. cell::
+                #          Content
+                #       .. row:: (nested)
+                #          ...
+                #    .. row::
+                nested_row = n.Directive((0,), nested_row_cells, "mongodb", "row", [], {})
+                cells.append(nested_row)
+
+        print("HMMM after")
+        print(node.serialize())
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "list-table":
+            return
+        if (fileid_stack.current == FileId("test-tables.txt")):
+            self.__identify_expandable_content(node)
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.Directive) and node.name == "list-table":
+            self.is_in_list_table = False
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        pass
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -2213,6 +2277,7 @@ class Postprocessor:
             WayfindingHandler,
             MethodSelectorHandler,
             MultiPageTutorialHandler,
+            ListTableHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
