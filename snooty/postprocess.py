@@ -2148,8 +2148,6 @@ class ListTableHandler(Handler):
         super().__init__(context)
 
     def __identify_expandable_content(self, node: n.Directive) -> None:
-        print("HMMM before")
-        print(node.serialize())
         # List tables have nested list nodes and list items, so we attempt to destructure them
         list_node = node.children[0]
         assert isinstance(list_node, n.ListNode)
@@ -2161,11 +2159,11 @@ class ListTableHandler(Handler):
             list_node = row.children[0]
             assert isinstance(list_node, n.ListNode)
             cells = list_node.children
-            nested_row_cells = []
+            nested_row_cells: MutableSequence[n.Node] = []
             found_nested_list_table = False
 
             for cell in cells:
-                nested_row_cell_content = []
+                nested_row_cell_content: MutableSequence[n.Node] = []
                 nested_list_table_index = next(
                     (
                         i

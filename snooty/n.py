@@ -324,13 +324,28 @@ class DefinitionList(Parent[DefinitionListItem]):
 
 
 @dataclass
+class Directive(Parent[Node]):
+    __slots__ = ("domain", "name", "argument", "options")
+    type = "directive"
+    domain: str
+    name: str
+    argument: MutableSequence["Text"]
+    options: Dict[str, str]
+
+    def verify(self) -> None:
+        super().verify()
+        for arg in self.argument:
+            arg.verify()
+
+
+@dataclass
 class ListNodeItem(Parent[Node]):
     __slots__ = ()
     type = "listItem"
 
 
 @dataclass
-class ListNode(Parent[ListNodeItem]):
+class ListNode(Parent[Union[ListNodeItem, Directive]]):
     __slots__ = ("enumtype", "startat")
     type = "list"
     enumtype: ListEnumType
@@ -347,21 +362,6 @@ class Line(Parent[InlineNode]):
 class LineBlock(Parent[Line]):
     __slots__ = ()
     type = "line_block"
-
-
-@dataclass
-class Directive(Parent[Node]):
-    __slots__ = ("domain", "name", "argument", "options")
-    type = "directive"
-    domain: str
-    name: str
-    argument: MutableSequence["Text"]
-    options: Dict[str, str]
-
-    def verify(self) -> None:
-        super().verify()
-        for arg in self.argument:
-            arg.verify()
 
 
 class TocTreeDirectiveEntry(NamedTuple):
