@@ -4613,3 +4613,279 @@ Heading of the page
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], UnknownDefaultTabId)
+
+
+def test_list_table_nesting() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+============
+Nested table
+============
+
+.. list-table::
+   :header-rows: 1
+
+   * - Service
+     - Result
+
+   * - PagerDuty
+     - A returned PagerDuty integration configuration object will
+       contain the following fields:
+          
+       .. list-table::
+          :widths: 30 70
+          :header-rows: 1
+             
+          * - Property
+            - Description 
+
+          * - ``type``
+            - ``PAGER_DUTY``
+             
+          * - ``serviceKey``
+            - Your Service Key.
+          
+       Content after list-table.
+
+   * - Slack
+     - A returned Slack integration configuration object will
+       contain no nested list-tables.
+    
+   * - Datadog
+     - A returned Datadog integration configuration object will
+       contain the following fields:
+          
+       .. list-table::
+          :widths: 30 70
+          :header-rows: 1
+        
+          * - Property
+            - Description 
+
+          * - ``type``
+            - ``DATADOG``
+        
+          * - ``apiKey``
+            - Your API Key.
+        
+          * - ``region``
+            - Indicates the API URL to use.
+"""
+        }
+    ) as result:
+        test_fileid = FileId("index.txt")
+        page = result.pages[test_fileid]
+        diagnostics = result.diagnostics[test_fileid]
+        assert len(diagnostics) == 0
+        # Ensure there are nested row directives
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt">
+	<section>
+		<heading id="nested-table">
+			<text>Nested table</text>
+		</heading>
+		<directive name="list-table" header-rows="1">
+			<list enumtype="unordered">
+				<listItem>
+					<list enumtype="unordered">
+						<listItem>
+							<paragraph>
+								<text>Service</text>
+							</paragraph>
+						</listItem>
+						<listItem>
+							<paragraph>
+								<text>Result</text>
+							</paragraph>
+						</listItem>
+					</list>
+				</listItem>
+				<listItem>
+					<list enumtype="unordered">
+						<listItem>
+							<paragraph>
+								<text>PagerDuty</text>
+							</paragraph>
+						</listItem>
+						<listItem>
+							<paragraph>
+								<text>A returned PagerDuty integration configuration object will
+contain the following fields:</text>
+							</paragraph>
+						</listItem>
+						<directive domain="mongodb" name="row">
+							<directive domain="mongodb" name="cell"></directive>
+							<directive domain="mongodb" name="cell">
+								<directive name="list-table" widths="30 70" header-rows="1">
+									<list enumtype="unordered">
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<text>Property</text>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<text>Description</text>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>type</text>
+														</literal>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>PAGER_DUTY</text>
+														</literal>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>serviceKey</text>
+														</literal>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<text>Your Service Key.</text>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+									</list>
+								</directive>
+								<paragraph>
+									<text>Content after list-table.</text>
+								</paragraph>
+							</directive>
+						</directive>
+					</list>
+				</listItem>
+				<listItem>
+					<list enumtype="unordered">
+						<listItem>
+							<paragraph>
+								<text>Slack</text>
+							</paragraph>
+						</listItem>
+						<listItem>
+							<paragraph>
+								<text>A returned Slack integration configuration object will
+contain no nested list-tables.</text>
+							</paragraph>
+						</listItem>
+					</list>
+				</listItem>
+				<listItem>
+					<list enumtype="unordered">
+						<listItem>
+							<paragraph>
+								<text>Datadog</text>
+							</paragraph>
+						</listItem>
+						<listItem>
+							<paragraph>
+								<text>A returned Datadog integration configuration object will
+contain the following fields:</text>
+							</paragraph>
+						</listItem>
+						<directive domain="mongodb" name="row">
+							<directive domain="mongodb" name="cell"></directive>
+							<directive domain="mongodb" name="cell">
+								<directive name="list-table" widths="30 70" header-rows="1">
+									<list enumtype="unordered">
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<text>Property</text>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<text>Description</text>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>type</text>
+														</literal>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>DATADOG</text>
+														</literal>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>apiKey</text>
+														</literal>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<text>Your API Key.</text>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+										<listItem>
+											<list enumtype="unordered">
+												<listItem>
+													<paragraph>
+														<literal>
+															<text>region</text>
+														</literal>
+													</paragraph>
+												</listItem>
+												<listItem>
+													<paragraph>
+														<text>Indicates the API URL to use.</text>
+													</paragraph>
+												</listItem>
+											</list>
+										</listItem>
+									</list>
+								</directive>
+							</directive>
+						</directive>
+					</list>
+				</listItem>
+			</list>
+		</directive>
+	</section>
+</root>
+""",
+        )

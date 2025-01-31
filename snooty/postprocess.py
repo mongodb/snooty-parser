@@ -2200,8 +2200,7 @@ class ListTableHandler(Handler):
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "list-table":
             return
-        if fileid_stack.current == FileId("test-tables.txt"):
-            self.__identify_expandable_content(node)
+        self.__identify_expandable_content(node)
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and node.name == "list-table":
