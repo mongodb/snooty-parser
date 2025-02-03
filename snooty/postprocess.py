@@ -2202,10 +2202,6 @@ class ListTableHandler(Handler):
             return
         self.__identify_expandable_content(node)
 
-    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
-        if isinstance(node, n.Directive) and node.name == "list-table":
-            self.is_in_list_table = False
-
 
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
