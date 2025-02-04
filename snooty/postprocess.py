@@ -2149,11 +2149,11 @@ class ListTableHandler(Handler):
 
     def __identify_expandable_content(self, node: n.Directive) -> None:
         # List tables have nested list nodes and list items, so we attempt to destructure them
-       # .. table::
-       #    .. list:: <row list>
-       #       .. list-item:: <row>
-       #          .. list:: <cell list>
-       #             .. list-item:: <cell>
+        # .. table::
+        #    .. list:: <row list>
+        #       .. list-item:: <row>
+        #          .. list:: <cell list>
+        #             .. list-item:: <cell>
 
         list_node = node.children[0]
         assert isinstance(list_node, n.ListNode)
