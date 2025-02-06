@@ -1651,6 +1651,7 @@ class _Project:
         root: Path,
         backend: ProjectBackend,
         build_identifiers: BuildIdentifierSet,
+        custom_branch: Optional[str],
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
@@ -1767,6 +1768,9 @@ class _Project:
         self.postprocessor_factory = lambda: Postprocessor(
             self.config, self.targets.copy_clean_slate()
         )
+
+        if custom_branch:
+            branch = custom_branch
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.backend.on_config(self.config, branch)
@@ -2056,8 +2060,9 @@ class Project:
         root: Path,
         backend: ProjectBackend,
         build_identifiers: BuildIdentifierSet,
+        branch: Optional[str],
     ) -> None:
-        self._project = _Project(root, backend, build_identifiers)
+        self._project = _Project(root, backend, build_identifiers, branch)
         self._lock = threading.Lock()
 
     @property

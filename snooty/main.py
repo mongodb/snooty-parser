@@ -12,6 +12,7 @@ Options:
   --patch=<patch_id>        Patch ID of build. Must be specified with a commit hash.
   --no-caching              Disable HTTP response caching.
   --rstspec=<url>           Override the reStructuredText directive & role spec.
+  --branch=<branch>         Override branch value for Netlify.
 
 Environment variables:
   SNOOTY_PARANOID           0, 1 where 0 is default
@@ -282,8 +283,10 @@ def main() -> None:
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
 
+    branch = args["--branch"]
+
     try:
-        project = Project(root_path, backend, _generate_build_identifiers(args))
+        project = Project(root_path, backend, _generate_build_identifiers(args), branch)
     except ProjectLoadError:
         # Close out the backend so that load diagnostics get reported
         backend.close()
