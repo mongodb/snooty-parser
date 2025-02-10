@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed ability to specify branch for Netlify
+- Fixed ability to specify branch for Netlaify
 
 ## [v0.18.13] - 2025-01-29
 
