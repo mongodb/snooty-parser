@@ -69,7 +69,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, Directive
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -2452,6 +2452,7 @@ class Postprocessor:
         for fileid in context.pages:
             if fileid.suffix != EXT_FOR_PAGE:
                 continue
+
 
             if fileid not in visited_fileids:
                 if "orphan" not in context.pages[fileid].ast.options:

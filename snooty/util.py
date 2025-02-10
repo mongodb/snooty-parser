@@ -50,7 +50,7 @@ import requests
 import tomli
 
 from snooty.diagnostics import Diagnostic, NestedProject, UnexpectedNodeType
-from snooty.n import FileId
+from snooty.n import FileId, TocTreeDirectiveEntry
 
 from . import n, tinydocutils
 
@@ -525,15 +525,17 @@ class NodeDeserializer:
                 deserialized_children: List[n.Node] = []
 
                 for child in node_value:
+
                     if not isinstance(child, dict):
                         continue
 
                     child_type: str = child.get("type", "")
                     child_node_type = cls.node_classes.get(child_type)
+
                     if child_node_type:
                         if (
                             child_node_type == n.Directive
-                            and node.get("name") == "toctree"
+                            and child.get("name") == "toctree"
                         ):
                             child_node_type = n.TocTreeDirective
 
@@ -547,6 +549,24 @@ class NodeDeserializer:
                 filtered_fields[field.name] = deserialized_children
             elif field.type == FileId and isinstance(node_value, str):
                 filtered_fields[field.name] = field.type(node_value)
+            elif field.name == "entries":
+                deserialized_entries: List[n.TocTreeDirectiveEntry] = []
+
+                for entry in node_value:
+                    if not isinstance(entry, dict):
+                        continue
+                    
+                    title = entry.get("title")
+                    slug = entry.get("slug")
+
+                    if not title or not slug:
+                        continue
+
+                    entryNode = TocTreeDirectiveEntry(title, None, slug, None)
+                    deserialized_entries.append(
+                        entryNode
+                    )
+                    filtered_fields[field.name] = deserialized_entries
             else:
                 # Ideally, we validate that the data types of the fields match the data types of the JSON node,
                 # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.
