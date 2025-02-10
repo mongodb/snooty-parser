@@ -1754,7 +1754,7 @@ class _Project:
 
         if custom_branch:
             branch = custom_branch
-        else: 
+        else:
             try:
                 branch = subprocess.check_output(
                     ["git", "rev-parse", "--abbrev-ref", "HEAD"],
