@@ -1751,16 +1751,20 @@ class _Project:
                     )
 
         username = getpass.getuser()
-        try:
-            branch = subprocess.check_output(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                cwd=root,
-                encoding="utf-8",
-                stderr=subprocess.PIPE,
-            ).strip()
-        except subprocess.CalledProcessError as err:
-            logger.info("git error getting branch name: %s", err.stderr)
-            branch = "current"
+
+        if custom_branch:
+            branch = custom_branch
+        else:
+            try:
+                branch = subprocess.check_output(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=root,
+                    encoding="utf-8",
+                    stderr=subprocess.PIPE,
+                ).strip()
+            except subprocess.CalledProcessError as err:
+                logger.info("git error getting branch name: %s", err.stderr)
+                branch = "current"
 
         self.prefix = [self.config.name, username, branch]
 
@@ -1768,9 +1772,6 @@ class _Project:
         self.postprocessor_factory = lambda: Postprocessor(
             self.config, self.targets.copy_clean_slate()
         )
-
-        if custom_branch:
-            branch = custom_branch
 
         self.asset_dg: "networkx.DiGraph[FileId]" = networkx.DiGraph()
         self.backend.on_config(self.config, branch)
