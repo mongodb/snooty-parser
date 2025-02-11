@@ -2454,7 +2454,9 @@ class Postprocessor:
                 continue
 
 
+        # TODO: This is being hit for osiris pages with toctrees
             if fileid not in visited_fileids:
+                print(fileid)
                 if "orphan" not in context.pages[fileid].ast.options:
                     context.diagnostics[fileid].append(OrphanedPage())
 
@@ -2706,7 +2708,7 @@ def clean_slug(slug: str) -> str:
     # TODO: remove file extensions in initial parse layer
     # https://jira.mongodb.org/browse/DOCSP-7595
     root, ext = os.path.splitext(slug)
-    if ext in SOURCE_FILE_EXTENSIONS:
+    if ext in SOURCE_FILE_EXTENSIONS or ext == ".ast":
         return root
 
     return slug
