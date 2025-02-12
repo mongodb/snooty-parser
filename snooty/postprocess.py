@@ -187,11 +187,15 @@ def propagate_facets(pages: Dict[FileId, Page], context: Context) -> None:
         if parent_facets:
             for file in files:
                 ext = os.path.splitext(file)[1]
-                if ext not in util.RST_EXTENSIONS:
+                if ext not in util.RST_EXTENSIONS and ext != ".ast":
                     continue
 
                 file_path = Path(os.path.join(base, file))
                 fileid = config.get_fileid(file_path)
+
+                if ext == ".ast":
+                    # .ast files have their .txt fileids spoofed
+                    fileid = FileId(fileid.as_posix().replace(".ast", ".txt"))
 
                 page = pages[fileid]
                 page.facets = parent_facets

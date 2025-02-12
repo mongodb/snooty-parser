@@ -1651,6 +1651,7 @@ class _Project:
         root: Path,
         backend: ProjectBackend,
         build_identifiers: BuildIdentifierSet,
+        custom_branch: Optional[str] = None,
     ) -> None:
         root = root.resolve(strict=True)
         self.config, config_diagnostics = ProjectConfig.open(root)
@@ -1750,16 +1751,20 @@ class _Project:
                     )
 
         username = getpass.getuser()
-        try:
-            branch = subprocess.check_output(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                cwd=root,
-                encoding="utf-8",
-                stderr=subprocess.PIPE,
-            ).strip()
-        except subprocess.CalledProcessError as err:
-            logger.info("git error getting branch name: %s", err.stderr)
-            branch = "current"
+
+        if custom_branch:
+            branch = custom_branch
+        else:
+            try:
+                branch = subprocess.check_output(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=root,
+                    encoding="utf-8",
+                    stderr=subprocess.PIPE,
+                ).strip()
+            except subprocess.CalledProcessError as err:
+                logger.info("git error getting branch name: %s", err.stderr)
+                branch = "current"
 
         self.prefix = [self.config.name, username, branch]
 
@@ -2056,8 +2061,9 @@ class Project:
         root: Path,
         backend: ProjectBackend,
         build_identifiers: BuildIdentifierSet,
+        branch: Optional[str] = None,
     ) -> None:
-        self._project = _Project(root, backend, build_identifiers)
+        self._project = _Project(root, backend, build_identifiers, branch)
         self._lock = threading.Lock()
 
     @property

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.14] - 2025-02-10
+
+### Fixed
+
+- Fixed ability to specify branch for Netlaify
+
+## [v0.18.13] - 2025-01-29
+
+### Added
+
+- Add ability to specify branch for Netlify
+
+## [v0.18.12] - 2025-01-29
+
+### Added
+
+- Support for propagating facets to AST files (#642)
+
+## [v0.18.11] - 2025-01-15
+
+### Added
+
+- New role for downloads page (DOCSP-46042, #641)
+
+## [v0.18.10] - 2025-01-09
+
+### Added
+
+- Preparatory logic for loading pre-parsed AST files (DOP-5237 #638, DOP-5250 #639)
+
+### Changed
+
+- `atlascli` role link target (DOCSP-45974, #640)
+
 ## [v0.18.9] - 2024-12-11
 
 ### Changed
