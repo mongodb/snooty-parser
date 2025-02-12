@@ -69,7 +69,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType, Directive
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -2550,9 +2550,7 @@ class Postprocessor:
                     # Ensure Osiris-built TOC parent nodes are functional
                     if ast.options:
                         if ast.options.get("osiris_parent"):
-                            toctree_node_options = {
-                                "drawer": False
-                            }
+                            toctree_node_options = {"drawer": False}
 
                     # Check if the cleaned slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:

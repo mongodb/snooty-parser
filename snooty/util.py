@@ -552,22 +552,21 @@ class NodeDeserializer:
             elif field.name == "entries":
                 deserialized_entries: List[n.TocTreeDirectiveEntry] = []
 
-                for entry in node_value:
-                    if not isinstance(entry, dict):
-                        continue
-                    
-                    title = entry.get("title")
-                    slug = entry.get("slug")
+                if isinstance(node_value, List):
+                    for entry in node_value:
+                        if not isinstance(entry, dict):
+                            continue
 
-                    if not title or not slug:
-                        continue
+                        title = entry.get("title")
+                        slug = entry.get("slug")
 
-                    entryNode = TocTreeDirectiveEntry(title, None, slug, None)
-                    deserialized_entries.append(
-                        entryNode
-                    )
-                
-                filtered_fields[field.name] = deserialized_entries
+                        if not title or not slug:
+                            continue
+
+                        entryNode = TocTreeDirectiveEntry(title, None, slug, None)
+                        deserialized_entries.append(entryNode)
+
+                    filtered_fields[field.name] = deserialized_entries
             else:
                 # Ideally, we validate that the data types of the fields match the data types of the JSON node,
                 # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.
