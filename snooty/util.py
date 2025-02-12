@@ -566,7 +566,8 @@ class NodeDeserializer:
                     deserialized_entries.append(
                         entryNode
                     )
-                    filtered_fields[field.name] = deserialized_entries
+                
+                filtered_fields[field.name] = deserialized_entries
             else:
                 # Ideally, we validate that the data types of the fields match the data types of the JSON node,
                 # but that requires a more verbose and time-consuming process. For now, we assume data types are correct.

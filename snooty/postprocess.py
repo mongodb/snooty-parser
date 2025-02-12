@@ -2453,10 +2453,7 @@ class Postprocessor:
             if fileid.suffix != EXT_FOR_PAGE:
                 continue
 
-
-        # TODO: This is being hit for osiris pages with toctrees
             if fileid not in visited_fileids:
-                print(fileid)
                 if "orphan" not in context.pages[fileid].ast.options:
                     context.diagnostics[fileid].append(OrphanedPage())
 
@@ -2545,6 +2542,13 @@ class Postprocessor:
                     toctree_node_options: Dict[str, Any] = {
                         "drawer": slug not in toc_landing_pages
                     }
+
+                    # Ensure Osiris-built TOC parent nodes are functional
+                    if ast.options:
+                        if ast.options.get("osiris_parent"):
+                            toctree_node_options = {
+                                "drawer": False
+                            }
 
                     # Check if the cleaned slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:
