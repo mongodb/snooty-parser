@@ -2547,6 +2547,11 @@ class Postprocessor:
                         "drawer": slug not in toc_landing_pages
                     }
 
+                    # Ensure Osiris-built TOC parent nodes are functional
+                    if ast.options:
+                        if ast.options.get("osiris_parent"):
+                            toctree_node_options = {"drawer": False}
+
                     # Check if the cleaned slug corresponds to an associated project name, indicating an external node
                     if slug in associated_project_names:
                         toctree_node_options["project"] = slug
@@ -2709,7 +2714,7 @@ def clean_slug(slug: str) -> str:
     # TODO: remove file extensions in initial parse layer
     # https://jira.mongodb.org/browse/DOCSP-7595
     root, ext = os.path.splitext(slug)
-    if ext in SOURCE_FILE_EXTENSIONS:
+    if ext in SOURCE_FILE_EXTENSIONS or ext == ".ast":
         return root
 
     return slug
