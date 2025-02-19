@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.16] - 2025-02-19
+
 ### Added
 
 - Enable ToC consumption for Osiris
