@@ -2328,6 +2328,12 @@ class Postprocessor:
         if iatree:
             document["iatree"] = iatree
 
+        if context[ProjectConfig].limited_translations:
+            # TODO-5322: We'll maybe want to add some sort of validations to make sure slugs are valid?
+            document["limited_translations"] = [limited_translation.serialize() for limited_translation in context[ProjectConfig].limited_translations]
+            print("HELLO???")
+            print(document["limited_translations"])
+
         context[GuidesHandler].add_guides_metadata(document)
 
         openapi_pages_metadata = context[OpenAPIHandler].get_metadata()
