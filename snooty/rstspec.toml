@@ -1672,6 +1672,10 @@ prefix = "exp"
 help = """aggregation framework group expression"""
 prefix = "grp"
 
+[rstobject."mongodb:window"]
+help = """aggregation window function used in $setWindowFields"""
+prefix = "window"
+
 [rstobject."mongodb:operator"]
 prefix = "metaOp"
 
