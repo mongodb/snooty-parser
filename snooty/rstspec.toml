@@ -1879,6 +1879,12 @@ platforms = [
   {id = "rhel", title = "RHEL/CentOS/SLES/AMZ"},
   {id = "linux", title = "Linux"},
 ]
+relational-dbs = [
+  {id = "mysql", title = "MySQL"},
+  {id = "oracle", title = "Oracle"},
+  {id = "postgres", title = "PostgreSQL"},
+  {id = "sql", title = "SQL Server"},
+]
 drivers = [
   {id = "atlas-api", title = "Atlas API"},
   {id = "atlas-cli", title = "Atlas CLI"},
