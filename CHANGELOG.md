@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.19.0] - 2025-03-13
-
-### Added
-
-- Add role for window functions
-- Added relational-dbs for the tab directive
-
 ## [v0.18.16] - 2025-02-19
 
 ### Added

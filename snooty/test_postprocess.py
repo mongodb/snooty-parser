@@ -3,6 +3,7 @@
 
 from pathlib import Path, PurePath
 from typing import Any, Dict, cast
+import pytest
 
 from snooty.types import Facet
 
@@ -2922,6 +2923,8 @@ versions = ["v1", "v2"]
         assert metadata["associated_products"][0]["name"] == "test_associated_product"
 
 
+# Temporarily expect this to fail as APIx team fixes dependency
+@pytest.mark.xfail
 def test_openapi_metadata() -> None:
     with make_test(
         {
@@ -3028,6 +3031,8 @@ def test_openapi_duplicates() -> None:
         assert file_metadata["source"] == "/openapi-admin-v3.yaml"
 
 
+# Temporarily expect this to fail as APIx team fixes dependency
+@pytest.mark.xfail
 def test_openapi_invalid_version() -> None:
     with make_test(
         {
