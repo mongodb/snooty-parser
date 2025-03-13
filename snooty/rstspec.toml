@@ -374,6 +374,9 @@ inherit = "tabs"
 [directive.tabs-platforms]
 inherit = "tabs"
 
+[directive.tabs-relational-dbs]
+inherit = "tabs"
+
 [directive.tabs-drivers]
 inherit = "tabs"
 
