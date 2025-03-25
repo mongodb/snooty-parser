@@ -1639,10 +1639,19 @@ help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/operator%s", ensure_trailing_slash = true}
 
 ### Types of objects (directive & role pairs)
-[rstobject."py:class"]
 
+# The following rstobjects are used for cross-referencing through intersphinx
+# Examples: https://www.sphinx-doc.org/en/master/usage/domains/python.html#cross-referencing-python-objects
+[rstobject."py:class"]
 [rstobject."py:meth"]
 type = "callable"
+[rstobject."py:mod"]
+[rstobject."py:attr"]
+[rstobject."py:data"]
+[rstobject."py:exc"]
+[rstobject."py:func"]
+[rstobject."std:django-admin"]
+[rstobject."std:fieldlookup"]
 
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
