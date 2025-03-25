@@ -1642,14 +1642,14 @@ type = {link = "https://www.mongodb.com/docs/atlas/operator%s", ensure_trailing_
 
 # The following rstobjects are used for cross-referencing through intersphinx
 # Examples: https://www.sphinx-doc.org/en/master/usage/domains/python.html#cross-referencing-python-objects
-[rstobject."py:class"]
-[rstobject."py:meth"]
-type = "callable"
-[rstobject."py:mod"]
 [rstobject."py:attr"]
+[rstobject."py:class"]
 [rstobject."py:data"]
 [rstobject."py:exc"]
 [rstobject."py:func"]
+[rstobject."py:meth"]
+type = "callable"
+[rstobject."py:mod"]
 [rstobject."std:django-admin"]
 [rstobject."std:fieldlookup"]
 

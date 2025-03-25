@@ -259,3 +259,21 @@ def test_suggestions() -> None:
     assert db.get_suggestions("std:label:a-labal-on-index") == [
         "std:label:a-label-on-index"
     ]
+
+
+def test_cross_reference_roles() -> None:
+    inventory_bytes = Path("test_data/test_intersphinx/django.inv").read_bytes()
+    inventory = Inventory.parse(INVENTORY_URL, inventory_bytes)
+    # Test that examples of custom cross-reference roles are valid targets.
+    expected_targets = [
+        "py:attr:django.db.models.Options.constraints",
+        "py:class:django.views.generic.list.MultipleObjectMixin",
+        "py:data:django.apps.apps",
+        "py:exc:django.urls.Resolver404",
+        "py:func:asgiref.sync.async_to_sync",
+        "py:meth:db_for_read",
+        "py:mod:django.apps",
+        "std:ext-doc:contents",
+    ]
+    for target in expected_targets:
+        assert inventory.targets.get(target)

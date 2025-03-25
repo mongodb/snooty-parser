@@ -111,6 +111,7 @@ class Inventory:
             name, domain_and_role, raw_priority, uri, raw_dispname = match.groups()
 
             # These are hard-coded in Sphinx as well. Support these names for compatibility.
+            # Each one should have a corresponding rstobject in rstspec.toml.
             if domain_and_role == "std:cmdoption":
                 domain_and_role = "std:option"
             elif domain_and_role == "std:doc":
