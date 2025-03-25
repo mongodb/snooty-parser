@@ -104,6 +104,10 @@ def test_dump_target_database() -> None:
     )
 
     for target_name, generated_definition in generated_inventory.targets.items():
+        # Reconcile difference between "doc" role usage internally vs. externally
+        if "std:doc" in target_name:
+            target_name = target_name.replace("std:doc", "std:ext-doc")
+
         reference_definition = reference_inventory.targets[target_name]
         # Skip odd definitions
         if not reference_definition.uri:
@@ -124,6 +128,13 @@ def test_dump_target_database() -> None:
             )
             generated_definition = generated_definition._replace(
                 uri=new_uri, uri_base=new_uri_base
+            )
+
+        # We have internal "doc" roles keep their original "doc" role when generating an inventory, but
+        # consumed inventories expect these to be "ext-doc" to differentiate between for usage.
+        if generated_definition.role == ("std", "doc"):
+            generated_definition = generated_definition._replace(
+                role=("std", "ext-doc")
             )
 
         assert reference_definition == generated_definition
