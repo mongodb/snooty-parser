@@ -1653,6 +1653,9 @@ type = "callable"
 [rstobject."std:django-admin"]
 [rstobject."std:fieldlookup"]
 
+# Used to differentiate between internal "doc" role and external "doc" role through intersphinx
+[rstobject."std:ext-doc"]
+
 [rstobject."js:func"]
 [rstobject."mongodb:httpaction"]
 [rstobject."mongodb:mailgunaction"]
