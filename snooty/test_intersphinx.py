@@ -104,6 +104,10 @@ def test_dump_target_database() -> None:
     )
 
     for target_name, generated_definition in generated_inventory.targets.items():
+        # Reconcile difference between "doc" role usage internally vs. externally
+        if "std:doc" in target_name:
+            target_name = target_name.replace("std:doc", "std:ext-doc")
+
         reference_definition = reference_inventory.targets[target_name]
         # Skip odd definitions
         if not reference_definition.uri:
@@ -124,6 +128,13 @@ def test_dump_target_database() -> None:
             )
             generated_definition = generated_definition._replace(
                 uri=new_uri, uri_base=new_uri_base
+            )
+
+        # We have internal "doc" roles keep their original "doc" role when generating an inventory, but
+        # consumed inventories expect these to be "ext-doc" to differentiate between for usage.
+        if generated_definition.role == ("std", "doc"):
+            generated_definition = generated_definition._replace(
+                role=("std", "ext-doc")
             )
 
         assert reference_definition == generated_definition
@@ -259,3 +270,21 @@ def test_suggestions() -> None:
     assert db.get_suggestions("std:label:a-labal-on-index") == [
         "std:label:a-label-on-index"
     ]
+
+
+def test_cross_reference_roles() -> None:
+    inventory_bytes = Path("test_data/test_intersphinx/django.inv").read_bytes()
+    inventory = Inventory.parse(INVENTORY_URL, inventory_bytes)
+    # Test that examples of custom cross-reference roles are valid targets.
+    expected_targets = [
+        "py:attr:django.db.models.Options.constraints",
+        "py:class:django.views.generic.list.MultipleObjectMixin",
+        "py:data:django.apps.apps",
+        "py:exc:django.urls.Resolver404",
+        "py:func:asgiref.sync.async_to_sync",
+        "py:meth:db_for_read",
+        "py:mod:django.apps",
+        "std:ext-doc:contents",
+    ]
+    for target in expected_targets:
+        assert inventory.targets.get(target)

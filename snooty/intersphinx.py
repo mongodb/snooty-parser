@@ -111,10 +111,24 @@ class Inventory:
             name, domain_and_role, raw_priority, uri, raw_dispname = match.groups()
 
             # These are hard-coded in Sphinx as well. Support these names for compatibility.
+            # Each one should have a corresponding rstobject in rstspec.toml.
             if domain_and_role == "std:cmdoption":
                 domain_and_role = "std:option"
+            elif domain_and_role == "std:doc":
+                # Make it easier to differentiate between regular internal docs roles and external ones for intersphinx
+                domain_and_role = "std:ext-doc"
+            # The following rstobjects are used for cross-referencing through intersphinx
+            # Examples: https://www.sphinx-doc.org/en/master/usage/domains/python.html#cross-referencing-python-objects
+            elif domain_and_role == "py:attribute":
+                domain_and_role = "py:attr"
+            elif domain_and_role == "py:exception":
+                domain_and_role = "py:exc"
+            elif domain_and_role == "py:function":
+                domain_and_role = "py:func"
             elif domain_and_role == "py:method":
                 domain_and_role = "py:meth"
+            elif domain_and_role == "py:module":
+                domain_and_role = "py:mod"
 
             uri_base = uri
             if uri.endswith("$"):
