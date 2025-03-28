@@ -512,3 +512,15 @@ class Transition(Node):
 class Table(Parent[Node]):
     __slots__ = ()
     type = "table"
+
+
+@dataclass
+class ComposableDirective(Directive):
+    __slots__ = "composable_options"
+    composable_options: List[Dict[str, Union[str, List[Dict[str, str]]]]]
+
+
+@dataclass
+class ComposableContent(Directive):
+    __slots__ = "selections"
+    selections: List[Dict[str, str]]

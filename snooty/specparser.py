@@ -163,6 +163,18 @@ class RefRoleType:
     )
 
 
+@checked
+@dataclass
+class Composable:
+    """Composable object with id, title, default, and options"""
+
+    id: str
+    title: str
+    default: Optional[str]
+    dependencies: Optional[List[Dict[str, str]]]
+    options: List[TabDefinition]
+
+
 #: Spec definition of a role: this can be either a PrimitiveRoleType, or
 #: an object requiring additional configuration.
 RoleType = Union[PrimitiveRoleType, LinkRoleType, RefRoleType]
@@ -295,6 +307,7 @@ class Spec:
     tabs: Dict[str, List[TabDefinition]] = field(default_factory=dict)
     wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
+    composables: List[Composable] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
 

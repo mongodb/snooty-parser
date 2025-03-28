@@ -4590,3 +4590,55 @@ def test_parse_ast() -> None:
         assert not diagnostics
         bad_types_diagnostics = result.diagnostics[FileId("bad-types.txt")]
         assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
+
+
+def test_composable_tutorial() -> None:
+    """Test composable directive"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+      Cloud Provider - GCP
+
+   .. selected-content::
+      :selections: atlas-ui, None, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas UI
+      Deployment Type - Replication
+      Cloud Provider - GCP
+""",
+    )
+
+    assert not diagnostics
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst"><directive domain="mongodb" name="composable-tutorial" composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': []}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': []}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': []}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': []}]"><directive domain="mongodb" name="selected-content" selections="[{'interface': 'driver'}, {'language': 'nodejs'}, {'cluster-topology': 'repl'}, {'cloud-provider': 'gcp'}]"><paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - Node
+Deployment Type - Replication
+Cloud Provider - GCP</text></paragraph></directive><directive domain="mongodb" name="selected-content" selections="[{'interface': 'atlas-ui'}, {'language': 'None'}, {'cluster-topology': 'repl'}, {'cloud-provider': 'gcp'}]"><paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas UI
+Deployment Type - Replication
+Cloud Provider - GCP</text></paragraph></directive></directive></root>""",
+    )
+
+
+def test_composable_tutorial_errors() -> None:
+    print("TODO. test each error")
