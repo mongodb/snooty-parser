@@ -162,6 +162,7 @@ class RefRoleType:
         default_factory=lambda: {FormattingType.monospace}
     )
 
+
 @checked
 @dataclass
 class Composable:
@@ -170,6 +171,7 @@ class Composable:
     id: str
     title: str
     default: Optional[str]
+    dependencies: Optional[List[Dict[str, str]]]
     options: List[TabDefinition]
 
 

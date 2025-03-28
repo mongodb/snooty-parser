@@ -356,7 +356,7 @@ class Directive(Parent[Node]):
     domain: str
     name: str
     argument: MutableSequence["Text"]
-    options: Dict[str, str]
+    options: Dict[str, Union[str]]
 
     def verify(self) -> None:
         super().verify()
@@ -512,3 +512,8 @@ class Transition(Node):
 class Table(Parent[Node]):
     __slots__ = ()
     type = "table"
+
+# @dataclass
+# class ComposableDirective(Directive):
+#     __slots__ = ()
+#     options: Dict[str, List[object]]

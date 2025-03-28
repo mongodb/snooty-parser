@@ -4590,3 +4590,47 @@ def test_parse_ast() -> None:
         assert not diagnostics
         bad_types_diagnostics = result.diagnostics[FileId("bad-types.txt")]
         assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
+
+
+def test_composable_tutorial() -> None:
+    """Test composable directive"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+      Cloud Provider - GCP
+""",
+    )
+    print("check test")
+    print(diagnostics)
+    print(page.ast)
+
+
+#     check_ast_testing_string(
+#         page.ast,
+#         """
+# <root fileid="test.rst">
+#     <directive domain="mongodb" name="composable-tutorial" heading="This is a heading" sub_heading="This is a subheading" id="this-is-a-heading">
+#         <section>
+#             <paragraph><text>This is collapsible content</text></paragraph><code lang="javascript" copyable="True">This is code within collapsible content</code>
+#         </section>
+#     </directive>
+# </root>""",
+#     )
+def test_composable_tutorial_errors() -> None:
+    print("TODO. test each error")

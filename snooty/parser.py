@@ -88,6 +88,7 @@ from .n import FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
 from .postprocess import Postprocessor, PostprocessorResult
+from .specparser import Composable
 from .target_database import ProjectInterface, TargetDatabase
 from .types import (
     AssociatedProduct,
@@ -579,6 +580,9 @@ class JSONVisitor:
             popped.options["id"] = html5_id
             popped.children = [n.Section((node.get_line(),), popped.children)]
 
+        elif isinstance(popped, n.Directive) and popped.name == "composable-tutorial":
+            self.handle_composable(popped)
+
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
             return
@@ -690,7 +694,9 @@ class JSONVisitor:
                 if child.name == expected_child_desc_name:
                     valid_desc = child
                     continue
-                self.check_valid_option_id(child, expected_options_dict, used_ids)
+                self.check_valid_option_id(
+                    child.options.get("id"), child, expected_options_dict, used_ids
+                )
             except ChildValidationError:
                 continue
 
@@ -763,13 +769,13 @@ class JSONVisitor:
 
     def check_valid_option_id(
         self,
+        option_id: str | None,
         child: n.Directive,
         expected_options: Dict[str, Any],
         used_ids: Set[str],
     ) -> None:
         """Ensures that a child directive has a unique option "id" that is correctly defined."""
 
-        option_id = child.options.get("id")
         if not option_id:
             # Don't append diagnostic since docutils should already
             # complain about missing ID option
@@ -803,7 +809,9 @@ class JSONVisitor:
                 self.check_valid_child(node, child, {expected_child_name})
                 # check_valid_child verifies that the child is a directive
                 assert isinstance(child, n.Directive)
-                self.check_valid_option_id(child, expected_options_dict, used_ids)
+                self.check_valid_option_id(
+                    child.options.get("id"), child, expected_options_dict, used_ids
+                )
             except ChildValidationError:
                 continue
 
@@ -853,6 +861,105 @@ class JSONVisitor:
 
         if target_idx >= 0:
             node.children.insert(0, node.children.pop(target_idx))
+
+    def handle_composable(self, node: n.Directive) -> None:
+        print("handle_composable")
+        print(node)
+        # options={
+        #     "options": "interface, language, deployment-type, cloud-provider",
+        #     "defaults": "driver, node, replication, gcp",
+        # },
+
+        # make sure all options are valid within the spec
+        # handle options to make them list of strings
+        option_ids_as_string = (
+            node.options["options"] if "options" in node.options else ""
+        )
+        default_ids_as_string = (
+            node.options["defaults"] if "defaults" in node.options else ""
+        )
+
+        expected_options = specparser.Spec.get().composables
+        expected_options_dict = {
+            expected_option.id: expected_option for expected_option in expected_options
+        }
+        option_ids: List[str] = re.split(r"\s*,\s*", option_ids_as_string.strip())
+        default_ids: List[str] = re.split(r"\s*,\s*", default_ids_as_string.strip())
+
+        # TODO: validate default_ids
+
+        # constructing composable option
+        used_ids: Set[str] = set()
+        composable_options = []
+        for index in range(len(option_ids)):
+            option_id = option_ids[index]
+            try:
+                self.check_valid_option_id(
+                    option_id, node, expected_options_dict, used_ids
+                )
+                option_from_spec = next(
+                    (option for option in expected_options if option.id == option_id),
+                )
+                composable_option: Dict[str, str | List[Dict[str, str]]] = {
+                    "value": option_from_spec.id,
+                    "text": option_from_spec.title,
+                    "default": default_ids[index] or option_from_spec.default or "",
+                    "dependencies": option_from_spec.dependencies or [],
+                    "selections": [],
+                }
+                composable_options.append(composable_option)
+
+            except ChildValidationError:
+                continue
+
+            # add to used ids for no repeats
+            used_ids.add(option_id)
+
+        valid_children = []
+        for child in node.children:
+            try:
+                self.check_valid_child(node, child, {"selected-content"})
+                assert isinstance(child, n.Directive)
+                self.handle_composable_content(
+                    child, expected_options
+                )
+                valid_children.append(child)
+            except ChildValidationError:
+                continue
+
+        # TODO: after handling child content, handle commposable.options[].selections[]
+
+        # make sure there are at least 1 children with `selected-content`
+        if len(valid_children) < 1:
+            self.diagnostics.append(
+                MissingChild("composable-tutorial", "selected-content", node.start[0])
+            )
+        node.options = {"composable-options": composable_options}
+
+    def handle_composable_content(
+        self,
+        node: n.Directive,
+        spec_composables: List[Composable],
+    ) -> None:
+        selection_ids = re.split(r"\s*,\s*", node.options.get("selections", "").strip())
+        selections: List[Dict[str, str]] = []
+        # validate all selection ids
+        for idx in range(len(selection_ids)):
+            selection_id = selection_ids[idx]
+            spec_composable = spec_composables[idx]
+            allowed_selection_ids = map(lambda x: x.id, spec_composable.options)
+            if selection_id not in allowed_selection_ids:
+                self.diagnostics.append(
+                    InvalidField(
+                        f"Composable tutorial's selection is invalid: '{selection_id}'",
+                        node.start[0],
+                    )
+                )
+                break
+            composable_option_value = str(spec_composable.id)
+            selections.append({composable_option_value: selection_id})
+
+        node.options = {"selections": selections}
 
     def handle_directive(
         self, node: rstparser.directive, line: int

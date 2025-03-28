@@ -849,6 +849,27 @@ example = """.. multi-page-tutorial::
    :show-next-top:
 """
 
+[directive."mongodb:composable-tutorial"]
+help = "Collection of content that is configurable by user selections"
+options.options = {type = "string", required = true}
+options.defaults = {type = "string"}
+content_type = "block"
+example = """
+.. composable-tutorial::
+   :options: interface, language
+   :defaults: driver, nodejs
+
+   .. selected-content::
+      :selections: driver, nodejs
+
+      This is content under Driver and Node.js selections
+"""
+
+[directive."mongodb:selected-content"]
+help = "Content chosen to be displayed"
+options.selections = {type = "string", required = true}
+content_type = "block"
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -2052,6 +2073,9 @@ options = [
 id = "language"
 title = "Language"
 default = "nodejs"
+dependencies = [
+  {interface = "driver"}
+]
 options = [
   {id = "c", title = "C"},
   {id = "csharp", title = "C#"},
