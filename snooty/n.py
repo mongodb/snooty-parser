@@ -356,7 +356,7 @@ class Directive(Parent[Node]):
     domain: str
     name: str
     argument: MutableSequence["Text"]
-    options: Dict[str, Union[str]]
+    options: Dict[str, str]
 
     def verify(self) -> None:
         super().verify()
@@ -513,7 +513,14 @@ class Table(Parent[Node]):
     __slots__ = ()
     type = "table"
 
-# @dataclass
-# class ComposableDirective(Directive):
-#     __slots__ = ()
-#     options: Dict[str, List[object]]
+
+@dataclass
+class ComposableDirective(Directive):
+    __slots__ = "composable_options"
+    composable_options: List[Dict[str, Union[str, List[Dict[str, str]]]]]
+
+
+@dataclass
+class ComposableContent(Directive):
+    __slots__ = "selections"
+    selections: List[Dict[str, str]]
