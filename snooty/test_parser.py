@@ -4592,7 +4592,7 @@ def test_parse_ast() -> None:
         assert [type(d) for d in bad_types_diagnostics] == [UnexpectedNodeType]
 
 
-def test_composable_tutorial() -> None:
+def test_valid_composable_tutorial() -> None:
     """Test composable directive"""
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
@@ -4616,7 +4616,7 @@ def test_composable_tutorial() -> None:
       Cloud Provider - GCP
 
    .. selected-content::
-      :selections: atlas-ui, None, repl, gcp
+      :selections: atlas-ui, None, repl, aws
 
       This content will only be shown when the selections are as follows:
       Interface - Atlas UI
@@ -4626,17 +4626,31 @@ def test_composable_tutorial() -> None:
     )
 
     assert not diagnostics
+    print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
         """
-<root fileid="test.rst"><directive domain="mongodb" name="composable-tutorial" composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': []}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': []}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': []}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': []}]"><directive domain="mongodb" name="selected-content" selections="[{'interface': 'driver'}, {'language': 'nodejs'}, {'cluster-topology': 'repl'}, {'cloud-provider': 'gcp'}]"><paragraph><text>This content will only be shown when the selections are as follows:
+<root fileid="test.rst">
+   <directive domain="mongodb" name="composable-tutorial"
+      composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': {}, 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-ui', 'text': 'Atlas UI'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': {'interface': 'driver'}, 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': {}, 'selections': [{'value': 'repl', 'text': 'Replica Set'}, {'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': {}, 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'driver', 'language': 'nodejs', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
 Interface - Drivers
 Language - Node
 Deployment Type - Replication
-Cloud Provider - GCP</text></paragraph></directive><directive domain="mongodb" name="selected-content" selections="[{'interface': 'atlas-ui'}, {'language': 'None'}, {'cluster-topology': 'repl'}, {'cloud-provider': 'gcp'}]"><paragraph><text>This content will only be shown when the selections are as follows:
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-ui', 'language': 'None', 'cluster-topology': 'repl', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
 Interface - Atlas UI
 Deployment Type - Replication
-Cloud Provider - GCP</text></paragraph></directive></directive></root>""",
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+   </directive>
+</root>
+""",
     )
 
 

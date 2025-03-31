@@ -875,6 +875,14 @@ class JSONVisitor:
         option_ids: List[str] = re.split(r"\s*,\s*", option_ids_as_string.strip())
         default_ids: List[str] = re.split(r"\s*,\s*", default_ids_as_string.strip())
 
+        # expect at least 1 option_ids
+        if len(option_ids) < 1:
+            self.diagnostics.append(
+                InvalidChildCount(
+                    "composable-tutorial", "option_ids", "at least one", node.start[0]
+                )
+            )
+
         # get the expected composable options from the spec
         spec_composables = specparser.Spec.get().composables
         spec_composables_dict = {
@@ -884,6 +892,7 @@ class JSONVisitor:
         # validate the specified :options: and :defaults:
         used_ids: Set[str] = set()
         composable_options = []
+        default_ids_dict: Dict[str, str] = {}
         for index in range(len(option_ids)):
             option_id = option_ids[index]
             try:
@@ -900,14 +909,21 @@ class JSONVisitor:
                 self.check_valid_option_id(
                     specified_default_id, node, allowed_values_dict, set()
                 )
+                default_ids_dict[option_id] = (
+                    specified_default_id
+                    or composable_from_spec.default
+                    or composable_from_spec.options[0].id
+                )
 
-                composable_option: Dict[str, str | List[Dict[str, str]]] = {
+                composable_option: Dict[
+                    str, str | List[Dict[str, str]] | Dict[str, str]
+                ] = {
                     "value": composable_from_spec.id,
                     "text": composable_from_spec.title,
                     "default": specified_default_id
                     or composable_from_spec.default
                     or "",
-                    "dependencies": composable_from_spec.dependencies or [],
+                    "dependencies": composable_from_spec.dependencies or {},
                     "selections": [],
                 }
                 composable_options.append(composable_option)
@@ -919,23 +935,60 @@ class JSONVisitor:
             used_ids.add(option_id)
 
         # validate the expected children and options
-        valid_children = []
+        valid_children: List[n.ComposableContent] = []
+        default_values_found = False
         for child in node.children:
             try:
                 self.check_valid_child(node, child, {"selected-content"})
                 assert isinstance(child, n.ComposableContent)
                 self.handle_composable_content(child, spec_composables)
                 valid_children.append(child)
+
+                # populate parent composable-tutorial with selections used by children
+                for option_key, value_key in child.selections.items():
+                    composable_from_spec = next(
+                        spec_composable
+                        for spec_composable in spec_composables
+                        if spec_composable.id == option_key
+                    )
+                    if not value_key or value_key == "None":
+                        continue
+                    option_from_spec = next(
+                        spec_option
+                        for spec_option in composable_from_spec.options
+                        if spec_option.id == value_key
+                    )
+                    composable_option = next(
+                        composable_option
+                        for composable_option in composable_options
+                        if composable_option["value"] == option_key
+                    )
+                    composable_option["selections"] = (
+                        composable_option["selections"] or []
+                    )
+                    if isinstance(composable_option["selections"], list):
+                        composable_option["selections"].append(
+                            {
+                                "value": option_from_spec.id,
+                                "text": option_from_spec.title,
+                            }
+                        )
+
+                default_values_found = default_values_found or all(
+                    child.selections[composable_id] == option_id
+                    for composable_id, option_id in (default_ids_dict.items())
+                )
+
             except ChildValidationError:
                 continue
 
-        # TODO: after handling all child content, populate commposable.options[].selections[]
-        # TODO: make sure default value is used
-
-        # make sure there are at least 1 children with `selected-content`
-        if len(valid_children) < 1:
+        if not default_values_found:
             self.diagnostics.append(
-                MissingChild("composable-tutorial", "selected-content", node.start[0])
+                MissingChild(
+                    "composable-tutorial",
+                    "selected-content with selections {default_ids_as_string}",
+                    node.start[0],
+                )
             )
         node.composable_options = composable_options
         node.options = {}
@@ -954,8 +1007,10 @@ class JSONVisitor:
             allowed_selection_ids = map(lambda x: x.id, spec_composable.options)
             # check if dependencies are met - then None is not allowed
             met_dependencies: bool = all(
-                dependency.get("id") in selections
-                for dependency in (spec_composable.dependencies or [])
+                selections[composable_option_id] == option_value_id
+                for composable_option_id, option_value_id in (
+                    spec_composable.dependencies or {}
+                ).items()
             )
             if selection_id not in allowed_selection_ids and met_dependencies:
                 self.diagnostics.append(
@@ -968,7 +1023,7 @@ class JSONVisitor:
             composable_option_value = str(spec_composable.id)
             selections[composable_option_value] = selection_id
 
-        node.selections = [{key: value} for key, value in selections.items()]
+        node.selections = selections
         node.options = {}
 
     def handle_directive(
@@ -990,14 +1045,16 @@ class JSONVisitor:
             return doc
 
         elif name == "composable-tutorial":
-            composable_options: List[Dict[str, Union[str, List[Dict[str, str]]]]] = []
+            composable_options: List[
+                Dict[str, Union[str, List[Dict[str, str]], Dict[str, str]]]
+            ] = []
             doc = n.ComposableDirective(
                 (line,), [], domain, name, [], options, composable_options
             )
             return doc
 
         elif name == "selected-content":
-            selected_content_options: List[Dict[str, str]] = []
+            selected_content_options: Dict[str, str] = {}
             doc = n.ComposableContent(
                 (line,), [], domain, name, [], options, selected_content_options
             )
