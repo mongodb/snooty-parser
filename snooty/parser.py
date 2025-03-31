@@ -863,41 +863,51 @@ class JSONVisitor:
             node.children.insert(0, node.children.pop(target_idx))
 
     def handle_composable(self, node: n.ComposableDirective) -> None:
-        # make sure all options are valid within the spec
-        # handle options to make them list of strings
+        """Handles composable directive(s) and its children composable content. Translates string options to lists for consumption"""
+
+        # first convert specified options from str -> List[str]
         option_ids_as_string = (
             node.options["options"] if "options" in node.options else ""
         )
         default_ids_as_string = (
             node.options["defaults"] if "defaults" in node.options else ""
         )
-
-        expected_options = specparser.Spec.get().composables
-        expected_options_dict = {
-            expected_option.id: expected_option for expected_option in expected_options
-        }
         option_ids: List[str] = re.split(r"\s*,\s*", option_ids_as_string.strip())
         default_ids: List[str] = re.split(r"\s*,\s*", default_ids_as_string.strip())
 
-        # constructing composable option
+        # get the expected composable options from the spec
+        spec_composables = specparser.Spec.get().composables
+        spec_composables_dict = {
+            expected_option.id: expected_option for expected_option in spec_composables
+        }
+
+        # validate the specified :options: and :defaults:
         used_ids: Set[str] = set()
         composable_options = []
         for index in range(len(option_ids)):
             option_id = option_ids[index]
             try:
                 self.check_valid_option_id(
-                    option_id, node, expected_options_dict, used_ids
+                    option_id, node, spec_composables_dict, used_ids
                 )
-                option_from_spec = next(
-                    (option for option in expected_options if option.id == option_id),
+                composable_from_spec = next(
+                    (option for option in spec_composables if option.id == option_id),
+                )
+                specified_default_id = default_ids[index]
+                allowed_values_dict = {
+                    option.id: option for option in composable_from_spec.options
+                }
+                self.check_valid_option_id(
+                    specified_default_id, node, allowed_values_dict, set()
                 )
 
-                # TODO: validate default_ids
                 composable_option: Dict[str, str | List[Dict[str, str]]] = {
-                    "value": option_from_spec.id,
-                    "text": option_from_spec.title,
-                    "default": default_ids[index] or option_from_spec.default or "",
-                    "dependencies": option_from_spec.dependencies or [],
+                    "value": composable_from_spec.id,
+                    "text": composable_from_spec.title,
+                    "default": specified_default_id
+                    or composable_from_spec.default
+                    or "",
+                    "dependencies": composable_from_spec.dependencies or [],
                     "selections": [],
                 }
                 composable_options.append(composable_option)
@@ -908,17 +918,19 @@ class JSONVisitor:
             # add to used ids for no repeats
             used_ids.add(option_id)
 
+        # validate the expected children and options
         valid_children = []
         for child in node.children:
             try:
                 self.check_valid_child(node, child, {"selected-content"})
                 assert isinstance(child, n.ComposableContent)
-                self.handle_composable_content(child, expected_options)
+                self.handle_composable_content(child, spec_composables)
                 valid_children.append(child)
             except ChildValidationError:
                 continue
 
         # TODO: after handling all child content, populate commposable.options[].selections[]
+        # TODO: make sure default value is used
 
         # make sure there are at least 1 children with `selected-content`
         if len(valid_children) < 1:

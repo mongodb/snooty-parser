@@ -4641,4 +4641,40 @@ Cloud Provider - GCP</text></paragraph></directive></directive></root>""",
 
 
 def test_composable_tutorial_errors() -> None:
-    print("TODO. test each error")
+    """Test composable handle errors"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    _page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-providerrr
+   :defaults: driverrr, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcpppppp
+""",
+    )
+    assert [type(d) for d in diagnostics] == [
+        # invalid default driverrrr
+        UnknownOptionId,
+        # invalid composable tutorial option cloud-providerr
+        UnknownOptionId,
+        # invalid selection gcpp
+        InvalidField,
+    ]
+
+    _page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+""",
+    )
+    assert len(diagnostics) == 1
+    assert type(diagnostics[0]) == MissingChild
