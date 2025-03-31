@@ -4640,6 +4640,7 @@ Heading of the page
         }
     ) as result:
         print(result.pages[FileId("index.txt")].ast)
+        # TODO: handle dependent selection options
 
 
 def test_composable_collisions() -> None:
