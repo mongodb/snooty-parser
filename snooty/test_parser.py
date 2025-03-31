@@ -4672,13 +4672,14 @@ def test_composable_tutorial_errors() -> None:
       :selections: driver, nodejs, repl, gcpppppp
 """,
     )
+    print(diagnostics)
     assert [type(d) for d in diagnostics] == [
         # invalid default driverrrr
         UnknownOptionId,
         # invalid composable tutorial option cloud-providerr
         UnknownOptionId,
         # invalid selection gcpp
-        InvalidField,
+        UnknownOptionId,
     ]
 
     _page, diagnostics = parse_rst(

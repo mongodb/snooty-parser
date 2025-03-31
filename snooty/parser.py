@@ -954,15 +954,23 @@ class JSONVisitor:
                     if not value_key or value_key == "None":
                         continue
                     option_from_spec = next(
-                        spec_option
-                        for spec_option in composable_from_spec.options
-                        if spec_option.id == value_key
+                        (
+                            spec_option
+                            for spec_option in composable_from_spec.options
+                            if spec_option.id == value_key
+                        ),
+                        None,
                     )
                     composable_option = next(
-                        composable_option
-                        for composable_option in composable_options
-                        if composable_option["value"] == option_key
+                        (
+                            composable_option
+                            for composable_option in composable_options
+                            if composable_option["value"] == option_key
+                        ),
+                        {},
                     )
+                    if not option_from_spec or not composable_option:
+                        continue
                     composable_option["selections"] = (
                         composable_option["selections"] or []
                     )
@@ -1004,7 +1012,7 @@ class JSONVisitor:
         for idx in range(len(selection_ids)):
             selection_id = selection_ids[idx]
             spec_composable = spec_composables[idx]
-            allowed_selection_ids = map(lambda x: x.id, spec_composable.options)
+            allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
             # check if dependencies are met - then None is not allowed
             met_dependencies: bool = all(
                 selections[composable_option_id] == option_value_id
@@ -1014,8 +1022,10 @@ class JSONVisitor:
             )
             if selection_id not in allowed_selection_ids and met_dependencies:
                 self.diagnostics.append(
-                    InvalidField(
-                        f"Composable tutorial's selection for field {spec_composable.id} is invalid: '{selection_id}'",
+                    UnknownOptionId(
+                        "composable-tutorial",
+                        selection_id,
+                        allowed_selection_ids,
                         node.start[0],
                     )
                 )
