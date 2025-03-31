@@ -1,5 +1,5 @@
 """An alternative and more granular approach to writing postprocessing tests.
-   Eventually most postprocessor tests should probably be moved into this format."""
+Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path, PurePath
 from typing import Any, Dict, cast
@@ -4613,3 +4613,86 @@ Heading of the page
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], UnknownDefaultTabId)
+
+
+def test_composables() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+      """
+        }
+    ) as result:
+        print(result.pages[FileId("index.txt")].ast)
+
+
+def test_composable_collisions() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+
+.. method-selector::
+
+   .. method-option::
+      :id: driver
+
+      WHAT
+      ~~~~
+
+   .. method-option::
+      :id: cli
+
+      WHAT
+      ~~~~
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)

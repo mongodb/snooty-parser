@@ -119,7 +119,7 @@ def deep_copy_position(source: n.Node, dest: n.Node) -> None:
 
 
 def extract_inline(
-    nodes: Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]]
+    nodes: Union[MutableSequence[n.Node], MutableSequence[n.InlineNode]],
 ) -> Optional[MutableSequence[n.InlineNode]]:
     """Reach into a node and see if it's trivally transformable into an inline context
     without losing anything aside from a wrapping Paragraph."""
@@ -2143,6 +2143,47 @@ class MultiPageTutorialHandler(Handler):
             page.ast.children.remove(node)
 
 
+class ComposableTutorialHandler(Handler):
+    """Handles composable tutorial directivepresence in page.
+    Should not be simultaneously present on page with other directives"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.target_directive_name = "composable-tutorial"
+        self.composable_tutorial = False
+        self.colliding_ast_options = ["selectors", "has_method_selector"]
+        self.composable_node_start = 0
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.composable_tutorial = False
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.ComposableDirective):
+            return
+
+        if self.composable_tutorial:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(self.target_directive_name, (node.start[0]))
+            )
+            return
+
+        self.composable_tutorial = True
+        self.composable_node_start = node.start[0]
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if not self.composable_tutorial:
+            return
+        for colliding_ast_option in self.colliding_ast_options:
+            if page.ast.options.get(colliding_ast_option, None):
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnexpectedDirectiveOrder(
+                        f"{self.target_directive_name} cannot be used with {colliding_ast_option} on the same page",
+                        self.composable_node_start,
+                    )
+                )
+        page.ast.options["has_composable_tutorial"] = True
+
+
 class PostprocessorResult(NamedTuple):
     pages: Dict[FileId, Page]
     metadata: Dict[str, SerializableType]
@@ -2213,6 +2254,7 @@ class Postprocessor:
             WayfindingHandler,
             MethodSelectorHandler,
             MultiPageTutorialHandler,
+            ComposableTutorialHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],
