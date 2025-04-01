@@ -35,7 +35,7 @@ jobs:
   testPackage:
     strategy:
       matrix:
-        platform: [ubuntu-20.04, macos-latest]
+        platform: [ubuntu-22.04, macos-latest]
         python-version: ['3.11']
     runs-on: ${{ matrix.platform }}
     steps:
