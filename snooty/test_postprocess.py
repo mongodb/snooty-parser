@@ -4639,8 +4639,15 @@ Heading of the page
       """
         }
     ) as result:
-        print(result.pages[FileId("index.txt")].ast)
-        # TODO: handle dependent selection options
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+            <root fileid="index.txt" has_composable_tutorial="True"><section><heading id="heading-of-the-page"><text>Heading of the page</text></heading><directive domain="mongodb" name="composable-tutorial" composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': {}, 'selections': [{'value': 'driver', 'text': 'Driver'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': {'interface': 'driver'}, 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': {}, 'selections': [{'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': {}, 'selections': [{'value': 'gcp', 'text': 'GCP'}]}]"><directive domain="mongodb" name="selected-content" selections="{'interface': 'driver', 'language': 'nodejs', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}"><paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - Node
+Deployment Type - Replication</text></paragraph></directive></directive></section></root>
+                                 """,
+        )
 
 
 def test_composable_collisions() -> None:
