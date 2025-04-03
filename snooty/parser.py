@@ -84,7 +84,7 @@ from .diagnostics import (
     UnmarshallingError,
 )
 from .icon_names import ICON_SET, LG_ICON_SET
-from .n import FileId, SerializableType, TocTreeDirectiveEntry
+from .n import ComposableOption, FileId, SerializableType, TocTreeDirectiveEntry
 from .page import Page, PendingTask
 from .page_database import PageDatabase
 from .postprocess import Postprocessor, PostprocessorResult
@@ -97,7 +97,7 @@ from .types import (
     ProjectConfig,
     StaticAsset,
 )
-from .util import RST_EXTENSIONS
+from .util import RST_EXTENSIONS, split_option_str
 
 NO_CHILDREN = (n.SubstitutionReference,)
 MULTIPLE_FORWARD_SLASHES = re.compile(r"([\/])\1")
@@ -872,8 +872,8 @@ class JSONVisitor:
         default_ids_as_string = (
             node.options["defaults"] if "defaults" in node.options else ""
         )
-        option_ids: List[str] = re.split(r"\s*,\s*", option_ids_as_string.strip())
-        default_ids: List[str] = re.split(r"\s*,\s*", default_ids_as_string.strip())
+        option_ids: List[str] = split_option_str(option_ids_as_string)
+        default_ids: List[str] = split_option_str(default_ids_as_string)
 
         # expect at least 1 option_ids
         if len(option_ids) < 1:
@@ -915,15 +915,13 @@ class JSONVisitor:
                     or composable_from_spec.options[0].id
                 )
 
-                composable_option: Dict[
-                    str, str | List[Dict[str, str]] | Dict[str, str]
-                ] = {
+                composable_option: ComposableOption = {
                     "value": composable_from_spec.id,
                     "text": composable_from_spec.title,
                     "default": specified_default_id
                     or composable_from_spec.default
                     or "",
-                    "dependencies": composable_from_spec.dependencies or {},
+                    "dependencies": composable_from_spec.dependencies or [],
                     "selections": [],
                 }
                 composable_options.append(composable_option)
@@ -994,7 +992,7 @@ class JSONVisitor:
             self.diagnostics.append(
                 MissingChild(
                     "composable-tutorial",
-                    "selected-content with selections {default_ids_as_string}",
+                    f"selected-content with selections {default_ids_as_string}",
                     node.start[0],
                 )
             )
@@ -1006,7 +1004,7 @@ class JSONVisitor:
         node: n.ComposableContent,
         spec_composables: List[Composable],
     ) -> None:
-        selection_ids = re.split(r"\s*,\s*", node.options.get("selections", "").strip())
+        selection_ids = split_option_str(node.options.get("selections", ""))
         selections: Dict[str, str] = {}
         # validate all selection ids
         for idx in range(len(selection_ids)):
@@ -1015,10 +1013,9 @@ class JSONVisitor:
             allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
             # check if dependencies are met - then None is not allowed
             met_dependencies: bool = all(
-                selections[composable_option_id] == option_value_id
-                for composable_option_id, option_value_id in (
-                    spec_composable.dependencies or {}
-                ).items()
+                key in selections and selections[key] == value
+                for dependency in (spec_composable.dependencies or [])
+                for key, value in dependency.items()
             )
             if selection_id not in allowed_selection_ids and met_dependencies:
                 self.diagnostics.append(
@@ -1030,7 +1027,7 @@ class JSONVisitor:
                     )
                 )
                 break
-            composable_option_value = str(spec_composable.id)
+            composable_option_value = spec_composable.id
             selections[composable_option_value] = selection_id
 
         node.selections = selections
@@ -1055,19 +1052,11 @@ class JSONVisitor:
             return doc
 
         elif name == "composable-tutorial":
-            composable_options: List[
-                Dict[str, Union[str, List[Dict[str, str]], Dict[str, str]]]
-            ] = []
-            doc = n.ComposableDirective(
-                (line,), [], domain, name, [], options, composable_options
-            )
+            doc = n.ComposableDirective((line,), [], domain, name, [], options, [])
             return doc
 
         elif name == "selected-content":
-            selected_content_options: Dict[str, str] = {}
-            doc = n.ComposableContent(
-                (line,), [], domain, name, [], options, selected_content_options
-            )
+            doc = n.ComposableContent((line,), [], domain, name, [], options, {})
             return doc
 
         doc = n.Directive((line,), [], domain, name, [], options)

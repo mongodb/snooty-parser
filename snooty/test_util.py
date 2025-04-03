@@ -56,6 +56,19 @@ def test_option_flag() -> None:
         pass
 
 
+def test_split_option_str() -> None:
+    assert util.split_option_str("these,are,   spaced, options") == [
+        "these",
+        "are",
+        "spaced",
+        "options",
+    ]
+    try:
+        util.split_option_str("")
+    except ValueError:
+        pass
+
+
 def test_get_files() -> None:
     # The test_data/getfiles path tests how we handle symbolic links. To wit,
     # we ensure that we don't fail on loops; files with the same resolved path

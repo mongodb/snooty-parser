@@ -171,7 +171,7 @@ class Composable:
     id: str
     title: str
     default: Optional[str]
-    dependencies: Optional[Dict[str, str]]
+    dependencies: Optional[List[Dict[str, str]]]
     options: List[TabDefinition]
 
 

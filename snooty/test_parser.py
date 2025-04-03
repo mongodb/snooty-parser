@@ -4626,13 +4626,12 @@ def test_valid_composable_tutorial() -> None:
     )
 
     assert not diagnostics
-    print(ast_to_testing_string(page.ast))
     check_ast_testing_string(
         page.ast,
         """
 <root fileid="test.rst">
    <directive domain="mongodb" name="composable-tutorial"
-      composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': {}, 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-ui', 'text': 'Atlas UI'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': {'interface': 'driver'}, 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': {}, 'selections': [{'value': 'repl', 'text': 'Replica Set'}, {'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': {}, 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
+    composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-ui', 'text': 'Atlas UI'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': [{'value': 'repl', 'text': 'Replica Set'}, {'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
       <directive domain="mongodb" name="selected-content"
          selections="{'interface': 'driver', 'language': 'nodejs', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}">
          <paragraph><text>This content will only be shown when the selections are as follows:
@@ -4659,7 +4658,6 @@ def test_composable_tutorial_errors() -> None:
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
     parser = rstparser.Parser(project_config, JSONVisitor)
-
     _page, diagnostics = parse_rst(
         parser,
         path,
@@ -4672,7 +4670,6 @@ def test_composable_tutorial_errors() -> None:
       :selections: driver, nodejs, repl, gcpppppp
 """,
     )
-    print(diagnostics)
     assert [type(d) for d in diagnostics] == [
         # invalid default driverrrr
         UnknownOptionId,
@@ -4693,3 +4690,18 @@ def test_composable_tutorial_errors() -> None:
     )
     assert len(diagnostics) == 1
     assert type(diagnostics[0]) == MissingChild
+
+    _page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, None, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+""",
+    )
+    assert len(diagnostics) == 1
+    assert type(diagnostics[0]) == UnknownOptionId

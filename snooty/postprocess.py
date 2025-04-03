@@ -2151,7 +2151,10 @@ class ComposableTutorialHandler(Handler):
         super().__init__(context)
         self.target_directive_name = "composable-tutorial"
         self.composable_tutorial = False
-        self.colliding_ast_options = ["selectors", "has_method_selector"]
+        self.colliding_ast_options = (
+            ("selectors", "tabs-selectors"),
+            ("has_method_selector", "method-selector"),
+        )
         self.composable_node_start = 0
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
@@ -2173,11 +2176,12 @@ class ComposableTutorialHandler(Handler):
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if not self.composable_tutorial:
             return
-        for colliding_ast_option in self.colliding_ast_options:
+        for colliding_tuple in self.colliding_ast_options:
+            colliding_ast_option = colliding_tuple[0]
             if page.ast.options.get(colliding_ast_option, None):
                 self.context.diagnostics[fileid_stack.current].append(
                     UnexpectedDirectiveOrder(
-                        f"{self.target_directive_name} cannot be used with {colliding_ast_option} on the same page",
+                        f"{self.target_directive_name} cannot be used with {colliding_tuple[1]} on the same page",
                         self.composable_node_start,
                     )
                 )

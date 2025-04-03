@@ -514,12 +514,13 @@ class Table(Parent[Node]):
     type = "table"
 
 
+ComposableOption = Dict[str, Union[str, List[Dict[str, str]]]]
+
+
 @dataclass
 class ComposableDirective(Directive):
     __slots__ = "composable_options"
-    composable_options: List[
-        Dict[str, Union[str, List[Dict[str, str]], Dict[str, str]]]
-    ]
+    composable_options: List[ComposableOption]
 
 
 @dataclass
