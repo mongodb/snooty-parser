@@ -901,7 +901,21 @@ class JSONVisitor:
                 )
                 composable_from_spec = next(
                     (option for option in spec_composables if option.id == option_id),
+                    None,
                 )
+                if not composable_from_spec:
+                    self.diagnostics.append(
+                        UnknownOptionId(
+                            "composable-tutorial",
+                            option_id,
+                            [
+                                spec_composable.id
+                                for spec_composable in spec_composables
+                            ],
+                            node.start[0],
+                        )
+                    )
+                    continue
                 specified_default_id = default_ids[index]
                 allowed_values_dict = {
                     option.id: option for option in composable_from_spec.options
@@ -945,10 +959,26 @@ class JSONVisitor:
                 # populate parent composable-tutorial with selections used by children
                 for option_key, value_key in child.selections.items():
                     composable_from_spec = next(
-                        spec_composable
-                        for spec_composable in spec_composables
-                        if spec_composable.id == option_key
+                        (
+                            spec_composable
+                            for spec_composable in spec_composables
+                            if spec_composable.id == option_key
+                        ),
+                        None,
                     )
+                    if not composable_from_spec:
+                        self.diagnostics.append(
+                            UnknownOptionId(
+                                "composable-tutorial",
+                                option_key,
+                                [
+                                    spec_composable.id
+                                    for spec_composable in spec_composables
+                                ],
+                                node.start[0],
+                            )
+                        )
+                        continue
                     if not value_key or value_key == "None":
                         continue
                     option_from_spec = next(
