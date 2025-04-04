@@ -1,5 +1,5 @@
 """An alternative and more granular approach to writing postprocessing tests.
-   Eventually most postprocessor tests should probably be moved into this format."""
+Eventually most postprocessor tests should probably be moved into this format."""
 
 from pathlib import Path, PurePath
 from typing import Any, Dict, cast
@@ -4613,3 +4613,94 @@ Heading of the page
         diagnostics = result.diagnostics[FileId("index.txt")]
         assert len(diagnostics) == 1
         assert isinstance(diagnostics[0], UnknownDefaultTabId)
+
+
+def test_composables() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+      """
+        }
+    ) as result:
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+            <root fileid="index.txt" has_composable_tutorial="True"><section><heading id="heading-of-the-page"><text>Heading of the page</text></heading><directive domain="mongodb" name="composable-tutorial" composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': [{'value': 'driver', 'text': 'Driver'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': [{'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}]}]"><directive domain="mongodb" name="selected-content" selections="{'interface': 'driver', 'language': 'nodejs', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}"><paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - Node
+Deployment Type - Replication</text></paragraph></directive></directive></section></root>
+                                 """,
+        )
+
+
+def test_composable_collisions() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+
+.. method-selector::
+
+   .. method-option::
+      :id: driver
+
+      WHAT
+      ~~~~
+
+   .. method-option::
+      :id: cli
+
+      WHAT
+      ~~~~
+
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - Node
+      Deployment Type - Replication
+""",
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 2
+        assert isinstance(diagnostics[0], DuplicateDirective)
+        assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)

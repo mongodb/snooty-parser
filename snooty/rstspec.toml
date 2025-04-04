@@ -849,6 +849,27 @@ example = """.. multi-page-tutorial::
    :show-next-top:
 """
 
+[directive."mongodb:composable-tutorial"]
+help = "Collection of content that is configurable by user selections"
+options.options = {type = "string", required = true}
+options.defaults = {type = "string"}
+content_type = "block"
+example = """
+.. composable-tutorial::
+   :options: interface, language
+   :defaults: driver, nodejs
+
+   .. selected-content::
+      :selections: driver, nodejs
+
+      This is content under Driver and Node.js selections
+"""
+
+[directive."mongodb:selected-content"]
+help = "Content chosen to be displayed"
+options.selections = {type = "string", required = true}
+content_type = "block"
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
@@ -2033,4 +2054,74 @@ options = [
    {id = "scala", language = "scala" , title = "Scala"},
    {id = "swift", language = "swift" , title = "Swift"},
    {id = "typescript", language = "typescript" , title = "Typescript"},
+]
+
+[[composables]]
+id = "interface"
+title = "Interface"
+default = "driver"
+options = [
+  {id = "atlas-admin-api", title = "Atlas Admin API"},
+  {id = "atlas-cli", title = "Atlas CLI"},
+  {id = "compass", title = "Compass"},
+  {id = "driver", title = "Driver"},
+  {id = "terraform", title = "Terraform"},
+  {id = "atlas-ui", title = "Atlas UI"},
+]
+
+[[composables]]
+id = "language"
+title = "Language"
+default = "nodejs"
+dependencies = [{interface = "driver"}]
+options = [
+  {id = "c", title = "C"},
+  {id = "csharp", title = "C#"},
+  {id = "cpp", title = "C++"},
+  {id = "java-async", title = "Java (Async)"},
+  {id = "java-sync", title = "Java (Sync)"},
+  {id = "kotlin", title = "Kotlin"},
+  {id = "kotlin-coroutine", title = "Kotlin (Coroutine)"},
+  {id = "motor", title = "Motor"},
+  {id = "nodejs", title = "Node.js"},
+  {id = "php", title = "PHP"},
+  {id = "python", title = "Python"},
+  {id = "ruby", title = "Ruby"},
+  {id = "scala", title = "Scala"},
+]
+
+[[composables]]
+id = "cluster-topology"
+title = "Cluster Topology"
+options = [
+  {id = "standalone", title = "Standalone Cluster"},
+  {id = "repl", title = "Replica Set"},
+  {id = "shard", title = "Sharded Cluster"},
+]
+
+[[composables]]
+id = "cloud-provider"
+title = "Cloud Provider"
+options = [
+  {id = "aws", title = "AWS"},
+  {id = "azure", title = "Azure"},
+  {id = "gcp", title = "GCP"},
+]
+
+[[composables]]
+id = "operating-system"
+title = "Operating System"
+options = [
+  {id = "linux", title = "Linux"},
+  {id = "macos", title = "macOS"},
+  {id = "windows", title = "Windows"},
+  {id = "docker", title = "Docker"},
+]
+
+[[composables]]
+id = "deployment-type"
+title = "Deployment Type"
+options = [
+  {id = "atlas", title = "Atlas (Cloud)"},
+  {id = "self", title = "Self-Managed (On-premises)"},
 ]

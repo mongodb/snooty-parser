@@ -249,6 +249,12 @@ def split_domain(name: str) -> Tuple[str, str]:
     return parts[0], parts[1]
 
 
+def split_option_str(argument: str) -> List[str]:
+    if argument and argument.strip():
+        return re.split(r"\s*,\s*", argument.strip())
+    raise ValueError("Must supply string argument to option")
+
+
 def fast_deep_copy(v: _T) -> _T:
     """Time-efficiently create deep copy of trusted data.
     This implementation currently invokes pickle, so should NOT be called on untrusted objects.
