@@ -4742,7 +4742,7 @@ def test_composable_tutorial_errors() -> None:
         UnknownOptionId,
         # invalid composable tutorial option cloud-providerr
         UnknownOptionId,
-        # invalid selection gcpp
+        # invalid selection gcppgcpppppp
         UnknownOptionId,
     ]
 
