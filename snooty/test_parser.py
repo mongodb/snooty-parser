@@ -4603,49 +4603,116 @@ def test_valid_composable_tutorial() -> None:
         path,
         """
 .. composable-tutorial::
-   :options: interface, language, cluster-topology, cloud-provider
-   :defaults: driver, nodejs, repl, gcp
+   :options: interface, language, deployment-type, cloud-provider
+   :defaults: driver, nodejs, atlas, gcp
 
    .. selected-content::
-      :selections: driver, nodejs, repl, gcp
+      :selections: driver, nodejs, atlas, gcp
 
       This content will only be shown when the selections are as follows:
       Interface - Drivers
-      Language - Node
-      Deployment Type - Replication
+      Language - NodeJS
+      Deployment Type - Atlas
       Cloud Provider - GCP
 
    .. selected-content::
-      :selections: atlas-ui, None, repl, aws
+      :selections: driver, c, atlas, gcp
 
       This content will only be shown when the selections are as follows:
-      Interface - Atlas UI
-      Deployment Type - Replication
+      Interface - Drivers
+      Language - C
+      Deployment Type - atlas
       Cloud Provider - GCP
+
+   .. selected-content::
+      :selections: driver, cpp, atlas, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - CPP
+      Deployment Type - atlas
+      Cloud Provider - AWS
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, atlas, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - atlas
+      Cloud Provider - GCP
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, atlas, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - Atlas
+      Cloud Provider - AWS
+
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, self, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - self
+      Cloud Provider - AWS
 """,
     )
-
     assert not diagnostics
     check_ast_testing_string(
         page.ast,
         """
 <root fileid="test.rst">
    <directive domain="mongodb" name="composable-tutorial"
-    composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-ui', 'text': 'Atlas UI'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': [{'value': 'nodejs', 'text': 'Node.js'}]}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': [{'value': 'repl', 'text': 'Replica Set'}, {'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
+      composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-admin-api', 'text': 'Atlas Admin API'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': [{'value': 'nodejs', 'text': 'Node.js'}, {'value': 'c', 'text': 'C'}, {'value': 'cpp', 'text': 'C++'}]}, {'value': 'deployment-type', 'text': 'Deployment Type', 'default': 'atlas', 'dependencies': [], 'selections': [{'value': 'atlas', 'text': 'Atlas (Cloud)'}, {'value': 'self', 'text': 'Self-Managed (On-premises)'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
       <directive domain="mongodb" name="selected-content"
-         selections="{'interface': 'driver', 'language': 'nodejs', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}">
+         selections="{'interface': 'driver', 'language': 'nodejs', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
          <paragraph><text>This content will only be shown when the selections are as follows:
 Interface - Drivers
-Language - Node
-Deployment Type - Replication
+Language - NodeJS
+Deployment Type - Atlas
 Cloud Provider - GCP</text></paragraph>
       </directive>
       <directive domain="mongodb" name="selected-content"
-         selections="{'interface': 'atlas-ui', 'language': 'None', 'cluster-topology': 'repl', 'cloud-provider': 'aws'}">
+         selections="{'interface': 'driver', 'language': 'c', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
          <paragraph><text>This content will only be shown when the selections are as follows:
-Interface - Atlas UI
-Deployment Type - Replication
+Interface - Drivers
+Language - C
+Deployment Type - atlas
 Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'driver', 'language': 'cpp', 'deployment-type': 'atlas', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - CPP
+Deployment Type - atlas
+Cloud Provider - AWS</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - atlas
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'atlas', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - Atlas
+Cloud Provider - AWS</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'self', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - self
+Cloud Provider - AWS</text></paragraph>
       </directive>
    </directive>
 </root>
