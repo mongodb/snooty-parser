@@ -1044,7 +1044,18 @@ class JSONVisitor:
         # validate all selection ids
         for idx in range(len(selection_ids)):
             selection_id = selection_ids[idx]
-            spec_composable = spec_composables[idx]
+            try:
+                spec_composable = spec_composables[idx]
+            except IndexError:
+                self.diagnostics.append(
+                    UnknownOptionId(
+                        "composable-tutorial",
+                        selection_id,
+                        [],
+                        node.start[0],
+                    )
+                )
+                break
             allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
             # check if dependencies are met - then None is not allowed
             met_dependencies: bool = all(
