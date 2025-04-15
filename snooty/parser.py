@@ -952,7 +952,7 @@ class JSONVisitor:
         # validate the expected children and options
         valid_children: List[n.ComposableContent] = []
         default_values_found = False
-        for index, child in enumerate(node.children):
+        for child in node.children:
             try:
                 self.check_valid_child(node, child, {"selected-content"})
                 assert isinstance(child, n.ComposableContent)
@@ -1048,10 +1048,10 @@ class JSONVisitor:
                 spec_composable = spec_composables[idx]
             except IndexError:
                 self.diagnostics.append(
-                    UnknownOptionId(
-                        "composable-tutorial",
-                        selection_id,
-                        [],
+                    InvalidChildCount(
+                        "selected-content",
+                        "selections",
+                        str(len(spec_composables)),
                         node.start[0],
                     )
                 )

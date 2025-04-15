@@ -15,6 +15,7 @@ from .diagnostics import (
     IncorrectLinkSyntax,
     IncorrectMonospaceSyntax,
     InvalidChild,
+    InvalidChildCount,
     InvalidDirectiveStructure,
     InvalidField,
     InvalidLiteralInclude,
@@ -4742,8 +4743,8 @@ def test_composable_tutorial_errors() -> None:
         UnknownOptionId,
         # invalid composable tutorial option cloud-providerr
         UnknownOptionId,
-        # invalid selection gcppgcpppppp
-        UnknownOptionId,
+        # invalid child count gcppgcpppppp
+        InvalidChildCount,
     ]
 
     _page, diagnostics = parse_rst(
