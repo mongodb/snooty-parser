@@ -893,6 +893,8 @@ class JSONVisitor:
         used_ids: Set[str] = set()
         composable_options = []
         default_ids_dict: Dict[str, str] = {}
+        ordered_spec_composables: List[Composable] = []
+
         for index in range(len(option_ids)):
             option_id = option_ids[index]
             try:
@@ -916,6 +918,7 @@ class JSONVisitor:
                         )
                     )
                     continue
+                ordered_spec_composables.append(composable_from_spec)
                 specified_default_id = default_ids[index]
                 allowed_values_dict = {
                     option.id: option for option in composable_from_spec.options
@@ -949,11 +952,11 @@ class JSONVisitor:
         # validate the expected children and options
         valid_children: List[n.ComposableContent] = []
         default_values_found = False
-        for child in node.children:
+        for index, child in enumerate(node.children):
             try:
                 self.check_valid_child(node, child, {"selected-content"})
                 assert isinstance(child, n.ComposableContent)
-                self.handle_composable_content(child, spec_composables)
+                self.handle_composable_content(child, ordered_spec_composables)
                 valid_children.append(child)
 
                 # populate parent composable-tutorial with selections used by children
@@ -1002,16 +1005,18 @@ class JSONVisitor:
                     composable_option["selections"] = (
                         composable_option["selections"] or []
                     )
-                    if isinstance(composable_option["selections"], list):
-                        composable_option["selections"].append(
-                            {
-                                "value": option_from_spec.id,
-                                "text": option_from_spec.title,
-                            }
-                        )
+                    selection = {
+                        "value": option_from_spec.id,
+                        "text": option_from_spec.title,
+                    }
+                    if (
+                        isinstance(composable_option["selections"], list)
+                        and selection not in composable_option["selections"]
+                    ):
+                        composable_option["selections"].append(selection)
 
                 default_values_found = default_values_found or all(
-                    child.selections[composable_id] == option_id
+                    child.selections.get(composable_id, "") == option_id
                     for composable_id, option_id in (default_ids_dict.items())
                 )
 
