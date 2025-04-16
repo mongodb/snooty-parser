@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ### Added
 
 - Add additional py domain rstobjects
+- Follow up - strict order on composable options, dedupe selections
+- ingest composable tutorials from parser
 
 ## [v0.19.0] - 2025-03-13
 
