@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Follow up - strict order on composable options, dedupe selections
+- ingest composable tutorials from parser
+
 ## [v0.19.1] - 2025-03-26
 
 ### Added
