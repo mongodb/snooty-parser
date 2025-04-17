@@ -167,6 +167,7 @@ class Code(Node):
         "linenos",
         "lineno_start",
         "source",
+        "category",
     )
     type = "code"
     lang: Optional[str]
@@ -177,6 +178,7 @@ class Code(Node):
     linenos: bool
     lineno_start: Optional[int]
     source: Optional[str]
+    category: Optional[str]
 
 
 @dataclass

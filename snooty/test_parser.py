@@ -731,6 +731,7 @@ hello world4</code></directive>
       :end-before: end example 2
       :dedent: 4
       :lineno-start: 2
+      :category: syntax
 
    .. output:: /test_parser/includes/sample_code.py
       :language: python
@@ -755,7 +756,7 @@ hello world4</code></directive>
         """
 <root fileid="test.rst">
     <directive name="io-code-block">
-        <directive name="input" language="python" linenos="True" start-after="start example 1" end-before="end example 2" dedent="4" lineno-start="2">
+        <directive name="input" language="python" linenos="True" start-after="start example 1" end-before="end example 2" dedent="4" lineno-start="2" category="syntax">
             <text>/test_parser/includes/sample_code.py</text>
             <code lang="python" linenos="True" lineno_start="2">print("test dedent")
 # end example 1
@@ -945,6 +946,40 @@ def test_codeblock() -> None:
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+    # Test category option
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code-block:: java
+   :copyable: false
+   :category: syntax
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <code lang="java" category="syntax">foo</code>
+        </root>""",
+    )
+
+    # Test empty category
+    page, diagnostics = parse_rst(
+        parser,
+        tabs_path,
+        """
+.. code-block:: java
+   :copyable: false
+   :category:
+
+   foo""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
 
 def test_literalinclude() -> None:
     path = FileId("test.rst")
@@ -1015,6 +1050,7 @@ for (i = 0; i &lt; 10; i++) {
    :copyable: false
    :emphasize-lines: 1,2-4
    :lineno-start: 17
+   :category: syntax
 """,
     )
     page.finish(diagnostics)
@@ -1024,7 +1060,7 @@ for (i = 0; i &lt; 10; i++) {
         """<root fileid="test.rst">
         <directive name="literalinclude" caption="Sample Code" copyable="False" dedent="4" linenos="True" end-before="end example 1" language="python" start-after="start example 1" emphasize-lines="1,2-4" lineno-start="17">
         <text>/test_parser/includes/sample_code.py</text>
-        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True" lineno_start="17">print("test dedent")</code>
+        <code emphasize_lines="[(1, 1), (2, 4)]" lang="python" caption="Sample Code" linenos="True" lineno_start="17" category="syntax">print("test dedent")</code>
         </directive>
         </root>""",
     )
@@ -1215,6 +1251,19 @@ for (i = 0; i &lt; 10; i++) {
         """
 .. literalinclude:: /test_parser/includes/sample_code.py
    :caption:
+""",
+    )
+    page.finish(diagnostics)
+    assert len(diagnostics) == 1
+    assert isinstance(diagnostics[0], DocUtilsParseError)
+
+    # Test empty category
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. literalinclude:: /test_parser/includes/sample_code.py
+   :category:
 """,
     )
     page.finish(diagnostics)
