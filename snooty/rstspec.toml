@@ -205,6 +205,7 @@ options.language = "string"
 options.dedent = ["nonnegative_integer", "flag"]
 options.emphasize-lines = "linenos"
 options.lineno-start = "nonnegative_integer"
+options.category = "string"
 example = """..literalinclude:: ${1:/path/to/file.js}
    :start-after: ${2:text to start after (Optional}}
    :end-before: ${3:text to end before (Optional}}
@@ -213,7 +214,8 @@ example = """..literalinclude:: ${1:/path/to/file.js}
    :caption:
    :dedent:
    :emphasize-lines:
-   :lineno-start:}
+   :lineno-start:
+   :category:}
 """
 
 [directive.replacement]
@@ -453,12 +455,14 @@ options.emphasize-lines = "string"
 options.class = "string"
 options.linenos = "flag"
 options.source = "uri"
+options.category = "string"
 example = """.. code-block:: ${1:language}
    ${2::copyable: (bool)
    :caption: (string)
    :emphasize-lines: (string)
    :class: (string)
    :linenos: (flag)
+   :category: (string)
    :source: ${1: URL to source code}}
 
    ${0:code content}
@@ -473,6 +477,7 @@ example = """.. code:: ${1:language}
    :emphasize-lines: (string)
    :class: (string)
    :linenos: (flag)
+   :category: (string)
    :source: ${1: URL to source code}}
 
    ${0:code content}
@@ -496,6 +501,7 @@ example = """.. io-code-block::
       :language: ${1:language}
       :emphasize-lines: (string)
       :linenos: (flag)
+      :category: (string)
 
    .. output:: ${0:code output or </path/to/file>}
       :language: ${1:language}
@@ -515,6 +521,7 @@ options.dedent = ["nonnegative_integer", "flag"]
 options.lineno-start = "nonnegative_integer"
 options.emphasize-lines = "linenos"
 options.linenos = "flag"
+options.category = "string"
 example = """.. input:: ${0:code input or </path/to/file>}
       :language: ${1:language}
       :start-after: ${2:text to start after (Optional}}
@@ -523,6 +530,7 @@ example = """.. input:: ${0:code input or </path/to/file>}
       :lineno-start: ${5:nonnegative integer to start line numbering from}
       :emphasize-lines: (string)
       :linenos: (flag)
+      :category: (string)
 """
 
 [directive.output]
