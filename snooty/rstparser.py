@@ -717,6 +717,8 @@ class BaseCodeDirective(tinydocutils.directives.Directive):
         node["linenos"] = linenos
         if "source" in self.options:
             node["source"] = self.options["source"]
+        if "category" in self.options:
+            node["category"] = self.options["category"]
         node.document = self.state.document
         node.source, node.line = source, line
         return [node]
@@ -766,7 +768,8 @@ class BaseCodeIODirective(tinydocutils.directives.Directive):
             child_code["source"] = "test"
             if "source" in self.options:
                 child_code["source"] = self.options["source"]
-
+            if "category" in self.options:
+                child_code["category"] = self.options["category"]
             child_code.document = self.state.document
             child_code.source, node.line = source, line
             node.append(child_code)
