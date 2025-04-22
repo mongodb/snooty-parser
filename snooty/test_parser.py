@@ -981,6 +981,7 @@ def test_codeblock() -> None:
     assert len(diagnostics) == 1
     assert isinstance(diagnostics[0], DocUtilsParseError)
 
+
 def test_literalinclude() -> None:
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
