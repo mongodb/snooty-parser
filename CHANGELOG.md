@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add category option to code-related directives (for real this time)
+
 ## [v0.20.1] - 2025-04-23
 
 ### Added
