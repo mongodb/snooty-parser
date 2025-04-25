@@ -148,7 +148,7 @@ To run all linting, use `make lint`. To format source code, use `make format`.
 
 To release snooty, do the following:
 
-1. Make sure you are on the `main` branch.
+1. Make sure you are on the `main` branch and that it is up-to-date. Run `git pull`.
 
 2. Ensure that the "Unreleased" section of CHANGELOG.md is up-to-date and
    commit any changes you've made.
