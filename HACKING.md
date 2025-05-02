@@ -182,6 +182,10 @@ commits that might have been made, and
 `git tag --delete v<version>; git push --delete origin v<version>` to remove the
 tag if it was created.
 
+**After** the new parser version has been tested and is available to docs builders,
+set the new parser version to be the latest release on GitHub. The Snooty VS Code Extension
+will automatically update and use the latest parser release when users open up VS Code.
+
 ## Problem Areas
 
 * Transforming docutils nodes into our AST (parser.JSONVisitor) is
