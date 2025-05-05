@@ -25,6 +25,8 @@ from typing import (
 import tomli
 from typing_extensions import Protocol
 
+from snooty.diagnostics import Diagnostic
+
 from . import tinydocutils, util
 from .flutter import check_type, checked
 
@@ -308,6 +310,7 @@ class Spec:
     wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
     composables: List[Composable] = field(default_factory=list)
+    user_composables: List[Composable] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
 
@@ -438,6 +441,66 @@ class Spec:
         for key, inheritable in inheritable_index.items():
             resolve_value(key, inheritable)
 
+    def _merge_composables(self, custom_composables: List[Composable]) -> List[Diagnostic]:
+        res: List[Composable] = []
+
+        custom_composable_by_id = {
+            composable.id: composable for composable in custom_composables
+        }
+
+        for defined_composable in self.composables:
+            custom_composable = custom_composable_by_id.pop(defined_composable.id, None)
+            merged_title = (
+                custom_composable.title
+                if custom_composable
+                else defined_composable.title
+            )
+
+            # TODO: validate dependencies
+            merged_dependencies = (
+                custom_composable.dependencies
+                if custom_composable
+                else defined_composable.dependencies
+            )
+
+            # TODO: validate defaults
+            merged_default = (
+                custom_composable.default
+                if custom_composable
+                else defined_composable.default
+            )
+
+            defined_options = {
+                option.id: option for option in defined_composable.options
+            }
+            custom_options = (
+                {option.id: option for option in custom_composable.options}
+                if custom_composable
+                else {}
+            )
+
+            merged_options = []
+            for option_id in set(defined_options.keys()) | set(custom_options.keys()):
+                if option_id in custom_options:
+                    merged_options.append(custom_options[option_id])
+                else:
+                    merged_options.append(defined_options[option_id])
+            res.append(
+                Composable(
+                    defined_composable.id,
+                    merged_title,
+                    merged_default,
+                    merged_dependencies,
+                    merged_options,
+                )
+            )
+
+        for remaining_custom_composables in custom_composable_by_id.values():
+            res.append(remaining_custom_composables)
+
+        print("check composables")
+        print(res)
+
     @classmethod
     def initialize(cls, text: str) -> None:
         cls.SPEC = Spec.loads(text)
@@ -451,3 +514,9 @@ class Spec:
         spec = cls.SPEC
         assert spec is not None
         return spec
+
+    @classmethod
+    # used to merge rstspec and user defined settings in snooty.toml
+    def store_project_config(cls, user_defined_composables: List[Composable]) -> List[Diagnostic]:
+        spec = cls.get()
+        return spec._merge_composables(user_defined_composables)
