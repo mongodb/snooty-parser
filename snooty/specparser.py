@@ -1,5 +1,5 @@
 """Parser for a TOML spec file containing definitions of all supported reStructuredText
-   directives and roles, and what types of data each should expect."""
+directives and roles, and what types of data each should expect."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from typing import (
 import tomli
 from typing_extensions import Protocol
 
-from snooty.diagnostics import Diagnostic
+from snooty.diagnostics import Diagnostic, UnknownOptionId
 
 from . import tinydocutils, util
 from .flutter import check_type, checked
@@ -441,8 +441,11 @@ class Spec:
         for key, inheritable in inheritable_index.items():
             resolve_value(key, inheritable)
 
-    def _merge_composables(self, custom_composables: List[Composable]) -> List[Diagnostic]:
+    def _merge_composables(
+        self, custom_composables: List[Composable]
+    ) -> List[Diagnostic]:
         res: List[Composable] = []
+        diagnostics: List[Diagnostic] = []
 
         custom_composable_by_id = {
             composable.id: composable for composable in custom_composables
@@ -456,20 +459,7 @@ class Spec:
                 else defined_composable.title
             )
 
-            # TODO: validate dependencies
-            merged_dependencies = (
-                custom_composable.dependencies
-                if custom_composable
-                else defined_composable.dependencies
-            )
-
-            # TODO: validate defaults
-            merged_default = (
-                custom_composable.default
-                if custom_composable
-                else defined_composable.default
-            )
-
+            # merge all the options
             defined_options = {
                 option.id: option for option in defined_composable.options
             }
@@ -485,6 +475,36 @@ class Spec:
                     merged_options.append(custom_options[option_id])
                 else:
                     merged_options.append(defined_options[option_id])
+
+            # TODO: validate dependencies
+            merged_dependencies = (
+                custom_composable.dependencies
+                if custom_composable
+                else defined_composable.dependencies
+            )
+
+            merged_default = (
+                custom_composable.default
+                if custom_composable
+                else defined_composable.default
+            )
+            default_option = next(
+                (
+                    option
+                    for option in merged_options
+                    if merged_default and option.id == merged_default
+                ),
+                None,
+            )
+            if merged_default and not default_option:
+                diagnostics.append(
+                    UnknownOptionId(
+                        "Spec composables default",
+                        merged_default,
+                        [option.title for option in merged_options],
+                        0,
+                    )
+                )
             res.append(
                 Composable(
                     defined_composable.id,
@@ -498,8 +518,8 @@ class Spec:
         for remaining_custom_composables in custom_composable_by_id.values():
             res.append(remaining_custom_composables)
 
-        print("check composables")
-        print(res)
+        self.composables = res
+        return diagnostics
 
     @classmethod
     def initialize(cls, text: str) -> None:
@@ -517,6 +537,10 @@ class Spec:
 
     @classmethod
     # used to merge rstspec and user defined settings in snooty.toml
-    def store_project_config(cls, user_defined_composables: List[Composable]) -> List[Diagnostic]:
+    def store_project_config(
+        cls, user_defined_composables: List[Composable]
+    ) -> List[Diagnostic]:
+        diagostics: List[Diagnostic] = []
         spec = cls.get()
-        return spec._merge_composables(user_defined_composables)
+        diagostics.extend(spec._merge_composables(user_defined_composables))
+        return diagostics

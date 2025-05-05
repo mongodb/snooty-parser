@@ -262,7 +262,9 @@ class ProjectConfig:
                 ).render_constants()
 
                 parsed_diagnostics.extend(cls.validate_data(result.data))
-                specparser.Spec.store_project_config(result.composables)
+                parsed_diagnostics.extend(
+                    specparser.Spec.store_project_config(result.composables)
+                )
 
                 return result, parsed_diagnostics
             except FileNotFoundError:
