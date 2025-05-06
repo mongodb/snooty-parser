@@ -4,6 +4,7 @@ directives and roles, and what types of data each should expect."""
 from __future__ import annotations
 
 import dataclasses
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -19,6 +20,7 @@ from typing import (
     Optional,
     Sequence,
     Set,
+    Tuple,
     TypeVar,
     Union,
 )
@@ -72,6 +74,8 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.flag: util.option_flag,
     PrimitiveType.linenos: util.option_string,
 }
+
+logger = logging.getLogger(__name__)
 
 #: Option types can be a primitive type (PrimitiveType), an enum
 #: defined in the spec, or a union of those.
@@ -312,7 +316,6 @@ class Spec:
     data_fields: List[str] = field(default_factory=list)
     composables: List[Composable] = field(default_factory=list)
     merged: bool = False
-    # user_composables: List[Composable] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
 
@@ -446,7 +449,7 @@ class Spec:
     @classmethod
     def _merge_composables(
         cls, spec: Spec, custom_composables: List[Dict[str, Any]]
-    ) -> Spec:
+    ) -> Tuple[Spec, List[Diagnostic]]:
         res: List[Composable] = []
         diagnostics: List[Diagnostic] = []
 
@@ -542,7 +545,7 @@ class Spec:
             )
 
         spec.composables = res
-        return spec
+        return [spec, diagnostics]
 
     @classmethod
     def initialize(cls, text: str, configPath: Optional[Path]) -> "Spec":
@@ -551,9 +554,13 @@ class Spec:
             project_config = tomli.loads(configPath.read_text(encoding="utf-8"))
             # NOTE: would like to check_type but circular imports
             # this is already verified earlier in the process
-            cls.SPEC = cls._merge_composables(
+            spec, diagnostics = cls._merge_composables(
                 cls.SPEC, project_config["composables"] or []
             )
+            spec.merged = True
+            cls.SPEC = spec
+            for diagnostic in diagnostics:
+                logger.error(diagnostic)
         return cls.SPEC
 
     @classmethod
@@ -562,8 +569,8 @@ class Spec:
             return cls.SPEC
 
         path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
+        print("check configPath", configPath)
         spec = cls.initialize(path.read_text(encoding="utf-8"), configPath)
-        spec.merged = True
 
         cls.SPEC = spec
         assert cls.SPEC is not None
