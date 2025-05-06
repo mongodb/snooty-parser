@@ -485,7 +485,6 @@ class Spec:
                 else:
                     merged_options.append(defined_options[option_id])
 
-            # TODO: validate dependencies
             merged_dependencies = (
                 custom_composable["dependencies"]
                 if custom_composable and "dependencies" in custom_composable
