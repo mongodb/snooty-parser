@@ -544,7 +544,7 @@ class Spec:
             )
 
         spec.composables = res
-        return [spec, diagnostics]
+        return (spec, diagnostics)
 
     @classmethod
     def initialize(cls, text: str, configPath: Optional[Path]) -> "Spec":
