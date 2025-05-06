@@ -256,15 +256,6 @@ def main() -> None:
 
     logger.info(f"Snooty {__version__} starting")
 
-    if args["--rstspec"]:
-        rstspec_path = args["--rstspec"]
-        if rstspec_path.startswith("https://") or rstspec_path.startswith("http://"):
-            rstspec_bytes = HTTPCache.singleton().get(args["--rstspec"])
-            rstspec_text = str(rstspec_bytes, "utf-8")
-        else:
-            rstspec_text = Path(rstspec_path).expanduser().read_text(encoding="utf-8")
-        specparser.Spec.initialize(rstspec_text)
-
     if PARANOID_MODE:
         logger.info("Paranoid mode on")
 
@@ -282,6 +273,15 @@ def main() -> None:
 
     assert args["<source-path>"] is not None
     root_path = Path(args["<source-path>"])
+
+    if args["--rstspec"]:
+        rstspec_path = args["--rstspec"]
+        if rstspec_path.startswith("https://") or rstspec_path.startswith("http://"):
+            rstspec_bytes = HTTPCache.singleton().get(args["--rstspec"])
+            rstspec_text = str(rstspec_bytes, "utf-8")
+        else:
+            rstspec_text = Path(rstspec_path).expanduser().read_text(encoding="utf-8")
+        specparser.Spec.initialize(rstspec_text, root_path)
 
     branch = args["--branch"]
 

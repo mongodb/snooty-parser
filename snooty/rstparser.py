@@ -990,7 +990,9 @@ class Registry:
         ):
             return cls.CURRENT_REGISTRY[1]
 
-        registry = register_spec_with_docutils(specparser.Spec.get(), default_domain)
+        registry = register_spec_with_docutils(
+            specparser.Spec.get(None), default_domain
+        )
         cls.CURRENT_REGISTRY = (default_domain, registry)
         return registry
 

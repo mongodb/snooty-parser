@@ -229,8 +229,8 @@ def test_structural_hash() -> None:
     from . import specparser
 
     # Test specparser.Spec
-    objhash = util.structural_hash(specparser.Spec.get())
-    copied = copy.deepcopy(specparser.Spec.get())
+    objhash = util.structural_hash(specparser.Spec.get(None))
+    copied = copy.deepcopy(specparser.Spec.get(None))
     assert util.structural_hash(copied) == objhash
     copied.directive["input"].options["dedent"].reverse()  # type: ignore
     assert util.structural_hash(copied) != objhash

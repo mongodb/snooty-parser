@@ -1697,7 +1697,7 @@ class RefsHandler(Handler):
         super().__init__(context)
         self.project_config = context[ProjectConfig]
         self.targets = context[TargetDatabase]
-        self.spec = specparser.Spec.get()
+        self.spec = specparser.Spec.get(self.project_config.config_path)
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         """When a node of type ref_role is encountered, ensure that it references a valid target.

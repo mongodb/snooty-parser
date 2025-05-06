@@ -614,7 +614,9 @@ class JSONVisitor:
         line = node.start[0]
         # retrieve dictionary associated with this specific tabset
         try:
-            tab_definitions_list = specparser.Spec.get().tabs[tabset]
+            tab_definitions_list = specparser.Spec.get(
+                self.project_config.config_path
+            ).tabs[tabset]
         except KeyError:
             self.diagnostics.append(UnknownTabset(tabset, line))
             return
@@ -674,7 +676,9 @@ class JSONVisitor:
         )
 
     def handle_wayfinding(self, node: n.Directive) -> None:
-        expected_options = specparser.Spec.get().wayfinding["options"]
+        expected_options = specparser.Spec.get(
+            self.project_config.config_path
+        ).wayfinding["options"]
         expected_options_dict = {option.id: option for option in expected_options}
         expected_child_opt_name = "wayfinding-option"
         expected_child_desc_name = "wayfinding-description"
@@ -796,7 +800,9 @@ class JSONVisitor:
             raise ChildValidationError()
 
     def handle_method_selector(self, node: n.Directive) -> None:
-        expected_options = specparser.Spec.get().method_selector["options"]
+        expected_options = specparser.Spec.get(
+            self.project_config.config_path
+        ).method_selector["options"]
         expected_options_dict = {option.id: option for option in expected_options}
         expected_child_name = "method-option"
 
@@ -884,7 +890,9 @@ class JSONVisitor:
             )
 
         # get the expected composable options from the spec
-        spec_composables = specparser.Spec.get().composables
+        spec_composables = specparser.Spec.get(
+            self.project_config.config_path
+        ).composables
         spec_composables_dict = {
             expected_option.id: expected_option for expected_option in spec_composables
         }

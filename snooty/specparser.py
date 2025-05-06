@@ -7,6 +7,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -310,7 +311,8 @@ class Spec:
     wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
     composables: List[Composable] = field(default_factory=list)
-    user_composables: List[Composable] = field(default_factory=list)
+    merged: bool = False
+    # user_composables: List[Composable] = field(default_factory=list)
 
     SPEC: ClassVar[Optional[Spec]] = None
 
@@ -441,20 +443,21 @@ class Spec:
         for key, inheritable in inheritable_index.items():
             resolve_value(key, inheritable)
 
+    @classmethod
     def _merge_composables(
-        self, custom_composables: List[Composable]
-    ) -> List[Diagnostic]:
+        cls, spec: Spec, custom_composables: List[Dict[str, Any]]
+    ) -> Spec:
         res: List[Composable] = []
         diagnostics: List[Diagnostic] = []
 
         custom_composable_by_id = {
-            composable.id: composable for composable in custom_composables
+            composable["id"]: composable for composable in custom_composables
         }
 
-        for defined_composable in self.composables:
+        for defined_composable in spec.composables:
             custom_composable = custom_composable_by_id.pop(defined_composable.id, None)
             merged_title = (
-                custom_composable.title
+                custom_composable["title"]
                 if custom_composable
                 else defined_composable.title
             )
@@ -464,7 +467,7 @@ class Spec:
                 option.id: option for option in defined_composable.options
             }
             custom_options = (
-                {option.id: option for option in custom_composable.options}
+                {option["id"]: option for option in custom_composable["options"]}
                 if custom_composable
                 else {}
             )
@@ -472,20 +475,23 @@ class Spec:
             merged_options = []
             for option_id in set(defined_options.keys()) | set(custom_options.keys()):
                 if option_id in custom_options:
-                    merged_options.append(custom_options[option_id])
+                    custom_option = custom_options[option_id]
+                    merged_options.append(
+                        TabDefinition(custom_option["id"], custom_option["title"])
+                    )
                 else:
                     merged_options.append(defined_options[option_id])
 
             # TODO: validate dependencies
             merged_dependencies = (
-                custom_composable.dependencies
-                if custom_composable
+                custom_composable["dependencies"]
+                if custom_composable and "dependencies" in custom_composable
                 else defined_composable.dependencies
             )
 
             merged_default = (
-                custom_composable.default
-                if custom_composable
+                custom_composable["default"]
+                if custom_composable and "default" in custom_composable
                 else defined_composable.default
             )
             default_option = next(
@@ -515,32 +521,50 @@ class Spec:
                 )
             )
 
-        for remaining_custom_composables in custom_composable_by_id.values():
-            res.append(remaining_custom_composables)
+        for composableObj in custom_composable_by_id.values():
+            res.append(
+                Composable(
+                    composableObj["id"],
+                    composableObj["title"],
+                    composableObj["default"] if "default" in composableObj else None,
+                    (
+                        composableObj["dependencies"]
+                        if "dependencies" in composableObj
+                        else None
+                    ),
+                    list(
+                        map(
+                            lambda option: TabDefinition(option["id"], option["title"]),
+                            composableObj["options"],
+                        )
+                    ),
+                )
+            )
 
-        self.composables = res
-        return diagnostics
-
-    @classmethod
-    def initialize(cls, text: str) -> None:
-        cls.SPEC = Spec.loads(text)
-
-    @classmethod
-    def get(cls) -> "Spec":
-        if cls.SPEC is None:
-            path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
-            cls.initialize(path.read_text(encoding="utf-8"))
-
-        spec = cls.SPEC
-        assert spec is not None
+        spec.composables = res
         return spec
 
     @classmethod
-    # used to merge rstspec and user defined settings in snooty.toml
-    def store_project_config(
-        cls, user_defined_composables: List[Composable]
-    ) -> List[Diagnostic]:
-        diagostics: List[Diagnostic] = []
-        spec = cls.get()
-        diagostics.extend(spec._merge_composables(user_defined_composables))
-        return diagostics
+    def initialize(cls, text: str, configPath: Optional[Path]) -> "Spec":
+        cls.SPEC = Spec.loads(text)
+        if configPath:
+            project_config = tomli.loads(configPath.read_text(encoding="utf-8"))
+            # NOTE: would like to check_type but circular imports
+            # this is already verified earlier in the process
+            cls.SPEC = cls._merge_composables(
+                cls.SPEC, project_config["composables"] or []
+            )
+        return cls.SPEC
+
+    @classmethod
+    def get(cls, configPath: Optional[Path]) -> "Spec":
+        if cls.SPEC and cls.SPEC.merged:
+            return cls.SPEC
+
+        path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
+        spec = cls.initialize(path.read_text(encoding="utf-8"), configPath)
+        spec.merged = True
+
+        cls.SPEC = spec
+        assert cls.SPEC is not None
+        return cls.SPEC
