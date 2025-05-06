@@ -554,7 +554,12 @@ class Spec:
             # NOTE: would like to check_type but circular imports
             # this is already verified earlier in the process
             spec, diagnostics = cls._merge_composables(
-                cls.SPEC, project_config["composables"] or []
+                cls.SPEC,
+                (
+                    project_config["composables"]
+                    if "composables" in project_config
+                    else []
+                ),
             )
             spec.merged = True
             cls.SPEC = spec
@@ -568,7 +573,6 @@ class Spec:
             return cls.SPEC
 
         path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
-        print("check configPath", configPath)
         spec = cls.initialize(path.read_text(encoding="utf-8"), configPath)
 
         cls.SPEC = spec
