@@ -2073,6 +2073,7 @@ options = [
   {id = "atlas-cli", title = "Atlas CLI"},
   {id = "compass", title = "Compass"},
   {id = "driver", title = "Driver"},
+  {id = "mongosh", title = "MongoDB Shell"},
   {id = "terraform", title = "Terraform"},
   {id = "atlas-ui", title = "Atlas UI"},
 ]
@@ -2086,6 +2087,7 @@ options = [
   {id = "c", title = "C"},
   {id = "csharp", title = "C#"},
   {id = "cpp", title = "C++"},
+  {id = "go", title = "Go"},
   {id = "java-async", title = "Java (Async)"},
   {id = "java-sync", title = "Java (Sync)"},
   {id = "kotlin", title = "Kotlin"},
