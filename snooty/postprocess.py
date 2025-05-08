@@ -1986,6 +1986,26 @@ class CollapsibleHandler(Handler):
         if isinstance(node, n.Directive) and node.name == "collapsible":
             self.collapsible_detected = False
 
+# Possible todo: check that url is healthy? Check if both options are there and are strings? Is this built in??
+class DismissibleSkillsCardHandler(Handler):
+    """Handles duplicate dismissible skills card directives on a single page.
+    If a page has multiple, raise a diagnostic"""
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.dismissible_skills_card_detected = False
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.dismissible_skills_card_detected = False
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "dismissible-skills-card":
+            return
+        if self.dismissible_skills_card_detected:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.span[0])
+            )
+        self.dismissible_skills_card_detected = True
 
 class NestedDirectiveHandler(Handler):
     """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""

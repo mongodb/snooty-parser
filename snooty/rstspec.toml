@@ -878,6 +878,17 @@ help = "Content chosen to be displayed"
 options.selections = {type = "string", required = true}
 content_type = "block"
 
+[directive."mongodb:dismissible-skills-card"]
+help = "A dismissible card that links to Skills"
+content_type = "block"
+options.skill = {type = "string", required = true}
+options.url = {type = "string", required = true}
+example = """
+.. dismissible-skills-card::
+   :skill: CRUD Operations
+   :url: https://learn.mongodb.com/courses/crud-operations-in-mongodb
+"""
+
 ###### Misc.
 [directive.atf-image]
 help = "Path to the image to use for the above-the-fold header image"
