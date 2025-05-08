@@ -533,6 +533,9 @@ class ContentsHandler(Handler):
                 self.scanned_pattern.append((node.name, node.options["id"]))
             elif node.name == "tab":
                 self.scanned_pattern.append((node.name, node.options["tabid"]))
+            elif node.name == "selected-content":
+                selections = cast(Dict[str, str], node.selections)
+                self.scanned_pattern.append((node.name, selections))
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -573,7 +576,7 @@ class ContentsHandler(Handler):
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and (
-            node.name == "method-option" or node.name == "tab"
+            node.name in ["method-option", "tab", "selected-content"]
         ):
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):

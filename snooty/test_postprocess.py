@@ -4166,6 +4166,73 @@ Title here
         ]
 
 
+def test_composable_headings():
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. contents:: On this page
+   :local:
+   :depth: 3
+
+======================
+This is the page title
+======================
+   
+.. composable-tutorial::
+   :options: interface, language
+   :defaults: driver, nodejs
+         
+   .. selected-content::
+      :selections: driver, nodejs
+
+      This is a title under selected content
+      --------------------------------------
+
+      This is another heading!
+      ~~~~~~~~~~~~~~~~~~~~~~~~~
+      
+""",
+        }
+    ) as result:
+        test_file_id = FileId("index.txt")
+        page = result.pages[test_file_id]
+        diagnostics = result.diagnostics[test_file_id]
+        assert len(diagnostics) == 0
+        diagnostics = result.diagnostics
+        assert page.ast.options.get("headings") == [
+            {
+                "depth": 2,
+                "id": "this-is-a-title-under-selected-content",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 17}},
+                        "value": "This is a title under selected content",
+                    }
+                ],
+                "selector_ids": {
+                    "selected-content": {"interface": "driver", "language": "nodejs"}
+                },
+            },
+            {
+                "depth": 3,
+                "id": "this-is-another-heading-",
+                "title": [
+                    {
+                        "type": "text",
+                        "position": {"start": {"line": 20}},
+                        "value": "This is another heading!",
+                    }
+                ],
+                "selector_ids": {
+                    "selected-content": {"interface": "driver", "language": "nodejs"}
+                },
+            },
+        ]
+
+
 def test_multi_page_tutorials() -> None:
     test_page_template = """
 .. multi-page-tutorial::
