@@ -459,21 +459,17 @@ class Spec:
 
         for defined_composable in spec.composables:
             custom_composable = custom_composable_by_id.pop(defined_composable.id, None)
-            merged_title = (
-                custom_composable["title"]
-                if custom_composable
-                else defined_composable.title
-            )
+            if not custom_composable:
+                continue
+            merged_title = custom_composable["title"]
 
             # merge all the options
             defined_options = {
                 option.id: option for option in defined_composable.options
             }
-            custom_options = (
-                {option["id"]: option for option in custom_composable["options"]}
-                if custom_composable
-                else {}
-            )
+            custom_options = {
+                option["id"]: option for option in custom_composable["options"]
+            }
 
             merged_options = []
             for option_id in set(defined_options.keys()) | set(custom_options.keys()):
@@ -487,13 +483,13 @@ class Spec:
 
             merged_dependencies = (
                 custom_composable["dependencies"]
-                if custom_composable and "dependencies" in custom_composable
+                if "dependencies" in custom_composable
                 else defined_composable.dependencies
             )
 
             merged_default = (
                 custom_composable["default"]
-                if custom_composable and "default" in custom_composable
+                if "default" in custom_composable
                 else defined_composable.default
             )
             default_option = next(
@@ -523,21 +519,21 @@ class Spec:
                 )
             )
 
-        for composableObj in custom_composable_by_id.values():
+        for composable_obj in custom_composable_by_id.values():
             res.append(
                 Composable(
-                    composableObj["id"],
-                    composableObj["title"],
-                    composableObj["default"] if "default" in composableObj else None,
+                    composable_obj["id"],
+                    composable_obj["title"],
+                    composable_obj["default"] if "default" in composable_obj else None,
                     (
-                        composableObj["dependencies"]
-                        if "dependencies" in composableObj
+                        composable_obj["dependencies"]
+                        if "dependencies" in composable_obj
                         else None
                     ),
                     list(
                         map(
                             lambda option: TabDefinition(option["id"], option["title"]),
-                            composableObj["options"],
+                            composable_obj["options"],
                         )
                     ),
                 )
@@ -568,7 +564,7 @@ class Spec:
         return cls.SPEC
 
     @classmethod
-    def get(cls, configPath: Optional[Path]) -> "Spec":
+    def get(cls, configPath: Optional[Path] = None) -> "Spec":
         if cls.SPEC and cls.SPEC.merged:
             return cls.SPEC
 

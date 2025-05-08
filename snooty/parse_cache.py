@@ -162,9 +162,7 @@ class ParseCache:
     ) -> CacheData:
         path = self.path if path is None else path
         url_prefix = (
-            url_prefix
-            if url_prefix
-            else specparser.Spec.get(None).build.cache_url_prefix
+            url_prefix if url_prefix else specparser.Spec.get().build.cache_url_prefix
         )
         data: Optional[CacheData] = None
         try:
@@ -212,5 +210,5 @@ class ParseCache:
         return (
             __version__,
             util.structural_hash(self.project_config).hex(),
-            util.structural_hash(specparser.Spec.get(None)).hex(),
+            util.structural_hash(specparser.Spec.get()).hex(),
         )

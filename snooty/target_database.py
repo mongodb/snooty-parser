@@ -70,7 +70,7 @@ class TargetDatabase:
         key = normalize_target(key)
         results: List[TargetDatabase.Result] = []
 
-        spec = specparser.Spec.get(None)
+        spec = specparser.Spec.get()
 
         with self.lock:
             # Check to see if the target is defined locally

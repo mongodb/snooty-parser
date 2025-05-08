@@ -262,9 +262,6 @@ class ProjectConfig:
                 ).render_constants()
 
                 parsed_diagnostics.extend(cls.validate_data(result.data))
-                # parsed_diagnostics.extend(
-                #     specparser.Spec.store_project_config(result.composables)
-                # )
 
                 return result, parsed_diagnostics
             except FileNotFoundError:
@@ -500,7 +497,7 @@ class ProjectConfig:
     @staticmethod
     def validate_data(data: Dict[str, object]) -> List[Diagnostic]:
         diagnostics: List[Diagnostic] = []
-        permitted_fields = specparser.Spec.get(None).data_fields
+        permitted_fields = specparser.Spec.get().data_fields
         for key in data:
             if key not in permitted_fields:
                 diagnostics.append(
