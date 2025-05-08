@@ -1,12 +1,14 @@
 """Parser for a TOML spec file containing definitions of all supported reStructuredText
-   directives and roles, and what types of data each should expect."""
+directives and roles, and what types of data each should expect."""
 
 from __future__ import annotations
 
 import dataclasses
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -18,12 +20,15 @@ from typing import (
     Optional,
     Sequence,
     Set,
+    Tuple,
     TypeVar,
     Union,
 )
 
 import tomli
 from typing_extensions import Protocol
+
+from snooty.diagnostics import Diagnostic, UnknownOptionId
 
 from . import tinydocutils, util
 from .flutter import check_type, checked
@@ -69,6 +74,8 @@ VALIDATORS: Dict[PrimitiveType, Callable[[Any], Any]] = {
     PrimitiveType.flag: util.option_flag,
     PrimitiveType.linenos: util.option_string,
 }
+
+logger = logging.getLogger(__name__)
 
 #: Option types can be a primitive type (PrimitiveType), an enum
 #: defined in the spec, or a union of those.
@@ -308,6 +315,7 @@ class Spec:
     wayfinding: Dict[str, List[WayfindingOption]] = field(default_factory=dict)
     data_fields: List[str] = field(default_factory=list)
     composables: List[Composable] = field(default_factory=list)
+    merged: bool = False
 
     SPEC: ClassVar[Optional[Spec]] = None
 
@@ -439,15 +447,131 @@ class Spec:
             resolve_value(key, inheritable)
 
     @classmethod
-    def initialize(cls, text: str) -> None:
-        cls.SPEC = Spec.loads(text)
+    def _merge_composables(
+        cls, spec: Spec, custom_composables: List[Dict[str, Any]]
+    ) -> Tuple[Spec, List[Diagnostic]]:
+        res: List[Composable] = []
+        diagnostics: List[Diagnostic] = []
+
+        custom_composable_by_id = {
+            composable["id"]: composable for composable in custom_composables
+        }
+
+        for defined_composable in spec.composables:
+            custom_composable = custom_composable_by_id.pop(defined_composable.id, None)
+            if not custom_composable:
+                res.append(defined_composable)
+                continue
+            merged_title = custom_composable["title"]
+
+            # merge all the options
+            defined_options = {
+                option.id: option for option in defined_composable.options
+            }
+            custom_options = {
+                option["id"]: option for option in custom_composable["options"]
+            }
+
+            merged_options = []
+            for option_id in set(defined_options.keys()) | set(custom_options.keys()):
+                if option_id in custom_options:
+                    custom_option = custom_options[option_id]
+                    merged_options.append(
+                        TabDefinition(custom_option["id"], custom_option["title"])
+                    )
+                else:
+                    merged_options.append(defined_options[option_id])
+
+            merged_dependencies = (
+                custom_composable["dependencies"]
+                if "dependencies" in custom_composable
+                else defined_composable.dependencies
+            )
+
+            merged_default = (
+                custom_composable["default"]
+                if "default" in custom_composable
+                else defined_composable.default
+            )
+            default_option = next(
+                (
+                    option
+                    for option in merged_options
+                    if merged_default and option.id == merged_default
+                ),
+                None,
+            )
+            if merged_default and not default_option:
+                diagnostics.append(
+                    UnknownOptionId(
+                        "Spec composables default",
+                        merged_default,
+                        [option.title for option in merged_options],
+                        0,
+                    )
+                )
+            res.append(
+                Composable(
+                    defined_composable.id,
+                    merged_title,
+                    merged_default,
+                    merged_dependencies,
+                    merged_options,
+                )
+            )
+
+        for composable_obj in custom_composable_by_id.values():
+            res.append(
+                Composable(
+                    composable_obj["id"],
+                    composable_obj["title"],
+                    composable_obj["default"] if "default" in composable_obj else None,
+                    (
+                        composable_obj["dependencies"]
+                        if "dependencies" in composable_obj
+                        else None
+                    ),
+                    list(
+                        map(
+                            lambda option: TabDefinition(option["id"], option["title"]),
+                            composable_obj["options"],
+                        )
+                    ),
+                )
+            )
+
+        spec.composables = res
+        return (spec, diagnostics)
 
     @classmethod
-    def get(cls) -> "Spec":
-        if cls.SPEC is None:
-            path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
-            cls.initialize(path.read_text(encoding="utf-8"))
+    def initialize(cls, text: str, configPath: Optional[Path]) -> "Spec":
+        cls.SPEC = Spec.loads(text)
+        if configPath:
+            project_config = tomli.loads(configPath.read_text(encoding="utf-8"))
+            # NOTE: would like to check_type but circular imports
+            # this is already verified earlier in the process
+            spec, diagnostics = cls._merge_composables(
+                cls.SPEC,
+                (
+                    project_config["composables"]
+                    if "composables" in project_config
+                    else []
+                ),
+            )
+            spec.merged = True
+            cls.SPEC = spec
+            for diagnostic in diagnostics:
+                logger.error(diagnostic)
+        return cls.SPEC
 
-        spec = cls.SPEC
-        assert spec is not None
-        return spec
+    @classmethod
+    def get(cls, configPath: Optional[Path] = None) -> "Spec":
+        if cls.SPEC and cls.SPEC.merged:
+            return cls.SPEC
+
+        path = util.PACKAGE_ROOT.joinpath("rstspec.toml")
+        spec = cls.initialize(path.read_text(encoding="utf-8"), configPath)
+
+        cls.SPEC = spec
+        assert cls.SPEC is not None
+        return cls.SPEC

@@ -218,6 +218,7 @@ class ProjectConfig:
     bundle: BundleConfig = field(default_factory=BundleConfig)
     data: Dict[str, object] = field(default_factory=dict)
     associated_products: List[AssociatedProduct] = field(default_factory=list)
+    composables: List[specparser.Composable] = field(default_factory=list)
 
     # banner_nodes contains parsed banner nodes with target data
     banner_nodes: List[ParsedBannerConfig] = field(
