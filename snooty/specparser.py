@@ -460,6 +460,7 @@ class Spec:
         for defined_composable in spec.composables:
             custom_composable = custom_composable_by_id.pop(defined_composable.id, None)
             if not custom_composable:
+                res.append(defined_composable)
                 continue
             merged_title = custom_composable["title"]
 
