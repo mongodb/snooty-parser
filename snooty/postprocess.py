@@ -468,7 +468,7 @@ class NamedReferenceHandlerPass2(Handler):
         node.refuri = refuri
 
 
-SelectorId = Dict[str, Union[str, "SelectorId"]]
+SelectorId = Dict[str, Union[str, Dict[str, str], "SelectorId"]]
 
 
 class ContentsHandler(Handler):
@@ -486,9 +486,11 @@ class ContentsHandler(Handler):
         self.current_depth = 0
         self.has_contents_directive = False
         self.headings: List[ContentsHandler.HeadingData] = []
-        self.scanned_pattern: List[Tuple[str, str]] = []
+        self.scanned_pattern: List[Tuple[str, Union[str, Dict[str, str]]]] = []
 
-    def scan_pattern(self, arr: List[Tuple[str, str]]) -> SelectorId:
+    def scan_pattern(
+        self, arr: List[Tuple[str, Union[str, Dict[str, str]]]]
+    ) -> SelectorId:
         if not arr:
             return {}
         if len(arr) == 1:
@@ -533,6 +535,9 @@ class ContentsHandler(Handler):
                 self.scanned_pattern.append((node.name, node.options["id"]))
             elif node.name == "tab":
                 self.scanned_pattern.append((node.name, node.options["tabid"]))
+            elif node.name == "selected-content":
+                assert isinstance(node, n.ComposableContent)
+                self.scanned_pattern.append((node.name, node.selections))
 
         if isinstance(node, n.Directive) and node.name == "contents":
             if self.has_contents_directive:
@@ -573,7 +578,7 @@ class ContentsHandler(Handler):
 
     def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if isinstance(node, n.Directive) and (
-            node.name == "method-option" or node.name == "tab"
+            node.name in ["method-option", "tab", "selected-content"]
         ):
             self.scanned_pattern.pop()
         if isinstance(node, n.Section):
