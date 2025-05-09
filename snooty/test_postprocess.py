@@ -4166,7 +4166,7 @@ Title here
         ]
 
 
-def test_composable_headings():
+def test_composable_headings() -> None:
     with make_test(
         {
             Path(
@@ -4200,7 +4200,6 @@ This is the page title
         page = result.pages[test_file_id]
         diagnostics = result.diagnostics[test_file_id]
         assert len(diagnostics) == 0
-        diagnostics = result.diagnostics
         assert page.ast.options.get("headings") == [
             {
                 "depth": 2,
