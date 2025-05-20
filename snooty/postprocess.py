@@ -70,7 +70,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType, DismissibleSkillsCard
+from .n import DismissibleSkillsCard, FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -1987,16 +1987,17 @@ class CollapsibleHandler(Handler):
         if isinstance(node, n.Directive) and node.name == "collapsible":
             self.collapsible_detected = False
 
+
 class DismissibleSkillsCardHandler(Handler):
     """Handles duplicate dismissible skills card directives on a single page.
     Adds DismissibleSkillsCard node to page options"""
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.dismissible_skills_card_found: DismissibleSkillsCard | None = None
+        self.dismissible_skills_card: Optional[DismissibleSkillsCard] = None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.dismissible_skills_card_found = None
+        self.dismissible_skills_card = None
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "dismissible-skills-card":
@@ -2007,10 +2008,9 @@ class DismissibleSkillsCardHandler(Handler):
             )
 
         if node.options["url"] and node.options["skill"]:
-            self.dismissible_skills_card = {
-                "url": node.options["url"],
-                "skill": node.options["skill"]
-            }
+            self.dismissible_skills_card = DismissibleSkillsCard(
+                (node.span[0],), node.options["url"], node.options["skill"]
+            )
         else:
             for option in ("url", "skill"):
                 if not node.options.get(option):
@@ -2018,10 +2018,13 @@ class DismissibleSkillsCardHandler(Handler):
                         ExpectedOption(node.name, option, node.span[0])
                     )
 
-
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if self.dismissible_skills_card:
-            page.ast.options["dismissible_skills_card"] = self.dismissible_skills_card
+            page.ast.options["dismissible_skills_card"] = {
+                "skill": self.dismissible_skills_card.skill,
+                "url": self.dismissible_skills_card.url,
+            }
+
 
 class NestedDirectiveHandler(Handler):
     """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""

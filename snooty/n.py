@@ -530,6 +530,7 @@ class ComposableContent(Directive):
     __slots__ = "selections"
     selections: Dict[str, str]
 
+
 @dataclass
 class DismissibleSkillsCard(Node):
     __slots__ = (
