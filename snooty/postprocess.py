@@ -69,7 +69,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import FileId, SerializableType
+from .n import FileId, SerializableType, DismissibleSkillsCard
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -1993,19 +1993,28 @@ class DismissibleSkillsCardHandler(Handler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.dismissible_skills_card_detected = False
+        self.dismissible_skills_card = DismissibleSkillsCard | None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.dismissible_skills_card_detected = False
+        self.dismissible_skills_card = None
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "dismissible-skills-card":
             return
-        if self.dismissible_skills_card_detected:
+        if self.dismissible_skills_card:
             self.context.diagnostics[fileid_stack.current].append(
                 DuplicateDirective(node.name, node.span[0])
             )
-        self.dismissible_skills_card_detected = True
+
+        if node.options["url"] and node.options["skill"]:
+            self.dismissible_skills_card: DismissibleSkillsCard = {
+                "url": node.options["url"],
+                "skill": node.options["skill"]
+            }
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if self.dismissible_skills_card:
+            page.ast.options["dismissible_skills_card"] = self.dismissible_skills_card
 
 class NestedDirectiveHandler(Handler):
     """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""
@@ -2276,6 +2285,7 @@ class Postprocessor:
             ImageHandler,
             CollapsibleHandler,
             WayfindingHandler,
+            DismissibleSkillsCardHandler,
             MethodSelectorHandler,
             MultiPageTutorialHandler,
             ComposableTutorialHandler,
