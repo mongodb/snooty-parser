@@ -1993,10 +1993,10 @@ class DismissibleSkillsCardHandler(Handler):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.dismissible_skills_card = DismissibleSkillsCard | None
+        self.dismissible_skills_card_found: DismissibleSkillsCard | None = None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.dismissible_skills_card = None
+        self.dismissible_skills_card_found = None
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
         if not isinstance(node, n.Directive) or node.name != "dismissible-skills-card":
@@ -2007,7 +2007,7 @@ class DismissibleSkillsCardHandler(Handler):
             )
 
         if node.options["url"] and node.options["skill"]:
-            self.dismissible_skills_card: DismissibleSkillsCard = {
+            self.dismissible_skills_card = {
                 "url": node.options["url"],
                 "skill": node.options["skill"]
             }
@@ -2015,7 +2015,7 @@ class DismissibleSkillsCardHandler(Handler):
             for option in ("url", "skill"):
                 if not node.options.get(option):
                     self.context.diagnostics[fileid_stack.current].append(
-                        ExpectedOption(node.name, option)
+                        ExpectedOption(node.name, option, node.span[0])
                     )
 
 
