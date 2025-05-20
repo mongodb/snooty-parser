@@ -40,6 +40,7 @@ from .diagnostics import (
     Diagnostic,
     DuplicatedExternalToc,
     DuplicateDirective,
+    ExpectedOption,
     ExpectedPathArg,
     ExpectedTabs,
     FetchError,
@@ -1986,10 +1987,9 @@ class CollapsibleHandler(Handler):
         if isinstance(node, n.Directive) and node.name == "collapsible":
             self.collapsible_detected = False
 
-# Possible todo: check that url is healthy? Check if both options are there and are strings? Is this built in??
 class DismissibleSkillsCardHandler(Handler):
     """Handles duplicate dismissible skills card directives on a single page.
-    If a page has multiple, raise a diagnostic"""
+    Adds DismissibleSkillsCard node to page options"""
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
@@ -2011,6 +2011,13 @@ class DismissibleSkillsCardHandler(Handler):
                 "url": node.options["url"],
                 "skill": node.options["skill"]
             }
+        else:
+            for option in ("url", "skill"):
+                if not node.options.get(option):
+                    self.context.diagnostics[fileid_stack.current].append(
+                        ExpectedOption(node.name, option)
+                    )
+
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if self.dismissible_skills_card:
