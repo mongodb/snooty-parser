@@ -880,7 +880,6 @@ content_type = "block"
 
 [directive."mongodb:dismissible-skills-card"]
 help = "A dismissible card that links to Skills"
-content_type = "block"
 options.skill = {type = "string", required = true}
 options.url = {type = "string", required = true}
 example = """

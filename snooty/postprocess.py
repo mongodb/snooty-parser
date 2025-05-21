@@ -70,7 +70,7 @@ from .diagnostics import (
 )
 from .eventparser import EventParser, FileIdStack
 from .flutter import check_type, checked
-from .n import DismissibleSkillsCard, FileId, SerializableType
+from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
@@ -1989,12 +1989,19 @@ class CollapsibleHandler(Handler):
 
 
 class DismissibleSkillsCardHandler(Handler):
-    """Handles duplicate dismissible skills card directives on a single page.
-    Adds DismissibleSkillsCard node to page options"""
+    """Handles 'dismissible-skills-card' directives on a page.
+    Only one is allowed per page. Adds the data to page AST options."""
+
+    @dataclass
+    class DismissibleSkillsCard:
+        skill: str
+        url: str
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.dismissible_skills_card: Optional[DismissibleSkillsCard] = None
+        self.dismissible_skills_card: Optional[
+            DismissibleSkillsCardHandler.DismissibleSkillsCard
+        ] = None
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         self.dismissible_skills_card = None
@@ -2007,16 +2014,12 @@ class DismissibleSkillsCardHandler(Handler):
                 DuplicateDirective(node.name, node.span[0])
             )
 
-        if node.options["url"] and node.options["skill"]:
-            self.dismissible_skills_card = DismissibleSkillsCard(
-                (node.span[0],), node.options["url"], node.options["skill"]
+        skill = node.options.get("skill")
+        url = node.options.get("url")
+        if skill and url:
+            self.dismissible_skills_card = self.DismissibleSkillsCard(
+                skill=skill, url=url
             )
-        else:
-            for option in ("url", "skill"):
-                if not node.options.get(option):
-                    self.context.diagnostics[fileid_stack.current].append(
-                        ExpectedOption(node.name, option, node.span[0])
-                    )
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if self.dismissible_skills_card:
