@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Fix sharedinclude proxy
+- DOp-5589: Composable tutorials dynamic headings
+- DOP-5507: allow merging of rstspec and snooty configs for composables
+- Add options to composables
+- Update HACKING.md
+- Update release instructions
+
 ## [v0.20.2] - 2025-04-25
 
 ### Added
