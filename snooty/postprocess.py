@@ -40,7 +40,6 @@ from .diagnostics import (
     Diagnostic,
     DuplicatedExternalToc,
     DuplicateDirective,
-    ExpectedOption,
     ExpectedPathArg,
     ExpectedTabs,
     FetchError,
