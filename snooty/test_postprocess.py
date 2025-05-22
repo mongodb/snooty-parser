@@ -4704,3 +4704,27 @@ Heading of the page
         assert len(diagnostics) == 2
         assert isinstance(diagnostics[0], DuplicateDirective)
         assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)
+
+
+def test_dismissible_skills_card() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+===================
+Heading of the page
+===================
+
+.. dismissible-skills-card::
+   :skill: WOW Lightsaber Skill
+   :url: https://learn.mongodb.com/courses/crud-operations-in-mongodb
+
+""",
+        }
+    ) as result:
+        page = result.pages[FileId("index.txt")]
+        assert (page.ast.options.get("dismissible_skills_card")) == {
+            "skill": "WOW Lightsaber Skill",
+            "url": "https://learn.mongodb.com/courses/crud-operations-in-mongodb",
+        }
