@@ -1992,6 +1992,47 @@ class CollapsibleHandler(Handler):
             self.collapsible_detected = False
 
 
+class DismissibleSkillsCardHandler(Handler):
+    """Handles 'dismissible-skills-card' directives on a page.
+    Only one is allowed per page. Adds the data to page AST options."""
+
+    @dataclass
+    class DismissibleSkillsCard:
+        skill: str
+        url: str
+
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.dismissible_skills_card: Optional[
+            DismissibleSkillsCardHandler.DismissibleSkillsCard
+        ] = None
+
+    def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        self.dismissible_skills_card = None
+
+    def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.Directive) or node.name != "dismissible-skills-card":
+            return
+        if self.dismissible_skills_card:
+            self.context.diagnostics[fileid_stack.current].append(
+                DuplicateDirective(node.name, node.span[0])
+            )
+
+        skill = node.options.get("skill")
+        url = node.options.get("url")
+        if skill and url:
+            self.dismissible_skills_card = self.DismissibleSkillsCard(
+                skill=skill, url=url
+            )
+
+    def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
+        if self.dismissible_skills_card:
+            page.ast.options["dismissible_skills_card"] = {
+                "skill": self.dismissible_skills_card.skill,
+                "url": self.dismissible_skills_card.url,
+            }
+
+
 class NestedDirectiveHandler(Handler):
     """Prevents a directive from being nested deeper than intended on a page and from being used twice in a single page."""
 
@@ -2261,6 +2302,7 @@ class Postprocessor:
             ImageHandler,
             CollapsibleHandler,
             WayfindingHandler,
+            DismissibleSkillsCardHandler,
             MethodSelectorHandler,
             MultiPageTutorialHandler,
             ComposableTutorialHandler,
