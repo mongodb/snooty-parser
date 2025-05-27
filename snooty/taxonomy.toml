@@ -90,6 +90,7 @@ name = "enterprise-kubernetes-operator"
 
 [[target_product]]
 name = "intellij"
+display_name = "IntelliJ"
 
 [[target_product]]
 name = "kafka-connector"
