@@ -50,9 +50,16 @@ name = "atlas"
   [[target_product.sub_product]]
   name = "triggers"
 
+  [[target_product.sub_product]]
+  name = "atlas-vector-search"
+
 [[target_product]]
 name = "bi-connector"
 display_name = "BI Connector"
+
+[[target_product]]
+name = "atlas-architecture-center"
+display_name = "Atlas Architecture Center"
 
 [[target_product]]
 name = "com"
@@ -75,7 +82,13 @@ name = "database-tools"
 name = "drivers"
 
 [[target_product]]
+name = "django"
+
+[[target_product]]
 name = "enterprise-kubernetes-operator"
+
+[[target_product]]
+name = "intellij"
 
 [[target_product]]
 name = "kafka-connector"
