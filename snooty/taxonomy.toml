@@ -15,6 +15,10 @@ name = "atlas"
   display_name = "App Services"
 
   [[target_product.sub_product]]
+  name = "atlas-vector-search"
+  display_name = "Atlas Vector Search"
+
+  [[target_product.sub_product]]
   name = "charts"
   display_name = "Charts"
 
@@ -55,6 +59,10 @@ name = "bi-connector"
 display_name = "BI Connector"
 
 [[target_product]]
+name = "atlas-architecture-center"
+display_name = "Atlas Architecture Center"
+
+[[target_product]]
 name = "com"
 display_name = "Cloud Manager"
 
@@ -72,10 +80,18 @@ name = "compass"
 name = "database-tools"
 
 [[target_product]]
+name = "django"
+display_name = "Django Integration"
+
+[[target_product]]
 name = "drivers"
 
 [[target_product]]
 name = "enterprise-kubernetes-operator"
+
+[[target_product]]
+name = "intellij"
+display_name = "IntelliJ"
 
 [[target_product]]
 name = "kafka-connector"
