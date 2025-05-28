@@ -7,9 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- DOP-5604: dismissible-skills-card directive
-
 ## [v0.20.2] - 2025-04-25
 
 ### Added
