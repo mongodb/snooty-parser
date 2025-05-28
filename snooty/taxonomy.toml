@@ -9,7 +9,7 @@ name = "tutorial"
 # as much as possible
 [[target_product]]
 name = "atlas"
-  
+
   [[target_product.sub_product]]
   name = "atlas-app-services"
   display_name = "App Services"
