@@ -80,10 +80,11 @@ name = "compass"
 name = "database-tools"
 
 [[target_product]]
-name = "drivers"
+name = "django"
+display_name = "Django Integration"
 
 [[target_product]]
-name = "django"
+name = "drivers"
 
 [[target_product]]
 name = "enterprise-kubernetes-operator"
