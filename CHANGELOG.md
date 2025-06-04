@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DOCSP-50303 updating taxonomy for new products (#665)
+
 ## [v0.20.4] - 2025-05-28
 
 ### Added
