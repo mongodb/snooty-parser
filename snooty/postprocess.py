@@ -2547,6 +2547,9 @@ class Postprocessor:
 
         # Locate orphaned files
         for fileid in context.pages:
+            if "code-examples" in fileid.parts:
+                continue
+
             if fileid.suffix != EXT_FOR_PAGE:
                 continue
 

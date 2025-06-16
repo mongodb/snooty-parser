@@ -3404,11 +3404,25 @@ A Marked Orphan
 Not An Orphan
 =============
             """,
+            Path(
+                "source/code-examples/includes/connection-string.txt"
+            ): """
+mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]]
+            """,
         }
     ) as result:
-        assert {
+        diagnostics = {
             k: [type(d) for d in v] for k, v in result.diagnostics.items() if v
-        } == {FileId("orphan.txt"): [OrphanedPage]}
+        }
+
+        assert diagnostics == {FileId("orphan.txt"): [OrphanedPage]}
+
+        # Add a check to ensure a path including `code-examples` does NOT return `OrphanedPage`
+        assert FileId(
+            "code-examples/includes/connection-string.txt"
+        ) not in diagnostics or OrphanedPage not in diagnostics.get(
+            FileId("code-examples/includes/connection-string.txt"), []
+        )
 
 
 def test_slug_to_breadcrumb_labels() -> None:
