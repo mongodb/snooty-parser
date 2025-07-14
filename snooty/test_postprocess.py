@@ -4794,3 +4794,70 @@ Heading of the page
             "skill": "WOW Lightsaber Skill",
             "url": "https://learn.mongodb.com/courses/crud-operations-in-mongodb",
         }
+
+
+def test_reserved_dirs() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+========
+Homepage
+========
+
+txt files inside of code-examples directories should not be parsed as reStructuredText.
+
+.. literalinclude:: /code-examples/test.txt
+
+.. literalinclude:: /includes/code-examples/test.txt
+
+rst files inside of code-examples directories are okay to parse.
+
+.. include:: /includes/code-examples/foo.rst
+
+""",
+            Path(
+                "source/code-examples.txt"
+            ): """
+:orphan:
+
+==================
+Code Examples Page
+==================
+
+This page exists to make sure that pages titled code-examples are okay to have.
+
+""",
+            Path(
+                "source/code-examples/test.txt"
+            ): """
+This is a code example and should not be captured as a page.
+""",
+            Path(
+                "source/includes/code-examples/test.txt"
+            ): """
+This is another code example, but nested in a subdirectory, and should not be captured as a page.
+""",
+            Path(
+                "source/includes/code-examples/foo.rst"
+            ): """
+This file makes sure that rst files nested in a code-examples subdirectory is okay.
+
+.. warning::
+
+   This is a test.
+
+""",
+        }
+    ) as result:
+        # txt files nested under code-examples directories should not be parsed as reStructuredText
+        assert len(result.pages) == 3
+        assert result.pages.get(FileId("code-examples/test.txt")) == None
+        assert result.pages.get(FileId("includes/code-examples/test.txt")) == None
+
+        # Allow rst files under code-examples to be parsed
+        assert result.pages[FileId("includes/code-examples/foo.rst")]
+
+        # Allow code-examples.txt files to be parsed
+        assert result.pages[FileId("code-examples.txt")]
