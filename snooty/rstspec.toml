@@ -1661,6 +1661,12 @@ type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/
 [role."oas-atlas-op"]
 type = {link = "https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#operation%s"}
 
+[role."oas-bump-atlas-tag"]
+type = {link = "https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/group/endpoint-%s"}
+
+[role."oas-bump-atlas-op"]
+type = {link = "https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-%s"}
+
 [role."atlascli"]
 help = """Link to a page in the Atlas CLI documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/cli/current%s", ensure_trailing_slash = true}
