@@ -4861,3 +4861,37 @@ This file makes sure that rst files nested in a code-examples subdirectory is ok
 
         # Allow code-examples.txt files to be parsed
         assert result.pages[FileId("code-examples.txt")]
+
+        assert len(result.diagnostics[FileId("index.txt")]) == 0
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <section>
+        <heading id="homepage"><text>Homepage</text></heading>
+        <paragraph><text>txt files inside of code-examples directories should not be parsed as reStructuredText.</text></paragraph>
+        <directive name="literalinclude">
+            <text>/code-examples/test.txt</text>
+            <code copyable="True">
+                This is a code example and should not be captured as a page.
+            </code>
+        </directive>
+        <directive name="literalinclude">
+            <text>/includes/code-examples/test.txt</text>
+            <code copyable="True">
+                This is another code example, but nested in a subdirectory, and should not be captured as a page.
+            </code>
+        </directive>
+        <paragraph><text>rst files inside of code-examples directories are okay to parse.</text></paragraph>
+        <directive name="include">
+            <text>/includes/code-examples/foo.rst</text>
+            <root fileid="includes/code-examples/foo.rst">
+                <paragraph><text>This file makes sure that rst files nested in a code-examples subdirectory is okay.</text></paragraph>
+                <directive name="warning">
+                    <paragraph><text>This is a test.</text></paragraph>
+                </directive>
+            </root>
+        </directive>
+    </section>
+</root>""",
+        )
