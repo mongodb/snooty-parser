@@ -73,7 +73,7 @@ from .n import FileId, SerializableType
 from .page import Page
 from .target_database import TargetDatabase
 from .types import Facet, ProjectConfig
-from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, bundle
+from .util import EXT_FOR_PAGE, SOURCE_FILE_EXTENSIONS, bundle, is_txt_in_reserved_dir
 
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -191,6 +191,9 @@ def propagate_facets(pages: Dict[FileId, Page], context: Context) -> None:
                     continue
 
                 file_path = Path(os.path.join(base, file))
+                if is_txt_in_reserved_dir(file_path):
+                    continue
+
                 fileid = config.get_fileid(file_path)
 
                 if ext == ".ast":

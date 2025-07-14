@@ -62,6 +62,7 @@ PAT_INVALID_ID_CHARACTERS = re.compile(r"[^\w_\.\-]")
 PAT_URI = re.compile(r"^(?P<schema>[a-z]+)://")
 SOURCE_FILE_EXTENSIONS = {".txt", ".rst", ".yaml"}
 RST_EXTENSIONS = {".txt", ".rst"}
+RESERVED_DIRS = {"code-examples"}
 EXT_FOR_PAGE = ".txt"
 EMPTY_BLAKE2B = hashlib.blake2b(b"").hexdigest()
 SNOOTY_TOML = "snooty.toml"
@@ -175,7 +176,7 @@ def get_files(
 
             path = Path(os.path.join(base, name))
             # Detect and ignore symlinks outside of our jail
-            if is_relative_to(path.resolve(), must_be_relative_to):
+            if is_relative_to(path.resolve(), must_be_relative_to) and not is_txt_in_reserved_dir(path):
                 yield path
 
 
@@ -781,3 +782,17 @@ def parse_toml_and_add_line_info(text: str) -> Dict[str, Any]:
             raise TOMLDecodeErrorWithSourceInfo(message, text.count("\n") + 1) from err
 
         raise err
+
+
+def is_txt_in_reserved_dir(path: Path) -> bool:
+    if (path.suffix != ".txt"):
+        return False
+    
+    # Exclude files that have a reserved dir name AS the filename
+    path_parts = path.parts[:-1]
+    for part in path_parts:
+        if part in RESERVED_DIRS:
+            print(f"{path} is a big NO NO")
+            return True
+
+    return False
