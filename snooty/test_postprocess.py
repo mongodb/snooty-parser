@@ -4794,3 +4794,104 @@ Heading of the page
             "skill": "WOW Lightsaber Skill",
             "url": "https://learn.mongodb.com/courses/crud-operations-in-mongodb",
         }
+
+
+def test_reserved_dirs() -> None:
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+========
+Homepage
+========
+
+txt files inside of code-examples directories should not be parsed as reStructuredText.
+
+.. literalinclude:: /code-examples/test.txt
+
+.. literalinclude:: /includes/code-examples/test.txt
+
+rst files inside of code-examples directories are okay to parse.
+
+.. include:: /includes/code-examples/foo.rst
+
+""",
+            Path(
+                "source/code-examples.txt"
+            ): """
+:orphan:
+
+==================
+Code Examples Page
+==================
+
+This page exists to make sure that pages titled code-examples are okay to have.
+
+""",
+            Path(
+                "source/code-examples/test.txt"
+            ): """
+This is a code example and should not be captured as a page.
+""",
+            Path(
+                "source/includes/code-examples/test.txt"
+            ): """
+This is another code example, but nested in a subdirectory, and should not be captured as a page.
+""",
+            Path(
+                "source/includes/code-examples/foo.rst"
+            ): """
+This file makes sure that rst files nested in a code-examples subdirectory is okay.
+
+.. warning::
+
+   This is a test.
+
+""",
+        }
+    ) as result:
+        # txt files nested under code-examples directories should not be parsed as reStructuredText
+        assert len(result.pages) == 3
+        assert result.pages.get(FileId("code-examples/test.txt")) == None
+        assert result.pages.get(FileId("includes/code-examples/test.txt")) == None
+
+        # Allow rst files under code-examples to be parsed
+        assert result.pages[FileId("includes/code-examples/foo.rst")]
+
+        # Allow code-examples.txt files to be parsed
+        assert result.pages[FileId("code-examples.txt")]
+
+        assert len(result.diagnostics[FileId("index.txt")]) == 0
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <section>
+        <heading id="homepage"><text>Homepage</text></heading>
+        <paragraph><text>txt files inside of code-examples directories should not be parsed as reStructuredText.</text></paragraph>
+        <directive name="literalinclude">
+            <text>/code-examples/test.txt</text>
+            <code copyable="True">
+                This is a code example and should not be captured as a page.
+            </code>
+        </directive>
+        <directive name="literalinclude">
+            <text>/includes/code-examples/test.txt</text>
+            <code copyable="True">
+                This is another code example, but nested in a subdirectory, and should not be captured as a page.
+            </code>
+        </directive>
+        <paragraph><text>rst files inside of code-examples directories are okay to parse.</text></paragraph>
+        <directive name="include">
+            <text>/includes/code-examples/foo.rst</text>
+            <root fileid="includes/code-examples/foo.rst">
+                <paragraph><text>This file makes sure that rst files nested in a code-examples subdirectory is okay.</text></paragraph>
+                <directive name="warning">
+                    <paragraph><text>This is a test.</text></paragraph>
+                </directive>
+            </root>
+        </directive>
+    </section>
+</root>""",
+        )
