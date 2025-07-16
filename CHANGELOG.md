@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DOP-5873: Add new oas-bump-atlas roles (#668)
+
+### Changed
+
+- DOP-5816: Avoid parsing txt files in reserved directories (#669)
+
 ## [v0.20.5] - 2025-06-04
 
 ### Added
