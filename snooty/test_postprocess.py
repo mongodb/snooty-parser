@@ -4772,6 +4772,59 @@ Heading of the page
         assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)
 
 
+def test_composable_with_custom_config() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+                name = "test_name"
+                title = "MongoDB title"
+
+                [[composables]]
+                id = "package-type"
+                title = "Package"
+                default = ".deb"
+                dependencies = [{operating-system = "linux"}]
+                options = [
+                {id = ".deb", title = ".deb"},
+                {id = ".rpm", title = "rpm"},
+                ]
+            """,
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+    :options: operating-system, package-type
+    :defaults: windows, None
+
+    .. selected-content::
+        :selections: windows, None
+
+        This Content is only shown when the selections are as follows:
+        Operating System - Windows
+        Package Type - None
+      """,
+        }
+    ) as result:
+        assert len(result.diagnostics[FileId("index.txt")]) == 0
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+            <root fileid="index.txt" has_composable_tutorial="True">
+            <directive domain="mongodb" name="composable-tutorial" composable_options="[{'value': 'operating-system', 'text': 'Operating System', 'default': 'windows', 'dependencies': [], 'selections': [{'value': 'windows', 'text': 'Windows'}]}, {'value': 'package-type', 'text': 'Package', 'default': 'None', 'dependencies': [{'operating-system': 'linux'}], 'selections': []}]">
+                <directive domain="mongodb" name="selected-content" selections="{'operating-system': 'windows', 'package-type': 'None'}">
+                    <paragraph><text>This Content is only shown when the selections are as follows:
+Operating System - Windows
+Package Type - None</text>
+                    </paragraph>
+                </directive>
+            </directive>
+            </root>
+            """,
+        )
+
+
 def test_dismissible_skills_card() -> None:
     with make_test(
         {

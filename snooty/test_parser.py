@@ -4822,4 +4822,4 @@ def test_composable_tutorial_errors() -> None:
 """,
     )
     assert len(diagnostics) == 1
-    assert type(diagnostics[0]) == UnknownOptionId
+    assert type(diagnostics[0]) == MissingChild

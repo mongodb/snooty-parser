@@ -932,9 +932,13 @@ class JSONVisitor:
                 allowed_values_dict = {
                     option.id: option for option in composable_from_spec.options
                 }
-                self.check_valid_option_id(
-                    specified_default_id, node, allowed_values_dict, set()
-                )
+                # Skip validation for "None" as it means "no selection" when composable has dependencies
+                if specified_default_id != "None" or (
+                    not composable_from_spec.dependencies
+                ):
+                    self.check_valid_option_id(
+                        specified_default_id, node, allowed_values_dict, set()
+                    )
                 default_ids_dict[option_id] = (
                     specified_default_id
                     or composable_from_spec.default
