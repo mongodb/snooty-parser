@@ -4823,3 +4823,42 @@ def test_composable_tutorial_errors() -> None:
     )
     assert len(diagnostics) == 1
     assert type(diagnostics[0]) == MissingChild
+
+
+def test_repeatable_content_in_composable_tutorial() -> None:
+    """Test repeatable content in composable tutorial"""
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: atlas-cli, None, repl, gcp
+
+   This paragraph is present once before the selected contents
+
+   .. selected-content::
+      :selections: atlas-cli, None, repl, gcp
+        """,
+    )
+    assert not diagnostics
+    print("check ast")
+    print(ast_to_testing_string(page.ast))
+    check_ast_testing_string(
+        page.ast,
+        """
+<root fileid="test.rst">
+  <directive domain="mongodb" name="composable-tutorial"
+    composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'atlas-cli', 'dependencies': [], 'selections': [{'value': 'atlas-cli', 'text': 'Atlas CLI'}]}, {'value': 'language', 'text': 'Language', 'default': 'None', 'dependencies': [{'interface': 'driver'}], 'selections': []}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': [{'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}]}]">
+    <paragraph><text>This paragraph is present once before the selected contents</text></paragraph>
+    <directive domain="mongodb" name="selected-content"
+      selections="{'interface': 'atlas-cli', 'language': 'None', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}">
+    </directive>
+  </directive>
+</root>
+        """,
+    )

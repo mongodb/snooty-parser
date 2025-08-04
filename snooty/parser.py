@@ -966,75 +966,71 @@ class JSONVisitor:
         valid_children: List[n.ComposableContent] = []
         default_values_found = False
         for child in node.children:
-            try:
-                self.check_valid_child(node, child, {"selected-content"})
-                assert isinstance(child, n.ComposableContent)
-                self.handle_composable_content(child, ordered_spec_composables)
-                valid_children.append(child)
-
-                # populate parent composable-tutorial with selections used by children
-                for option_key, value_key in child.selections.items():
-                    composable_from_spec = next(
-                        (
-                            spec_composable
-                            for spec_composable in spec_composables
-                            if spec_composable.id == option_key
-                        ),
-                        None,
-                    )
-                    if not composable_from_spec:
-                        self.diagnostics.append(
-                            UnknownOptionId(
-                                "composable-tutorial",
-                                option_key,
-                                [
-                                    spec_composable.id
-                                    for spec_composable in spec_composables
-                                ],
-                                node.start[0],
-                            )
-                        )
-                        continue
-                    if not value_key or value_key == "None":
-                        continue
-                    option_from_spec = next(
-                        (
-                            spec_option
-                            for spec_option in composable_from_spec.options
-                            if spec_option.id == value_key
-                        ),
-                        None,
-                    )
-                    composable_option = next(
-                        (
-                            composable_option
-                            for composable_option in composable_options
-                            if composable_option["value"] == option_key
-                        ),
-                        {},
-                    )
-                    if not option_from_spec or not composable_option:
-                        continue
-                    composable_option["selections"] = (
-                        composable_option["selections"] or []
-                    )
-                    selection = {
-                        "value": option_from_spec.id,
-                        "text": option_from_spec.title,
-                    }
-                    if (
-                        isinstance(composable_option["selections"], list)
-                        and selection not in composable_option["selections"]
-                    ):
-                        composable_option["selections"].append(selection)
-
-                default_values_found = default_values_found or all(
-                    child.selections.get(composable_id, "") == option_id
-                    for composable_id, option_id in (default_ids_dict.items())
-                )
-
-            except ChildValidationError:
+            if not isinstance(child, n.Directive) or child.name != "selected-content":
                 continue
+            self.check_valid_child(node, child, {"selected-content"})
+            assert isinstance(child, n.ComposableContent)
+            self.handle_composable_content(child, ordered_spec_composables)
+            valid_children.append(child)
+
+            # populate parent composable-tutorial with selections used by children
+            for option_key, value_key in child.selections.items():
+                composable_from_spec = next(
+                    (
+                        spec_composable
+                        for spec_composable in spec_composables
+                        if spec_composable.id == option_key
+                    ),
+                    None,
+                )
+                if not composable_from_spec:
+                    self.diagnostics.append(
+                        UnknownOptionId(
+                            "composable-tutorial",
+                            option_key,
+                            [
+                                spec_composable.id
+                                for spec_composable in spec_composables
+                            ],
+                            node.start[0],
+                        )
+                    )
+                    continue
+                if not value_key or value_key == "None":
+                    continue
+                option_from_spec = next(
+                    (
+                        spec_option
+                        for spec_option in composable_from_spec.options
+                        if spec_option.id == value_key
+                    ),
+                    None,
+                )
+                composable_option = next(
+                    (
+                        composable_option
+                        for composable_option in composable_options
+                        if composable_option["value"] == option_key
+                    ),
+                    {},
+                )
+                if not option_from_spec or not composable_option:
+                    continue
+                composable_option["selections"] = composable_option["selections"] or []
+                selection = {
+                    "value": option_from_spec.id,
+                    "text": option_from_spec.title,
+                }
+                if (
+                    isinstance(composable_option["selections"], list)
+                    and selection not in composable_option["selections"]
+                ):
+                    composable_option["selections"].append(selection)
+
+            default_values_found = default_values_found or all(
+                child.selections.get(composable_id, "") == option_id
+                for composable_id, option_id in (default_ids_dict.items())
+            )
 
         if not default_values_found:
             self.diagnostics.append(
