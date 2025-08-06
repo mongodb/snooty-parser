@@ -33,6 +33,7 @@ from .diagnostics import (
     TargetNotFound,
     UnexpectedDirectiveOrder,
     UnknownDefaultTabId,
+    UnknownOptionId,
 )
 from .n import FileId
 from .util_test import (
@@ -4166,6 +4167,193 @@ Title here
         ]
 
 
+def test_valid_composable_tutorial() -> None:
+    """Test composable directive"""
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, deployment-type, cloud-provider
+   :defaults: driver, nodejs, atlas, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, atlas, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - NodeJS
+      Deployment Type - Atlas
+      Cloud Provider - GCP
+
+   .. selected-content::
+      :selections: driver, c, atlas, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - C
+      Deployment Type - atlas
+      Cloud Provider - GCP
+
+   .. selected-content::
+      :selections: driver, cpp, atlas, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Drivers
+      Language - CPP
+      Deployment Type - atlas
+      Cloud Provider - AWS
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, atlas, gcp
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - atlas
+      Cloud Provider - GCP
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, atlas, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - Atlas
+      Cloud Provider - AWS
+
+
+
+   .. selected-content::
+      :selections: atlas-admin-api, None, self, aws
+
+      This content will only be shown when the selections are as follows:
+      Interface - Atlas Admin API
+      Deployment Type - self
+      Cloud Provider - AWS
+
+        """
+        }
+    ) as result:
+        test_file_id = FileId("index.txt")
+        page = result.pages[test_file_id]
+        diagnostics = result.diagnostics[test_file_id]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" has_composable_tutorial="True">
+   <directive domain="mongodb" name="composable-tutorial"
+      composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'driver', 'dependencies': [], 'selections': [{'value': 'driver', 'text': 'Driver'}, {'value': 'atlas-admin-api', 'text': 'Atlas Admin API'}]}, {'value': 'language', 'text': 'Language', 'default': 'nodejs', 'dependencies': [{'interface': 'driver'}], 'selections': [{'value': 'nodejs', 'text': 'Node.js'}, {'value': 'c', 'text': 'C'}, {'value': 'cpp', 'text': 'C++'}]}, {'value': 'deployment-type', 'text': 'Deployment Type', 'default': 'atlas', 'dependencies': [], 'selections': [{'value': 'atlas', 'text': 'Atlas (Cloud)'}, {'value': 'self', 'text': 'Self-Managed (On-premises)'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}, {'value': 'aws', 'text': 'AWS'}]}]">
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'driver', 'language': 'nodejs', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - NodeJS
+Deployment Type - Atlas
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'driver', 'language': 'c', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - C
+Deployment Type - atlas
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'driver', 'language': 'cpp', 'deployment-type': 'atlas', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Drivers
+Language - CPP
+Deployment Type - atlas
+Cloud Provider - AWS</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'atlas', 'cloud-provider': 'gcp'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - atlas
+Cloud Provider - GCP</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'atlas', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - Atlas
+Cloud Provider - AWS</text></paragraph>
+      </directive>
+      <directive domain="mongodb" name="selected-content"
+         selections="{'interface': 'atlas-admin-api', 'language': 'None', 'deployment-type': 'self', 'cloud-provider': 'aws'}">
+         <paragraph><text>This content will only be shown when the selections are as follows:
+Interface - Atlas Admin API
+Deployment Type - self
+Cloud Provider - AWS</text></paragraph>
+      </directive>
+   </directive>
+</root>
+            """,
+        )
+
+
+def test_composable_tutorial_errors() -> None:
+    """Test composable handle errors"""
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-providerrr
+   :defaults: driverrr, nodejs, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcpppppp
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert UnknownOptionId in [type(d) for d in diagnostics]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, nodejs, repl, gcp
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert [type(d) for d in diagnostics] == [
+            MissingChild,
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, None, repl, gcp
+
+   .. selected-content::
+      :selections: driver, nodejs, repl, gcp
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert [type(d) for d in diagnostics] == [
+            MissingChild,
+        ]
+
+
 def test_composable_headings() -> None:
     with make_test(
         {
@@ -4230,6 +4418,46 @@ This is the page title
                 },
             },
         ]
+
+
+def test_repeatable_content_in_composable_tutorial() -> None:
+    """Test repeatable content in composable tutorial"""
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: atlas-cli, None, repl, gcp
+
+   This paragraph is present once before the selected contents
+
+   .. selected-content::
+      :selections: atlas-cli, None, repl, gcp
+
+      This is selected content
+        """
+        }
+    ) as result:
+        test_file_id = FileId("index.txt")
+        page = result.pages[test_file_id]
+        diagnostics = result.diagnostics[test_file_id]
+        assert len(diagnostics) == 0
+        check_ast_testing_string(
+            page.ast,
+            """
+<root fileid="index.txt" has_composable_tutorial="True">
+  <directive domain="mongodb" name="composable-tutorial"
+    composable_options="[{'value': 'interface', 'text': 'Interface', 'default': 'atlas-cli', 'dependencies': [], 'selections': [{'value': 'atlas-cli', 'text': 'Atlas CLI'}]}, {'value': 'language', 'text': 'Language', 'default': 'None', 'dependencies': [{'interface': 'driver'}], 'selections': []}, {'value': 'cluster-topology', 'text': 'Cluster Topology', 'default': 'repl', 'dependencies': [], 'selections': [{'value': 'repl', 'text': 'Replica Set'}]}, {'value': 'cloud-provider', 'text': 'Cloud Provider', 'default': 'gcp', 'dependencies': [], 'selections': [{'value': 'gcp', 'text': 'GCP'}]}]">
+    <paragraph><text>This paragraph is present once before the selected contents</text></paragraph>
+    <directive domain="mongodb" name="selected-content"
+      selections="{'interface': 'atlas-cli', 'language': 'None', 'cluster-topology': 'repl', 'cloud-provider': 'gcp'}">
+      <paragraph><text>This is selected content</text></paragraph>
+    </directive>
+  </directive>
+</root>            """,
+        )
 
 
 def test_multi_page_tutorials() -> None:
@@ -4767,6 +4995,7 @@ Heading of the page
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
+        print(diagnostics)
         assert len(diagnostics) == 2
         assert isinstance(diagnostics[0], DuplicateDirective)
         assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)

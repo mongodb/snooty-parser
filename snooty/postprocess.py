@@ -2218,29 +2218,9 @@ class ComposableTutorialHandler(Handler):
         for idx in range(len(selection_ids)):
             selection_id = selection_ids[idx]
             try:
-                composable = self.composable_tutorial.composable_options[idx]
-                spec_composable = next(
-                    (
-                        spec_composable
-                        for spec_composable in self.spec.composables
-                        if spec_composable.id == composable.get("value")
-                    ),
-                    None,
-                )
-                if not spec_composable:
-                    self.context.diagnostics[fileid_stack.current].append(
-                        UnknownOptionId(
-                            "selections",
-                            selection_id,
-                            [
-                                spec_composable.id
-                                for spec_composable in self.spec.composables
-                            ],
-                            node.span[0],
-                        )
-                    )
-                    break
+                composable_option = self.composable_tutorial.composable_options[idx]
             except IndexError:
+                print("check index error caused by selection_id ", selection_id)
                 self.context.diagnostics[fileid_stack.current].append(
                     InvalidChildCount(
                         "selected-content",
@@ -2249,7 +2229,75 @@ class ComposableTutorialHandler(Handler):
                         node.span[0],
                     )
                 )
-                break
+                continue
+
+            composable_id = composable_option.get("value")
+            if not isinstance(composable_id, str):
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnknownOptionId(
+                        "selections",
+                        str(composable_id) if composable_id is not None else "None",
+                        [
+                            spec_composable.id
+                            for spec_composable in self.spec.composables
+                        ],
+                        node.span[0],
+                    )
+                )
+                continue
+
+            spec_composable = next(
+                (
+                    spec_composable
+                    for spec_composable in self.spec.composables
+                    if spec_composable.id == composable_id
+                ),
+                None,
+            )
+            if not spec_composable:
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnknownOptionId(
+                        "selections",
+                        composable_id,
+                        [
+                            spec_composable.id
+                            for spec_composable in self.spec.composables
+                        ],
+                        node.span[0],
+                    )
+                )
+                continue
+
+            selections[spec_composable.id] = selection_id
+
+            if not selection_id or selection_id == "None":
+                continue
+
+            # get option value+title from spec
+            # and insert into composable_option.selections
+            option_from_spec = next(
+                (
+                    spec_option
+                    for spec_option in spec_composable.options
+                    if spec_option.id == selection_id
+                ),
+                None,
+            )
+            if not option_from_spec:
+                continue
+
+            composable_option["selections"] = composable_option["selections"] or []
+
+            selection = {
+                "value": option_from_spec.id,
+                "text": option_from_spec.title,
+            }
+            if (
+                isinstance(composable_option["selections"], list)
+                and selection not in composable_option["selections"]
+            ):
+                composable_option["selections"].append(selection)
+
             allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
             met_dependencies: bool = all(
                 key in selections and selections[key] == value
@@ -2265,9 +2313,7 @@ class ComposableTutorialHandler(Handler):
                         node.span[0],
                     )
                 )
-                break
-            composable_option_value = spec_composable.id
-            selections[composable_option_value] = selection_id
+                continue
 
         node.selections = selections
         node.options = {}
@@ -2310,22 +2356,14 @@ class ComposableTutorialHandler(Handler):
             return
         # check that default values are found within the content
         default_values_found = False
-        print("check default values")
-        print(self.total_selections)
-        # [
-        #     {"operating-system": "windows", "package-type": "None"},
-        #     {"operating-system": "macos", "package-type": "None"},
-        #     {"operating-system": "linux", "package-type": ".rpm"},
-        #     {"operating-system": "linux", "package-type": ".deb"},
-        # ]
         target_defaults: Dict[str, str] = {}
+
         for composable_option in node.composable_options:
             key = composable_option.get("value")
             value = composable_option.get("default")
             if isinstance(key, str) and isinstance(value, str):
                 target_defaults[key] = value
-        print("check target defaults")
-        print(target_defaults)
+
         for selections in self.total_selections:
             if all(
                 key in selections and selections[key] == value
@@ -2415,6 +2453,9 @@ class Postprocessor:
             FootnoteHandler,
             ProgramOptionHandler,
             TabsSelectorHandler,
+            MethodSelectorHandler,
+            MultiPageTutorialHandler,
+            ComposableTutorialHandler,
             ContentsHandler,
             InstruqtHandler,
             BannerHandler,
@@ -2426,9 +2467,6 @@ class Postprocessor:
             CollapsibleHandler,
             WayfindingHandler,
             DismissibleSkillsCardHandler,
-            MethodSelectorHandler,
-            MultiPageTutorialHandler,
-            ComposableTutorialHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

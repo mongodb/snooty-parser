@@ -10,7 +10,7 @@ from pathlib import Path, PurePath
 from typing import Any, AnyStr, Counter, Dict, Iterator, List, Optional, Tuple
 from xml.sax.saxutils import escape
 
-from . import n, rstparser
+from . import n, rstparser, specparser
 from .diagnostics import Diagnostic
 from .n import FileId, SerializableType
 from .page import Page
@@ -260,6 +260,8 @@ def make_test(
     files: Dict[PurePath, AnyStr], name: str = ""
 ) -> Iterator[BackendTestResults]:
     """Create a temporary test project with the given files."""
+    # Reset global Spec state to ensure test isolation
+    specparser.Spec.SPEC = None
     with make_test_project(files, name) as (project, backend):
         project.build()
         yield backend

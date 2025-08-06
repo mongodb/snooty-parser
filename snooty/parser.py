@@ -584,12 +584,6 @@ class JSONVisitor:
         elif isinstance(popped, n.ComposableDirective):
             self.handle_composable(popped)
 
-        # elif isinstance(popped, n.ComposableContent):
-        #     spec_composables = specparser.Spec.get(
-        #         self.project_config.config_path
-        #     ).composables
-        #     self.handle_composable_content(popped, spec_composables)
-
     def handle_facet(self, node: rstparser.directive, line: int) -> None:
         if "values" not in node["options"] or "name" not in node["options"]:
             return
