@@ -2213,7 +2213,19 @@ class ComposableTutorialHandler(Handler):
             return
 
         # validate selection ids by checking against composable tutorial and spec
-        selection_ids = util.split_option_str(node.options.get("selections", ""))
+        try:
+            selection_ids = util.split_option_str(node.options.get("selections", ""))
+        except ValueError:
+            self.context.diagnostics[fileid_stack.current].append(
+                InvalidChildCount(
+                    "selected-content",
+                    "selections",
+                    "at least one",
+                    node.span[0],
+                )
+            )
+            return
+
         selections: Dict[str, str] = {}
         for idx in range(len(selection_ids)):
             selection_id = selection_ids[idx]

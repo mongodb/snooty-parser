@@ -879,8 +879,19 @@ class JSONVisitor:
         default_ids_as_string = (
             node.options["defaults"] if "defaults" in node.options else ""
         )
-        option_ids: List[str] = split_option_str(option_ids_as_string)
-        default_ids: List[str] = split_option_str(default_ids_as_string)
+        try:
+            option_ids: List[str] = split_option_str(option_ids_as_string)
+            default_ids: List[str] = split_option_str(default_ids_as_string)
+        except ValueError:
+            self.diagnostics.append(
+                InvalidChildCount(
+                    "composable-tutorial",
+                    "option_ids and default_ids",
+                    "at least one",
+                    node.start[0],
+                )
+            )
+            return
 
         # expect at least 1 option_ids
         if len(option_ids) < 1:
