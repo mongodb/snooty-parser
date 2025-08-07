@@ -2230,9 +2230,16 @@ class ComposableTutorialHandler(Handler):
         for idx in range(len(selection_ids)):
             selection_id = selection_ids[idx]
             try:
+                # since selection options and composable options are in the same order,
+                # we can use the index to get the composable option, built in parser
+                # ie.
+                # .. composable-tutorial::
+                #   :options: interface, language
+                #
+                #   :selected-content:
+                #     :selections: driver, nodejs
                 composable_option = self.composable_tutorial.composable_options[idx]
             except IndexError:
-                print("check index error caused by selection_id ", selection_id)
                 self.context.diagnostics[fileid_stack.current].append(
                     InvalidChildCount(
                         "selected-content",

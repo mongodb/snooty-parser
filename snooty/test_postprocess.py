@@ -4995,7 +4995,6 @@ Heading of the page
         }
     ) as result:
         diagnostics = result.diagnostics[FileId("index.txt")]
-        print(diagnostics)
         assert len(diagnostics) == 2
         assert isinstance(diagnostics[0], DuplicateDirective)
         assert isinstance(diagnostics[1], UnexpectedDirectiveOrder)
