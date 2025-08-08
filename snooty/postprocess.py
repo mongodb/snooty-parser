@@ -46,6 +46,7 @@ from .diagnostics import (
     GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
+    InvalidChildCount,
     InvalidContextError,
     InvalidIAEntry,
     InvalidIALinkedData,
@@ -64,6 +65,7 @@ from .diagnostics import (
     TargetNotFound,
     UnexpectedDirectiveOrder,
     UnknownDefaultTabId,
+    UnknownOptionId,
     UnnamedPage,
     UnsupportedFormat,
 )
@@ -2193,23 +2195,169 @@ class MultiPageTutorialHandler(Handler):
 
 
 class ComposableTutorialHandler(Handler):
-    """Handles composable tutorial directivepresence in page.
-    Should not be simultaneously present on page with other directives"""
+    """Handles composable tutorial directive presence in page.
+    Should not be simultaneously present on page with other directives
+    Checks presence of selected-content directive in composable-tutorial"""
+
+    def handle_composable_content(
+        self, fileid_stack: FileIdStack, node: n.ComposableContent
+    ) -> None:
+        # if no composable_tutorial found before composable content throw an error
+        if not self.composable_tutorial:
+            self.context.diagnostics[fileid_stack.current].append(
+                UnexpectedDirectiveOrder(
+                    "composable-tutorial must be present on the page before selected-content",
+                    node.span[0],
+                )
+            )
+            return
+
+        # validate selection ids by checking against composable tutorial and spec
+        try:
+            selection_ids = util.split_option_str(node.options.get("selections", ""))
+        except ValueError:
+            self.context.diagnostics[fileid_stack.current].append(
+                InvalidChildCount(
+                    "selected-content",
+                    "selections",
+                    "at least one",
+                    node.span[0],
+                )
+            )
+            return
+
+        selections: Dict[str, str] = {}
+        for idx in range(len(selection_ids)):
+            selection_id = selection_ids[idx]
+            try:
+                # since selection options and composable options are in the same order,
+                # we can use the index to get the composable option, built in parser
+                # ie.
+                # .. composable-tutorial::
+                #   :options: interface, language
+                #
+                #   :selected-content:
+                #     :selections: driver, nodejs
+                composable_option = self.composable_tutorial.composable_options[idx]
+            except IndexError:
+                self.context.diagnostics[fileid_stack.current].append(
+                    InvalidChildCount(
+                        "selected-content",
+                        "selections",
+                        str(len(self.composable_tutorial.composable_options)),
+                        node.span[0],
+                    )
+                )
+                continue
+
+            composable_id = composable_option.get("value")
+            if not isinstance(composable_id, str):
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnknownOptionId(
+                        "selections",
+                        str(composable_id) if composable_id is not None else "None",
+                        [
+                            spec_composable.id
+                            for spec_composable in self.spec.composables
+                        ],
+                        node.span[0],
+                    )
+                )
+                continue
+
+            spec_composable = next(
+                (
+                    spec_composable
+                    for spec_composable in self.spec.composables
+                    if spec_composable.id == composable_id
+                ),
+                None,
+            )
+            if not spec_composable:
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnknownOptionId(
+                        "selections",
+                        composable_id,
+                        [
+                            spec_composable.id
+                            for spec_composable in self.spec.composables
+                        ],
+                        node.span[0],
+                    )
+                )
+                continue
+
+            selections[spec_composable.id] = selection_id
+
+            if not selection_id or selection_id == "None":
+                continue
+
+            # get option value+title from spec
+            # and insert into composable_option.selections
+            option_from_spec = next(
+                (
+                    spec_option
+                    for spec_option in spec_composable.options
+                    if spec_option.id == selection_id
+                ),
+                None,
+            )
+            if not option_from_spec:
+                continue
+
+            composable_option["selections"] = composable_option["selections"] or []
+
+            selection = {
+                "value": option_from_spec.id,
+                "text": option_from_spec.title,
+            }
+            if (
+                isinstance(composable_option["selections"], list)
+                and selection not in composable_option["selections"]
+            ):
+                composable_option["selections"].append(selection)
+
+            allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
+            met_dependencies: bool = all(
+                key in selections and selections[key] == value
+                for dependency in (spec_composable.dependencies or [])
+                for key, value in dependency.items()
+            )
+            if selection_id not in allowed_selection_ids and met_dependencies:
+                self.context.diagnostics[fileid_stack.current].append(
+                    UnknownOptionId(
+                        "selections",
+                        selection_id,
+                        allowed_selection_ids,
+                        node.span[0],
+                    )
+                )
+                continue
+
+        node.selections = selections
+        node.options = {}
+        self.total_selections.append(selections)
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.target_directive_name = "composable-tutorial"
-        self.composable_tutorial = False
+        self.composable_tutorial: Optional[n.ComposableDirective] = None
         self.colliding_ast_options = (
             ("selectors", "tabs-selectors"),
             ("has_method_selector", "method-selector"),
         )
         self.composable_node_start = 0
+        self.total_selections: List[Dict[str, str]] = []
+        self.spec = specparser.Spec.get(context[ProjectConfig].config_path)
 
     def enter_page(self, fileid_stack: FileIdStack, page: Page) -> None:
-        self.composable_tutorial = False
+        self.composable_tutorial = None
 
     def enter_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if isinstance(node, n.ComposableContent):
+            self.handle_composable_content(fileid_stack, node)
+            return
+
         if not isinstance(node, n.ComposableDirective):
             return
 
@@ -2219,8 +2367,37 @@ class ComposableTutorialHandler(Handler):
             )
             return
 
-        self.composable_tutorial = True
+        self.composable_tutorial = node
         self.composable_node_start = node.start[0]
+
+    def exit_node(self, fileid_stack: FileIdStack, node: n.Node) -> None:
+        if not isinstance(node, n.ComposableDirective):
+            return
+        # check that default values are found within the content
+        default_values_found = False
+        target_defaults: Dict[str, str] = {}
+
+        for composable_option in node.composable_options:
+            key = composable_option.get("value")
+            value = composable_option.get("default")
+            if isinstance(key, str) and isinstance(value, str):
+                target_defaults[key] = value
+
+        for selections in self.total_selections:
+            if all(
+                key in selections and selections[key] == value
+                for key, value in target_defaults.items()
+            ):
+                default_values_found = True
+                break
+        if not default_values_found:
+            self.context.diagnostics[fileid_stack.current].append(
+                MissingChild(
+                    "composable-tutorial",
+                    f"selected-content with selections {target_defaults}",
+                    node.start[0],
+                )
+            )
 
     def exit_page(self, fileid_stack: FileIdStack, page: Page) -> None:
         if not self.composable_tutorial:
@@ -2295,6 +2472,9 @@ class Postprocessor:
             FootnoteHandler,
             ProgramOptionHandler,
             TabsSelectorHandler,
+            MethodSelectorHandler,
+            MultiPageTutorialHandler,
+            ComposableTutorialHandler,
             ContentsHandler,
             InstruqtHandler,
             BannerHandler,
@@ -2306,9 +2486,6 @@ class Postprocessor:
             CollapsibleHandler,
             WayfindingHandler,
             DismissibleSkillsCardHandler,
-            MethodSelectorHandler,
-            MultiPageTutorialHandler,
-            ComposableTutorialHandler,
         ],
         [TargetHandler, IAHandler, NamedReferenceHandlerPass1],
         [RefsHandler, NamedReferenceHandlerPass2],

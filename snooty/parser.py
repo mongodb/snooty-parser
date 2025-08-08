@@ -879,8 +879,19 @@ class JSONVisitor:
         default_ids_as_string = (
             node.options["defaults"] if "defaults" in node.options else ""
         )
-        option_ids: List[str] = split_option_str(option_ids_as_string)
-        default_ids: List[str] = split_option_str(default_ids_as_string)
+        try:
+            option_ids: List[str] = split_option_str(option_ids_as_string)
+            default_ids: List[str] = split_option_str(default_ids_as_string)
+        except ValueError:
+            self.diagnostics.append(
+                InvalidChildCount(
+                    "composable-tutorial",
+                    "option_ids and default_ids",
+                    "at least one",
+                    node.start[0],
+                )
+            )
+            return
 
         # expect at least 1 option_ids
         if len(option_ids) < 1:
@@ -932,9 +943,13 @@ class JSONVisitor:
                 allowed_values_dict = {
                     option.id: option for option in composable_from_spec.options
                 }
-                self.check_valid_option_id(
-                    specified_default_id, node, allowed_values_dict, set()
-                )
+                # Skip validation for "None" as it means "no selection" when composable has dependencies
+                if specified_default_id != "None" or (
+                    not composable_from_spec.dependencies
+                ):
+                    self.check_valid_option_id(
+                        specified_default_id, node, allowed_values_dict, set()
+                    )
                 default_ids_dict[option_id] = (
                     specified_default_id
                     or composable_from_spec.default
@@ -958,134 +973,7 @@ class JSONVisitor:
             # add to used ids for no repeats
             used_ids.add(option_id)
 
-        # validate the expected children and options
-        valid_children: List[n.ComposableContent] = []
-        default_values_found = False
-        for child in node.children:
-            try:
-                self.check_valid_child(node, child, {"selected-content"})
-                assert isinstance(child, n.ComposableContent)
-                self.handle_composable_content(child, ordered_spec_composables)
-                valid_children.append(child)
-
-                # populate parent composable-tutorial with selections used by children
-                for option_key, value_key in child.selections.items():
-                    composable_from_spec = next(
-                        (
-                            spec_composable
-                            for spec_composable in spec_composables
-                            if spec_composable.id == option_key
-                        ),
-                        None,
-                    )
-                    if not composable_from_spec:
-                        self.diagnostics.append(
-                            UnknownOptionId(
-                                "composable-tutorial",
-                                option_key,
-                                [
-                                    spec_composable.id
-                                    for spec_composable in spec_composables
-                                ],
-                                node.start[0],
-                            )
-                        )
-                        continue
-                    if not value_key or value_key == "None":
-                        continue
-                    option_from_spec = next(
-                        (
-                            spec_option
-                            for spec_option in composable_from_spec.options
-                            if spec_option.id == value_key
-                        ),
-                        None,
-                    )
-                    composable_option = next(
-                        (
-                            composable_option
-                            for composable_option in composable_options
-                            if composable_option["value"] == option_key
-                        ),
-                        {},
-                    )
-                    if not option_from_spec or not composable_option:
-                        continue
-                    composable_option["selections"] = (
-                        composable_option["selections"] or []
-                    )
-                    selection = {
-                        "value": option_from_spec.id,
-                        "text": option_from_spec.title,
-                    }
-                    if (
-                        isinstance(composable_option["selections"], list)
-                        and selection not in composable_option["selections"]
-                    ):
-                        composable_option["selections"].append(selection)
-
-                default_values_found = default_values_found or all(
-                    child.selections.get(composable_id, "") == option_id
-                    for composable_id, option_id in (default_ids_dict.items())
-                )
-
-            except ChildValidationError:
-                continue
-
-        if not default_values_found:
-            self.diagnostics.append(
-                MissingChild(
-                    "composable-tutorial",
-                    f"selected-content with selections {default_ids_as_string}",
-                    node.start[0],
-                )
-            )
         node.composable_options = composable_options
-        node.options = {}
-
-    def handle_composable_content(
-        self,
-        node: n.ComposableContent,
-        spec_composables: List[Composable],
-    ) -> None:
-        selection_ids = split_option_str(node.options.get("selections", ""))
-        selections: Dict[str, str] = {}
-        # validate all selection ids
-        for idx in range(len(selection_ids)):
-            selection_id = selection_ids[idx]
-            try:
-                spec_composable = spec_composables[idx]
-            except IndexError:
-                self.diagnostics.append(
-                    InvalidChildCount(
-                        "selected-content",
-                        "selections",
-                        str(len(spec_composables)),
-                        node.start[0],
-                    )
-                )
-                break
-            allowed_selection_ids = list(map(lambda x: x.id, spec_composable.options))
-            # check if dependencies are met - then None is not allowed
-            met_dependencies: bool = all(
-                key in selections and selections[key] == value
-                for dependency in (spec_composable.dependencies or [])
-                for key, value in dependency.items()
-            )
-            if selection_id not in allowed_selection_ids and met_dependencies:
-                self.diagnostics.append(
-                    UnknownOptionId(
-                        "composable-tutorial",
-                        selection_id,
-                        allowed_selection_ids,
-                        node.start[0],
-                    )
-                )
-                break
-            composable_option_value = spec_composable.id
-            selections[composable_option_value] = selection_id
-
-        node.selections = selections
         node.options = {}
 
     def handle_directive(
