@@ -580,6 +580,32 @@ help = """A list of languages that this guide supports."""
 # """
 content_type = "list"
 
+[directive.column]
+help = """column content for the n-column component"""
+content_type = "block"
+options.title = "string"
+
+[directive."multi-column"]
+help = """A multi-column component for the homepage"""
+content_type = "block"
+example = """.. multi-column::
+
+   .. column::
+
+      .. code-block:: ${4:language}
+         ${5:First code block content}
+
+      ${6:Paragraph content between code blocks}
+
+      .. code-block:: ${7:language}
+         ${8:Second code block content}
+
+   .. column::
+
+      ${9:title}
+      ${10:Unordered list content}
+"""
+
 
 ##### Guides (LEGACY - do not deprecate until removed in dependent docs repos)
 [directive.hlist]

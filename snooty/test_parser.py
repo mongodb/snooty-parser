@@ -1486,6 +1486,108 @@ def test_banner() -> None:
     )
 
 
+def test_multi_column() -> None:
+    path = FileId("test.rst")
+    project_config = ProjectConfig(ROOT_PATH, "", source="./")
+    parser = rstparser.Parser(project_config, JSONVisitor)
+
+    # Test valid multi-column
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. multi-column::
+
+   .. column::
+      :title: First Column
+
+      .. code-block:: python
+        
+        print("Hello from first column")
+
+      This is a paragraph between code blocks.
+
+      .. code-block:: javascript
+        
+        console.log("Second code block");
+
+   .. column::
+      :title: Second Column
+
+      * List item 1
+      * List item 2
+      * List item 3
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="multi-column">
+            <directive name="column" title="First Column">
+                <code lang="python" copyable="True">print("Hello from first column")</code>
+                <paragraph><text>This is a paragraph between code blocks.</text></paragraph>
+                <code lang="javascript" copyable="True">console.log("Second code block");</code>
+            </directive>
+            <directive name="column" title="Second Column">
+                <list enumtype="unordered">
+                    <listItem><paragraph><text>List item 1</text></paragraph></listItem>
+                    <listItem><paragraph><text>List item 2</text></paragraph></listItem>
+                    <listItem><paragraph><text>List item 3</text></paragraph></listItem>
+                </list>
+            </directive>
+        </directive>
+        </root>""",
+    )
+
+    # Test multi-column with no columns
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. multi-column::
+
+   No columns here, just content.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="multi-column">
+            <paragraph><text>No columns here, just content.</text></paragraph>
+        </directive>
+        </root>""",
+    )
+
+    # Test column with no title option
+    page, diagnostics = parse_rst(
+        parser,
+        path,
+        """
+.. multi-column::
+
+   .. column::
+
+      Content without title.
+""",
+    )
+    page.finish(diagnostics)
+    assert diagnostics == []
+    check_ast_testing_string(
+        page.ast,
+        """<root fileid="test.rst">
+        <directive name="multi-column">
+            <directive name="column">
+                <paragraph><text>Content without title.</text></paragraph>
+            </directive>
+        </directive>
+        </root>""",
+    )
+
+
 def test_cta_banner() -> None:
     path = FileId("test.rst")
     project_config = ProjectConfig(ROOT_PATH, "", source="./")
