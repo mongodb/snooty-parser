@@ -586,7 +586,7 @@ content_type = "block"
 options.title = "string"
 
 [directive."multi-column"]
-help = """A two-column component for the homepage"""
+help = """A multi-column component for the homepage"""
 content_type = "block"
 example = """.. multi-column::
 
