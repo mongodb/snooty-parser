@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DOP-6049 adds new directives called multi-column and column 
+
+### Changed
+
+- DOP-5920: allow None values in defaults
+
 ## [v0.20.7] - 2025-08-07
 
 ## [v0.20.6] - 2025-07-16
