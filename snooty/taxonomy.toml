@@ -54,6 +54,10 @@ name = "atlas"
   [[target_product.sub_product]]
   name = "triggers"
 
+  [[target_product.sub_product]]
+  name = "terraform"
+  display_name = "Terraform"
+
 [[target_product]]
 name = "bi-connector"
 display_name = "BI Connector"
