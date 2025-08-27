@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.20.9] - 2025-08-27
+
 ### Added
 
 - DOCSP-51903 adding Terraform taxonomy
