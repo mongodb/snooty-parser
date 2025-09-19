@@ -167,6 +167,7 @@ class BannerConfig:
     targets: List[str]
     variant: str = field(default="info")
     value: str = field(default="")
+    locale: Optional[List[str]] = field(default=None)
 
 
 @checked

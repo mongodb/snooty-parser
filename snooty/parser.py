@@ -1863,7 +1863,7 @@ class _Project:
         # Parse banner value and instantiate a banner node for postprocessing, if a banner value is defined.
         for banner in self.config.banners:
             if banner.value:
-                options = {"variant": banner.variant}
+                options = {"variant": banner.variant, "locale": banner.locale}
                 banner_node = ParsedBannerConfig(
                     banner.targets,
                     n.Directive((-1,), [], "mongodb", "banner", [], options),
