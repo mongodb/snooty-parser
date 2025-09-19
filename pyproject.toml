@@ -1,10 +1,6 @@
 [tool.poetry]
 name = "snooty"
-<<<<<<< Updated upstream
-version = "0.20.10"
-=======
 version = "0.20.8.dev"
->>>>>>> Stashed changes
 description = ""
 authors = ["MongoDB, inc. <andrew.aldridge@mongodb.com>"]
 license = "Apache-2.0"
