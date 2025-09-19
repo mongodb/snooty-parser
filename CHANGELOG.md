@@ -7,20 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.20.10] - 2025-09-19
-
-## [v0.20.10] - 2025-09-19
-
-### Added
-
-- DOP-5322 adds the option.local to the Banner Config
-
-## [v0.20.9] - 2025-08-27
-
-### Added
-
-- DOCSP-51903 adding Terraform taxonomy
-
 ## [v0.20.8] - 2025-08-21
 
 ### Added
