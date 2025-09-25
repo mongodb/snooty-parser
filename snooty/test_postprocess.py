@@ -2524,7 +2524,7 @@ value = "This product is deprecated"
         )
 
 
-def test_banner_postprocess_multiple_banners() -> None:
+def test_banner_postprocess_multiple_banners_with_a_locale() -> None:
     with make_test(
         {
             Path(
@@ -2577,6 +2577,7 @@ title = "MongoDB title"
 targets = ["test/*.txt"]
 variant = "info"
 value = "This product is deprecated"
+locale = ["fr","es"]
 
 [[banners]]
 targets = ["guide/*.txt"]
@@ -2596,7 +2597,7 @@ value = "This product is out of date"
 <heading id="index-page">
 <text>Index Page</text>
 </heading>
-<directive domain="mongodb" name="banner" variant="info">
+<directive domain="mongodb" name="banner" variant="info" locale="fr,es">
 <text>This product is deprecated</text>
 </directive>
 <section>
