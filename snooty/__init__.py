@@ -1,3 +1,3 @@
 """The Snooty documentation writer's tool."""
 
-__version__ = "0.20.10.dev"
+__version__ = "0.20.8.dev"
