@@ -625,10 +625,12 @@ content_type = "block"
 help = """A skinny admonition, meant for alerts or smaller notifications."""
 content_type = "block"
 options.variant = "banner_variant"
+options.locale = "string"
 example = """.. banner::
    :variant: ${1: warning (Optional)}
+   :locale: ${2 en-us,es (Optional)}
 
-   ${2:banner content}
+   ${3:banner content}
 """
 
 [directive."mongodb:cta-banner"]

@@ -1864,6 +1864,10 @@ class _Project:
         for banner in self.config.banners:
             if banner.value:
                 options = {"variant": banner.variant}
+                if banner.locale is not None:
+                    options["locale"] = ",".join(
+                        banner.locale
+                    )  # Turn into a string to respect the options types which is a Dist[str,str]
                 banner_node = ParsedBannerConfig(
                     banner.targets,
                     n.Directive((-1,), [], "mongodb", "banner", [], options),
