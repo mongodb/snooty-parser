@@ -1712,7 +1712,7 @@ help = """Link to the MongoDB Atlas Kubernetes Operator documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas/operator%s", ensure_trailing_slash = true}
 
 [role."languages"]
-type = {link = "https://www.mongodb.com/docs/languages%s", ensure_trailing_slash = true}
+type = {link = "https://www.mongodb.com/docs/drivers%s", ensure_trailing_slash = true}
 
 ### Types of objects (directive & role pairs)
 
