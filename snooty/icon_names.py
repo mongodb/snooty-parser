@@ -2165,6 +2165,8 @@ LG_ICON_SET = {
     "lg-Edit",
     "lg-Ellipsis",
     "lg-Email",
+    "lg-EmptyDatabase",
+    "lg-EmptyFolder",
     "lg-Export",
     "lg-Favorite",
     "lg-Federation",
