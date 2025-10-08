@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snooty"
-version = "0.20.11.dev"
+version = "0.20.12"
 description = ""
 authors = ["MongoDB, inc. <andrew.aldridge@mongodb.com>"]
 license = "Apache-2.0"

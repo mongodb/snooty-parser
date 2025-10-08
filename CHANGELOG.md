@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.20.12] - 2025-10-08
+
 ### Added
 
 - DOP-6270: add LG icons
