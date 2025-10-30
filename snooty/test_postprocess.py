@@ -18,6 +18,7 @@ from .diagnostics import (
     GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
+    InvalidChildCount,
     InvalidContextError,
     InvalidIAEntry,
     InvalidIALinkedData,
@@ -4270,6 +4271,26 @@ def test_composable_tutorial_errors() -> None:
         assert len(diagnostics) == 1
         assert [type(d) for d in diagnostics] == [
             MissingChild,
+        ]
+
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, None, repl
+
+   .. selected-content::
+      :selections: driver, None, repl
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) == 1
+        assert [type(d) for d in diagnostics] == [
+            InvalidChildCount,
         ]
 
 
