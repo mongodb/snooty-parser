@@ -905,7 +905,10 @@ class JSONVisitor:
         if len(default_ids) != len(option_ids):
             self.diagnostics.append(
                 InvalidChildCount(
-                    "composable-tutorial", "defaults", str(len(option_ids)), node.start[0]
+                    "composable-tutorial",
+                    "defaults",
+                    str(len(option_ids)),
+                    node.start[0],
                 )
             )
             return
