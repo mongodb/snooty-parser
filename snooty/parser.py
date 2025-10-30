@@ -900,6 +900,15 @@ class JSONVisitor:
                     "composable-tutorial", "option_ids", "at least one", node.start[0]
                 )
             )
+            return
+
+        if len(default_ids) != len(option_ids):
+            self.diagnostics.append(
+                InvalidChildCount(
+                    "composable-tutorial", "defaults", str(len(option_ids)), node.start[0]
+                )
+            )
+            return
 
         # get the expected composable options from the spec
         spec_composables = specparser.Spec.get(
@@ -939,19 +948,7 @@ class JSONVisitor:
                     )
                     continue
                 ordered_spec_composables.append(composable_from_spec)
-                try:
-                    specified_default_id = default_ids[index]
-                except IndexError:
-                    # error to be verbose about default ids not matching up with option ids
-                    self.diagnostics.append(
-                        InvalidChildCount(
-                            "composable-tutorial",
-                            "defaults",
-                            str(len(option_ids)),
-                            node.start[0],
-                        )
-                    )
-                    continue
+                specified_default_id = default_ids[index]
                 allowed_values_dict = {
                     option.id: option for option in composable_from_spec.options
                 }
