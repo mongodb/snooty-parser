@@ -18,6 +18,7 @@ from .diagnostics import (
     GuideAlreadyHasChapter,
     InvalidChapter,
     InvalidChild,
+    InvalidChildCount,
     InvalidContextError,
     InvalidIAEntry,
     InvalidIALinkedData,
@@ -4271,6 +4272,52 @@ def test_composable_tutorial_errors() -> None:
         assert [type(d) for d in diagnostics] == [
             MissingChild,
         ]
+
+    # below test has mismatch of options and default ids (defaults has more ids than options)
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology, cloud-provider
+   :defaults: driver, None, repl
+
+   .. selected-content::
+      :selections: driver, None, repl
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) >= 1
+        invalidChildError = next(
+            (d for d in diagnostics if isinstance(d, InvalidChildCount)), None
+        )
+        assert invalidChildError
+        assert "defaults" in invalidChildError.message
+
+    # below test has mismatch of options and default ids (defaults has less ids than options)
+    with make_test(
+        {
+            Path(
+                "source/index.txt"
+            ): """
+.. composable-tutorial::
+   :options: interface, language, cluster-topology
+   :defaults: driver, None, repl, gcp
+
+   .. selected-content::
+      :selections: driver, None, repl, gcp
+        """
+        }
+    ) as result:
+        diagnostics = result.diagnostics[FileId("index.txt")]
+        assert len(diagnostics) >= 1
+        invalidChildError = next(
+            (d for d in diagnostics if isinstance(d, InvalidChildCount)), None
+        )
+        assert invalidChildError
+        assert "defaults" in invalidChildError.message
 
 
 def test_composable_headings() -> None:
