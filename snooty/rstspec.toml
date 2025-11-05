@@ -1714,6 +1714,20 @@ type = {link = "https://www.mongodb.com/docs/atlas/operator%s", ensure_trailing_
 [role."languages"]
 type = {link = "https://www.mongodb.com/docs/languages%s", ensure_trailing_slash = true}
 
+[role."om-v44"]
+help = """Link to Ops Manager v4.4 Release Notes"""
+type = {link = "https://www.mongodb.com/docs/v4.4/release-notes%s", ensure_trailing_slash = true}
+
+[role."om-v5"]
+help = """Link to Ops Manager v5.0 Release Notes"""
+type = {link = "https://www.mongodb.com/docs/v5.0/release-notes%s", ensure_trailing_slash = true}
+
+[role."om-v6"]
+help = """Link to Ops Manager v6.0 Release Notes"""
+type = {link = "https://www.mongodb.com/docs/v6.0/release-notes%s", ensure_trailing_slash = true}
+
+
+
 ### Types of objects (directive & role pairs)
 
 # The following rstobjects are used for cross-referencing through intersphinx
