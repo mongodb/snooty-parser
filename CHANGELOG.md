@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 
+
+- DOP-6391 adds role for OM old versions
+
+
 ## [v0.20.14] - 2025-11-05
 
+### Changed
+
+- Catch composable syntax err for options and defaults by (#678)
+- Update docs/drivers to docs/languages (#679)
+- Revert "Update docs/drivers to docs/languages" by @rachel-mack in (#680)
+
 ## [v0.20.13] - 2025-10-22
+
+### Changed
+
+- DOP-6341 Change Languages role link by @QuiqueSanMongo in (#677)
 
 ## [v0.20.11] - 2025-10-01
 
