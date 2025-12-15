@@ -1338,29 +1338,43 @@ class JSONVisitor:
                 self.diagnostics.append(ExpectedPathArg(name, node.get_line()))
                 return doc
 
-            if self.project_config.sharedinclude_root is None:
+            root = self.project_config.sharedinclude_root
+            if root is None or not isinstance(root, str):
                 self.diagnostics.append(
                     ConfigurationProblem(
-                        "To use sharedinclude, you must provide a 'sharedinclude_root' option in snooty.toml",
+                        "To use sharedinclude, you must provide a 'sharedinclude_root' option in snooty.toml. It can be either a URL or a relative path from the source directory of this project.",
                         node.get_line(),
                     )
                 )
                 return doc
 
-            url = urllib.parse.urljoin(
-                self.project_config.sharedinclude_root, argument_text
-            )
-            try:
-                response = util.HTTPCache.singleton().get(url)
-            except requests.exceptions.RequestException as err:
-                self.diagnostics.append(
-                    CannotOpenFile(Path(argument_text), str(err), node.get_line())
-                )
-                return doc
+            is_remote = root.startswith(("http://", "https://"))
+            if is_remote: # Remote mode (original mode): fetch from internet
+                url = urllib.parse.urljoin(root, argument_text)
+                try:
+                    response = util.HTTPCache.singleton().get(url)
+                    content = str(response, "utf-8")
+                except requests.exceptions.RequestException as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(Path(argument_text), str(err), node.get_line())
+                    )
+                    return doc
+            else: # File mode: treat sharedinclude_root as a filesystem directory
+                try:
+                    # sharedinclude_root should be a relative path from the
+                    # source directory of the project
+                    file_path = self.project_config.source_path / Path(root) / argument_text
+                    content = file_path.read_text(encoding="utf-8")
+                except OSError as err:
+                    self.diagnostics.append(
+                        CannotOpenFile(Path(argument_text), str(err), node.get_line())
+                    )
+                    return doc
 
             new_fileid = FileId("sharedinclude").joinpath(argument_text)
             doc.argument = [n.Text((line,), new_fileid.as_posix())]
-            self.synthetic_pages[new_fileid] = str(response, "utf-8")
+            self.synthetic_pages[new_fileid] = content
+            return doc
 
         elif name == "step":
             # Create heading for the step's argument, similar to titles of Giza/YAML steps
