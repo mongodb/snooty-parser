@@ -1349,7 +1349,7 @@ class JSONVisitor:
                 return doc
 
             is_remote = root.startswith(("http://", "https://"))
-            if is_remote: # Remote mode (original mode): fetch from internet
+            if is_remote:  # Remote mode (original mode): fetch from internet
                 url = urllib.parse.urljoin(root, argument_text)
                 try:
                     response = util.HTTPCache.singleton().get(url)
@@ -1359,11 +1359,13 @@ class JSONVisitor:
                         CannotOpenFile(Path(argument_text), str(err), node.get_line())
                     )
                     return doc
-            else: # File mode: treat sharedinclude_root as a filesystem directory
+            else:  # File mode: treat sharedinclude_root as a filesystem directory
                 try:
                     # sharedinclude_root should be a relative path from the
                     # source directory of the project
-                    file_path = self.project_config.source_path / Path(root) / argument_text
+                    file_path = (
+                        self.project_config.source_path / Path(root) / argument_text
+                    )
                     content = file_path.read_text(encoding="utf-8")
                 except OSError as err:
                     self.diagnostics.append(
