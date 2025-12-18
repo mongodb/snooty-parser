@@ -1366,10 +1366,6 @@ type = {link = "https://godoc.org/github.com/mongodb/mongo-go-driver/%s"}
 help = """Link to the synchronous Atlas documentation."""
 type = {link = "https://www.mongodb.com/docs/atlas%s", ensure_trailing_slash = true}
 
-[role.voyage-docs]
-help = """Link to a page in the Voyage documentation."""
-type = {link = "https://docs.voyageai.com/docs%s", ensure_trailing_slash = true}
-
 [role."v2.2"]
 type = {link = "https://www.mongodb.com/docs/v2.2%s", ensure_trailing_slash = true}
 
