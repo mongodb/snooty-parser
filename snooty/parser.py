@@ -1723,7 +1723,7 @@ def parse_rst(
     
     return extend_result_with_shared_includes(visitor, result)
 
-def is_remote_shared_include_root(root: str):
+def is_remote_shared_include_root(root: str) -> bool:
   return root.startswith(("http://", "https://"))
 
 def extend_result_with_shared_includes(
