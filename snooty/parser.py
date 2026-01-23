@@ -1747,11 +1747,15 @@ def extend_result_with_shared_includes(
             default_domain=project_config.default_domain,
             fail_on_diagnostics=project_config.fail_on_diagnostics,
             silence_diagnostics=project_config.silence_diagnostics,
-            # Original implementation used source project config, which means
-            # constants, substitutions, etc. used in the shared files must be
-            # defined in the source projects. Consequently, some shared files can't
-            # be used by all other projects without copying these settings to each
-            # config, and the settings will drift between projects.
+            # In the original implementation, configuration values like source
+            # constants and substitutions derive from the source project's
+            # configuration. This means the source project must define any
+            # constants and substitutions used in the shared include file. One
+            # advantage of this is that variables like `current_driver` can be
+            # used, but a disadvantage is that shared includes are inherently
+            # less shareable without copying some configuration values, which
+            # will inevitably drift. By copying the following settings, the
+            # behavior remains as-is.
             intersphinx=project_config.intersphinx,
             substitutions=project_config.substitutions,
             constants=project_config.constants,
