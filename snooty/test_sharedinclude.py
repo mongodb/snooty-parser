@@ -173,22 +173,31 @@ Foo |test-guideline-target| baz.
         """,
         )
 
+
 def test_sharedinclude_local_root_with_literalinclude() -> None:
     with make_test(
         {
-            Path("snooty.toml"): """
+            Path(
+                "snooty.toml"
+            ): """
 name = "test"
 sharedinclude_root = "../shared"
 """,
-            Path("source/index.txt"): """
+            Path(
+                "source/index.txt"
+            ): """
 .. sharedinclude:: items/shared-item.rst
 """,
-            Path("../shared/items/shared-item.rst"): """
+            Path(
+                "../shared/items/shared-item.rst"
+            ): """
 Here is some shared content:
 
 .. literalinclude:: /snippets/snippet.cpp
 """,
-            Path("../shared/snippets/snippet.cpp"): """
+            Path(
+                "../shared/snippets/snippet.cpp"
+            ): """
 // This is literally included
 """,
         }
@@ -218,14 +227,20 @@ Here is some shared content:
 def test_sharedinclude_local_root_literalinclude_missing_file() -> None:
     with make_test(
         {
-            Path("snooty.toml"): """
+            Path(
+                "snooty.toml"
+            ): """
 name = "test"
 sharedinclude_root = "../shared"
 """,
-            Path("source/index.txt"): """
+            Path(
+                "source/index.txt"
+            ): """
 .. sharedinclude:: items/shared-item.rst
 """,
-            Path("../shared/items/shared-item.rst"): """
+            Path(
+                "../shared/items/shared-item.rst"
+            ): """
 .. literalinclude:: data/does-not-exist.txt
 """,
         }

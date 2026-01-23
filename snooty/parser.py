@@ -215,10 +215,8 @@ class JSONVisitor:
         self.dependencies: util.FileCacheMapping = util.FileCacheMapping()
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
-        self.shared_includes: Dict[
-            FileId, # path from sharedinclude_root
-            str # file contents
-        ] = {}
+        # Dict of `path from sharedinclude_root` -> `file contents`
+        self.shared_includes: Dict[FileId, str] = {}
 
     def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
         line = node.get_line()
@@ -1348,7 +1346,9 @@ class JSONVisitor:
                 )
                 return doc
 
-            if is_remote_shared_include_root(root):  # Remote mode (original mode): fetch from internet
+            if is_remote_shared_include_root(
+                root
+            ):  # Remote mode (original mode): fetch from internet
                 url = urllib.parse.urljoin(root, argument_text)
                 try:
                     response = util.HTTPCache.singleton().get(url)
@@ -1363,9 +1363,7 @@ class JSONVisitor:
                 try:
                     # sharedinclude_root should be a relative path from the
                     # project root directory
-                    file_path = (
-                        self.project_config.root / Path(root) / argument_text
-                    )
+                    file_path = self.project_config.root / Path(root) / argument_text
                     content = file_path.read_text(encoding="utf-8")
                     new_fileid = FileId(argument_text)
                 except OSError as err:
@@ -1720,16 +1718,17 @@ def parse_rst(
     page.static_assets = visitor.static_assets
     page.pending_tasks = visitor.pending
     result = [(page, visitor.diagnostics)]
-    
+
     return extend_result_with_shared_includes(visitor, result)
 
+
 def is_remote_shared_include_root(root: str) -> bool:
-  return root.startswith(("http://", "https://"))
+    return root.startswith(("http://", "https://"))
+
 
 def extend_result_with_shared_includes(
-  visitor: JSONVisitor,
-  result: list[tuple[Page, List[Diagnostic]]]
-) ->  Sequence[Tuple[Page, List[Diagnostic]]]:
+    visitor: JSONVisitor, result: list[tuple[Page, List[Diagnostic]]]
+) -> Sequence[Tuple[Page, List[Diagnostic]]]:
     project_config = visitor.project_config
     root = project_config.sharedinclude_root
     if root is None or not isinstance(root, str):
@@ -1742,28 +1741,25 @@ def extend_result_with_shared_includes(
         # Local sharedinclude_root: support literalincludes relative to
         # sharedinclude_root path
         shared_include_config = ProjectConfig(
-            name = "sharedinclude",
-
+            name="sharedinclude",
             # Copy reasonable set from existing project config
-            canonical = project_config.canonical,
-            default_domain = project_config.default_domain,
-            fail_on_diagnostics = project_config.fail_on_diagnostics,
-            silence_diagnostics = project_config.silence_diagnostics,
-
+            canonical=project_config.canonical,
+            default_domain=project_config.default_domain,
+            fail_on_diagnostics=project_config.fail_on_diagnostics,
+            silence_diagnostics=project_config.silence_diagnostics,
             # Original implementation used source project config, which means
             # constants, substitutions, etc. used in the shared files must be
             # defined in the source projects. Consequently, some shared files can't
             # be used by all other projects without copying these settings to each
-            # config, and the settings will drift between projects. 
-            intersphinx = project_config.intersphinx,
-            substitutions = project_config.substitutions,
-            constants = project_config.constants,
-
+            # config, and the settings will drift between projects.
+            intersphinx=project_config.intersphinx,
+            substitutions=project_config.substitutions,
+            constants=project_config.constants,
             # Set working root to sharedinclude root: relative paths
             # (literalinclude) will work from this path instead
-            root = (project_config.root / Path(root)).resolve(strict = True),
-            sharedinclude_root = ".",
-            source = "."
+            root=(project_config.root / Path(root)).resolve(strict=True),
+            sharedinclude_root=".",
+            source=".",
         )
 
     shared_include_parser = rstparser.Parser(shared_include_config, visitor.__class__)
