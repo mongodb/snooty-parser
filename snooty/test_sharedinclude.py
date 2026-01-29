@@ -172,3 +172,83 @@ Foo |test-guideline-target| baz.
             </paragraph></root></directive></root>
         """,
         )
+
+
+def test_sharedinclude_local_root_with_literalinclude() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test"
+sharedinclude_root = "../shared"
+""",
+            Path(
+                "source/index.txt"
+            ): """
+.. sharedinclude:: items/shared-item.rst
+""",
+            Path(
+                "../shared/items/shared-item.rst"
+            ): """
+Here is some shared content:
+
+.. literalinclude:: /snippets/snippet.cpp
+""",
+            Path(
+                "../shared/snippets/snippet.cpp"
+            ): """
+// This is literally included
+""",
+        }
+    ) as result:
+        assert result.diagnostics == {
+            FileId("index.txt"): [],
+            FileId("items/shared-item.rst"): [],
+        }
+        check_ast_testing_string(
+            result.pages[FileId("index.txt")].ast,
+            """
+<root fileid="index.txt">
+    <directive name="sharedinclude">
+        <text>items/shared-item.rst</text>
+        <root fileid="items/shared-item.rst">
+            <paragraph>
+                <text>Here is some shared content:</text>
+            </paragraph>
+            <directive name="literalinclude"><text>/snippets/snippet.cpp</text><code copyable="True"> // This is literally included </code></directive>
+        </root>
+    </directive>
+</root>
+""",
+        )
+
+
+def test_sharedinclude_local_root_literalinclude_missing_file() -> None:
+    with make_test(
+        {
+            Path(
+                "snooty.toml"
+            ): """
+name = "test"
+sharedinclude_root = "../shared"
+""",
+            Path(
+                "source/index.txt"
+            ): """
+.. sharedinclude:: items/shared-item.rst
+""",
+            Path(
+                "../shared/items/shared-item.rst"
+            ): """
+.. literalinclude:: data/does-not-exist.txt
+""",
+        }
+    ) as result:
+        assert {
+            f: [type(d) for d in diagnostics]
+            for f, diagnostics in result.diagnostics.items()
+        } == {
+            FileId("index.txt"): [],
+            FileId("items/shared-item.rst"): [CannotOpenFile],
+        }

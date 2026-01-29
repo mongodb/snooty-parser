@@ -215,10 +215,8 @@ class JSONVisitor:
         self.dependencies: util.FileCacheMapping = util.FileCacheMapping()
         self.static_assets: Set[StaticAsset] = set()
         self.pending: List[PendingTask] = []
-
-        # It's possible for pages to synthetically create other pages that don't
-        # exist in the filesystem
-        self.synthetic_pages: Dict[FileId, str] = {}
+        # Dict of `path from sharedinclude_root` -> `file contents`
+        self.shared_includes: Dict[FileId, str] = {}
 
     def dispatch_visit(self, node: tinydocutils.nodes.Node) -> None:
         line = node.get_line()
@@ -1348,12 +1346,14 @@ class JSONVisitor:
                 )
                 return doc
 
-            is_remote = root.startswith(("http://", "https://"))
-            if is_remote:  # Remote mode (original mode): fetch from internet
+            if is_remote_shared_include_root(
+                root
+            ):  # Remote mode (original mode): fetch from internet
                 url = urllib.parse.urljoin(root, argument_text)
                 try:
                     response = util.HTTPCache.singleton().get(url)
                     content = str(response, "utf-8")
+                    new_fileid = FileId("sharedinclude").joinpath(argument_text)
                 except requests.exceptions.RequestException as err:
                     self.diagnostics.append(
                         CannotOpenFile(Path(argument_text), str(err), node.get_line())
@@ -1362,20 +1362,18 @@ class JSONVisitor:
             else:  # File mode: treat sharedinclude_root as a filesystem directory
                 try:
                     # sharedinclude_root should be a relative path from the
-                    # source directory of the project
-                    file_path = (
-                        self.project_config.source_path / Path(root) / argument_text
-                    )
+                    # project root directory
+                    file_path = self.project_config.root / Path(root) / argument_text
                     content = file_path.read_text(encoding="utf-8")
+                    new_fileid = FileId(argument_text)
                 except OSError as err:
                     self.diagnostics.append(
                         CannotOpenFile(Path(argument_text), str(err), node.get_line())
                     )
                     return doc
 
-            new_fileid = FileId("sharedinclude").joinpath(argument_text)
             doc.argument = [n.Text((line,), new_fileid.as_posix())]
-            self.synthetic_pages[new_fileid] = content
+            self.shared_includes[new_fileid] = content
             return doc
 
         elif name == "step":
@@ -1721,13 +1719,60 @@ def parse_rst(
     page.pending_tasks = visitor.pending
     result = [(page, visitor.diagnostics)]
 
-    # Pages can create additional pages that are not "real" filesystem artifacts
-    for synthetic_page, synthetic_page_text in visitor.synthetic_pages.items():
+    return extend_result_with_shared_includes(visitor, result)
+
+
+def is_remote_shared_include_root(root: str) -> bool:
+    return root.startswith(("http://", "https://"))
+
+
+def extend_result_with_shared_includes(
+    visitor: JSONVisitor, result: list[tuple[Page, List[Diagnostic]]]
+) -> Sequence[Tuple[Page, List[Diagnostic]]]:
+    project_config = visitor.project_config
+    root = project_config.sharedinclude_root
+    if root is None or not isinstance(root, str):
+        return result
+
+    if is_remote_shared_include_root(root):
+        # Use original remote implementation -- literalincludes will continue to NOT work as expected
+        shared_include_config = project_config
+    else:
+        # Local sharedinclude_root: support literalincludes relative to
+        # sharedinclude_root path
+        shared_include_config = ProjectConfig(
+            name="sharedinclude",
+            # Copy reasonable set from existing project config
+            canonical=project_config.canonical,
+            default_domain=project_config.default_domain,
+            fail_on_diagnostics=project_config.fail_on_diagnostics,
+            silence_diagnostics=project_config.silence_diagnostics,
+            # In the original implementation, configuration values like source
+            # constants and substitutions derive from the source project's
+            # configuration. This means the source project must define any
+            # constants and substitutions used in the shared include file. One
+            # advantage of this is that variables like `current_driver` can be
+            # used, but a disadvantage is that shared includes are inherently
+            # less shareable without copying some configuration values, which
+            # will inevitably drift. By copying the following settings, the
+            # behavior remains as-is.
+            intersphinx=project_config.intersphinx,
+            substitutions=project_config.substitutions,
+            constants=project_config.constants,
+            # Set working root to sharedinclude root: relative paths
+            # (literalinclude) will work from this path instead
+            root=(project_config.root / Path(root)).resolve(strict=True),
+            sharedinclude_root=".",
+            source=".",
+        )
+
+    shared_include_parser = rstparser.Parser(shared_include_config, visitor.__class__)
+    for shared_include_path, shared_include_text in visitor.shared_includes.items():
         result.extend(
             parse_rst(
-                parser,
-                synthetic_page,
-                synthetic_page_text,
+                shared_include_parser,
+                shared_include_path,
+                shared_include_text,
             )
         )
 
