@@ -1188,7 +1188,7 @@ type = {link = "https://docs.microsoft.com/en-us/azure%s"}
 
 [role.ftsuservoice]
 help = """Link to the Atlas Search Feedback Engine."""
-type = {link = "https://feedback.mongodb.com/forums/924868-atlas-search%s"}
+type = {link = "https://feedback.mongodb.com/ideas?&category=7517328098716539287%s"}
 
 [role.avsuservoice]
 help = """Link to the Atlas Vector Search Feedback Engine."""
