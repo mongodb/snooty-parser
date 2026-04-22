@@ -1730,6 +1730,10 @@ type = {link = "https://www.mongodb.com/docs/v5.0/release-notes%s", ensure_trail
 help = """Link to Ops Manager v6.0 Release Notes"""
 type = {link = "https://www.mongodb.com/docs/v6.0/release-notes%s", ensure_trailing_slash = true}
 
+[role."tf-module"]
+help = """Link to a MongoDB Atlas Terraform module in the Terraform Registry."""
+type = {link = "https://registry.terraform.io/modules/terraform-mongodbatlas-modules/%s/mongodbatlas/latest"}
+
 
 
 ### Types of objects (directive & role pairs)
