@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from .safe_unpickler import safe_loads
 import pickletools
 import queue
 import threading
@@ -196,7 +197,7 @@ class PageDatabase:
 
     @classmethod
     def from_persisted(cls, pickled: bytes) -> PageDatabase:
-        unpickled = pickle.loads(pickled)
+        unpickled = safe_loads(pickled)
         assert isinstance(unpickled, SerializedPageData)
 
         db = PageDatabase()
