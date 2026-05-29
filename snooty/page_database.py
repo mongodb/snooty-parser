@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pickle
-from .safe_unpickler import safe_loads
 import pickletools
 import queue
 import threading
@@ -9,6 +8,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from . import parse_cache, util
+from .safe_unpickler import safe_loads
 from .diagnostics import Diagnostic
 from .n import FileId
 from .page import Page

@@ -2,7 +2,6 @@ import collections
 import hashlib
 import logging
 import pickle
-from ..safe_unpickler import safe_loads
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -18,6 +17,7 @@ from typing import (
 
 from .. import n
 from ..diagnostics import Diagnostic
+from ..safe_unpickler import safe_loads
 from ..page import Page
 from ..types import EmbeddedRstParser, ProjectConfig
 from . import extracts, nodes, release, steps
