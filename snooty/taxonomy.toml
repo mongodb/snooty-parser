@@ -72,7 +72,7 @@ display_name = "Cloud Manager"
 
 [[target_product]]
 name = "c2c"
-display_name = "Cluster-to-Cluster Sync"
+display_name = "Mongosync"
 
 [[target_product]]
 name = "community-kubernetes-operator"  # 404
@@ -119,46 +119,6 @@ display_name = "MongoDB Shell"
 [[target_product]]
 name = "onprem" # verify
 display_name = "Ops Manager"
-
-[[target_product]]
-name = "realm"
-
-  [[target_product.sub_product]]
-  name = "cpp"
-  display_name = "C++ SDK"
-
-  # nestled under docs-realm 
-  [[target_product.sub_product]]
-  name = "flutter"
-  display_name = "Dart Flutter SDK"
-
-  [[target_product.sub_product]]
-  name = "java"
-  display_name = "Java SDK"
-
-  [[target_product.sub_product]]
-  name = "kotlin"
-  display_name = "Kotlin SDK"
-
-  [[target_product.sub_product]]
-  name = "dotnet"
-  display_name = ".NET SDK"
-
-  [[target_product.sub_product]]
-  name = "react-native"
-  display_name = "React Native SDK"
-
-  [[target_product.sub_product]]
-  name = "swift"
-  display_name = "Swift SDK"
-
-  [[target_product.sub_product]]
-  name = "node"
-  display_name = "Node.js SDK"
-
-  [[target_product.sub_product]]
-  name = "web"
-  display_name = "Web SDK"
 
 [[target_product]]
 name = "docs-relational-migrator"
