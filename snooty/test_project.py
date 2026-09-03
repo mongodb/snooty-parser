@@ -10,7 +10,6 @@ import pytest
 from .diagnostics import (
     ConstantNotDeclared,
     Diagnostic,
-    DocUtilsParseError,
     GitMergeConflictArtifactFound,
     ImageSizeUndetermined,
     NestedProject,
@@ -484,13 +483,13 @@ def test_silencing_diagnostics() -> None:
                 "snooty.toml"
             ): r"""
 name = "test_silencing_diagnostics"
-silence_diagnostics = ["OrphanedPage"]
+silence_diagnostics = ["DocUtilsParseError"]
 """,
             Path("source/index.txt"): "====\nfoobarbaz\n====",
-            Path("source/orphan.txt"): r"",
+            Path("source/other.txt"): r"",
         }
     ) as backend:
         assert {k: [type(d) for d in v] for k, v in backend.diagnostics.items()} == {
-            FileId("index.txt"): [DocUtilsParseError],
-            FileId("orphan.txt"): [],
+            FileId("index.txt"): [],
+            FileId("other.txt"): [],
         }

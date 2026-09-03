@@ -970,17 +970,6 @@ class ImageSizeUndetermined(Diagnostic):
         )
 
 
-class OrphanedPage(Diagnostic):
-    severity = Diagnostic.Level.warning
-
-    def __init__(self) -> None:
-        super().__init__(
-            "Page not included in any toctree and not marked :orphan:",
-            0,
-            None,
-        )
-
-
 class NestedDirective(Diagnostic):
     severity = Diagnostic.Level.error
 
