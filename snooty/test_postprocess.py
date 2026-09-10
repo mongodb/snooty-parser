@@ -27,7 +27,6 @@ from .diagnostics import (
     MissingTab,
     MissingTocTreeEntry,
     NestedDirective,
-    OrphanedPage,
     SubstitutionRefError,
     TabMustBeDirective,
     TargetNotFound,
@@ -259,7 +258,6 @@ Page One Title
             InvalidIAEntry,
             MissingTocTreeEntry,
             InvalidIAEntry,
-            OrphanedPage,
         }
         page = result.pages[FileId(active_file)]
         check_ast_testing_string(
@@ -3286,50 +3284,6 @@ Image test
 </root>
         """,
         )
-
-
-def test_orphan_diagnostic() -> None:
-    with make_test(
-        {
-            Path(
-                "source/index.txt"
-            ): """
-==========
-Index Page
-==========
-
-.. toctree::
-
-   /not-an-orphan
-            """,
-            Path(
-                "source/orphan.txt"
-            ): """
-=========
-An Orphan
-=========
-            """,
-            Path(
-                "source/marked-orphan.txt"
-            ): """
-:orphan:
-
-===============
-A Marked Orphan
-===============
-            """,
-            Path(
-                "source/not-an-orphan.txt"
-            ): """
-=============
-Not An Orphan
-=============
-            """,
-        }
-    ) as result:
-        assert {
-            k: [type(d) for d in v] for k, v in result.diagnostics.items() if v
-        } == {FileId("orphan.txt"): [OrphanedPage]}
 
 
 def test_slug_to_breadcrumb_labels() -> None:

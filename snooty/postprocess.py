@@ -60,7 +60,6 @@ from .diagnostics import (
     MissingTab,
     MissingTocTreeEntry,
     NestedDirective,
-    OrphanedPage,
     SubstitutionRefError,
     TargetNotFound,
     UnexpectedDirectiveOrder,
@@ -2724,15 +2723,6 @@ class Postprocessor:
             ref_project_set,
             visited_fileids,
         )
-
-        # Locate orphaned files
-        for fileid in context.pages:
-            if fileid.suffix != EXT_FOR_PAGE:
-                continue
-
-            if fileid not in visited_fileids:
-                if "orphan" not in context.pages[fileid].ast.options:
-                    context.diagnostics[fileid].append(OrphanedPage())
 
         return root
 
