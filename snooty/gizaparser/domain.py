@@ -17,6 +17,7 @@ from typing import (
 
 from .. import n
 from ..diagnostics import Diagnostic
+from ..safe_unpickler import safe_loads
 from ..page import Page
 from ..types import EmbeddedRstParser, ProjectConfig
 from . import extracts, nodes, release, steps
@@ -92,7 +93,7 @@ class GizaYamlDomain:
                         "Cache: loaded %d nodes for %s", len(cached_entries), prefix
                     )
                     for fileid, cached_entry in cached_entries.items():
-                        giza_file = pickle.loads(cached_entry[1])
+                        giza_file = safe_loads(cached_entry[1])
                         assert isinstance(giza_file, nodes.GizaFile)
                         giza_category.add(
                             fileid,

@@ -11,6 +11,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 import requests.exceptions
 
 from . import __version__, diagnostics, gizaparser, specparser, util
+from .safe_unpickler import safe_loads
 from .diagnostics import Diagnostic
 from .n import FileId
 from .page import Page
@@ -87,7 +88,7 @@ class CacheData:
         file_hash = hashlib.blake2b(bytes(text, "utf-8")).hexdigest()
 
         try:
-            page, diagnostics = pickle.loads(self.pages[(path.as_posix(), file_hash)])
+            page, diagnostics = safe_loads(self.pages[(path.as_posix(), file_hash)])
         except KeyError as err:
             self.stats.misses += 1
             raise CacheMiss() from err
@@ -137,7 +138,7 @@ class ParseCache:
 
     def read_from_bytes(self, data_bytes: bytes) -> Optional[CacheData]:
         try:
-            data = pickle.loads(gzip.decompress(data_bytes))
+            data = safe_loads(gzip.decompress(data_bytes))
             assert isinstance(data, CacheData)
             if not isinstance(data.specifier, tuple) or not all(
                 isinstance(x, str) for x in data.specifier
