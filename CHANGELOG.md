@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.20.22] - 2026-09-14
+
 ### Removed
 
 - DOP-6233 removes the `OrphanedPage` diagnostic, which reported false positives for pages
