@@ -315,7 +315,7 @@ def test_ia_linked_data() -> None:
 
    .. entry:: Client Libraries
       :id: client-libraries
-      :url: https://www.mongodb.com/docs/drivers/
+      :url: https://www.mongodb.com/docs/languages/
 
 .. card-group::
    :columns: 4
@@ -326,7 +326,7 @@ def test_ia_linked_data() -> None:
 
    .. card::
       :headline: C
-      :url: https://www.mongodb.com/docs/drivers/c/
+      :url: https://www.mongodb.com/docs/languages/c/
 
    .. there is no headline
    .. card::
@@ -334,7 +334,7 @@ def test_ia_linked_data() -> None:
 
    .. card::
       :headline: C++
-      :url: https://www.mongodb.com/docs/drivers/cxx/
+      :url: https://www.mongodb.com/docs/languages/cxx/
 
    .. card::
       :headline: No url
@@ -346,7 +346,7 @@ def test_ia_linked_data() -> None:
 
    .. card::
       :headline: Wahoo
-      :url: https://www.mongodb.com/docs/drivers/java/
+      :url: https://www.mongodb.com/docs/languages/java/
 """,
             Path(
                 "source/page1.txt"
@@ -362,7 +362,7 @@ def test_ia_linked_data() -> None:
 
    .. card::
       :headline: C
-      :url: https://www.mongodb.com/docs/drivers/c/
+      :url: https://www.mongodb.com/docs/languages/c/
 """,
         }
     ) as result:
@@ -3913,7 +3913,7 @@ Subsection heading
 
       .. method-description::
 
-         This is an optional description. Learn more about drivers at `MongoDB Documentation <https://www.mongodb.com/docs/drivers/>`__.
+         This is an optional description. Learn more about drivers at `MongoDB Documentation <https://www.mongodb.com/docs/languages/>`__.
 
       This is content in the Driver method haha.
 
