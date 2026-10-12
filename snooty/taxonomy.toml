@@ -131,6 +131,10 @@ display_name = "Server"
 [[target_product]]
 name = "spark-connector"  # verify
 
+[[target_product]]
+name = "voyageai"
+display_name = "Voyage AI"
+
 # validated against existing search documents
 [[programming_language]]
 name = "objective-c"
