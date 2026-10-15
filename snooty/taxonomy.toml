@@ -58,12 +58,16 @@ name = "atlas"
   name = "terraform"
   display_name = "Terraform"
 
+  [[target_product.sub_product]]
+  name = "infinite"
+  display_name = "Atlas Infinite"
+
 [[target_product]]
 name = "bi-connector"
 display_name = "BI Connector"
 
 [[target_product]]
-name = "atlas-architecture-center"
+name = "atlas-architecture"
 display_name = "Atlas Architecture Center"
 
 [[target_product]]
@@ -133,7 +137,55 @@ name = "spark-connector"  # verify
 
 [[target_product]]
 name = "voyageai"
-display_name = "Voyage AI"
+display_name = "MongoDB Voyage AI Models"
+
+[[target_product]]
+name = "agentic-platform"
+display_name = "MongoDB Agentic Platform"
+
+[[target_product]]
+name = "atlas-government"
+display_name = "MongoDB Atlas for Government"
+
+[[target_product]]
+name = "entity-framework"
+display_name = "Entity Framework"
+
+[[target_product]]
+name = "hibernate"
+display_name = "MongoDB Extension for Hibernate ORM"
+
+[[target_product]]
+name = "kubernetes-operator"
+display_name = "MongoDB Atlas Kubernetes Operator"
+
+[[target_product]]
+name = "laravel-mongodb"
+display_name = "Laravel MongoDB"
+
+[[target_product]]
+name = "mcp-server"
+display_name = "MCP Server"
+
+[[target_product]]
+name = "mongoid"
+display_name = "Mongoid"
+
+[[target_product]]
+name = "search"
+display_name = "MongoDB Search"
+
+[[target_product]]
+name = "sql-interface"
+display_name = "SQL Interface"
+
+[[target_product]]
+name = "standby-clusters"
+display_name = "Standby Clusters"
+
+[[target_product]]
+name = "vector-search"
+display_name = "MongoDB Vector Search"
 
 # validated against existing search documents
 [[programming_language]]
