@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from . import parse_cache, util
+from .safe_unpickler import safe_loads
 from .diagnostics import Diagnostic
 from .n import FileId
 from .page import Page
@@ -196,7 +197,7 @@ class PageDatabase:
 
     @classmethod
     def from_persisted(cls, pickled: bytes) -> PageDatabase:
-        unpickled = pickle.loads(pickled)
+        unpickled = safe_loads(pickled)
         assert isinstance(unpickled, SerializedPageData)
 
         db = PageDatabase()
