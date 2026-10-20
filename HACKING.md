@@ -166,6 +166,10 @@ To release snooty, do the following:
    (you can monitor its progress at <https://github.com/mongodb/snooty-parser/actions>),
    a new release should be created with binaries for supported platforms.
 
+   The Linux `linux_x86_64` binary is built inside an `amazonlinux:2023` container
+   (glibc 2.34) so it remains compatible with older build hosts such as Vercel.
+   macOS binaries are still built on `macos-latest`.
+
    You can instruct the `cut-release` target to avoid pushing the tag by passing the
    `PUSH_TO=""` option. For example, `make cut-release BUMP_TO_VERSION=0.1.2 PUSH_TO=""`.
 

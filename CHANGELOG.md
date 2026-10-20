@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Build the Linux `linux_x86_64` release binary on Amazon Linux 2023 (glibc 2.34)
+  so it runs on hosts older than Ubuntu 22.04, including Vercel build images.
+
 ## [v0.20.23] - 2026-10-12
 
 ## [v0.20.22] - 2026-09-14
