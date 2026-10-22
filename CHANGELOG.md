@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.20.25] - 2026-10-22
+
 ### Changed
 
 - Build the Linux `linux_x86_64` release binary on Amazon Linux 2023 (glibc 2.34)
