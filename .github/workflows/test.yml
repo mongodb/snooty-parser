@@ -7,6 +7,9 @@ on:
     - 'v[0-9]*'
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
@@ -32,19 +35,41 @@ jobs:
       run: python3 -m poetry install
     - name: Run tests
       run: make test
-  testPackage:
-    strategy:
-      matrix:
-        platform: [ubuntu-22.04, macos-latest]
-        python-version: ['3.11']
-    runs-on: ${{ matrix.platform }}
+
+  # Keep Linux packaging in sync with the release workflow: build on AL2023
+  # (glibc 2.34) rather than Ubuntu 22.04 (glibc 2.35).
+  testPackage-linux:
+    runs-on: ubuntu-latest
+    container: amazonlinux:2023
+    steps:
+    - name: Install packaging dependencies
+      run: |
+        dnf install -y git tar gzip findutils which make zip binutils \
+          gcc gcc-c++ zlib-devel python3.11 python3.11-pip python3.11-devel
+        python3.11 -m pip install --upgrade pip
+        python3.11 -m pip install poetry
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Show glibc version
+      run: ldd --version | head -1
+    - name: Install dependencies
+      run: |
+        poetry env use python3.11
+        poetry install
+    - name: Build package
+      id: build_package
+      run: make package
+
+  testPackage-macos:
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.11'
         architecture: 'x64'
     - name: Setup poetry
       run: python3 -m pip install poetry
