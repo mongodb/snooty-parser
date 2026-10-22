@@ -51,6 +51,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        fetch-tags: true
+    - name: Allow git in workspace
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
     - name: Show glibc version
       run: ldd --version | head -1
     - name: Install dependencies
