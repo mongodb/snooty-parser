@@ -41,7 +41,7 @@ jobs:
     steps:
     - name: Install packaging dependencies
       run: |
-        dnf install -y git tar gzip findutils which make zip curl binutils \
+        dnf install -y git tar gzip findutils which make zip binutils \
           gcc gcc-c++ zlib-devel python3.11 python3.11-pip python3.11-devel
         python3.11 -m pip install --upgrade pip
         python3.11 -m pip install poetry
